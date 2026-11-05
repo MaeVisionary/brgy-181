@@ -20,7 +20,7 @@ export const TEST_ACCOUNT = {
   name: 'Ruffa Mae Silorio',
 } as const
 
-export const TEST_LEVELS: RoleId[] = ['system_admin', 'chairman', 'secretary', 'kagawad', 'sk_chairman', 'property_custodian', 'staff', 'resident']
+export const TEST_LEVELS: RoleId[] = ['system_admin', 'chairman', 'secretary', 'kagawad', 'property_custodian', 'staff', 'resident']
 
 export const isTestUser = (id: string | undefined) => !!id && id.startsWith('usr-test-')
 

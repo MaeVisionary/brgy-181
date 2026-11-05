@@ -24,7 +24,6 @@ import { DashHeader, ListPanel, PopulationCards, Row, Stat } from './shared'
 
 function CouncilList({ highlight }: { highlight?: string }) {
   const kagawads = officialByPosition('Barangay Kagawad')
-  const sk = officialByPosition('SK Chairman')[0]
   const Person = ({ name, position }: { name: string; position: string }) => (
     <li className={`flex items-center gap-3 rounded-[var(--radius-control)] px-3 py-2 ${highlight === name ? 'bg-sky-100' : ''}`}>
       <span className="grid size-8 shrink-0 place-items-center rounded-full bg-navy-900 text-[11px] font-semibold text-white">{initials(name)}</span>
@@ -40,7 +39,6 @@ function CouncilList({ highlight }: { highlight?: string }) {
         <Person name={CHAIRMAN.name} position="Barangay Chairman" />
         <Person name={SECRETARY.name} position="Barangay Secretary" />
         {kagawads.map((k) => <Person key={k.id} name={k.name} position="Barangay Kagawad" />)}
-        <Person name={sk.name} position="SK Chairman" />
         {officialByPosition('Barangay Treasurer').map((t) => <Person key={t.id} name={t.name} position="Barangay Treasurer" />)}
         {officialByPosition('Lupon Member').map((l) => <Person key={l.id} name={l.name} position="Lupon Member" />)}
       </ul>
@@ -69,26 +67,6 @@ export function KagawadDashboard() {
             {can('reports.view') && <ButtonLink to="/reports" variant="secondary">Reports</ButtonLink>}
           </div>
         </div>
-        <CouncilList highlight={user?.fullName} />
-      </div>
-    </>
-  )
-}
-
-/** SK Chairman: distinct profile; SK records are not yet in the documented scope. */
-export function SkDashboard() {
-  const { user } = useAuth()
-  return (
-    <>
-      <DashHeader subtitle="Sangguniang Kabataan Chairman" />
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <Card className="px-6 py-6">
-          <p className="label-caps">Sangguniang Kabataan</p>
-          <h2 className="mt-1 font-display text-[18px] font-extrabold text-navy-900">Youth programs</h2>
-          <p className="mt-2 max-w-xl text-[13.5px] text-ink-muted">
-            No youth program records yet. Community summaries and other modules can be added to this account by the System Administrator.
-          </p>
-        </Card>
         <CouncilList highlight={user?.fullName} />
       </div>
     </>

@@ -10,7 +10,6 @@ import { PublicLayout } from './PublicLayout'
 export function HomePage() {
   const go = useSmoothNavigate()
   const kagawads = officialByPosition('Barangay Kagawad')
-  const sk = officialByPosition('SK Chairman')[0]
   const treasurer = officialByPosition('Barangay Treasurer')[0]
   const lupon = officialByPosition('Lupon Member')
   const certificates = DOCUMENT_TYPES.filter((d) => d.category !== 'case')
@@ -88,7 +87,7 @@ export function HomePage() {
                 ))}
               </dl>
               <p className="mt-5 text-[14.5px] leading-relaxed text-ink-nav">
-                Barangay 181 is led by the Barangay Chairman, seven Barangay Kagawad, the SK Chairman and the Barangay Secretary. The BMIS study describes a
+                Barangay 181 is led by the Barangay Chairman, seven Barangay Kagawad and the Barangay Secretary. The BMIS study describes a
                 community of around 6,000 residents and about 2,000 registered voters as of 2025.
               </p>
               <p className="mt-3 text-[14.5px] leading-relaxed text-ink-nav">
@@ -109,7 +108,6 @@ export function HomePage() {
                 ))}
               </ul>
               <div className="mt-5 grid gap-4 border-t border-line-soft pt-4 sm:grid-cols-2">
-                <Person name={sk.name} position="SK Chairman" />
                 {treasurer && <Person name={treasurer.name} position="Barangay Treasurer" />}
               </div>
               {lupon.length > 0 && (

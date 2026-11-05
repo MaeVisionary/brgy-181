@@ -38,13 +38,6 @@ export const ROLES: Record<RoleId, Role> = {
     description:
       'Member of the Barangay Council. Base access is community summaries and reports; anything more is granted per account once the barangay confirms the responsibility.',
   },
-  sk_chairman: {
-    id: 'sk_chairman',
-    name: 'SK Chairman',
-    portal: 'personnel',
-    portalLabel: 'Sangguniang Kabataan',
-    description: 'Heads youth programs (Sangguniang Kabataan).',
-  },
   property_custodian: {
     id: 'property_custodian',
     name: 'Property Custodian',
@@ -88,8 +81,6 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
   // related to their responsibilities. Further access is granted per account.
   kagawad: ['analytics.view', 'reports.view'],
 
-  // Study §1.1: the SK Chairman heads youth programs; no system functions are documented yet.
-  sk_chairman: [],
 
   secretary: [
     'residents.view',
@@ -147,8 +138,8 @@ export const GRANTABLE_STAFF_PERMISSIONS: readonly Permission[] = [
   'cases.view',
 ]
 
-/** Same grantable set applies to Kagawad and SK accounts (per-account, once confirmed). */
-export const GRANTABLE_ROLES: readonly string[] = ['staff', 'kagawad', 'sk_chairman']
+/** Same grantable set applies to Kagawad accounts (per-account, once confirmed). */
+export const GRANTABLE_ROLES: readonly string[] = ['staff', 'kagawad']
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   'residents.view': 'View resident records',

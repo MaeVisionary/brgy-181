@@ -9,7 +9,6 @@ export type RoleId =
   | 'chairman'
   | 'secretary'
   | 'kagawad'
-  | 'sk_chairman'
   | 'property_custodian'
   | 'staff'
   | 'resident'

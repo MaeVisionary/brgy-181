@@ -15,7 +15,6 @@ const roleOf: Record<string, RoleId> = {
   'Barangay Chairman': 'chairman',
   'Barangay Secretary': 'secretary',
   'Barangay Kagawad': 'kagawad',
-  'SK Chairman': 'sk_chairman',
 }
 
 const usernames: Record<string, string> = {
@@ -28,7 +27,6 @@ const usernames: Record<string, string> = {
   'usr-kag-5': 'cecilia.espinosa',
   'usr-kag-6': 'alver.domingo',
   'usr-kag-7': 'rogelio.cristobal',
-  'usr-sk': 'kriscelli.reyes',
 }
 
 const officialUsers: User[] = OFFICIALS.filter((o) => o.userId).map((o, i) => ({

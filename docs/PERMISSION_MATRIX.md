@@ -2,7 +2,7 @@
 
 Status: **proposed**. Source in code: `src/config/permissions.ts`. The **Roles and Permissions** page in the Admin Console always shows the current matrix.
 
-**Update (Barangay 181 personalization):** two roles were added. **Barangay Kagawad** gets community analytics and reports by default. **SK Chairman** has no default system functions yet, since the study only says the SK Chairman heads youth programs. Both can receive extra permissions per account. The Chairman also has `cases.decide`: assess complaints, record a settlement or a Lupon referral.
+**Update (Barangay 181 personalization):** the **Barangay Kagawad** role was added and gets community analytics and reports by default. The SK Chairman role was removed because Barangay 181 has no SK Chairman. Kagawad accounts can receive extra permissions per account. The Chairman also has `cases.decide`: assess complaints, record a settlement or a Lupon referral.
 In this frontend phase the matrix only controls what each role *sees*. The backend must enforce the same rules later.
 
 Legend: ✅ granted · ⬜ not granted · ⚙️ grantable per account by the System Administrator · ❓ needs your decision

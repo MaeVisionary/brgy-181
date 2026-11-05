@@ -157,7 +157,7 @@ export function RolesPage() {
   const perms = Object.keys(PERMISSION_LABELS) as Permission[]
   return (
     <>
-      <PageHeader title="Roles and Permissions" subtitle="Proposed matrix, pending barangay review. Personnel, Kagawad and SK accounts can receive extra permissions per account." />
+      <PageHeader title="Roles and Permissions" subtitle="Proposed matrix, pending barangay review. Personnel and Kagawad accounts can receive extra permissions per account." />
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[900px] text-[12.5px]">
           <thead>
