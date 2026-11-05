@@ -20,6 +20,13 @@ export interface SignInInput {
   remember: boolean
 }
 
+/** Exact match, or the same password with stray spaces from copy-paste removed. */
+async function passwordMatches(key: string, password: string, expected: string): Promise<boolean> {
+  if ((await hashPassword(key, password)) === expected) return true
+  const trimmed = password.trim()
+  return trimmed !== password && (await hashPassword(key, trimmed)) === expected
+}
+
 const INVALID = 'Incorrect username/email or password. If you have no password yet, ask the System Administrator to reset your account.'
 
 export async function signIn(input: SignInInput): Promise<{ user: User; session: Session }> {
@@ -38,7 +45,7 @@ export async function signIn(input: SignInInput): Promise<{ user: User; session:
   if (TEST_ACCOUNT.enabled && id === TEST_ACCOUNT.email) {
     const cred = getCredential(TEST_ACCOUNT.credentialKey)
     const expected = cred?.hash ?? TEST_ACCOUNT.passwordHash
-    if ((await hashPassword(TEST_ACCOUNT.credentialKey, input.password)) !== expected) fail()
+    if (!(await passwordMatches(TEST_ACCOUNT.credentialKey, input.password, expected))) fail()
     clearFailures(lockKey)
     const role = input.roles.includes('staff') ? 'staff' : input.roles[0]
     const user = testUserFor(role)
@@ -48,7 +55,7 @@ export async function signIn(input: SignInInput): Promise<{ user: User; session:
   const user = mockUsers.find((u) => u.username.toLowerCase() === id || u.email.toLowerCase() === id)
   const cred = user ? getCredential(user.id) : undefined
   if (!user || !cred || !input.roles.includes(user.roleId)) fail()
-  if ((await hashPassword(user!.id, input.password)) !== cred!.hash) fail()
+  if (!(await passwordMatches(user!.id, input.password, cred!.hash))) fail()
   if (user!.status !== 'active') {
     clearFailures(lockKey)
     throw new ServiceError('inactive', pendingAccountMessage(user!.id) ?? 'This account is deactivated. Please contact the System Administrator.')
