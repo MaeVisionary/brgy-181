@@ -6,7 +6,8 @@ import { FieldInput, groupFields } from '@/components/documents/DocParts'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
-import { DOCUMENT_TYPES, getDocumentType } from '@/documents/catalog'
+import { getDocumentType } from '@/documents/catalog'
+import { activeDocumentTypes } from '@/services/templateService'
 import { isFilled, prefillFromResident, residentFullName } from '@/documents/fill'
 import { useDocActor } from '@/hooks/useDocActor'
 import { cn } from '@/lib/cn'
@@ -70,7 +71,7 @@ export function NewRequestPage() {
     }
   }
 
-  const groups = (['certificate', 'clearance', 'case'] as const).map((cat) => [cat, DOCUMENT_TYPES.filter((d) => d.category === cat)] as const)
+  const groups = (['certificate', 'clearance', 'case'] as const).map((cat) => [cat, activeDocumentTypes().filter((d) => d.category === cat)] as const)
 
   return (
     <>

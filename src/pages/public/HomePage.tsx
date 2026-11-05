@@ -1,7 +1,6 @@
-import { ArrowRight, Building2, ClipboardList, FileText, Gavel, MapPin, Package, UserCheck } from 'lucide-react'
-import { BarangaySeal } from '@/components/layout/BarangaySeal'
+import { ArrowRight, Building2, ClipboardList, FileText, Gavel, MapPin, Package, UserCheck, UserPlus } from 'lucide-react'
 import { BARANGAY, CHAIRMAN, SECRETARY, officialByPosition } from '@/config/barangay'
-import { DOCUMENT_TYPES } from '@/documents/catalog'
+import { activeDocumentTypes } from '@/services/templateService'
 import { cn } from '@/lib/cn'
 import { useSmoothNavigate } from '@/lib/transition'
 import { PublicLayout } from './PublicLayout'
@@ -12,15 +11,23 @@ export function HomePage() {
   const kagawads = officialByPosition('Barangay Kagawad')
   const treasurer = officialByPosition('Barangay Treasurer')[0]
   const lupon = officialByPosition('Lupon Member')
-  const certificates = DOCUMENT_TYPES.filter((d) => d.category !== 'case')
-  const caseDocs = DOCUMENT_TYPES.filter((d) => d.category === 'case' && d.id !== 'notice-of-hearing')
+  const docTypes = activeDocumentTypes()
+  const certificates = docTypes.filter((d) => d.category !== 'case')
+  const caseDocs = docTypes.filter((d) => d.category === 'case' && d.id !== 'notice-of-hearing')
 
   return (
     <PublicLayout>
-      {/* Hero */}
+      {/* Hero: large, faint seal behind the text (low opacity so the text stays easy to read) */}
       <section className="relative overflow-hidden border-b border-line bg-surface">
-        <div className="mx-auto grid max-w-[1180px] items-center gap-10 px-4 py-14 sm:px-6 md:py-20 lg:grid-cols-[1.15fr_1fr]">
-          <div>
+        <img
+          aria-hidden
+          alt=""
+          src={`${import.meta.env.BASE_URL}seal.png`}
+          className="bmis-rise pointer-events-none absolute top-1/2 right-[-140px] w-[620px] max-w-none -translate-y-1/2 object-contain opacity-[0.09] grayscale select-none sm:right-[-80px] md:w-[680px] lg:right-[-40px] lg:w-[720px]"
+        />
+        <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-surface via-surface/85 to-transparent lg:w-[62%]" />
+        <div className="relative mx-auto max-w-[1180px] px-4 py-16 sm:px-6 md:py-24">
+          <div className="max-w-[620px]">
             <p className="bmis-rise label-caps text-navy-600">Official digital portal</p>
             <h1 className="bmis-rise bmis-rise-2 mt-3 font-display text-[34px] leading-[1.08] font-extrabold tracking-tight text-navy-900 sm:text-[46px]">
               Welcome to the Digital Portal of <span className="block">Barangay 181</span>
@@ -35,33 +42,18 @@ export function HomePage() {
               <button type="button" onClick={() => go('/portal')} className="bmis-press inline-flex h-12 items-center gap-2 rounded-full bg-navy-900 px-6 text-[15px] font-semibold text-white hover:bg-navy-800">
                 Access the Portal <ArrowRight className="size-4" />
               </button>
+              <button type="button" onClick={() => go('/register')} className="bmis-press inline-flex h-12 items-center gap-2 rounded-full border border-navy-900 bg-surface px-6 text-[15px] font-semibold text-navy-900 hover:bg-sky-50">
+                <UserPlus className="size-4" /> Create an account
+              </button>
               <button
                 type="button"
                 onClick={() => document.querySelector('#services')?.scrollIntoView({ behavior: 'smooth' })}
-                className="bmis-press inline-flex h-12 items-center rounded-full border border-line bg-surface px-6 text-[15px] font-semibold text-navy-900 hover:bg-surface-muted"
+                className="bmis-press inline-flex h-12 items-center rounded-full px-4 text-[15px] font-semibold text-navy-900 hover:bg-surface-muted"
               >
                 Explore Services
               </button>
             </div>
-          </div>
-
-          {/* Identity card: wording as printed on the barangay's official documents */}
-          <div className="bmis-rise bmis-rise-3 relative mx-auto w-full max-w-[440px]">
-            <div className="relative overflow-hidden rounded-[28px] bg-navy-900 px-8 pt-10 pb-8 text-center text-white">
-              {/* Faint seal watermark behind the card content */}
-              <img
-                aria-hidden
-                alt=""
-                src={`${import.meta.env.BASE_URL}seal.png`}
-                className="pointer-events-none absolute top-1/2 left-1/2 size-[460px] max-w-none -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.06] select-none"
-              />
-              <BarangaySeal className="relative mx-auto size-36 drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)]" />
-              <p className="relative mt-6 text-[13px] tracking-wide text-white/75">Republic of the Philippines · City of Manila</p>
-              <p className="relative mt-1 font-display text-[22px] font-extrabold">Barangay 181</p>
-              <p className="relative text-[14px] text-white/85">Zone 16, District II</p>
-              <div className="relative mx-auto my-5 h-px w-16 bg-[#f2c94c]" />
-              <p className="relative font-display text-[13px] font-bold text-[#f2c94c] italic">“{BARANGAY.motto}”</p>
-            </div>
+            <p className="bmis-rise bmis-rise-4 mt-6 font-display text-[13px] font-bold text-navy-600 italic">“{BARANGAY.motto}”</p>
           </div>
         </div>
       </section>
@@ -152,26 +144,14 @@ export function HomePage() {
             </ServiceGroup>
           </div>
 
-          <div className="mt-10 grid gap-3 md:grid-cols-4">
-            {[
-              [ClipboardList, 'Submit your request', 'Through the portal or at the Barangay Hall.'],
-              [UserCheck, 'Verification', 'The Barangay Secretary checks your information against the records.'],
-              [Building2, 'Approval', 'Documents that need it are approved by the Barangay Chairman, then signed and sealed.'],
-              [MapPin, 'Pickup', 'Claim your document at the Barangay 181 Hall.'],
-            ].map(([Icon, title, body], i) => {
-              const I = Icon as typeof ClipboardList
-              return (
-                <div key={title as string} className="rounded-[var(--radius-card)] border border-line bg-canvas p-5">
-                  <span className="flex items-center gap-2 text-[12px] font-semibold text-ink-muted">
-                    <span className="grid size-6 place-items-center rounded-full bg-navy-900 text-[11px] text-white">{i + 1}</span>
-                    <I className="size-4" />
-                  </span>
-                  <p className="mt-3 font-display text-[15px] font-bold text-navy-900">{title as string}</p>
-                  <p className="mt-1 text-[13px] text-ink-muted">{body as string}</p>
-                </div>
-              )
-            })}
-          </div>
+          <ProcessSteps
+            steps={[
+              { icon: ClipboardList, title: 'Submit your request', body: 'Through the portal or at the Barangay Hall.' },
+              { icon: UserCheck, title: 'Verification', body: 'The Barangay Secretary checks your information against the records.' },
+              { icon: Building2, title: 'Approval', body: 'Documents that need it are approved by the Barangay Chairman, then signed and sealed.' },
+              { icon: MapPin, title: 'Pickup', body: 'Claim your document at the Barangay 181 Hall.' },
+            ]}
+          />
         </div>
       </section>
 
@@ -232,5 +212,34 @@ function ServiceItem({ name, online }: { name: string; online: boolean }) {
       <span className="text-navy-900">{name}</span>
       <span className={cn('shrink-0 text-[11px] font-semibold', online ? 'text-info' : 'text-ink-muted')}>{online ? 'Online' : 'At the Hall'}</span>
     </li>
+  )
+}
+
+/** Numbered steps joined by a line: horizontal on wide screens, vertical on phones. */
+function ProcessSteps({ steps }: { steps: { icon: typeof FileText; title: string; body: string }[] }) {
+  return (
+    <div className="mt-12">
+      <p className="label-caps text-navy-600">How a request moves</p>
+      <ol className="relative mt-6 grid gap-8 md:grid-cols-4 md:gap-4">
+        {/* Connector line */}
+        <span aria-hidden className="absolute top-6 right-[12.5%] left-[12.5%] hidden h-[3px] rounded-full bg-sky-300 md:block" />
+        <span aria-hidden className="absolute top-6 bottom-6 left-6 w-[3px] rounded-full bg-sky-300 md:hidden" />
+        {steps.map((s, i) => {
+          const I = s.icon
+          return (
+            <li key={s.title} className="relative flex gap-4 md:flex-col md:items-center md:text-center">
+              <span className="relative z-10 grid size-12 shrink-0 place-items-center rounded-full border-4 border-surface bg-navy-900 text-white shadow-[0_0_0_3px_var(--color-sky-300)]">
+                <I className="size-5" />
+              </span>
+              <div className="md:mt-3">
+                <p className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-muted uppercase">Step {i + 1}</p>
+                <p className="font-display text-[15.5px] font-bold text-navy-900">{s.title}</p>
+                <p className="mt-1 max-w-[230px] text-[13px] text-ink-muted">{s.body}</p>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+    </div>
   )
 }

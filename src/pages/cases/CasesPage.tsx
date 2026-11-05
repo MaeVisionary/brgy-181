@@ -1,14 +1,16 @@
-import { CalendarClock, Gavel } from 'lucide-react'
+import { CalendarCheck2, CalendarClock, Gavel, RotateCcw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 import { formatDate, formatDateTime } from '@/lib/format'
-import { STAGE_LABEL, STAGE_TONE, listCases, mediationDay, upcomingHearings } from '@/services/caseService'
+import { STAGE_LABEL, STAGE_TONE, listCases, mediationDay, removeClosedCase, removedCaseIds, restoreCase, upcomingHearings } from '@/services/caseService'
+import { ServiceError } from '@/services/mockApi'
 import type { CaseStage } from '@/types/case'
 import { SampleBadge } from '@/pages/dashboard/shared'
 import { KP } from '@/config/barangay'
@@ -17,9 +19,25 @@ import { KP } from '@/config/barangay'
 export function CasesPage() {
   const actor = useDocActor()!
   const navigate = useNavigate()
-  const cases = useAsync(() => listCases(actor), [actor]).data
+  const [showRemoved, setShowRemoved] = useState(false)
+  const [version, setVersion] = useState(0)
+  const cases = useAsync(() => listCases(actor, { includeRemoved: showRemoved }), [actor, showRemoved, version]).data
   const [stage, setStage] = useState('')
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const canRemove = actor.permissions.has('cases.decide')
+  const removed = removedCaseIds()
   const rows = (cases ?? []).filter((c) => !stage || c.stage === stage)
+  const act = async (fn: () => Promise<void>) => {
+    setError(null)
+    try {
+      await fn()
+      setConfirmId(null)
+      setVersion((v) => v + 1)
+    } catch (e) {
+      setError(e instanceof ServiceError ? e.message : 'Something went wrong.')
+    }
+  }
 
   return (
     <>
@@ -35,11 +53,18 @@ export function CasesPage() {
             {(Object.keys(STAGE_LABEL) as CaseStage[]).map((s) => <option key={s} value={s}>{STAGE_LABEL[s]}</option>)}
           </Select>
           <span className="text-[12.5px] text-ink-muted">{rows.length} cases</span>
+          {canRemove && (
+            <label className="ml-auto flex items-center gap-2 text-[12.5px] text-navy-900">
+              <input type="checkbox" className="size-4 accent-[#002132]" checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} />
+              Show removed cases ({removed.size})
+            </label>
+          )}
         </div>
+        {error && <p className="border-b border-line-soft bg-danger-tint px-4 py-2 text-[12.5px] text-danger-ink">{error}</p>}
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-[13px]">
             <thead>
-              <tr className="bg-surface-muted text-left">{['Case no.', 'Parties', 'Nature', 'Filed', 'Stage', 'Next hearing'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}</tr>
+              <tr className="bg-surface-muted text-left">{['Case no.', 'Parties', 'Nature', 'Filed', 'Stage', 'Next hearing', ...(canRemove ? [''] : [])].map((h, i) => <th key={i} className="label-caps px-4 py-2.5">{h}</th>)}</tr>
             </thead>
             <tbody>
               {rows.map((c) => {
@@ -56,6 +81,24 @@ export function CasesPage() {
                       {md && <span className={`mt-0.5 block text-[11px] ${md.overdue ? 'text-danger-ink' : 'text-ink-muted'}`}>Day {md.day} of {md.total}</span>}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">{next ? formatDateTime(next.scheduledAt) : <span className="text-ink-subtle">–</span>}</td>
+                    {canRemove && (
+                      <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        {removed.has(c.id) ? (
+                          <Button size="sm" variant="secondary" icon={<RotateCcw className="size-3.5" />} onClick={() => act(() => restoreCase(c.id, actor))}>Restore</Button>
+                        ) : c.stage === 'closed' ? (
+                          confirmId === c.id ? (
+                            <span className="inline-flex items-center gap-2">
+                              <Button size="sm" variant="danger" onClick={() => act(() => removeClosedCase(c.id, actor))}>Remove</Button>
+                              <button type="button" className="text-[12px] font-semibold text-ink-muted hover:text-navy-900" onClick={() => setConfirmId(null)}>Cancel</button>
+                            </span>
+                          ) : (
+                            <Button size="sm" variant="ghost" icon={<Trash2 className="size-3.5" />} onClick={() => setConfirmId(c.id)} aria-label={`Remove ${c.caseNo} from the list`}>
+                              Remove
+                            </Button>
+                          )
+                        ) : null}
+                      </td>
+                    )}
                   </tr>
                 )
               })}
@@ -63,6 +106,11 @@ export function CasesPage() {
           </table>
         </div>
       </Card>
+      {canRemove && (
+        <p className="mt-2 text-[12px] text-ink-muted">
+          Closed cases can be removed from this list to keep it short. The case record is kept, as Katarungang Pambarangay records must be preserved, and can be restored anytime.
+        </p>
+      )}
     </>
   )
 }
@@ -96,6 +144,10 @@ export function HearingsPage() {
   return (
     <>
       <PageHeader title="Hearings and Mediation" subtitle="Schedules come from case records. Reminders go to the parties before each hearing (FR20)." actions={<SampleBadge />} />
+      <div className="mb-4 grid gap-4 sm:grid-cols-2">
+        <Total icon={<CalendarClock className="size-5" />} label="Upcoming hearings" value={cases ? upcoming.length : null} hint={upcoming[0] ? `Next: ${formatDateTime(upcoming[0].h.scheduledAt)}` : 'Nothing scheduled'} tone="navy" />
+        <Total icon={<CalendarCheck2 className="size-5" />} label="Hearings held" value={cases ? past.length : null} hint={past[0] ? `Last: ${formatDateTime(past[0].h.scheduledAt)}` : 'None yet'} tone="sky" />
+      </div>
       <div className="grid gap-4 xl:grid-cols-2">
         <Panel title="Upcoming" bodyClassName="px-0 py-0" icon={<CalendarClock className="size-[18px]" />}>
           {upcoming.length === 0 ? <p className="px-5 py-6 text-[13px] text-ink-muted">No hearings scheduled.</p> : <ul>{upcoming.map((x) => <Item key={x.h.id} {...x} />)}</ul>}
@@ -105,5 +157,20 @@ export function HearingsPage() {
         </Panel>
       </div>
     </>
+  )
+}
+
+function Total({ icon, label, value, hint, tone }: { icon: React.ReactNode; label: string; value: number | null; hint: string; tone: 'navy' | 'sky' }) {
+  return (
+    <Card className={tone === 'navy' ? 'bg-navy-900 px-6 py-5 text-white' : 'px-6 py-5'}>
+      <div className="flex items-center gap-4">
+        <span className={`grid size-12 shrink-0 place-items-center rounded-2xl ${tone === 'navy' ? 'bg-white/10 text-white' : 'bg-sky-100 text-navy-900'}`}>{icon}</span>
+        <div>
+          <p className={`text-[12px] font-semibold tracking-[0.06em] uppercase ${tone === 'navy' ? 'text-white/70' : 'text-ink-muted'}`}>{label}</p>
+          <p className={`font-display text-[34px] leading-none font-extrabold ${tone === 'navy' ? 'text-white' : 'text-navy-900'}`}>{value ?? '–'}</p>
+          <p className={`mt-1 text-[12.5px] ${tone === 'navy' ? 'text-white/75' : 'text-ink-muted'}`}>{hint}</p>
+        </div>
+      </div>
+    </Card>
   )
 }

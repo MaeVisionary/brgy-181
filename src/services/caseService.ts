@@ -94,8 +94,61 @@ export function stepsFor(c: KPCase, a: CaseActor): CaseStep[] {
   return CASE_STEPS.filter((s) => s.from.includes(c.stage) && a.permissions.has(s.by))
 }
 
-export function listCases(a: CaseActor): Promise<KPCase[]> {
-  return mockRequest(() => mockCases.filter((c) => canSee(c, a)).map((c) => redactForResident(c, a)).sort((x, y) => y.filedAt.localeCompare(x.filedAt)))
+const REMOVED_CASES_KEY = 'bmis.removedCases'
+
+/** Closed cases the Chairman removed from the lists (saved on this device in the prototype). */
+export function removedCaseIds(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(REMOVED_CASES_KEY) ?? '[]') as string[])
+  } catch {
+    return new Set()
+  }
+}
+function saveRemoved(ids: Set<string>) {
+  try {
+    localStorage.setItem(REMOVED_CASES_KEY, JSON.stringify([...ids]))
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/** Lists cases; removed (closed) cases are left out unless asked for. */
+export function listCases(a: CaseActor, opts: { includeRemoved?: boolean } = {}): Promise<KPCase[]> {
+  const removed = removedCaseIds()
+  return mockRequest(() =>
+    mockCases
+      .filter((c) => canSee(c, a) && (opts.includeRemoved || !removed.has(c.id)))
+      .map((c) => redactForResident(c, a))
+      .sort((x, y) => y.filedAt.localeCompare(x.filedAt)),
+  )
+}
+
+/**
+ * The Barangay Chairman can remove a CLOSED case from the lists to keep them short.
+ * The record itself is kept (KP records must be preserved) and can be restored.
+ */
+export function removeClosedCase(id: string, a: CaseActor): Promise<void> {
+  return mockRequest(() => {
+    if (!a.permissions.has('cases.decide')) throw new ServiceError('forbidden', 'Only the Barangay Chairman can remove cases from the list.')
+    const c = mockCases.find((x) => x.id === id)
+    if (!c) throw new ServiceError('not_found', 'Case not found.')
+    if (c.stage !== 'closed') throw new ServiceError('open', 'Only closed cases can be removed from the list.')
+    const ids = removedCaseIds()
+    ids.add(id)
+    saveRemoved(ids)
+    c.history.push({ at: new Date().toISOString(), byUserId: a.user.id, byRole: a.user.roleId, action: 'Removed from the case list (record kept)', stage: c.stage })
+  })
+}
+
+export function restoreCase(id: string, a: CaseActor): Promise<void> {
+  return mockRequest(() => {
+    if (!a.permissions.has('cases.decide')) throw new ServiceError('forbidden', 'Only the Barangay Chairman can restore cases.')
+    const ids = removedCaseIds()
+    ids.delete(id)
+    saveRemoved(ids)
+    const c = mockCases.find((x) => x.id === id)
+    c?.history.push({ at: new Date().toISOString(), byUserId: a.user.id, byRole: a.user.roleId, action: 'Restored to the case list', stage: c.stage })
+  })
 }
 
 export function getCase(id: string, a: CaseActor): Promise<KPCase> {

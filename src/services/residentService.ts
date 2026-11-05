@@ -21,10 +21,12 @@ export interface AreaBreakdown {
   area: string
   residents: number
   households: number
+  families: number
   seniorCitizens: number
   pwds: number
   soloParents: number
   fourPsMembers: number
+  programBeneficiaries: number
 }
 
 function summarize(residents: Resident[], households: Household[]): PopulationSummary {
@@ -41,9 +43,11 @@ function summarize(residents: Resident[], households: Household[]): PopulationSu
   }
 }
 
-/** Population figures computed from the resident records (never hardcoded). */
-export function getPopulationSummary(): Promise<PopulationSummary> {
-  return mockRequest(() => summarize(mockResidents, mockHouseholds))
+/** Population figures computed from the resident records (never hardcoded); optionally for one street. */
+export function getPopulationSummary(street?: string): Promise<PopulationSummary> {
+  return mockRequest(() =>
+    street ? summarize(mockResidents.filter((r) => r.street === street), mockHouseholds.filter((h) => h.street === street)) : summarize(mockResidents, mockHouseholds),
+  )
 }
 
 export function getAreaBreakdown(): Promise<AreaBreakdown[]> {
@@ -51,7 +55,7 @@ export function getAreaBreakdown(): Promise<AreaBreakdown[]> {
     AREAS.map((area) => {
       const rs = mockResidents.filter((r) => r.street === area)
       const s = summarize(rs, mockHouseholds.filter((h) => h.street === area))
-      return { area, residents: s.totalResidents, households: s.totalHouseholds, seniorCitizens: s.seniorCitizens, pwds: s.pwds, soloParents: s.soloParents, fourPsMembers: s.fourPsMembers }
+      return { area, residents: s.totalResidents, households: s.totalHouseholds, families: s.totalFamilies, seniorCitizens: s.seniorCitizens, pwds: s.pwds, soloParents: s.soloParents, fourPsMembers: s.fourPsMembers, programBeneficiaries: s.programBeneficiaries }
     }).filter((a) => a.residents > 0),
   )
 }

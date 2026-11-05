@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/Button'
 import { FieldLabel, Select, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Panel } from '@/components/ui/Panel'
-import { DOCUMENT_TYPES, getDocumentType } from '@/documents/catalog'
+import { getDocumentType } from '@/documents/catalog'
+import { activeDocumentTypes } from '@/services/templateService'
 import { ageOn, prefillFromResident, residentFullName } from '@/documents/fill'
 import { useDocActor } from '@/hooks/useDocActor'
 import { createRequest } from '@/services/documentService'
@@ -102,7 +103,7 @@ export function NewAssistedRequestPage() {
         <Panel title="1. Document">
           <FieldLabel label="Document type" hint={type.onlineNote}>
             <Select value={typeId} onChange={(e) => pickType(e.target.value as DocumentTypeId)}>
-              {DOCUMENT_TYPES.map((d) => (
+              {activeDocumentTypes().map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
                 </option>
