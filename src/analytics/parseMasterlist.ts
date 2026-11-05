@@ -94,13 +94,25 @@ export const STREET_ALIASES: Record<string, string> = {
   'GEN.LUBAN': 'GEN.LUKBAN',
   'GEN. LUKBAN': 'GEN.LUKBAN',
   'GEN LUKBAN': 'GEN.LUKBAN',
+  'D GEN.LUKBAN': 'GEN.LUKBAN',
+  'A PAGASA': 'PAGASA',
+  'RD.4 GAGALANGIN': 'ROAD 4',
+  'RD.4': 'ROAD 4',
+  'SUNOG=APOG': 'SUNOG APOG',
 }
 
 function streetOf(address: string): string | null {
-  // Masterlist format: "<house no.> -<STREET> , TONDO II , MANILA"
-  const m = address.match(/-\s*([A-Z][A-Z .'Ñ]*?)\s*(,|$)/)
-  if (!m) return null
-  let st = m[1].replace(/\s+(ST|STREET)\.?$/, '').replace(/\.\s+/g, '.').trim()
+  // Masterlist format: "<house no.> -<STREET> , TONDO II , MANILA". House numbers can
+  // contain a dash too ("665-D -GEN.LUKBAN"), so use the last dash before the first comma.
+  const head = address.split(',')[0]
+  const seg = head.slice(head.lastIndexOf('-') + 1).trim()
+  if (head.lastIndexOf('-') < 0 || !/^[A-Z]/.test(seg)) return null
+  let st = seg
+    .replace(/^INT\.?\s*[A-Z]?\s+/, '') // "INT. BENITA" / "INT.I BENITA": interior lot prefix
+    .replace(/^INT\./, '')
+    .replace(/\s*(ST|STREET)\.?(\s*GAGALANGIN)?$/, '')
+    .replace(/\.\s+/g, '.')
+    .trim()
   st = STREET_ALIASES[st] ?? st
   return st || null
 }

@@ -1,9 +1,8 @@
-# Barangay 181 BMIS: Frontend
+# Barangay 181 Information Management System (frontend)
 
-Frontend prototype of the Barangay 181, Zone 16, District II, Manila Information Management System.
+Frontend of the Barangay 181, Zone 16, District II, Manila Information Management System (BMIS).
 
-> **Frontend only.** All data is mock data and every access check runs in the browser.
-> This is for demonstration and testing, not security. The backend (Laravel + MySQL) comes in a later phase.
+> **Frontend only.** There is no backend, database or real sign-in yet. Records are labelled sample data (or files you load in the browser), and every access check runs in the browser. Production security comes with the backend phase.
 
 ## Run
 
@@ -13,33 +12,38 @@ npm run dev        # http://localhost:5181
 npm run build      # type-check + production build
 ```
 
-## Demo accounts
+## Using the prototype
 
-Demo mode (on during `npm run dev`, or with `VITE_DEMO_MODE=true`) shows a role switcher bar and one-click demo sign-in.
-Accounts and the shared demo password are in `src/mocks/users.ts`.
+- **Public site:** `/` (homepage) → `/portal` (choose account type) → `/login/:role` (role-specific sign-in). Sign-in only validates the form and says that authentication arrives with the backend. There are no demo accounts or shortcuts.
+- **Development preview:** `/preview`, only in `npm run dev`. It opens any role's screens with sample data and is **not included in production builds**.
+
+## What's in it
+
+| Area | Highlights |
+|---|---|
+| Roles | Barangay Chairman (Robert Atad), Barangay Secretary (Ana Manila Salvador), seven Barangay Kagawad, SK Chairman (Kriscelli Ann Reyes), Property Custodian, System Administrator, other personnel, residents. Each has its own dashboard. |
+| Resident records | Master list, profiles, households with multiple families, registration verification, update requests, CSV import with duplicate review |
+| Documents | All 13 official templates, used exactly as supplied, with values placed on their blanks; per-document workflows, preview, print / Save as PDF |
+| Katarungang Pambarangay | Cases, assessment, 15-day mediation under the Chairman, Lupon referral, hearings, attendance, reminders (simulated) |
+| Equipment | Chairs, tables, ladders, nebulizers; 15-day period + 3-day grace; release, return inspection, overdue tracking |
+| Analytics and reports | Loads the OSCA senior citizen masterlist (.xlsx) in the browser, with data-quality checks; community planning by area; internal reports to PDF/Excel. Official DILG/OSCA/MADAO/Barangay Bureau formats are pending. |
 
 ## Structure
 
 ```
 src/
-  config/        permissions.ts (role matrix), navigation.ts (sidebar + route registry), app.ts (settings)
-  types/         domain types shared by mocks, services and pages
-  mocks/         MOCK DATA ONLY: deterministic fictional records
-  services/      data-access layer; each function returns a Promise so it can be swapped for an API call
-  auth/          simulated session, permission checks, route guards
-  components/    ui/ (design system), layout/ (shell, sidebar, header), charts/
-  pages/         grouped by module
-docs/            PERMISSION_MATRIX.md (draft for review)
+  config/      barangay.ts (officials, settings), permissions.ts, navigation.ts, accountTypes.ts
+  documents/   template catalog, workflows, value filling
+  analytics/   masterlist parser, statistics, reports, exporters
+  mocks/       SAMPLE DATA ONLY (fictional residents on Barangay 181 streets)
+  services/    data-access layer, one Promise-based function per backend call
+  pages/       public/, dashboard/, residents/, documents/, cases/, equipment/, analytics/, admin/, resident/
+public/templates/  official document pages (rendered from the supplied files)
+docs/        PERMISSION_MATRIX.md, MASTERLIST_NOTES.md
 ```
 
-**Integrating the backend later:** replace the body of each `services/*.ts` function with a `fetch` to the API. Pages and components only use services, never mocks directly.
+To connect the backend, replace each `services/*.ts` body with an API call. Pages never read mocks directly.
 
-## Design system
+## Privacy
 
-Tokens are in `src/index.css` (`@theme`). They were measured from the Figma Final Inspo frame (node 249-3847): Manrope for titles and figures, Inter for interface text, navy `#002132`, canvas `#F4F7F8`, 1px `#D6D9DE` borders, 15px card radius.
-
-## Placeholders to replace
-
-- **Barangay seal:** `src/components/layout/BarangaySeal.tsx` shows a "181" placeholder.
-- **Purok names:** Purok 1–6 follow the Figma reference and haven't been confirmed.
-- **Lockout threshold (5) and session length (30 min):** assumptions in `src/config/app.ts`.
+The real masterlist file is never stored in this repository. It is read in the browser when loaded and cleared on reload. Sample residents are fictional.

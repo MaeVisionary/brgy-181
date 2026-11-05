@@ -69,7 +69,7 @@ export function Sidebar({ collapsed, onNavigate }: { collapsed: boolean; onNavig
                 <Icon className="size-[18px] shrink-0" strokeWidth={1.75} />
                 {!collapsed && (
                   <>
-                    <span className="flex-1 truncate text-left">{g.label}</span>
+                    <span className="flex-1 text-left leading-snug">{g.label}</span>
                     <ChevronRight className={cn('size-4 shrink-0 transition-transform', expanded && 'rotate-90')} />
                   </>
                 )}

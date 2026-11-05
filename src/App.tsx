@@ -13,6 +13,19 @@ import { NewAssistedRequestPage } from '@/pages/documents/NewAssistedRequestPage
 import { PreviewPage } from '@/pages/documents/PreviewPage'
 import { RequestDetailPage } from '@/pages/documents/RequestDetailPage'
 import { TemplatesPage } from '@/pages/documents/TemplatesPage'
+import { ActivityPage, HealthPage, PersonnelPage, RolesPage, SettingsPage, UsersPage } from '@/pages/admin/AdminPages'
+import { CaseDetailPage } from '@/pages/cases/CaseDetailPage'
+import { CasesPage, HearingsPage } from '@/pages/cases/CasesPage'
+import { BorrowingDetailPage, BorrowingPage } from '@/pages/equipment/BorrowingPages'
+import { InventoryPage } from '@/pages/equipment/InventoryPage'
+import { HouseholdDetailPage, HouseholdsPage } from '@/pages/residents/HouseholdsPage'
+import { ImportPage } from '@/pages/residents/ImportPage'
+import { ResidentProfilePage } from '@/pages/residents/ResidentProfilePage'
+import { ResidentsPage } from '@/pages/residents/ResidentsPage'
+import { ChangeRequestsPage, RegistrationsPage } from '@/pages/residents/ReviewPages'
+import { MyBorrowingPage, MyCaseDetailPage, MyComplaintsPage, MyProfilePage } from '@/pages/resident/ResidentPortalPages'
+import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage'
+import { ReportsPage } from '@/pages/analytics/ReportsPage'
 import { NotificationsPage } from '@/pages/NotificationsPage'
 import { MyRequestDetailPage } from '@/pages/resident/MyRequestDetailPage'
 import { MyRequestsPage } from '@/pages/resident/MyRequestsPage'
@@ -54,6 +67,43 @@ export default function App() {
           <Route path="/documents/new" element={guard(['documents.create'], 'personnel', <NewAssistedRequestPage />)} />
           <Route path="/documents/:id" element={guard(['documents.view'], 'personnel', <RequestDetailPage />)} />
           <Route path="/documents/:id/preview" element={guard(['documents.view'], 'personnel', <PreviewPage />)} />
+
+          {/* Resident records */}
+          <Route path="/residents" element={guard(['residents.view', 'residents.search'], 'personnel', <ResidentsPage />)} />
+          <Route path="/residents/households" element={guard(['residents.view'], 'personnel', <HouseholdsPage />)} />
+          <Route path="/residents/households/:id" element={guard(['residents.view'], 'personnel', <HouseholdDetailPage />)} />
+          <Route path="/residents/registrations" element={guard(['residents.verify'], 'personnel', <RegistrationsPage />)} />
+          <Route path="/residents/change-requests" element={guard(['residents.approve'], 'personnel', <ChangeRequestsPage />)} />
+          <Route path="/residents/import" element={guard(['residents.import'], 'personnel', <ImportPage />)} />
+          <Route path="/residents/:id" element={guard(['residents.view'], 'personnel', <ResidentProfilePage />)} />
+
+          {/* Katarungang Pambarangay */}
+          <Route path="/cases" element={guard(['cases.view', 'cases.manage'], 'personnel', <CasesPage />)} />
+          <Route path="/cases/:id" element={guard(['cases.view', 'cases.manage'], 'personnel', <CaseDetailPage />)} />
+          <Route path="/hearings" element={guard(['hearings.view', 'hearings.manage'], 'personnel', <HearingsPage />)} />
+
+          {/* Property and equipment */}
+          <Route path="/inventory" element={guard(['inventory.view'], 'personnel', <InventoryPage />)} />
+          <Route path="/borrowing" element={guard(['borrowing.approve', 'borrowing.release'], 'personnel', <BorrowingPage />)} />
+          <Route path="/borrowing/:id" element={guard(['borrowing.approve', 'borrowing.release'], 'personnel', <BorrowingDetailPage />)} />
+
+          {/* System administration */}
+          <Route path="/admin/users" element={guard(['users.manage'], 'admin', <UsersPage />)} />
+          <Route path="/admin/roles" element={guard(['roles.manage'], 'admin', <RolesPage />)} />
+          <Route path="/admin/personnel" element={guard(['users.manage'], 'admin', <PersonnelPage />)} />
+          <Route path="/admin/activity" element={guard(['audit_logs.view'], 'admin', <ActivityPage />)} />
+          <Route path="/admin/settings" element={guard(['system.settings'], 'admin', <SettingsPage />)} />
+          <Route path="/admin/health" element={guard(['system.health'], 'admin', <HealthPage />)} />
+
+          {/* Resident portal */}
+          <Route path="/my/complaints" element={guard(['self.complaints'], 'resident', <MyComplaintsPage />)} />
+          <Route path="/my/complaints/:id" element={guard(['self.complaints'], 'resident', <MyCaseDetailPage />)} />
+          <Route path="/my/borrowing" element={guard(['self.borrowing'], 'resident', <MyBorrowingPage />)} />
+          <Route path="/my/profile" element={guard(['self.profile'], 'resident', <MyProfilePage />)} />
+
+          {/* Analytics and reports */}
+          <Route path="/analytics" element={guard(['analytics.view'], 'personnel', <AnalyticsPage />)} />
+          <Route path="/reports" element={guard(['reports.view'], 'personnel', <ReportsPage />)} />
 
           {/* Documents: resident portal (own records only, enforced in the service) */}
           <Route path="/my/documents" element={guard(['self.documents'], 'resident', <MyRequestsPage />)} />

@@ -1,0 +1,229 @@
+import { ArrowLeft, BellRing, Check, Lock, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { useAuth } from '@/auth/useAuth'
+import { StatusBadge } from '@/components/documents/DocParts'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { TextArea, TextInput } from '@/components/ui/Field'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card, Panel } from '@/components/ui/Panel'
+import { KP } from '@/config/barangay'
+import { getDocumentType } from '@/documents/catalog'
+import { useDocActor } from '@/hooks/useDocActor'
+import { cn } from '@/lib/cn'
+import { formatDate, formatDateTime } from '@/lib/format'
+import { mockDocumentRequests } from '@/mocks/documentRequests'
+import { userById } from '@/mocks/users'
+import { ROLES } from '@/config/permissions'
+import { ServiceError } from '@/services/mockApi'
+import { STAGE_LABEL, STAGE_TONE, addInternalNote, applyStep, getCase, mediationDay, recordHearing, reschedule, sendReminder, stepsFor, type CaseStep } from '@/services/caseService'
+import type { CaseStage, KPCase } from '@/types/case'
+import { NotFound } from '@/pages/system/NotFound'
+
+const PATH: CaseStage[] = ['filed', 'under_review', 'for_assessment', 'mediation_scheduled', 'ongoing_mediation', 'referred_to_lupon', 'lupon_mediation', 'settled', 'closed']
+
+export function CaseDetailPage() {
+  const { id = '' } = useParams()
+  const actor = useDocActor()!
+  const { can } = useAuth()
+  const [c, setC] = useState<KPCase | null>(null)
+  const [missing, setMissing] = useState(false)
+  const [step, setStep] = useState<CaseStep | null>(null)
+  const [remarks, setRemarks] = useState('')
+  const [when, setWhen] = useState('')
+  const [err, setErr] = useState<string | null>(null)
+  const [note, setNote] = useState('')
+
+  useEffect(() => {
+    getCase(id, actor).then(setC).catch(() => setMissing(true))
+  }, [id, actor])
+
+  if (missing) return <NotFound />
+  if (!c) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
+
+  const refresh = (x: KPCase) => setC({ ...x, hearings: [...x.hearings], history: [...x.history] })
+  const steps = stepsFor(c, actor)
+  const md = mediationDay(c)
+  const docs = mockDocumentRequests.filter((d) => d.caseId === c.id)
+  const manage = can('hearings.manage')
+  const reached = new Set(c.history.map((h) => h.stage))
+
+  const run = async () => {
+    if (!step) return
+    setErr(null)
+    try {
+      refresh(await applyStep(c.id, step, remarks, when || null, actor))
+      setStep(null)
+      setRemarks('')
+      setWhen('')
+    } catch (e) {
+      setErr(e instanceof ServiceError ? e.message : 'Failed.')
+    }
+  }
+
+  return (
+    <>
+      <Link to="/cases" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-navy-900"><ArrowLeft className="size-4" /> Katarungang Pambarangay</Link>
+      <PageHeader eyebrow={`${c.caseNo} · filed ${formatDate(c.filedAt)} (${c.filedVia === 'online' ? 'online' : 'walk-in'}) · sample case`} title={c.title} subtitle={c.nature} actions={<Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>} />
+
+      <Card className="mb-4 overflow-x-auto px-5 py-4">
+        <ol className="flex min-w-[720px] items-center gap-1">
+          {PATH.map((s, i) => (
+            <li key={s} className="flex flex-1 items-center gap-1">
+              <span className={cn('rounded-full px-2.5 py-1 text-[11.5px] font-semibold whitespace-nowrap', c.stage === s ? 'bg-navy-900 text-white' : reached.has(s) ? 'bg-sky-100 text-navy-900' : 'text-ink-subtle')}>{STAGE_LABEL[s]}</span>
+              {i < PATH.length - 1 && <span className="h-px flex-1 bg-line" />}
+            </li>
+          ))}
+        </ol>
+        <p className="mt-2 text-[12px] text-ink-muted">Not every case goes through every stage. Lupon mediation period: {KP.luponMediationDays ?? 'pending barangay confirmation'}.</p>
+      </Card>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="space-y-4">
+          {md && (
+            <Card className={cn('px-5 py-4', md.overdue ? 'border-danger' : '')}>
+              <p className="label-caps">Mediation under the Barangay Chairman</p>
+              <p className="mt-1 font-display text-[20px] font-extrabold text-navy-900">Day {md.day} of {md.total}</p>
+              <div className="mt-2 h-2 rounded-full bg-surface-muted"><div className={cn('h-2 rounded-full', md.overdue ? 'bg-danger' : 'bg-navy-900')} style={{ width: `${Math.min(100, (md.day / md.total) * 100)}%` }} /></div>
+              {md.overdue && <p className="mt-2 text-[12.5px] text-danger-ink">The 15-day period has ended. Record a settlement or refer the case to the Lupon.</p>}
+            </Card>
+          )}
+          <Panel title="Parties">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {(['complainants', 'respondents'] as const).map((side) => (
+                <div key={side}>
+                  <p className="label-caps mb-1.5">{side === 'complainants' ? 'Complainant' : 'Respondent'}</p>
+                  {c[side].map((p) => (
+                    <div key={p.name} className="text-[13px]">
+                      {p.residentId && can('residents.view') ? <Link to={`/residents/${p.residentId}`} className="font-semibold text-navy-900 hover:underline">{p.name}</Link> : <span className="font-semibold text-navy-900">{p.name}</span>}
+                      <span className="block text-ink-muted">{p.address}</span>
+                      {p.contactNo && <span className="block text-ink-muted">{p.contactNo}</span>}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <p className="label-caps mt-4 mb-1">Complaint details (confidential)</p>
+            <p className="text-[13.5px] text-navy-900">{c.details}</p>
+            {c.outcome && (
+              <div className="mt-4 rounded-md bg-success-tint px-3 py-2 text-[13px] text-navy-900"><strong className="capitalize">{c.outcome.type.replace('_', ' ')}:</strong> {c.outcome.summary}</div>
+            )}
+          </Panel>
+
+          <Panel title="Hearings and mediation sessions" bodyClassName="px-0 py-0">
+            {c.hearings.length === 0 ? <p className="px-5 py-5 text-[13px] text-ink-muted">No hearing scheduled yet. Scheduling happens when the Barangay Chairman assesses the complaint.</p> : (
+              <ul>{[...c.hearings].sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt)).map((h) => <HearingRow key={h.id} caseId={c.id} h={h} manage={manage} onChange={refresh} />)}</ul>
+            )}
+          </Panel>
+
+          {docs.length > 0 && (
+            <Panel title="Case documents" bodyClassName="px-0 py-0">
+              <ul>{docs.map((d) => <li key={d.id} className="border-b border-line-soft last:border-0"><Link to={`/documents/${d.id}`} className="flex items-center justify-between px-5 py-2.5 hover:bg-sky-50"><span className="text-[13px] text-navy-900">{getDocumentType(d.typeId).name} · {d.referenceNo}</span><StatusBadge status={d.status} /></Link></li>)}</ul>
+            </Panel>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <Panel title="Next step" subtitle={`Stage: ${STAGE_LABEL[c.stage]}`}>
+            {steps.length === 0 ? <p className="text-[12.5px] text-ink-muted">No step is available to your role at this stage.</p> : step ? (
+              <div className="space-y-3">
+                <p className="text-[13px] font-semibold text-navy-900">{step.label}</p>
+                {step.hint && <p className="text-[12px] text-ink-muted">{step.hint}</p>}
+                {step.schedule && (
+                  <label className="block"><span className="mb-1 block text-[12px] font-semibold text-navy-900">Hearing date and time *</span><TextInput type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></label>
+                )}
+                {step.remarks && <label className="block"><span className="mb-1 block text-[12px] font-semibold text-navy-900">{step.outcome === 'settled' ? 'Settlement terms' : 'Note'} {step.remarks === 'required' && '*'}</span><TextArea value={remarks} onChange={(e) => setRemarks(e.target.value)} /></label>}
+                {err && <p className="text-[12px] text-danger-ink">{err}</p>}
+                <div className="flex gap-2"><Button onClick={run}>Confirm</Button><Button variant="ghost" onClick={() => { setStep(null); setErr(null) }}>Back</Button></div>
+              </div>
+            ) : (
+              <div className="space-y-2">{steps.map((s, i) => <Button key={s.label} className="w-full" variant={s.outcome === 'dismissed' || s.outcome === 'withdrawn' || s.outcome === 'not_settled' ? 'danger' : i === 0 ? 'primary' : 'secondary'} onClick={() => setStep(s)}>{s.label}</Button>)}</div>
+            )}
+          </Panel>
+
+          {can('cases.manage') && (
+            <Panel title="Internal notes" subtitle="Visible only to case personnel">
+              {c.internalNotes.length === 0 && <p className="text-[12.5px] text-ink-muted">No notes.</p>}
+              <ul className="space-y-1.5">{c.internalNotes.map((n, i) => <li key={i} className="rounded-md bg-surface-muted px-3 py-2 text-[12.5px] text-navy-900">{n}</li>)}</ul>
+              <div className="mt-3 flex gap-2"><TextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a note" /><Button size="md" variant="secondary" disabled={!note.trim()} onClick={async () => { refresh(await addInternalNote(c.id, note, actor)); setNote('') }}>Add</Button></div>
+            </Panel>
+          )}
+          {!can('cases.manage') && <p className="flex items-center gap-2 text-[12px] text-ink-muted"><Lock className="size-3.5" /> Internal notes are hidden for your role.</p>}
+
+          <Panel title="Case history">
+            <ol className="space-y-3">
+              {[...c.history].reverse().map((h, i) => (
+                <li key={i} className="border-l-2 border-line-soft pl-3">
+                  <p className="text-[12.5px] font-semibold text-navy-900">{h.action}</p>
+                  <p className="text-[11.5px] text-ink-muted">{formatDateTime(h.at)} · {userById(h.byUserId)?.fullName ?? 'Resident'} ({ROLES[h.byRole].name})</p>
+                  {h.remarks && <p className="mt-1 rounded-md bg-surface-muted px-2.5 py-1.5 text-[12.5px] text-navy-900">{h.remarks}</p>}
+                </li>
+              ))}
+            </ol>
+          </Panel>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase['hearings'][number]; manage: boolean; onChange: (c: KPCase) => void }) {
+  const actor = useDocActor()!
+  const [mode, setMode] = useState<'none' | 'attendance' | 'reschedule'>('none')
+  const [att, setAtt] = useState<(boolean | null)[]>(h.attendance.map((a) => a.present))
+  const [notes, setNotes] = useState('')
+  const [when, setWhen] = useState('')
+  const kind = h.kind === 'lupon_mediation' ? 'Lupon mediation' : 'Mediation under the Barangay Chairman'
+  return (
+    <li className="border-b border-line-soft px-5 py-3 last:border-0">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span>
+          <span className="block text-[13.5px] font-semibold text-navy-900">{formatDateTime(h.scheduledAt)}</span>
+          <span className="block text-[12px] text-ink-muted">{kind} · {h.place}</span>
+        </span>
+        <span className="flex items-center gap-2">
+          <Badge tone={h.status === 'held' ? 'neutral' : h.status === 'scheduled' ? 'info' : 'warning'}>{h.status === 'held' ? 'Held' : h.status === 'scheduled' ? 'Scheduled' : h.status === 'rescheduled' ? 'Rescheduled' : 'Cancelled'}</Badge>
+          {h.remindersSentAt.length > 0 && <span className="text-[11.5px] text-ink-muted">Reminder sent {formatDate(h.remindersSentAt[h.remindersSentAt.length - 1])}</span>}
+        </span>
+      </div>
+      <ul className="mt-2 flex flex-wrap gap-2">
+        {h.attendance.map((a) => (
+          <li key={a.name} className="flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-1 text-[12px] text-navy-900">
+            {a.present === true ? <Check className="size-3.5 text-success" /> : a.present === false ? <X className="size-3.5 text-danger" /> : null}
+            {a.name} <span className="text-ink-muted">({a.side})</span>
+          </li>
+        ))}
+      </ul>
+      {h.notes && <p className="mt-2 text-[12.5px] text-ink-muted">{h.notes}</p>}
+      {manage && h.status === 'scheduled' && mode === 'none' && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" onClick={() => setMode('attendance')}>Record attendance</Button>
+          <Button size="sm" variant="secondary" onClick={() => setMode('reschedule')}>Reschedule</Button>
+          <Button size="sm" variant="ghost" icon={<BellRing className="size-3.5" />} onClick={async () => onChange(await sendReminder(caseId, h.id, actor))}>Send reminder (simulated)</Button>
+        </div>
+      )}
+      {mode === 'attendance' && (
+        <div className="mt-3 space-y-2 rounded-md border border-line p-3">
+          {h.attendance.map((a, i) => (
+            <label key={a.name} className="flex items-center justify-between gap-3 text-[13px] text-navy-900">
+              {a.name}
+              <span className="flex gap-1">
+                {[true, false].map((v) => <button key={String(v)} type="button" onClick={() => setAtt((s) => s.map((x, j) => (j === i ? v : x)))} className={cn('rounded-md border px-2.5 py-1 text-[12px] font-semibold', att[i] === v ? 'border-navy-900 bg-navy-900 text-white' : 'border-line')}>{v ? 'Present' : 'Absent'}</button>)}
+              </span>
+            </label>
+          ))}
+          <TextArea className="min-h-[60px]" placeholder="What happened at the hearing" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <div className="flex gap-2"><Button size="sm" disabled={att.some((x) => x === null)} onClick={async () => { onChange(await recordHearing(caseId, h.id, att, notes, actor)); setMode('none') }}>Save</Button><Button size="sm" variant="ghost" onClick={() => setMode('none')}>Cancel</Button></div>
+        </div>
+      )}
+      {mode === 'reschedule' && (
+        <div className="mt-3 flex flex-wrap items-end gap-2 rounded-md border border-line p-3">
+          <TextInput type="datetime-local" className="w-auto" value={when} onChange={(e) => setWhen(e.target.value)} />
+          <Button size="sm" disabled={!when} onClick={async () => { onChange(await reschedule(caseId, h.id, when, actor)); setMode('none') }}>Save new schedule</Button>
+          <Button size="sm" variant="ghost" onClick={() => setMode('none')}>Cancel</Button>
+        </div>
+      )}
+    </li>
+  )
+}

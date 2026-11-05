@@ -31,13 +31,13 @@ const usernames: Record<string, string> = {
   'usr-sk': 'kriscelli.reyes',
 }
 
-const officialUsers: User[] = OFFICIALS.map((o, i) => ({
-  id: o.userId,
-  username: usernames[o.userId],
+const officialUsers: User[] = OFFICIALS.filter((o) => o.userId).map((o, i) => ({
+  id: o.userId!,
+  username: usernames[o.userId!],
   fullName: o.name,
   position: o.position,
   roleId: roleOf[o.position],
-  email: `${usernames[o.userId]}@brgy181.test`,
+  email: `${usernames[o.userId!]}@brgy181.test`,
   status: 'active',
   lastLoginAt: isoDaysAgo(i % 4, 8 + (i % 3)),
 }))

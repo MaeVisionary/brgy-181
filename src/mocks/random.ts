@@ -22,9 +22,8 @@ export function createRng(seed: number) {
 /** Fixed "today" for mock data so ages and dates stay stable. */
 export const MOCK_TODAY = new Date('2026-11-05T09:00:00+08:00')
 
+/** A sample timestamp `days` before MOCK_TODAY at `hour` o'clock Philippine time (UTC+8), on any machine. */
 export function isoDaysAgo(days: number, hour = 9): string {
-  const d = new Date(MOCK_TODAY)
-  d.setDate(d.getDate() - days)
-  d.setHours(hour, 0, 0, 0)
-  return d.toISOString()
+  const base = Date.UTC(2026, 10, 5) // 5 November 2026
+  return new Date(base - days * 86400000 + (hour - 8) * 3600000).toISOString()
 }
