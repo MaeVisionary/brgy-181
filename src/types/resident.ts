@@ -80,19 +80,55 @@ export interface ResidentRegistration {
     lastName: string
     birthDate: string
     address: string
+    middleName?: string
+    suffix?: string
+    sex?: Sex
+    civilStatus?: CivilStatus
+    houseNo?: string
+    street?: string
+    contactNo?: string
+    email?: string
+    residentSince?: string
+    voter?: boolean
+    oscaId?: string
+    pwd?: boolean
+    soloParent?: boolean
+    fourPs?: boolean
   }
   matchedResidentId?: string
   verification: {
-    ocr: 'passed' | 'failed' | 'inconclusive'
-    masterListMatch: 'passed' | 'failed' | 'inconclusive'
-    faceMatch: 'passed' | 'failed' | 'inconclusive'
-    liveness: 'passed' | 'failed' | 'inconclusive'
+    ocr: CheckResult
+    masterListMatch: CheckResult
+    faceMatch: CheckResult
+    liveness: CheckResult
   }
   status: 'auto_approved' | 'manual_review' | 'approved' | 'rejected'
   privacyNoticeVersion: string
   decidedBy?: string
   decidedAt?: string
   decisionNote?: string
+  /** Online self-registration evidence (prototype: kept in this browser only). */
+  evidence?: RegistrationEvidence
+  /** Account created with the registration; active once approved. */
+  accountUserId?: string
+}
+
+export type CheckResult = 'passed' | 'failed' | 'inconclusive'
+
+export interface RegistrationEvidence {
+  idType: string
+  idNumber: string
+  /** Downscaled JPEG data URLs. */
+  idImage: string
+  selfieImage: string
+  /** Face similarity 0–100 (higher = more alike); undefined when no face was found. */
+  faceSimilarity?: number
+  /** Which record source matched: resident records or the OSCA masterlist. */
+  recordSource?: 'resident_records' | 'osca_masterlist'
+  /** What the ID text reader found. */
+  ocrFound: { firstName: boolean; lastName: boolean; idNumber: boolean }
+  /** Plain-language reasons the registration needs manual review. */
+  reasons: string[]
 }
 
 export interface ResidentChangeRequest {

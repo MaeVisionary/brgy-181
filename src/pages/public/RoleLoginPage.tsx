@@ -140,6 +140,14 @@ export function RoleLoginPage() {
               Sign In
             </Button>
           </form>
+          {type.slug === 'resident' && (
+            <p className="mt-5 rounded-xl bg-surface-muted px-4 py-3 text-center text-[13.5px] text-navy-900">
+              New resident?{' '}
+              <button type="button" onClick={() => go('/register', 'forward')} className="font-semibold text-info hover:underline">
+                Create an account
+              </button>
+            </p>
+          )}
           <p className="mt-5 text-[12px] leading-relaxed text-ink-subtle">
             Your account and role are verified by the barangay's system before you can continue. Personal information is handled under the Data Privacy Act of
             2012 (RA 10173).
