@@ -4,11 +4,12 @@ import type { Permission, Portal } from '@/types/auth'
 import { AccessDenied } from '@/pages/system/AccessDenied'
 import { useAuth } from './useAuth'
 
-/** Redirects to the login page when nobody is signed in. */
+/** Redirects to the portal when nobody is signed in; forces a new password after a reset. */
 export function RequireAuth() {
-  const { user } = useAuth()
+  const { user, mustChangePassword } = useAuth()
   const location = useLocation()
   if (!user) return <Navigate to="/portal" replace state={{ from: location.pathname }} />
+  if (mustChangePassword && location.pathname !== '/account') return <Navigate to="/account" replace />
   return <Outlet />
 }
 

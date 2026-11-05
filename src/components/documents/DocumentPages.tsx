@@ -102,11 +102,11 @@ function Page({ type, values, mode, missing, showSlots, pendingSystemLabel, tpl,
           slot={slot}
           pageNo={pageNo}
           tpl={tpl}
-          value={values[slot.field]}
+          value={slot.kind === 'static' ? slot.text : values[slot.field]}
           screen={screen}
-          isMissing={!!missing?.has(slot.field)}
-          isSystemEmpty={fieldDefs[slot.field]?.by === 'system' && !isFilled(values[slot.field])}
-          label={fieldDefs[slot.field]?.label ?? slot.field}
+          isMissing={slot.kind !== 'static' && !!missing?.has(slot.field)}
+          isSystemEmpty={slot.kind !== 'static' && fieldDefs[slot.field]?.by === 'system' && !isFilled(values[slot.field])}
+          label={slot.kind === 'static' ? '' : (fieldDefs[slot.field]?.label ?? slot.field)}
           showSlots={showSlots}
           pendingSystemLabel={pendingSystemLabel}
         />
@@ -206,7 +206,7 @@ function SlotView({
     )
   }
 
-  if (slot.kind === 'text') {
+  if (slot.kind === 'text' || slot.kind === 'static') {
     if (slot.page !== pageNo) return null
     const text = asText(value)
     const width = slot.x2 - slot.x1

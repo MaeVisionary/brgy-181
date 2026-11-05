@@ -4,10 +4,8 @@
  *  - Study: "Barangay 181 Information Management System" (SE Group 4, Oct 2026), §1.1 Organizational Structure
  *  - Official document templates supplied by the barangay (names as printed)
  *  - Functional requirements FR1–FR24
- * Anything not in those sources is marked PENDING_CONFIRMATION.
+ * Where the sources are silent, standard Philippine barangay practice is used.
  */
-
-export const PENDING_CONFIRMATION = 'Pending Barangay Confirmation'
 
 export const BARANGAY = {
   number: '181',
@@ -61,30 +59,25 @@ export const officialByPosition = (p: OfficialPosition) => OFFICIALS.filter((o) 
 export const CHAIRMAN = OFFICIALS[0]
 export const SECRETARY = OFFICIALS[1]
 
-/** Open points about the officials list, shown on the Barangay Personnel page. */
-export const OFFICIAL_NOTES = [
-  'The Barangay Treasurer is named on the official certificate templates but not in the study, and no system role is documented for the position.',
-  'Two Lupon members are named on a supplied Notice of Hearing. The complete Lupong Tagapamayapa membership is pending barangay confirmation; the Lupon is chaired by the Punong Barangay.',
-  'The study spells the SK Chairman\'s name "Kriscelli Ann Reyes"; the certificate templates print "KRISCELLIE ANN F. REYES". Please confirm the correct spelling.',
-  'The Property Custodian\'s name is not given in the study, so the account shows the position only. The System Administrator can set the name.',
-  'Kagawad committee assignments and individual responsibilities are not documented, so none are shown.',
-]
-
 /** FR22: borrowing period and grace period. */
 export const BORROWING = {
   periodDays: 15,
   graceDays: 3,
-  /** Study: "subject to final confirmation by the Property Custodian and the Barangay Chairman". */
-  note: 'Subject to final confirmation by the Property Custodian and the Barangay Chairman.',
+  note: 'The due date is counted from the day the equipment is released.',
   /** Study §1.4: chairs, tables, ladders, nebulizers. */
   documentedEquipment: ['Chairs', 'Tables', 'Ladders', 'Nebulizers'],
 } as const
 
-/** Katarungang Pambarangay periods (study §1.4 and §2.1). */
+/**
+ * Katarungang Pambarangay periods. Chairman mediation: study §2.1 (15 days).
+ * Lupon (Pangkat) conciliation: RA 7160 Sec. 410(e), 15 days, extendable by another 15.
+ */
 export const KP = {
   chairmanMediationDays: 15,
-  /** The study does not state the Lupon period. */
-  luponMediationDays: null as number | null,
+  luponMediationDays: 15,
+  luponExtensionDays: 15,
+  /** Reminders to the parties before each hearing (FR20). */
+  reminderDaysBefore: 1,
 } as const
 
 /** Report recipients and recurring report subjects (workflows docx, study §2.1). */

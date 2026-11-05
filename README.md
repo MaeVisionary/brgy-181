@@ -15,6 +15,8 @@ npm run build      # type-check + production build
 ## Using the prototype
 
 - **Public site:** `/` (homepage) → `/portal` (choose account type) → `/login/:role` (role-specific sign-in). Sign-in only validates the form and says that authentication arrives with the backend. There are no demo accounts or shortcuts.
+- **Test account:** configured in `.env.local` (see `.env.example`; never committed). Sign in from `/portal` with any account type, then use **Viewing as** in the top bar to switch between all roles. The credentials for this machine are in `test-account.local`.
+- **Passwords:** *Forgot password?* sends a request to the System Administrator. In **User Accounts**, the administrator resets the password and gets a one-time temporary password. The user must choose a new one at sign-in. Everyone can change their password in **Account Settings**. Prototype passwords are stored as SHA-256 hashes on the device; the backend will verify them on the server.
 - **Development preview:** `/preview`, only in `npm run dev`. It opens any role's screens with sample data and is **not included in production builds**.
 
 ## What's in it

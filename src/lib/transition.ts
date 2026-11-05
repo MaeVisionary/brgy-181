@@ -22,8 +22,13 @@ export function useSmoothNavigate() {
   return useCallback(
     (to: string, direction: NavDirection = 'forward', state?: unknown) => {
       document.documentElement.dataset.navDir = direction
-      const go = () => navigate(to, { state })
-      if (!supportsViewTransitions() || prefersReducedMotion()) {
+      let done = false
+      const go = () => {
+        if (done) return
+        done = true
+        navigate(to, { state })
+      }
+      if (!supportsViewTransitions() || prefersReducedMotion() || document.visibilityState !== 'visible') {
         go()
         return
       }
@@ -31,6 +36,8 @@ export function useSmoothNavigate() {
         flushSync(go)
         window.scrollTo({ top: 0 })
       })
+      // Browsers may hold a transition (e.g. a background tab); never leave the user stuck.
+      window.setTimeout(go, 400)
     },
     [navigate],
   )

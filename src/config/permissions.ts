@@ -43,7 +43,7 @@ export const ROLES: Record<RoleId, Role> = {
     name: 'SK Chairman',
     portal: 'personnel',
     portalLabel: 'Sangguniang Kabataan',
-    description: 'Heads youth programs (study §1.1). SK-specific records are pending barangay confirmation.',
+    description: 'Heads youth programs (Sangguniang Kabataan).',
   },
   property_custodian: {
     id: 'property_custodian',

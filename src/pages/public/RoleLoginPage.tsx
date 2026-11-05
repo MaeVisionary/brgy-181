@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeft, Eye, EyeOff, Info } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -27,7 +27,6 @@ export function RoleLoginPage() {
   const [touched, setTouched] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const [showRecovery, setShowRecovery] = useState(false)
 
   if (!type) return <Navigate to="/portal" replace />
   const Icon = type.icon
@@ -42,7 +41,8 @@ export function RoleLoginPage() {
     if (!identifier.trim() || !password || (identifier.includes('@') && !/^\S+@\S+\.\S+$/.test(identifier.trim()))) return
     setBusy(true)
     try {
-      await signIn({ accountType: type.roles[0], identifier: identifier.trim(), password, remember })
+      const result = await signIn({ roles: type.roles, identifier: identifier.trim(), password, remember })
+      go(result.mustChangePassword ? '/account' : '/dashboard', 'forward')
     } catch (err) {
       setNotice(err instanceof ServiceError ? err.message : 'Sign-in failed. Please try again.')
     } finally {
@@ -124,23 +124,15 @@ export function RoleLoginPage() {
                 <input type="checkbox" className="size-4 accent-[#002132]" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                 Remember me
               </label>
-              <button type="button" onClick={() => setShowRecovery((s) => !s)} className="text-[13px] font-semibold text-info hover:underline">
+              <button type="button" onClick={() => go(`/forgot-password/${type.slug}`, 'forward')} className="text-[13px] font-semibold text-info hover:underline">
                 Forgot password?
               </button>
             </div>
-            {showRecovery && (
-              <p className="bmis-rise rounded-xl bg-surface-muted px-4 py-3 text-[13px] text-navy-900">{type.recovery}</p>
-            )}
 
             {notice && (
-              <p role="status" className="bmis-rise flex items-start gap-2.5 rounded-xl border border-info/25 bg-info-tint px-4 py-3 text-[13px] text-navy-900">
-                <Info className="mt-px size-4 shrink-0 text-info" />
+              <p role="alert" className="bmis-rise flex items-start gap-2.5 rounded-xl border border-danger/25 bg-danger-tint px-4 py-3 text-[13px] text-navy-900">
+                <AlertCircle className="mt-px size-4 shrink-0 text-danger" />
                 {notice}
-              </p>
-            )}
-            {touched && (idError || pwError) && !notice && (
-              <p className="sr-only" role="alert">
-                <AlertCircle /> Please correct the highlighted fields.
               </p>
             )}
 

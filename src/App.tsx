@@ -7,6 +7,8 @@ import type { Permission, Portal } from '@/types/auth'
 import { HomePage } from '@/pages/public/HomePage'
 import { PortalPage } from '@/pages/public/PortalPage'
 import { RoleLoginPage } from '@/pages/public/RoleLoginPage'
+import { ForgotPasswordPage } from '@/pages/public/ForgotPasswordPage'
+import { AccountPage } from '@/pages/AccountPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { DocumentRequestsPage } from '@/pages/documents/DocumentRequestsPage'
 import { NewAssistedRequestPage } from '@/pages/documents/NewAssistedRequestPage'
@@ -53,12 +55,14 @@ export default function App() {
       <Route path="/portal" element={<PortalPage />} />
       <Route path="/login" element={<Navigate to="/portal" replace />} />
       <Route path="/login/:role" element={<RoleLoginPage />} />
+      <Route path="/forgot-password/:role" element={<ForgotPasswordPage />} />
       {DevPreviewPage && <Route path="/preview" element={<Suspense fallback={null}><DevPreviewPage /></Suspense>} />}
 
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/account" element={<AccountPage />} />
 
           {/* Documents: personnel */}
           <Route path="/documents" element={guard(['documents.view'], 'personnel', <DocumentRequestsPage />)} />

@@ -2,6 +2,7 @@ import { GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS } from '@/config/permissio
 import { mockUsers } from '@/mocks/users'
 import type { Permission, User } from '@/types/auth'
 import { audit } from './auditService'
+import { clearFailures, hashPassword, resolveResetRequests, setCredential, temporaryPassword } from './credentialStore'
 import { ServiceError, mockRequest } from './mockApi'
 
 /** Account administration (FR3). Simulated in memory; the backend must enforce it. */
@@ -38,6 +39,21 @@ export function setDisplayName(id: string, fullName: string, by: User): Promise<
     audit(by, 'Updated account name', 'User accounts', u.username)
     return u
   })
+}
+
+/**
+ * Administrator password reset: issues a one-time temporary password, unlocks the
+ * account and requires a new password at next sign-in. Returns the temporary password
+ * so the administrator can hand it over; it is never stored in plain text.
+ */
+export async function resetPassword(target: { credentialKey: string; identifiers: string[]; label: string }, by: User): Promise<string> {
+  requireAdmin(by)
+  const temp = temporaryPassword()
+  setCredential(target.credentialKey, { hash: await hashPassword(target.credentialKey, temp), mustChange: true, updatedAt: new Date().toISOString() })
+  for (const id of target.identifiers) clearFailures(`login:${id.toLowerCase()}`)
+  resolveResetRequests(target.identifiers)
+  audit(by, 'Reset password', 'User accounts', target.label)
+  return temp
 }
 
 export function setExtraPermissions(id: string, perms: Permission[], by: User): Promise<User> {

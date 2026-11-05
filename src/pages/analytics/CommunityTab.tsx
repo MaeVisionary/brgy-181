@@ -110,9 +110,6 @@ export function CommunityTab() {
           </table>
         </Panel>
       </section>
-      <p className="mt-3 text-[12px] text-ink-muted">
-        Relief goods inventory tracking (study §1.4) needs the barangay's actual relief goods records and is pending confirmation.
-      </p>
     </>
   )
 }

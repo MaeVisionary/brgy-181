@@ -1,42 +1,79 @@
+import { APP_CONFIG } from '@/config/app'
+import { TEST_ACCOUNT, isTestUser, testUserFor } from '@/config/testAccount'
 import { mockUsers } from '@/mocks/users'
 import type { RoleId, Session, User } from '@/types/auth'
-import { APP_CONFIG } from '@/config/app'
+import { addFailure, addResetRequest, clearFailures, failedCount, getCredential, hashPassword } from './credentialStore'
 import { ServiceError, mockRequest } from './mockApi'
 
 /**
- * Authentication boundary. The frontend never checks credentials: there are no
- * demo usernames or passwords. `signIn` is where the backend API will be called
- * (it must verify the password, the account status and that the account's role
- * matches the account type selected on the portal).
+ * PROTOTYPE sign-in. Passwords exist only after the System Administrator resets an
+ * account (or for the configured test account); nothing is hardcoded. The backend
+ * replaces this with server-side verification, hashing and HTTPS (NFR5).
  */
 
 export interface SignInInput {
-  accountType: RoleId | 'personnel'
+  /** Roles allowed by the account type chosen on the portal. */
+  roles: RoleId[]
   identifier: string
   password: string
   remember: boolean
 }
 
-export function signIn(input: SignInInput): Promise<{ user: User; session: Session }> {
+const INVALID = 'Incorrect username/email or password. If you have no password yet, ask the System Administrator to reset your account.'
+
+export async function signIn(input: SignInInput): Promise<{ user: User; session: Session }> {
+  const id = input.identifier.trim().toLowerCase()
+  const lockKey = `login:${id}`
+  if (failedCount(lockKey) >= APP_CONFIG.lockoutThreshold) {
+    throw new ServiceError('locked', 'This account is locked after too many failed attempts. Ask the System Administrator to reset your password.')
+  }
+  const fail = (): never => {
+    const n = addFailure(lockKey)
+    const left = APP_CONFIG.lockoutThreshold - n
+    throw new ServiceError('invalid', left > 0 ? `${INVALID} ${left} attempt${left === 1 ? '' : 's'} left.` : 'Too many failed attempts. The account is now locked.')
+  }
+
+  // Test account: any account type; the chosen type decides the starting level.
+  if (TEST_ACCOUNT.enabled && id === TEST_ACCOUNT.email) {
+    const cred = getCredential(TEST_ACCOUNT.credentialKey)
+    const expected = cred?.hash ?? TEST_ACCOUNT.passwordHash
+    if ((await hashPassword(TEST_ACCOUNT.credentialKey, input.password)) !== expected) fail()
+    clearFailures(lockKey)
+    const role = input.roles.includes('staff') ? 'staff' : input.roles[0]
+    const user = testUserFor(role)
+    return mockRequest(() => ({ user, session: createSession(user.id, !!cred?.mustChange) }))
+  }
+
+  const user = mockUsers.find((u) => u.username.toLowerCase() === id || u.email.toLowerCase() === id)
+  const cred = user ? getCredential(user.id) : undefined
+  if (!user || !cred || !input.roles.includes(user.roleId)) fail()
+  if ((await hashPassword(user!.id, input.password)) !== cred!.hash) fail()
+  if (user!.status !== 'active') throw new ServiceError('inactive', 'This account is deactivated. Please contact the System Administrator.')
+  clearFailures(lockKey)
+  user!.lastLoginAt = new Date().toISOString()
+  return mockRequest(() => ({ user: user!, session: createSession(user!.id, cred!.mustChange) }))
+}
+
+/** Always answers the same way, so it never reveals whether an account exists. */
+export function requestPasswordReset(identifier: string, accountType: string): Promise<void> {
   return mockRequest(() => {
-    void input
-    throw new ServiceError(
-      'backend_not_connected',
-      'Sign-in is not available yet. Account verification will be connected during backend development.',
-    )
+    if (!identifier.trim()) throw new ServiceError('invalid', 'Enter your username or email.')
+    addResetRequest(identifier, accountType)
   })
 }
 
-export function createSession(userId: string): Session {
+export function createSession(userId: string, mustChangePassword = false): Session {
   const now = new Date()
   return {
     userId,
     startedAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + APP_CONFIG.sessionMinutes * 60_000).toISOString(),
+    mustChangePassword,
   }
 }
 
 export function findUser(userId: string): User | undefined {
+  if (isTestUser(userId) && TEST_ACCOUNT.enabled) return testUserFor(userId.replace('usr-test-', '') as RoleId)
   return mockUsers.find((u) => u.id === userId)
 }
 

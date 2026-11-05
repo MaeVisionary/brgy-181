@@ -1,0 +1,98 @@
+/**
+ * PROTOTYPE credential store (browser localStorage, this device only).
+ * Stores SHA-256 hashes, never plain passwords. Replaced by server-side
+ * password hashing (NFR5) in the backend phase.
+ */
+
+const CRED_KEY = 'bmis.credentials'
+const FAIL_KEY = 'bmis.failedSignIns'
+const RESET_KEY = 'bmis.resetRequests'
+
+export interface Credential {
+  hash: string
+  mustChange: boolean
+  updatedAt: string
+}
+
+export interface ResetRequest {
+  id: string
+  identifier: string
+  accountType: string
+  requestedAt: string
+  status: 'pending' | 'done'
+  resolvedAt?: string
+}
+
+function read<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+function write(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export async function hashPassword(credentialKey: string, password: string): Promise<string> {
+  const data = new TextEncoder().encode(`${credentialKey}:${password}`)
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+export const getCredential = (key: string): Credential | undefined => read<Record<string, Credential>>(CRED_KEY, {})[key]
+
+export function setCredential(key: string, c: Credential) {
+  const all = read<Record<string, Credential>>(CRED_KEY, {})
+  all[key] = c
+  write(CRED_KEY, all)
+}
+
+export const failedCount = (id: string) => read<Record<string, number>>(FAIL_KEY, {})[id] ?? 0
+export function addFailure(id: string) {
+  const all = read<Record<string, number>>(FAIL_KEY, {})
+  all[id] = (all[id] ?? 0) + 1
+  write(FAIL_KEY, all)
+  return all[id]
+}
+export function clearFailures(id: string) {
+  const all = read<Record<string, number>>(FAIL_KEY, {})
+  delete all[id]
+  write(FAIL_KEY, all)
+}
+
+export const listResetRequests = (): ResetRequest[] => read<ResetRequest[]>(RESET_KEY, [])
+
+export function addResetRequest(identifier: string, accountType: string) {
+  const all = listResetRequests()
+  all.unshift({ id: `rst-${Date.now().toString(36)}`, identifier: identifier.trim().toLowerCase(), accountType, requestedAt: new Date().toISOString(), status: 'pending' })
+  write(RESET_KEY, all.slice(0, 50))
+}
+
+export function resolveResetRequests(identifiers: string[]) {
+  const ids = identifiers.map((i) => i.toLowerCase())
+  write(
+    RESET_KEY,
+    listResetRequests().map((r) => (r.status === 'pending' && ids.includes(r.identifier) ? { ...r, status: 'done', resolvedAt: new Date().toISOString() } : r)),
+  )
+}
+
+/** Readable temporary password (no look-alike characters). */
+export function temporaryPassword(): string {
+  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+  const bytes = crypto.getRandomValues(new Uint8Array(10))
+  const body = [...bytes].map((b) => alphabet[b % alphabet.length]).join('')
+  return `${body.slice(0, 5)}-${body.slice(5)}`
+}
+
+/** Rules for new passwords. Returns an error message or null. */
+export function passwordProblem(pw: string): string | null {
+  if (pw.length < 8) return 'Use at least 8 characters.'
+  if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return 'Use both letters and numbers.'
+  return null
+}

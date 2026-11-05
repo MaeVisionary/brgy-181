@@ -7,6 +7,8 @@ import { cn } from '@/lib/cn'
 import { formatDate, formatWeekday } from '@/lib/format'
 import { BarangaySeal } from './BarangaySeal'
 import { NotificationMenu } from './NotificationMenu'
+import { TestAccountBar } from './TestAccountBar'
+import { isTestUser } from '@/config/testAccount'
 import { Sidebar } from './Sidebar'
 
 /** Development-only; not bundled in production builds. */
@@ -23,7 +25,7 @@ function readCollapsed(): boolean {
 }
 
 export function AppShell() {
-  const { role } = useAuth()
+  const { role, user } = useAuth()
   const [collapsed, setCollapsed] = useState(readCollapsed)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [today] = useState(() => new Date())
@@ -45,7 +47,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-full flex-col">
-      {DevPreviewBar && <Suspense fallback={null}><DevPreviewBar /></Suspense>}
+      {isTestUser(user?.id) ? <TestAccountBar /> : DevPreviewBar && <Suspense fallback={null}><DevPreviewBar /></Suspense>}
 
       <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-surface px-4 sm:px-5">
         <button
