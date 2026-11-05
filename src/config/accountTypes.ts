@@ -47,9 +47,9 @@ export const ACCOUNT_TYPES: AccountType[] = [
     slug: 'authorized-personnel',
     title: 'Authorized Barangay Personnel',
     loginTitle: 'Authorized Personnel Login',
-    description: 'Access assigned barangay functions based on authorized permissions, including Barangay Kagawad and SK accounts.',
+    description: 'Access assigned barangay functions based on authorized permissions, including Barangay Kagawad accounts.',
     icon: Users,
-    roles: ['kagawad', 'sk_chairman', 'staff'],
+    roles: ['kagawad', 'staff'],
     recovery: 'Ask the System Administrator to reset your password.',
   },
   {

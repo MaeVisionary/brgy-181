@@ -23,7 +23,7 @@ npm run build      # type-check + production build
 
 | Area | Highlights |
 |---|---|
-| Roles | Barangay Chairman (Robert Atad), Barangay Secretary (Ana Manila Salvador), seven Barangay Kagawad, SK Chairman (Kriscelli Ann Reyes), Property Custodian, System Administrator, other personnel, residents. Each has its own dashboard. |
+| Roles | Barangay Chairman (Robert Atad), Barangay Secretary (Ana Manila Salvador), seven Barangay Kagawad, Property Custodian, System Administrator, other personnel, residents. Each has its own dashboard. |
 | Resident records | Master list, profiles, households with multiple families, registration verification, update requests, CSV import with duplicate review |
 | Documents | All 13 official templates, used exactly as supplied, with values placed on their blanks; per-document workflows, preview, print / Save as PDF |
 | Katarungang Pambarangay | Cases, assessment, 15-day mediation under the Chairman, Lupon referral, hearings, attendance, reminders (simulated) |

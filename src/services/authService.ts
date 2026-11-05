@@ -1,5 +1,5 @@
 import { APP_CONFIG } from '@/config/app'
-import { TEST_ACCOUNT, isTestUser, testUserFor } from '@/config/testAccount'
+import { TEST_ACCOUNT, TEST_LEVELS, isTestUser, testUserFor } from '@/config/testAccount'
 import { mockUsers } from '@/mocks/users'
 import type { RoleId, Session, User } from '@/types/auth'
 import { addFailure, addResetRequest, clearFailures, failedCount, getCredential, hashPassword } from './credentialStore'
@@ -84,7 +84,11 @@ export function createSession(userId: string, mustChangePassword = false): Sessi
 }
 
 export function findUser(userId: string): User | undefined {
-  if (isTestUser(userId) && TEST_ACCOUNT.enabled) return testUserFor(userId.replace('usr-test-', '') as RoleId)
+  if (isTestUser(userId) && TEST_ACCOUNT.enabled) {
+    const role = userId.replace('usr-test-', '') as RoleId
+    // A level that no longer exists (e.g. a removed role) ends the saved session.
+    return TEST_LEVELS.includes(role) ? testUserFor(role) : undefined
+  }
   return mockUsers.find((u) => u.id === userId)
 }
 
