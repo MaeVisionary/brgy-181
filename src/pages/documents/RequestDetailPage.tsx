@@ -5,7 +5,7 @@ import { FieldInput, HistoryList, ProgressTracker, StatusBadge, groupFields } fr
 import { TransitionPanel } from '@/components/documents/TransitionPanel'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Card, Panel } from '@/components/ui/Panel'
+import { Panel } from '@/components/ui/Panel'
 import { getDocumentType } from '@/documents/catalog'
 import { effectiveValues, missingFields } from '@/documents/fill'
 import { useDocActor } from '@/hooks/useDocActor'
@@ -168,18 +168,6 @@ export function RequestDetailPage() {
             </Panel>
           )}
 
-          {type.issues.length > 0 && (
-            <Card className="border-warning/30 bg-warning-tint px-5 py-4">
-              <p className="flex items-center gap-2 text-[12.5px] font-semibold text-warning">
-                <AlertTriangle className="size-4" /> Template questions still open with the barangay
-              </p>
-              <ul className="mt-1.5 list-disc space-y-1 pl-5 text-[12.5px] text-navy-900">
-                {type.issues.map((i) => (
-                  <li key={i}>{i}</li>
-                ))}
-              </ul>
-            </Card>
-          )}
         </div>
 
         <div className="space-y-4">

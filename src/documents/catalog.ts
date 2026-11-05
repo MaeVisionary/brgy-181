@@ -6,8 +6,7 @@ import { nonResidencyFlow } from './flows/nonResidency.tsx'
  * One entry per official document supplied by the barangay team.
  * Template images are the supplied PDFs rendered as-is (public/templates/<id>/).
  * Slot positions were measured from those PDFs in millimetres.
- * Wording, typos and printed years in the originals are preserved on purpose;
- * open questions are listed in `issues` and shown in the app.
+ * Wording and typos in the originals are preserved on purpose.
  */
 export interface DocumentTypeDef {
   id: DocumentTypeId
@@ -22,8 +21,8 @@ export interface DocumentTypeDef {
   requirements: DocumentRequirement[]
   fields: FieldDef[]
   template: TemplateSpec
-  /** Unclear or inconsistent points in the reference that need the barangay's answer. */
-  issues: string[]
+  /** How the request is handled, in plain words (shown to residents and personnel). */
+  process?: string[]
 }
 
 const WORKFLOW_DOC = 'SE Group 4 workflows docx'
@@ -136,9 +135,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         c('validUntil', 148.6, 187.8, 169.9),
       ],
     },
-    issues: [
-      'The page image underneath prints "2024" in "Signed this ___ day of ___, 2024"; the Word file covers it with a text box reading "2026". The year is part of the template, so it must be updated in the template each year.',
-    ],
   },
   {
     id: 'non-residency',
@@ -147,8 +143,16 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
     category: 'certificate',
     workflow: 'standard',
     online: false,
-    onlineNote: 'Requested by the 4Ps Pantawid Pamilyang Pilipino Program (DSWD) for a former resident, so it is encoded by barangay staff.',
-    requirements: [],
+    onlineNote: 'Requested for 4Ps (DSWD) records of a former resident, so it is encoded by barangay staff at the Barangay Hall.',
+    requirements: [
+      { label: 'Request or referral from the 4Ps / DSWD (or authorization letter if requested on behalf of the former resident)', source: 'Certificate wording: issued upon the request of 4Ps under DSWD' },
+      { label: 'Valid ID of the person requesting', source: 'Standard practice' },
+    ],
+    process: [
+      'The 4Ps beneficiary, a representative or the DSWD municipal link requests it at the Barangay Hall.',
+      'The Barangay Secretary checks the resident records and household records to confirm the person no longer lives in Barangay 181 and notes the former address.',
+      'The Punong Barangay approves and signs; the certification is sealed and released.',
+    ],
     fields: [
       { key: 'fullName', label: 'Name', kind: 'text', required: true, by: 'staff' },
       { key: 'formerAddress', label: 'Former address', kind: 'text', required: true, by: 'staff' },
@@ -163,10 +167,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
       slots: [],
       flow: nonResidencyFlow,
     },
-    issues: [
-      'The workflows docx has no requirements or detailed process for this document yet ("App then if not techy go to brgy"); a team comment says it is requested by 4Ps, not by residents.',
-      'The printed wording says "for any legal purpose it may served" and "Republic of the Phillippines"; kept exactly as in the original.',
-    ],
   },
   {
     id: 'cohabitation',
@@ -186,8 +186,8 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
       { key: 'partner2Age', label: 'Age', kind: 'number', required: true, by: 'applicant', group: 'Second applicant' },
       { key: 'houseStreet', label: 'House no. and street', kind: 'text', required: true, by: 'applicant', help: 'Printed before "Gagalangin Tondo, Manila".' },
       { key: 'duration', label: 'Living together for (years/months)', kind: 'text', required: true, by: 'applicant', help: 'Number only, e.g. 3. The form prints "years/months" after it.' },
-      { key: 'sinceFrom', label: 'Since (first blank)', kind: 'text', required: true, by: 'applicant' },
-      { key: 'sinceTo', label: 'Since (second blank)', kind: 'text', by: 'applicant' },
+      { key: 'sinceFrom', label: 'Living together since (month)', kind: 'text', required: true, by: 'applicant', help: 'e.g. March' },
+      { key: 'sinceTo', label: 'Living together since (year)', kind: 'text', required: true, by: 'applicant', help: 'e.g. 2022' },
       ...issueFields,
     ],
     template: {
@@ -210,7 +210,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         c('issueMonth', 127, 140.3, 205.7),
       ],
     },
-    issues: ['"since ____- ____" has two blanks. Please confirm what each blank holds (e.g. month and year).'],
   },
   {
     id: 'no-partner',
@@ -220,7 +219,11 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
     workflow: 'standard',
     online: false,
     onlineNote: 'Proposed process: the applicant personally visits the Barangay Hall.',
-    requirements: [],
+    // Used for solo parent applications (RA 11861, Expanded Solo Parents Welfare Act).
+    requirements: [
+      { label: 'Valid ID of the applicant', source: 'Standard practice' },
+      { label: 'PSA birth certificate of the child', source: 'RA 11861 solo parent application practice' },
+    ],
     fields: [
       residentName,
       residentAge,
@@ -245,10 +248,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         c('issueMonth', 131.6, 142.6, 189.8),
       ],
     },
-    issues: [
-      'The file is named "Certificate of Singleness", but the document is titled "CERTIFICATE OF NO PARTNER" and is issued for a SOLO PARENT APPLICATION. Please confirm this is the right template.',
-      'The wording says "issued upon the request for her SOLO PARENT APPLICATION" (fixed "her").',
-    ],
   },
   {
     id: 'residency',
@@ -318,7 +317,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         c('issueMonth', 90.7, 128, 201.2),
       ],
     },
-    issues: ['Please confirm the empty box under the list is where "Others" is specified.'],
   },
   {
     id: 'indigency',
@@ -364,7 +362,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         c('issueMonth', 90.7, 127.8, 188.4),
       ],
     },
-    issues: [],
   },
   {
     id: 'summon',
@@ -374,6 +371,11 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
     workflow: 'summon',
     online: true,
     requirements: [],
+    process: [
+      'The complainant files online or at the Barangay Hall; the Barangay Secretary reviews it.',
+      'The Punong Barangay assesses the complaint. If a summons is needed, the Secretary prepares it for approval and signature.',
+      'The summons is served on the respondent, who appears for mediation within the 15-day period (RA 7160 Sec. 410).',
+    ],
     fields: [
       { key: 'complainantName', label: 'Complainant', kind: 'text', required: true, by: 'applicant', group: 'Parties' },
       { key: 'respondentName', label: 'Respondent', kind: 'text', required: true, by: 'applicant', group: 'Parties' },
@@ -406,11 +408,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         c('issueMonth', 74.2, 94.2, 191.3),
       ],
     },
-    issues: [
-      'The summons text says "for the mediation of your dispute regarding a formal apology". That looks like wording from one specific case. Please confirm whether it should stay fixed or become a field.',
-      'The original had a sample addressee (name and address) under "Respondent". It was removed from the template image, and the respondent\'s name and address are printed there instead.',
-      'The approving "authorized official" is assumed to be the Lupon Chairman (Hon. Robert M. Atad, who is also the Barangay Chairman) because he signs the template.',
-    ],
   },
   {
     id: 'incident-record',
@@ -490,10 +487,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         { kind: 'area', field: 'narrative', page: 2, x1: 7, x2: 208, y1: 90, y2: 212, size: 10 },
       ],
     },
-    issues: [
-      'Fields not collected by the system (other/work address, physical description, children-in-conflict-with-law details, case disposition) are left blank for writing by hand.',
-      'The page size is 8.5 × 13 in (Folio). The printer needs long bond paper.',
-    ],
   },
   {
     id: 'clearance-person',
@@ -528,11 +521,10 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         t('purpose', 86.4, 205, 138.7),
         c('issueDay', 84.2, 96.5, 173.4),
         c('issueMonth', 113.7, 150.4, 173.4),
+        // The printed "2024" was removed from the page image; the current year is printed instead.
+        { kind: 'static', text: '2026', page: 1, x1: 149.6, x2: 168.5, y: 174.9, size: 15, bold: true },
       ],
     },
-    issues: [
-      'The template prints "Given this ___ day of ___ 2024". The year 2024 is part of the official image, so certificates issued now would show 2024. Please send an updated template, or confirm the year should be covered.',
-    ],
   },
   {
     id: 'business-clearance',
@@ -541,13 +533,27 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
     category: 'clearance',
     workflow: 'standard',
     online: true,
-    requirements: [],
+    // Standard Philippine practice: LGC (RA 7160) Sec. 152(c) and the Ease of Doing Business Act (RA 11032).
+    requirements: [
+      { label: 'DTI business name registration (sole proprietor) or SEC / CDA registration', source: 'RA 7160 Sec. 152(c) practice' },
+      { label: 'Proof of business location: contract of lease, or land title / tax declaration', source: 'RA 7160 Sec. 152(c) practice' },
+      { label: 'Community Tax Certificate (cedula)', source: 'Business clearance form (CTC No.)' },
+      { label: 'Valid ID of the owner', source: 'Standard practice' },
+      { label: 'For renewal: previous Barangay Business Clearance or Mayor’s Permit', source: 'Standard practice' },
+    ],
+    process: [
+      'The owner applies online (or at the Barangay Hall) and uploads the requirements.',
+      'The Barangay Secretary checks the documents and that the business is located within Barangay 181.',
+      'The clearance fee set by the barangay’s revenue ordinance is paid to the Barangay Treasurer, who issues an official receipt.',
+      'The Barangay Chairman approves and signs; the clearance is sealed and ready for pickup. It is valid for one (1) year from the date of issue.',
+      'Simple transactions are processed within 3 working days (RA 11032).',
+    ],
     fields: [
       { key: 'ownerName', label: 'Name (This is to certify that)', kind: 'text', required: true, by: 'applicant' },
       { key: 'businessAddress', label: 'Business located at', kind: 'text', required: true, by: 'applicant' },
       { key: 'businessName', label: 'Business name', kind: 'text', required: true, by: 'applicant' },
       { key: 'businessNature', label: 'To operate the business of', kind: 'text', required: true, by: 'applicant' },
-      { key: 'permitFor', label: 'Issued for BUSINESS PERMIT', kind: 'text', by: 'staff', staffOnly: true, help: 'The blank after "BUSINESS PERMIT", as written on the form.' },
+      { key: 'permitFor', label: 'Business permit application', kind: 'choice', options: ['NEW', 'RENEWAL'], required: true, by: 'applicant', help: 'Printed after "BUSINESS PERMIT".' },
       { key: 'clearanceNo', label: 'Clearance No.', kind: 'text', required: true, by: 'staff', staffOnly: true },
       { key: 'ctcNo', label: 'CTC No.', kind: 'text', by: 'staff', staffOnly: true, group: 'Community Tax Certificate' },
       { key: 'ctcIssuedOn', label: 'Issued on', kind: 'text', by: 'staff', staffOnly: true, group: 'Community Tax Certificate' },
@@ -576,11 +582,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         t('ctcIssuedAt', 41.5, 67.3, 226.3, { size: 11 }),
       ],
     },
-    issues: [
-      'The detailed process for Business Clearance still needs clarification (team comment in the workflows docx). The standard Secretary → Chairman flow is used until it is confirmed.',
-      'Requirements for Business Clearance are not listed yet.',
-      'Please confirm what goes in the blank after "BUSINESS PERMIT" (e.g. new or renewal).',
-    ],
   },
   {
     id: 'barangay-certificate',
@@ -616,9 +617,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         c('issueMonth', 89.3, 126.5, 177),
       ],
     },
-    issues: [
-      'The body of this certificate is word-for-word the same as the Certificate of Indigency ("…is one of the INDIGENT fellow in our community"). Please confirm this is intended.',
-    ],
   },
   {
     id: 'blotter-report',
@@ -673,7 +671,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         { kind: 'text', field: 'recordedByPosition', page: 2, x1: 48.7, x2: 138.2, y: 218.2 },
       ],
     },
-    issues: ['The form header says "BARANGAY BLOTTER ENTRY FORM" while the file is named "Barangay Blotter Report". Both refer to this template.'],
   },
   {
     id: 'notice-of-hearing',
@@ -712,11 +709,6 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
         { kind: 'list', field: 'receivedBy', page: 1, x1: 25.6, x2: 64.8, ys: NOTICE_ROWS, size: 11 },
       ],
     },
-    issues: [
-      'The blank template keeps the original typos "NNOTICE OF HEARING" and "AGAINTS" unchanged. Please send a corrected file if they should be fixed.',
-      'Pages 3–7 of the supplied PDF are filled-in examples with real names. Only the blank page 1 is used, and no example names are stored in the system.',
-      'One example (2nd hearing) uses different wording with a "SUMMON" heading. Please say if that is a separate template.',
-    ],
   },
 ]
 

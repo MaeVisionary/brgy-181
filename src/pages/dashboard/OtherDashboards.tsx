@@ -5,7 +5,7 @@ import { StatusBadge } from '@/components/documents/DocParts'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { Card, Panel } from '@/components/ui/Panel'
-import { CHAIRMAN, OFFICIALS, OFFICIAL_NOTES, SECRETARY, officialByPosition } from '@/config/barangay'
+import { CHAIRMAN, OFFICIALS, SECRETARY, officialByPosition } from '@/config/barangay'
 import { NAVIGATION } from '@/config/navigation'
 import { PERMISSION_LABELS, ROLES } from '@/config/permissions'
 import { getDocumentType } from '@/documents/catalog'
@@ -60,8 +60,8 @@ export function KagawadDashboard() {
           <Card className="flex items-start gap-3 px-5 py-4 text-[13px] text-navy-900">
             <Info className="mt-0.5 size-4 shrink-0 text-info" />
             <span>
-              Individual Kagawad responsibilities and committee assignments are pending barangay confirmation. Access to cases, residents or other modules is
-              granted per account by the System Administrator once confirmed.
+              Your account shows community summaries and barangay reports. Access to other modules, such as cases or resident records for an assigned
+              responsibility, is granted per account by the System Administrator.
             </span>
           </Card>
           <div className="flex flex-wrap gap-2">
@@ -84,10 +84,9 @@ export function SkDashboard() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Card className="px-6 py-6">
           <p className="label-caps">Sangguniang Kabataan</p>
-          <h2 className="mt-1 font-display text-[18px] font-extrabold text-navy-900">SK records: pending barangay confirmation</h2>
+          <h2 className="mt-1 font-display text-[18px] font-extrabold text-navy-900">Youth programs</h2>
           <p className="mt-2 max-w-xl text-[13.5px] text-ink-muted">
-            The study states that the SK Chairman heads youth programs. Youth program records, activities and reports are not yet part of the confirmed system
-            scope, so this section is ready but empty. Nothing here is invented.
+            No youth program records yet. Community summaries and other modules can be added to this account by the System Administrator.
           </p>
         </Card>
         <CouncilList highlight={user?.fullName} />
@@ -225,4 +224,4 @@ export function StaffDashboard() {
   )
 }
 
-export { CouncilList, OFFICIAL_NOTES, OFFICIALS }
+export { CouncilList, OFFICIALS }

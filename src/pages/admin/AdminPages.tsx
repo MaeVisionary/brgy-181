@@ -1,19 +1,22 @@
-import { Check, Info, Minus } from 'lucide-react'
+import { Check, Copy, Info, KeyRound, Minus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Card, Panel } from '@/components/ui/Panel'
+import { Card } from '@/components/ui/Panel'
 import { APP_CONFIG } from '@/config/app'
-import { BORROWING, KP, OFFICIALS, OFFICIAL_NOTES } from '@/config/barangay'
+import { BORROWING, KP, OFFICIALS } from '@/config/barangay'
 import { GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS, PERMISSION_LABELS, ROLES, ROLE_PERMISSIONS } from '@/config/permissions'
 import { formatDateTime, initials } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { listAudit } from '@/services/auditService'
 import { ServiceError } from '@/services/mockApi'
-import { listUsers, setDisplayName, setExtraPermissions, setStatus } from '@/services/userService'
+import { listUsers, resetPassword, setDisplayName, setExtraPermissions, setStatus } from '@/services/userService'
+import { getCredential, listResetRequests, type ResetRequest } from '@/services/credentialStore'
+import { TEST_ACCOUNT, testUserFor } from '@/config/testAccount'
+import { accountTypeBySlug } from '@/config/accountTypes'
 import type { Permission, RoleId, User } from '@/types/auth'
 import { cn } from '@/lib/cn'
 
@@ -27,16 +30,62 @@ export function UsersPage() {
   useEffect(() => {
     load()
   }, [])
+  const [requests, setRequests] = useState<ResetRequest[]>(listResetRequests)
+  const [issued, setIssued] = useState<{ label: string; password: string } | null>(null)
   const run = async (fn: () => Promise<unknown>) => {
     setErr(null)
     try { await fn(); await load() } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Failed.') }
   }
+  const reset = async (u: User) => {
+    const isTest = u.id === 'usr-test'
+    const password = await resetPassword(
+      { credentialKey: isTest ? TEST_ACCOUNT.credentialKey : u.id, identifiers: [u.username, u.email], label: isTest ? 'Test account' : u.username },
+      me!,
+    )
+    setIssued({ label: u.fullName, password })
+    setRequests(listResetRequests())
+  }
+  const accounts = TEST_ACCOUNT.enabled
+    ? [{ ...testUserFor('system_admin'), id: 'usr-test', position: 'Test account (all levels)' }, ...users]
+    : users
+  const pending = requests.filter((r) => r.status === 'pending')
+  const matchFor = (r: ResetRequest) => accounts.find((u) => u.username.toLowerCase() === r.identifier || u.email.toLowerCase() === r.identifier)
   return (
     <>
-      <PageHeader title="User Accounts" subtitle="Accounts for Barangay 181 officials, personnel and residents. New accounts and password resets need the backend; this screen manages status, names and permissions." />
+      <PageHeader title="User Accounts" subtitle="Accounts for Barangay 181 officials, personnel and residents: status, names, permissions and password resets." />
       {err && <p className="mb-3 rounded-md bg-danger-tint px-3 py-2 text-[12.5px] text-danger-ink">{err}</p>}
+      {issued && (
+        <Card className="mb-4 border-success/40 bg-success-tint px-5 py-4">
+          <p className="text-[13px] font-semibold text-navy-900">Temporary password for {issued.label}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <code className="rounded-md bg-surface px-3 py-1.5 font-mono text-[15px] font-semibold tracking-wider text-navy-900">{issued.password}</code>
+            <Button size="sm" variant="secondary" icon={<Copy className="size-3.5" />} onClick={() => navigator.clipboard?.writeText(issued.password)}>Copy</Button>
+            <Button size="sm" variant="ghost" onClick={() => setIssued(null)}>Done</Button>
+          </div>
+          <p className="mt-2 text-[12px] text-ink-muted">Shown once. Give it to the account holder in person; they must choose a new password when they sign in.</p>
+        </Card>
+      )}
+      {pending.length > 0 && (
+        <Card className="mb-4">
+          <p className="label-caps border-b border-line-soft px-5 py-3">Password reset requests</p>
+          <ul className="divide-y divide-line-soft">
+            {pending.map((r) => {
+              const u = matchFor(r)
+              return (
+                <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-[13px]">
+                  <span>
+                    <span className="block font-semibold text-navy-900">{r.identifier}</span>
+                    <span className="block text-[12px] text-ink-muted">{accountTypeBySlug(r.accountType)?.title ?? r.accountType} · {formatDateTime(r.requestedAt)} · {u ? `matches ${u.fullName}` : 'no matching account'}</span>
+                  </span>
+                  {u && <Button size="sm" icon={<KeyRound className="size-3.5" />} onClick={() => reset(u)}>Reset password</Button>}
+                </li>
+              )
+            })}
+          </ul>
+        </Card>
+      )}
       <Card className="divide-y divide-line-soft">
-        {users.map((u) => (
+        {accounts.map((u) => (
           <div key={u.id} className="px-5 py-3">
             <div className="flex flex-wrap items-center gap-3">
               <span className="grid size-9 shrink-0 place-items-center rounded-full bg-navy-900 text-[11px] font-semibold text-white">{initials(u.fullName)}</span>
@@ -44,11 +93,16 @@ export function UsersPage() {
                 <span className="block text-[13.5px] font-semibold text-navy-900">{u.fullName}</span>
                 <span className="block text-[12px] text-ink-muted">{u.position} · {u.username} · {ROLES[u.roleId].name}</span>
               </span>
-              <span className="text-[11.5px] text-ink-muted">{u.lastLoginAt ? `Last sign-in ${formatDateTime(u.lastLoginAt)}` : 'Never signed in'}</span>
+              <span className="text-[11.5px] text-ink-muted">{getCredential(u.id === 'usr-test' ? TEST_ACCOUNT.credentialKey : u.id)?.mustChange ? 'Temporary password issued' : u.id === 'usr-test' || getCredential(u.id) ? 'Password set' : 'No password yet'}</span>
               <Badge tone={u.status === 'active' ? 'success' : 'neutral'}>{u.status === 'active' ? 'Active' : u.status === 'locked' ? 'Locked' : 'Inactive'}</Badge>
               <Button size="sm" variant="ghost" onClick={() => setOpen(open === u.id ? null : u.id)}>{open === u.id ? 'Close' : 'Manage'}</Button>
             </div>
-            {open === u.id && <ManageUser u={u} me={me!} run={run} />}
+            {open === u.id && (u.id === 'usr-test' ? (
+              <div className="mt-3 flex flex-wrap items-center gap-3 rounded-[var(--radius-control)] bg-surface-muted p-4 text-[12.5px] text-navy-900">
+                Test account for the project team. It can switch between every level after signing in.
+                <Button size="sm" icon={<KeyRound className="size-3.5" />} onClick={() => reset(u)}>Reset password</Button>
+              </div>
+            ) : <ManageUser u={u} me={me!} run={run} onReset={() => reset(u)} />)}
           </div>
         ))}
       </Card>
@@ -56,7 +110,7 @@ export function UsersPage() {
   )
 }
 
-function ManageUser({ u, me, run }: { u: User; me: User; run: (fn: () => Promise<unknown>) => Promise<void> }) {
+function ManageUser({ u, me, run, onReset }: { u: User; me: User; run: (fn: () => Promise<unknown>) => Promise<void>; onReset: () => void }) {
   const [name, setName] = useState(u.fullName)
   const [perms, setPerms] = useState<Set<Permission>>(new Set(u.extraPermissions ?? []))
   const renamable = ['property_custodian', 'system_admin', 'staff'].includes(u.roleId)
@@ -65,12 +119,13 @@ function ManageUser({ u, me, run }: { u: User; me: User; run: (fn: () => Promise
       <div className="space-y-3">
         <div className="flex gap-2">
           <Button size="sm" variant={u.status === 'active' ? 'danger' : 'primary'} disabled={u.id === me.id} onClick={() => run(() => setStatus(u.id, u.status === 'active' ? 'inactive' : 'active', me))}>{u.status === 'active' ? 'Deactivate' : 'Activate'}</Button>
+          <Button size="sm" variant="secondary" icon={<KeyRound className="size-3.5" />} onClick={onReset}>Reset password</Button>
         </div>
         {renamable ? (
           <label className="block">
             <span className="mb-1 block text-[12px] font-semibold text-navy-900">Display name</span>
             <span className="flex gap-2"><TextInput value={name} onChange={(e) => setName(e.target.value)} /><Button size="md" variant="secondary" onClick={() => run(() => setDisplayName(u.id, name, me))}>Save</Button></span>
-            <span className="mt-1 block text-[11.5px] text-ink-muted">The study does not name this position's holder, so the administrator sets it.</span>
+            <span className="mt-1 block text-[11.5px] text-ink-muted">Set the name of the person holding this position.</span>
           </label>
         ) : (
           <p className="text-[12px] text-ink-muted">This is an official's account; the name comes from the barangay's records.</p>
@@ -161,54 +216,50 @@ export function ActivityPage() {
   )
 }
 
-/** Barangay officials as documented, with sources and open questions. */
+/** Barangay officials as documented, with sources. */
 export function PersonnelPage() {
   return (
     <>
       <PageHeader title="Barangay Personnel" subtitle="Officials of Barangay 181, Zone 16, District II, Manila." />
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[640px] text-[13px]">
-          <thead><tr className="bg-surface-muted text-left">{['Name', 'Position', 'Name as printed on documents', 'Source', 'System account'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}</tr></thead>
+          <thead><tr className="bg-surface-muted text-left">{['Name', 'Position', 'Source', 'System account'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}</tr></thead>
           <tbody>
             {OFFICIALS.map((o) => (
               <tr key={o.id} className="border-t border-line-soft">
                 <td className="px-4 py-2.5 font-semibold text-navy-900">{o.name}</td>
                 <td className="px-4 py-2.5">{o.position}</td>
-                <td className="px-4 py-2.5 text-ink-muted">{o.nameOnDocuments ?? '–'}</td>
                 <td className="px-4 py-2.5 text-ink-muted">{o.source}</td>
                 <td className="px-4 py-2.5">{o.userId ? <Badge tone="success">Yes</Badge> : <Badge tone="neutral">None</Badge>}</td>
               </tr>
             ))}
-            <tr className="border-t border-line-soft"><td className="px-4 py-2.5 font-semibold text-navy-900">Not named in the study</td><td className="px-4 py-2.5">Property Custodian</td><td className="px-4 py-2.5 text-ink-muted">–</td><td className="px-4 py-2.5 text-ink-muted">Study §1.5</td><td className="px-4 py-2.5"><Badge tone="success">Yes</Badge></td></tr>
+            <tr className="border-t border-line-soft"><td className="px-4 py-2.5 font-semibold text-navy-900">Not named in the study</td><td className="px-4 py-2.5">Property Custodian</td><td className="px-4 py-2.5 text-ink-muted">Study §1.5</td><td className="px-4 py-2.5"><Badge tone="success">Yes</Badge></td></tr>
           </tbody>
         </table>
       </Card>
-      <Panel className="mt-4" title="Open questions">
-        <ul className="list-disc space-y-1 pl-5 text-[13px] text-navy-900">{OFFICIAL_NOTES.map((n) => <li key={n}>{n}</li>)}</ul>
-      </Panel>
     </>
   )
 }
 
-/** Settings currently in effect; values marked pending need barangay confirmation. */
+/** Settings currently in effect. */
 export function SettingsPage() {
-  const rows: [string, string, boolean][] = [
-    ['Failed sign-in attempts before lockout (NFR8)', String(APP_CONFIG.lockoutThreshold), true],
-    ['Idle session length', `${APP_CONFIG.sessionMinutes} minutes`, true],
-    ['Equipment borrowing period (FR22)', `${BORROWING.periodDays} days from release`, false],
-    ['Borrowing grace period (FR22)', `${BORROWING.graceDays} days`, false],
-    ['Mediation under the Barangay Chairman', `Up to ${KP.chairmanMediationDays} days`, false],
-    ['Lupon mediation period', KP.luponMediationDays ? `${KP.luponMediationDays} days` : 'Not stated in the study', true],
-    ['Hearing reminder timing (FR20)', 'Not specified', true],
+  const rows: [string, string][] = [
+    ['Failed sign-in attempts before lockout (NFR8)', String(APP_CONFIG.lockoutThreshold)],
+    ['Idle session length', `${APP_CONFIG.sessionMinutes} minutes`],
+    ['Equipment borrowing period (FR22)', `${BORROWING.periodDays} days from release`],
+    ['Borrowing grace period (FR22)', `${BORROWING.graceDays} days`],
+    ['Mediation under the Barangay Chairman', `Up to ${KP.chairmanMediationDays} days`],
+    ['Lupon (Pangkat) conciliation, RA 7160 Sec. 410', `${KP.luponMediationDays} days, extendable by ${KP.luponExtensionDays}`],
+    ['Hearing reminders (FR20)', `${KP.reminderDaysBefore} day before each hearing`],
   ]
   return (
     <>
       <PageHeader title="System Settings" subtitle="Values currently used by the prototype. Editing will be enabled with the backend." />
       <Card className="divide-y divide-line-soft">
-        {rows.map(([k, v, pending]) => (
+        {rows.map(([k, v]) => (
           <div key={k} className="flex items-center justify-between gap-4 px-5 py-3 text-[13px]">
             <span className="text-navy-900">{k}</span>
-            <span className="flex items-center gap-2"><strong className="text-navy-900">{v}</strong>{pending && <Badge tone="warning">Pending confirmation</Badge>}</span>
+            <strong className="text-navy-900">{v}</strong>
           </div>
         ))}
       </Card>

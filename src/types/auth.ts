@@ -100,4 +100,6 @@ export interface Session {
   userId: string
   startedAt: string
   expiresAt: string
+  /** Set after an administrator reset: the user must choose a new password first. */
+  mustChangePassword?: boolean
 }

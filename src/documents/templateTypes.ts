@@ -72,7 +72,19 @@ export interface ListSlot extends Base {
   ys: number[]
 }
 
-export type Slot = TextSlot | CheckSlot | LinesSlot | AreaSlot | ListSlot
+/** Fixed text printed on the form (e.g. the year replacing an outdated printed year). */
+export interface StaticSlot extends Base {
+  kind: 'static'
+  text: string
+  x1: number
+  x2: number
+  y: number
+  align?: 'left' | 'center'
+  /** Not a field; kept for a uniform shape. */
+  field?: undefined
+}
+
+export type Slot = TextSlot | CheckSlot | LinesSlot | AreaSlot | ListSlot | StaticSlot
 
 export interface TemplateSpec {
   pageSize: PageSize

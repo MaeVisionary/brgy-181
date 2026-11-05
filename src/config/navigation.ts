@@ -89,6 +89,7 @@ const PERSONNEL_NAV: NavGroup[] = [
     ],
   },
   { label: 'Notifications', icon: Bell, path: '/notifications' },
+  { label: 'Account Settings', icon: Settings2, path: '/account' },
 ]
 
 const ADMIN_NAV: NavGroup[] = [
@@ -112,6 +113,7 @@ const ADMIN_NAV: NavGroup[] = [
     ],
   },
   { label: 'Notifications', icon: Bell, path: '/notifications' },
+  { label: 'Account Settings', icon: Settings2, path: '/account' },
 ]
 
 const RESIDENT_NAV: NavGroup[] = [
@@ -121,10 +123,7 @@ const RESIDENT_NAV: NavGroup[] = [
   { label: 'Borrow Equipment', icon: Package, path: '/my/borrowing', anyOf: ['self.borrowing'] },
   { label: 'My Profile', icon: UserRound, path: '/my/profile', anyOf: ['self.profile'] },
   { label: 'Notifications', icon: Bell, path: '/notifications' },
-  {
-    label: 'Account Settings', icon: Settings2, path: '/my/settings', anyOf: ['self.profile'], phase: 9,
-    summary: 'Password changes and contact preferences need backend authentication.',
-  },
+  { label: 'Account Settings', icon: Settings2, path: '/account' },
 ]
 
 export const NAVIGATION: Record<Portal, NavGroup[]> = {
@@ -138,7 +137,7 @@ export function allLeaves(): (NavLeaf & { portal: Portal })[] {
   const out: (NavLeaf & { portal: Portal })[] = []
   for (const [portal, groups] of Object.entries(NAVIGATION) as [Portal, NavGroup[]][]) {
     for (const g of groups) {
-      if (g.path && g.path !== '/dashboard' && g.path !== '/notifications') {
+      if (g.path && !['/dashboard', '/notifications', '/account'].includes(g.path)) {
         out.push({ label: g.label, path: g.path, anyOf: g.anyOf, phase: g.phase, summary: g.summary, portal })
       }
       for (const c of g.children ?? []) out.push({ ...c, portal })

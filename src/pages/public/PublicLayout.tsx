@@ -91,7 +91,7 @@ export function PublicLayout({ children, minimal }: { children: ReactNode; minim
           <div>
             <p className="label-caps mb-2.5">Contact</p>
             <p className="text-[13px] text-ink-muted">Barangay 181 Hall, {BARANGAY.locality}</p>
-            <p className="mt-1 text-[12.5px] text-ink-subtle">Official contact details will be posted once confirmed by the barangay.</p>
+            <p className="mt-1 text-[12.5px] text-ink-subtle">Walk-in assistance is available at the Barangay Hall.</p>
           </div>
         </div>
         <div className="border-t border-line-soft">

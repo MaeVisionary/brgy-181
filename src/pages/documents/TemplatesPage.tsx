@@ -1,4 +1,4 @@
-import { AlertTriangle, FileText } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { DocumentPages, ScaledPages } from '@/components/documents/DocumentPages'
 import { Badge } from '@/components/ui/Badge'
@@ -37,11 +37,6 @@ export function TemplatesPage() {
                       {d.template.pageSize.name} · {d.template.pages.length} page{d.template.pages.length > 1 ? 's' : ''}
                     </span>
                   </span>
-                  {d.issues.length > 0 && (
-                    <span title={`${d.issues.length} open question(s)`} className="mt-0.5 text-warning">
-                      <AlertTriangle className="size-4" />
-                    </span>
-                  )}
                 </button>
               </li>
             ))}
@@ -82,16 +77,12 @@ export function TemplatesPage() {
                 </div>
               )}
             </dl>
-            {selected.issues.length > 0 && (
-              <div className="mt-4 rounded-[var(--radius-control)] border border-warning/30 bg-warning-tint px-4 py-3">
-                <p className="flex items-center gap-2 text-[12.5px] font-semibold text-warning">
-                  <AlertTriangle className="size-4" /> Open questions for the barangay
-                </p>
-                <ul className="mt-1.5 list-disc space-y-1 pl-5 text-[12.5px] text-navy-900">
-                  {selected.issues.map((i) => (
-                    <li key={i}>{i}</li>
-                  ))}
-                </ul>
+            {selected.process && (
+              <div className="mt-4 rounded-[var(--radius-control)] bg-surface-muted px-4 py-3">
+                <p className="label-caps mb-1.5">How it is processed</p>
+                <ol className="list-decimal space-y-1 pl-5 text-[12.5px] text-navy-900">
+                  {selected.process.map((step) => <li key={step}>{step}</li>)}
+                </ol>
               </div>
             )}
           </Panel>

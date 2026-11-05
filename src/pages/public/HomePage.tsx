@@ -113,7 +113,7 @@ export function HomePage() {
                   <ul className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
                     {lupon.map((l) => <li key={l.id} className="text-[14px] font-semibold text-navy-900">{l.name}</li>)}
                   </ul>
-                  <p className="mt-2 text-[12px] text-ink-muted">Chaired by the Punong Barangay. Full membership to be confirmed.</p>
+                  <p className="mt-2 text-[12px] text-ink-muted">Chaired by the Punong Barangay.</p>
                 </div>
               )}
             </div>
@@ -188,10 +188,6 @@ export function HomePage() {
               <div>
                 <dt className="label-caps">Location</dt>
                 <dd className="mt-1 font-semibold text-navy-900">Barangay 181 Hall, Zone 16, District II, {BARANGAY.locality}</dd>
-              </div>
-              <div>
-                <dt className="label-caps">Telephone, email and office hours</dt>
-                <dd className="mt-1 text-ink-muted">To be posted once confirmed by the barangay.</dd>
               </div>
               <div>
                 <dt className="label-caps">Assistance</dt>

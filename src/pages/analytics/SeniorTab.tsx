@@ -176,7 +176,7 @@ export function SeniorTab() {
           <SimpleBar labels={streets.slice(0, 10).map((c) => c.key)} values={streets.slice(0, 10).map((c) => c.count)} selected={filters.street} onSelect={(l) => set({ street: l })} horizontal height={Math.max(180, Math.min(10, streets.length) * 30)} />
           <details className="mt-3 text-[12px] text-ink-muted">
             <summary className="cursor-pointer font-semibold text-navy-900">How addresses were grouped into areas</summary>
-            <p className="mt-1">The street is read from the text after the house number ("665-D -GEN.LUKBAN , TONDO II" → GEN.LUKBAN). "ST." is dropped. These spelling variants were merged and should be confirmed:</p>
+            <p className="mt-1">The street is read from the text after the house number ("665-D -GEN.LUKBAN , TONDO II" → GEN.LUKBAN). "ST." is dropped. These spelling variants were merged:</p>
             <ul className="mt-1 list-disc pl-5">{Object.entries(STREET_ALIASES).map(([a, b]) => <li key={a}>{a} → {b}</li>)}</ul>
             <p className="mt-1">Addresses the rule could not read are counted as "Unparsed".</p>
           </details>

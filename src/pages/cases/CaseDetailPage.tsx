@@ -76,7 +76,7 @@ export function CaseDetailPage() {
             </li>
           ))}
         </ol>
-        <p className="mt-2 text-[12px] text-ink-muted">Not every case goes through every stage. Lupon mediation period: {KP.luponMediationDays ?? 'pending barangay confirmation'}.</p>
+        <p className="mt-2 text-[12px] text-ink-muted">Not every case goes through every stage. Mediation under the Barangay Chairman: up to {KP.chairmanMediationDays} days. Lupon (Pangkat) conciliation: {KP.luponMediationDays} days, extendable by {KP.luponExtensionDays} (RA 7160 Sec. 410).</p>
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
