@@ -1,14 +1,16 @@
 import { Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
+import { APP_CONFIG } from '@/config/app'
 import { Outlet } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import { APP_CONFIG } from '@/config/app'
 import { cn } from '@/lib/cn'
 import { formatDate, formatWeekday } from '@/lib/format'
 import { BarangaySeal } from './BarangaySeal'
-import { DemoBar } from './DemoBar'
 import { NotificationMenu } from './NotificationMenu'
 import { Sidebar } from './Sidebar'
+
+/** Development-only; not bundled in production builds. */
+const DevPreviewBar = import.meta.env.DEV ? lazy(() => import('./DevPreviewBar').then((m) => ({ default: m.DevPreviewBar }))) : null
 
 const COLLAPSE_KEY = 'bmis.sidebar.collapsed'
 
@@ -43,7 +45,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-full flex-col">
-      {APP_CONFIG.demoMode && <DemoBar />}
+      {DevPreviewBar && <Suspense fallback={null}><DevPreviewBar /></Suspense>}
 
       <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-surface px-4 sm:px-5">
         <button

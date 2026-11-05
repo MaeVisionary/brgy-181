@@ -1,23 +1,24 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { APP_CONFIG } from '@/config/app'
 import { ROLES, ROLE_PERMISSIONS } from '@/config/permissions'
-import { createSession, findUser, login as loginRequest } from '@/services/authService'
+import { createSession, findUser, signIn as signInRequest, type SignInInput } from '@/services/authService'
 import type { Permission, Role, Session, User } from '@/types/auth'
 
 /**
- * FRONTEND ROLE SIMULATION. Checks here only shape what the UI shows.
- * They do not protect data; the backend must enforce every rule.
+ * Session state for the frontend. Permission checks here only shape the UI;
+ * the backend must enforce every rule. There is no frontend credential check.
  */
 
-const STORAGE_KEY = 'bmis.demo.session'
+const STORAGE_KEY = 'bmis.session'
 
 export interface AuthContextValue {
   user: User | null
   role: Role | null
   permissions: ReadonlySet<Permission>
-  login: (username: string, password: string) => Promise<User>
+  signIn: (input: SignInInput) => Promise<User>
   logout: () => void
-  /** Demo mode only: switch to another mock account without a password. */
-  switchUser: (userId: string) => void
+  /** Development preview only: open the app as an account without signing in. */
+  previewAs: (userId: string) => void
   can: (permission: Permission) => boolean
   canAny: (permissions: readonly Permission[]) => boolean
 }
@@ -40,12 +41,13 @@ function writeSession(session: Session | null) {
     if (session) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session))
     else sessionStorage.removeItem(STORAGE_KEY)
   } catch {
-    // Storage unavailable (private mode); session lives in memory only.
+    // Storage unavailable; session lives in memory only.
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(readSession)
+  // Sessions only exist through the development preview until the backend exists.
+  const [session, setSession] = useState<Session | null>(() => (APP_CONFIG.devPreview ? readSession() : null))
 
   const user = useMemo(() => (session ? (findUser(session.userId) ?? null) : null), [session])
 
@@ -59,7 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(next)
   }, [])
 
-  // Session expiry (simulated).
   useEffect(() => {
     if (!session) return
     const ms = new Date(session.expiresAt).getTime() - Date.now()
@@ -72,13 +73,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       role: user ? ROLES[user.roleId] : null,
       permissions,
-      login: async (username, password) => {
-        const result = await loginRequest(username, password)
+      signIn: async (input) => {
+        const result = await signInRequest(input)
         start(result.session)
         return result.user
       },
       logout: () => start(null),
-      switchUser: (userId) => start(createSession(userId)),
+      previewAs: (userId) => {
+        if (!APP_CONFIG.devPreview) return
+        start(createSession(userId))
+      },
       can: (p) => permissions.has(p),
       canAny: (ps) => ps.some((p) => permissions.has(p)),
     }),

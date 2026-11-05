@@ -1,178 +1,271 @@
-import type {
-  CivilStatus,
-  Household,
-  Resident,
-  ResidentChangeRequest,
-  ResidentRegistration,
-} from '@/types/resident'
-import { MOCK_TODAY, createRng, isoDaysAgo } from './random'
+import type { CivilStatus, Family, Household, Relationship, Resident, ResidentChangeRequest, ResidentRegistration } from '@/types/resident'
+import { MOCK_TODAY, isoDaysAgo } from './random'
 
 /**
- * MOCK RESIDENT DATA. Fictional people, generated deterministically.
- * Purok names follow the Figma reference and must be confirmed with Barangay 181.
+ * SAMPLE RESIDENTS FOR THE PROTOTYPE. These are fictional people, not verified
+ * residents of Barangay 181. Street names are Barangay 181 streets; house numbers
+ * are made up. The same people appear across requests, cases and borrowing so
+ * the demo stays consistent. Replace with the imported master list later.
  */
 
-export const PUROKS = ['Purok 1', 'Purok 2', 'Purok 3', 'Purok 4', 'Purok 5', 'Purok 6'] as const
+export const SAMPLE_DATA_NOTICE = 'Sample data for demonstration. These are not actual verified Barangay 181 residents.'
 
-const STREETS: Record<string, string[]> = {
-  'Purok 1': ['Mabini St.', 'Kalaw Ave.'],
-  'Purok 2': ['Rizal St.', 'Del Pilar St.'],
-  'Purok 3': ['Luna St.', 'Bonifacio St.'],
-  'Purok 4': ['Jacinto St.', 'Aguinaldo St.'],
-  'Purok 5': ['Burgos St.', 'Gomez St.'],
-  'Purok 6': ['Zamora St.', 'Silang St.'],
+/** Areas = streets in Barangay 181 (from the senior citizen masterlist's addresses). */
+export const AREAS = ['Rosalina St.', 'Victoria St.', 'Benita St.', 'Asa St.', 'Apog St.', 'Gen. Lukban St.', 'Juan Luna St.', 'R. Fernandez St.'] as const
+
+interface P {
+  f: string
+  m?: string
+  l: string
+  sx?: string
+  sex: 'm' | 'f'
+  b: string
+  c: CivilStatus
+  rel: Relationship
+  job?: string
+  edu?: string
+  tel?: string
+  voter?: boolean
+  pwd?: boolean
+  solo?: boolean
+  fourPs?: boolean
+  prog?: boolean
+  osca?: string
 }
 
-const SURNAMES = [
-  'Dela Cruz', 'Santos', 'Reyes', 'Garcia', 'Mendoza', 'Bautista', 'Villanueva', 'Ramos', 'Aquino', 'Castillo',
-  'Navarro', 'Torres', 'Flores', 'Gonzales', 'Rivera', 'Domingo', 'Mercado', 'Pascual', 'Salazar', 'Fernandez',
-  'Soriano', 'Valdez', 'Lim', 'Tan', 'Cruz', 'Manalo', 'Ocampo', 'Javier', 'Dizon', 'Panganiban',
-]
-const MALE = [
-  'Jose', 'Juan', 'Mark', 'John Paul', 'Christian', 'Rafael', 'Miguel', 'Antonio', 'Carlo', 'Paolo',
-  'Daniel', 'Joshua', 'Ramon', 'Eduardo', 'Ernesto', 'Rogelio', 'Nestor', 'Arnel', 'Kevin', 'Angelo',
-]
-const FEMALE = [
-  'Maria', 'Ana', 'Kristine', 'Jasmine', 'Angelica', 'Patricia', 'Liza', 'Rosario', 'Teresita', 'Cristina',
-  'Jennifer', 'Michelle', 'Andrea', 'Camille', 'Nicole', 'Lourdes', 'Gloria', 'Elena', 'Divina', 'Princess',
-]
-const MIDDLE = ['Santos', 'Reyes', 'Cruz', 'Lopez', 'Garcia', 'Ramos', 'Torres', 'Gomez', 'Diaz', 'Perez']
-
-function birthDateForAge(age: number, rng: ReturnType<typeof createRng>): string {
-  const d = new Date(MOCK_TODAY)
-  d.setFullYear(d.getFullYear() - age)
-  d.setMonth(rng.int(0, 11), rng.int(1, 28))
-  if (d > MOCK_TODAY) d.setFullYear(d.getFullYear() - 1)
-  return d.toISOString().slice(0, 10)
+interface H {
+  houseNo: string
+  street: (typeof AREAS)[number]
+  since: string
+  families: { name: string; members: P[] }[]
 }
 
-function generate() {
-  const rng = createRng(181)
+const HOUSEHOLDS: H[] = [
+  {
+    houseNo: '2741', street: 'Rosalina St.', since: '2012',
+    families: [
+      { name: 'Dizon family', members: [
+        { f: 'Ramon', m: 'Cruz', l: 'Dizon', sex: 'm', b: '1988-07-02', c: 'married', rel: 'Head', job: 'Tricycle driver', edu: 'High school graduate', tel: '09171230001', voter: true, fourPs: true },
+        { f: 'Maria Clara', m: 'Santos', l: 'Dizon', sex: 'f', b: '1991-03-14', c: 'married', rel: 'Spouse', job: 'Sari-sari store owner', edu: 'College level', tel: '09171234567', voter: true, fourPs: true },
+        { f: 'Paolo', m: 'Santos', l: 'Dizon', sex: 'm', b: '2014-05-21', c: 'single', rel: 'Son', job: 'Student', edu: 'Elementary', fourPs: true },
+        { f: 'Angela', m: 'Santos', l: 'Dizon', sex: 'f', b: '2017-11-02', c: 'single', rel: 'Daughter', job: 'Student', edu: 'Elementary', fourPs: true },
+      ] },
+      { name: 'Santos family', members: [
+        { f: 'Lourdes', m: 'Mendoza', l: 'Santos', sex: 'f', b: '1958-02-11', c: 'widowed', rel: 'Head', job: 'None', edu: 'Elementary graduate', tel: '09181230002', voter: true, prog: true, osca: 'SAMPLE-0012' },
+      ] },
+    ],
+  },
+  {
+    houseNo: '2765', street: 'Victoria St.', since: '2005',
+    families: [{ name: 'Garcia family', members: [
+      { f: 'Daniel', m: 'Reyes', l: 'Garcia', sex: 'm', b: '1983-09-10', c: 'married', rel: 'Head', job: 'Construction worker', edu: 'High school graduate', tel: '09191230003', voter: true },
+      { f: 'Kristine', m: 'Lopez', l: 'Garcia', sex: 'f', b: '1986-01-25', c: 'married', rel: 'Spouse', job: 'Laundry worker', edu: 'High school graduate', voter: true },
+      { f: 'Joshua', m: 'Lopez', l: 'Garcia', sex: 'm', b: '2008-06-30', c: 'single', rel: 'Son', job: 'Student', edu: 'Senior high school', voter: false },
+      { f: 'Mika', m: 'Lopez', l: 'Garcia', sex: 'f', b: '2012-12-03', c: 'single', rel: 'Daughter', job: 'Student', edu: 'Junior high school' },
+    ] }],
+  },
+  {
+    houseNo: '631', street: 'Benita St.', since: '1990',
+    families: [{ name: 'Navarro family', members: [
+      { f: 'Rogelio', m: 'Ramos', l: 'Navarro', sex: 'm', b: '1959-04-18', c: 'widowed', rel: 'Head', job: 'Retired', edu: 'Vocational', tel: '09201230004', voter: true, pwd: true, osca: 'SAMPLE-0031' },
+      { f: 'Rafael', m: 'Domingo', l: 'Navarro', sex: 'm', b: '1992-08-08', c: 'live_in', rel: 'Son', job: 'Delivery rider', edu: 'College graduate', tel: '09201230005', voter: true },
+      { f: 'Elena', m: 'Lopez', l: 'Salazar', sex: 'f', b: '2001-10-12', c: 'live_in', rel: 'Partner', job: 'Call center agent', edu: 'College level', tel: '09201230006', voter: true },
+    ] }],
+  },
+  {
+    houseNo: '15', street: 'Asa St.', since: '2019',
+    families: [{ name: 'Bautista family', members: [
+      { f: 'Angelica', m: 'Torres', l: 'Bautista', sex: 'f', b: '1995-03-27', c: 'single', rel: 'Head', job: 'Market vendor', edu: 'High school graduate', tel: '09211230007', voter: true, solo: true, fourPs: true },
+      { f: 'Angelo', m: 'Torres', l: 'Bautista', sex: 'm', b: '2019-09-15', c: 'single', rel: 'Son', job: 'None', edu: 'Pre-school', fourPs: true },
+    ] }],
+  },
+  {
+    houseNo: '2776', street: 'Apog St.', since: '2001',
+    families: [{ name: 'Tan family', members: [
+      { f: 'Wilson', m: 'Go', l: 'Tan', sex: 'm', b: '1970-02-14', c: 'married', rel: 'Head', job: 'Hardware store owner', edu: 'College graduate', tel: '09221230008', voter: true },
+      { f: 'Grace', m: 'Diaz', l: 'Tan', sex: 'f', b: '1972-07-19', c: 'married', rel: 'Spouse', job: 'Hardware store owner', edu: 'College graduate', voter: true },
+      { f: 'Andrea', m: 'Diaz', l: 'Tan', sex: 'f', b: '2004-04-04', c: 'single', rel: 'Daughter', job: 'Fresh graduate', edu: 'College graduate', tel: '09221230009', voter: true },
+    ] }],
+  },
+  {
+    houseNo: '665', street: 'Gen. Lukban St.', since: '2016',
+    families: [{ name: 'Flores family', members: [
+      { f: 'Jose', m: 'Gomez', l: 'Flores', sex: 'm', b: '2000-01-30', c: 'single', rel: 'Head', job: 'Tricycle owner-driver', edu: 'High school graduate', tel: '09252561566', voter: true },
+      { f: 'Camille', m: 'Torres', l: 'Flores', sex: 'f', b: '1998-05-05', c: 'single', rel: 'Sibling', job: 'Online seller', edu: 'College graduate', tel: '09252561567', voter: true },
+    ] }],
+  },
+  {
+    houseNo: '2815', street: 'Juan Luna St.', since: '2010',
+    families: [
+      { name: 'Panganiban family', members: [
+        { f: 'Teresa', m: 'Aquino', l: 'Panganiban', sex: 'f', b: '1968-08-22', c: 'widowed', rel: 'Head', job: 'Caregiver', edu: 'High school graduate', tel: '09261230010', voter: true },
+        { f: 'John Paul', m: 'Diaz', l: 'Panganiban', sex: 'm', b: '2001-11-11', c: 'single', rel: 'Son', job: 'Bank teller', edu: 'College graduate', tel: '09261230011', voter: true },
+      ] },
+      { name: 'Domingo family', members: [
+        { f: 'Ernesto', m: 'Valdez', l: 'Domingo', sex: 'm', b: '1979-03-03', c: 'married', rel: 'Head', job: 'Jeepney driver', edu: 'High school graduate', voter: true },
+        { f: 'Jennifer', m: 'Lopez', l: 'Domingo', sex: 'f', b: '1993-04-24', c: 'married', rel: 'Spouse', job: 'Homemaker', edu: 'College level', tel: '09692042062', voter: true },
+        { f: 'Princess', m: 'Lopez', l: 'Domingo', sex: 'f', b: '2024-01-15', c: 'single', rel: 'Daughter', job: 'None', edu: 'None' },
+      ] },
+    ],
+  },
+  {
+    houseNo: '44', street: 'R. Fernandez St.', since: '2008',
+    families: [{ name: 'Lim family', members: [
+      { f: 'Nestor', m: 'Salazar', l: 'Lim', sex: 'm', b: '1975-06-16', c: 'married', rel: 'Head', job: 'Mechanic', edu: 'Vocational', tel: '09271230012', voter: true },
+      { f: 'Divina', m: 'Cruz', l: 'Lim', sex: 'f', b: '1977-10-09', c: 'married', rel: 'Spouse', job: 'Homemaker', edu: 'High school graduate', voter: true },
+    ] }],
+  },
+  {
+    houseNo: '2750', street: 'Rosalina St.', since: '2014',
+    families: [{ name: 'Valdez family', members: [
+      { f: 'Arnel', m: 'Pascual', l: 'Valdez', sex: 'm', b: '1978-12-01', c: 'married', rel: 'Head', job: 'Security guard', edu: 'High school graduate', voter: true },
+      { f: 'Maria', m: 'Ocampo', l: 'Valdez', sex: 'f', b: '1980-09-09', c: 'married', rel: 'Spouse', job: 'Sari-sari store owner', edu: 'High school graduate', tel: '09281230013', voter: true },
+    ] }],
+  },
+  {
+    houseNo: '2759', street: 'Victoria St.', since: '1998',
+    families: [{ name: 'Castillo family', members: [
+      { f: 'Gloria', m: 'Manalo', l: 'Castillo', sex: 'f', b: '1956-06-06', c: 'widowed', rel: 'Head', job: 'None', edu: 'Elementary graduate', voter: true, osca: 'SAMPLE-0047' },
+      { f: 'Jasmine', m: 'Manalo', l: 'Castillo', sex: 'f', b: '1990-02-02', c: 'single', rel: 'Daughter', job: 'Teacher', edu: 'College graduate', tel: '09291230014', voter: true },
+    ] }],
+  },
+  {
+    houseNo: '70', street: 'Asa St.', since: '2020',
+    families: [{ name: 'Mercado family', members: [
+      { f: 'Carlo', m: 'Javier', l: 'Mercado', sex: 'm', b: '1987-08-17', c: 'married', rel: 'Head', job: 'Welder', edu: 'Vocational', tel: '09301230015', voter: true },
+      { f: 'Patricia', m: 'Soriano', l: 'Mercado', sex: 'f', b: '1989-01-21', c: 'married', rel: 'Spouse', job: 'Saleslady', edu: 'High school graduate', voter: true },
+    ] }],
+  },
+]
+
+function ageOn(birth: string, on = MOCK_TODAY) {
+  const b = new Date(birth)
+  let a = on.getFullYear() - b.getFullYear()
+  if (on.getMonth() < b.getMonth() || (on.getMonth() === b.getMonth() && on.getDate() < b.getDate())) a--
+  return a
+}
+
+function build() {
   const residents: Resident[] = []
   const households: Household[] = []
-  let residentSeq = 1
-
-  const HOUSEHOLD_COUNT = 312
-  for (let h = 0; h < HOUSEHOLD_COUNT; h++) {
-    const purok = PUROKS[h % PUROKS.length]
-    const street = rng.pick(STREETS[purok])
-    const houseNo = String(rng.int(1, 240))
-    const surname = rng.pick(SURNAMES)
-    const isFourPs = rng.chance(0.11)
-    const size = rng.int(1, 7)
-    const householdId = `hh-${String(h + 1).padStart(4, '0')}`
-    const memberIds: string[] = []
-
-    for (let m = 0; m < size; m++) {
-      const isHead = m === 0
-      const isSpouse = m === 1 && size > 2
-      const age = isHead
-        ? rng.int(24, 82)
-        : isSpouse
-          ? rng.int(22, 78)
-          : m === size - 1 && rng.chance(0.15)
-            ? rng.int(60, 88)
-            : rng.int(0, 34)
-      const sex = isSpouse ? 'female' : rng.chance(0.5) ? 'male' : 'female'
-      const civilStatus: CivilStatus =
-        age < 18 ? 'single' : isHead || isSpouse ? rng.pick(['married', 'married', 'live_in', 'widowed'] as const) : rng.pick(['single', 'single', 'married'] as const)
-      const id = `res-${String(residentSeq).padStart(5, '0')}`
-      const registered = age >= 18 && rng.chance(0.42)
-
-      residents.push({
-        id,
-        residentNo: `181-${String(residentSeq).padStart(5, '0')}`,
-        firstName: rng.pick(sex === 'male' ? MALE : FEMALE),
-        middleName: rng.pick(MIDDLE),
-        lastName: surname,
-        sex,
-        birthDate: birthDateForAge(age, rng),
-        civilStatus,
-        purok,
-        street,
-        houseNo,
-        householdId,
-        contactNo: age >= 18 ? `09${rng.int(10, 99)}${String(rng.int(0, 9999999)).padStart(7, '0')}` : undefined,
-        sectors: {
-          seniorCitizen: age >= 60,
-          pwd: rng.chance(0.035),
-          soloParent: age >= 18 && (isHead && size > 1 ? rng.chance(0.09) : false),
-          fourPs: isFourPs,
-          programBeneficiary: rng.chance(0.07),
-        },
-        registrationStatus: registered ? 'verified' : 'not_registered',
-        createdAt: isoDaysAgo(rng.int(200, 900)),
-        updatedAt: isoDaysAgo(rng.int(1, 199)),
+  let r = 0
+  HOUSEHOLDS.forEach((h, hi) => {
+    const householdId = `hh-${String(hi + 1).padStart(3, '0')}`
+    const families: Family[] = h.families.map((fam, fi) => {
+      const familyId = `${householdId}-f${fi + 1}`
+      const ids = fam.members.map((p) => {
+        r++
+        const id = `res-${String(r).padStart(3, '0')}`
+        residents.push({
+          id,
+          residentNo: `181-SAMPLE-${String(r).padStart(3, '0')}`,
+          firstName: p.f,
+          middleName: p.m,
+          lastName: p.l,
+          suffix: p.sx,
+          sex: p.sex === 'm' ? 'male' : 'female',
+          birthDate: p.b,
+          civilStatus: p.c,
+          houseNo: h.houseNo,
+          street: h.street,
+          householdId,
+          familyId,
+          relationship: p.rel,
+          contactNo: p.tel,
+          residentSince: h.since,
+          voter: !!p.voter,
+          employment: p.job ?? 'Not recorded',
+          education: p.edu ?? 'Not recorded',
+          oscaId: p.osca,
+          sectors: {
+            seniorCitizen: ageOn(p.b) >= 60,
+            pwd: !!p.pwd,
+            soloParent: !!p.solo,
+            fourPs: !!p.fourPs,
+            programBeneficiary: !!p.prog,
+          },
+          registrationStatus: id === 'res-002' ? 'verified' : ageOn(p.b) >= 18 && r % 3 === 0 ? 'verified' : 'not_registered',
+          createdAt: isoDaysAgo(400 + r * 3),
+          updatedAt: isoDaysAgo(10 + r),
+        })
+        return id
       })
-      memberIds.push(id)
-      residentSeq++
-    }
-
+      return { id: familyId, name: fam.name, headResidentId: ids[0], memberIds: ids }
+    })
     households.push({
       id: householdId,
-      householdNo: `HH-181-${String(h + 1).padStart(4, '0')}`,
-      purok,
-      address: `${houseNo} ${street}, ${purok}`,
-      headResidentId: memberIds[0],
-      memberIds,
+      householdNo: `HH-181-${String(hi + 1).padStart(3, '0')}`,
+      houseNo: h.houseNo,
+      street: h.street,
+      address: `${h.houseNo} ${h.street}, Gagalangin, Tondo, Manila`,
+      families,
     })
-  }
-
-  // Fixed demo resident linked to the mock resident account.
-  const demo = residents[0]
-  Object.assign(demo, {
-    firstName: 'Maria',
-    middleName: 'Santos',
-    lastName: 'Reyes',
-    sex: 'female',
-    birthDate: '1991-03-14',
-    civilStatus: 'married',
-    contactNo: '09171234567',
-    registrationStatus: 'verified',
-  } satisfies Partial<Resident>)
-
+  })
   return { residents, households }
 }
 
-const generated = generate()
-export const mockResidents: Resident[] = generated.residents
-export const mockHouseholds: Household[] = generated.households
-export const DEMO_RESIDENT_ID = mockResidents[0].id
+const built = build()
+export const mockResidents: Resident[] = built.residents
+export const mockHouseholds: Household[] = built.households
+
+/** The sample resident linked to the demo resident account (Maria Clara Dizon). */
+export const DEMO_RESIDENT_ID = 'res-002'
+
+export const residentById = (id: string) => mockResidents.find((r) => r.id === id)
+const R = (first: string, last: string) => mockResidents.find((r) => r.firstName === first && r.lastName === last)!.id
+
+export const SAMPLE_IDS = {
+  mariaDizon: DEMO_RESIDENT_ID,
+  lourdesSantos: R('Lourdes', 'Santos'),
+  danielGarcia: R('Daniel', 'Garcia'),
+  rogelioNavarro: R('Rogelio', 'Navarro'),
+  rafaelNavarro: R('Rafael', 'Navarro'),
+  elenaSalazar: R('Elena', 'Salazar'),
+  angelicaBautista: R('Angelica', 'Bautista'),
+  andreaTan: R('Andrea', 'Tan'),
+  joseFlores: R('Jose', 'Flores'),
+  camilleFlores: R('Camille', 'Flores'),
+  johnPaulPanganiban: R('John Paul', 'Panganiban'),
+  jenniferDomingo: R('Jennifer', 'Domingo'),
+  nestorLim: R('Nestor', 'Lim'),
+  mariaValdez: R('Maria', 'Valdez'),
+  jasmineCastillo: R('Jasmine', 'Castillo'),
+  carloMercado: R('Carlo', 'Mercado'),
+  gloriaCastillo: R('Gloria', 'Castillo'),
+}
 
 export const mockRegistrations: ResidentRegistration[] = [
   {
     id: 'reg-001', referenceNo: 'REG-2026-0148', submittedAt: isoDaysAgo(0, 8),
-    applicant: { firstName: 'Kristine', lastName: 'Navarro', birthDate: '1998-07-02', address: '45 Rizal St., Purok 2' },
+    applicant: { firstName: 'Camille', lastName: 'Flores', birthDate: '1998-05-05', address: '665 Gen. Lukban St.' },
+    matchedResidentId: SAMPLE_IDS.camilleFlores,
     verification: { ocr: 'passed', masterListMatch: 'inconclusive', faceMatch: 'passed', liveness: 'passed' },
     status: 'manual_review', privacyNoticeVersion: 'v1.0-draft',
   },
   {
     id: 'reg-002', referenceNo: 'REG-2026-0147', submittedAt: isoDaysAgo(1, 15),
-    applicant: { firstName: 'Ramon', lastName: 'Pascual', birthDate: '1975-11-20', address: '12 Luna St., Purok 3' },
+    applicant: { firstName: 'Nestor', lastName: 'Lim', birthDate: '1975-06-16', address: '44 R. Fernandez St.' },
+    matchedResidentId: SAMPLE_IDS.nestorLim,
     verification: { ocr: 'inconclusive', masterListMatch: 'passed', faceMatch: 'passed', liveness: 'passed' },
     status: 'manual_review', privacyNoticeVersion: 'v1.0-draft',
   },
   {
     id: 'reg-003', referenceNo: 'REG-2026-0146', submittedAt: isoDaysAgo(1, 10),
-    applicant: { firstName: 'Angelica', lastName: 'Soriano', birthDate: '2001-01-09', address: '88 Burgos St., Purok 5' },
+    applicant: { firstName: 'Elena', lastName: 'Salazar', birthDate: '2001-10-12', address: '631 Benita St.' },
+    matchedResidentId: SAMPLE_IDS.elenaSalazar,
     verification: { ocr: 'passed', masterListMatch: 'passed', faceMatch: 'failed', liveness: 'passed' },
     status: 'manual_review', privacyNoticeVersion: 'v1.0-draft',
   },
   {
     id: 'reg-004', referenceNo: 'REG-2026-0145', submittedAt: isoDaysAgo(2, 11),
-    applicant: { firstName: 'Paolo', lastName: 'Domingo', birthDate: '1989-05-30', address: '7 Zamora St., Purok 6' },
+    applicant: { firstName: 'Mark Anthony', lastName: 'Rivera', birthDate: '1996-02-29', address: '12 Apog St.' },
     verification: { ocr: 'passed', masterListMatch: 'failed', faceMatch: 'passed', liveness: 'inconclusive' },
     status: 'manual_review', privacyNoticeVersion: 'v1.0-draft',
   },
   {
     id: 'reg-005', referenceNo: 'REG-2026-0144', submittedAt: isoDaysAgo(3, 9),
-    applicant: { firstName: 'Lourdes', lastName: 'Valdez', birthDate: '1960-08-16', address: '30 Mabini St., Purok 1' },
-    verification: { ocr: 'passed', masterListMatch: 'passed', faceMatch: 'passed', liveness: 'passed' },
-    status: 'auto_approved', privacyNoticeVersion: 'v1.0-draft',
-  },
-  {
-    id: 'reg-006', referenceNo: 'REG-2026-0143', submittedAt: isoDaysAgo(4, 14),
-    applicant: { firstName: 'Christian', lastName: 'Ocampo', birthDate: '1994-12-03', address: '19 Jacinto St., Purok 4' },
+    applicant: { firstName: 'Andrea', lastName: 'Tan', birthDate: '2004-04-04', address: '2776 Apog St.' },
+    matchedResidentId: SAMPLE_IDS.andreaTan,
     verification: { ocr: 'passed', masterListMatch: 'passed', faceMatch: 'passed', liveness: 'passed' },
     status: 'auto_approved', privacyNoticeVersion: 'v1.0-draft',
   },
@@ -180,19 +273,20 @@ export const mockRegistrations: ResidentRegistration[] = [
 
 export const mockChangeRequests: ResidentChangeRequest[] = [
   {
-    id: 'chg-001', residentId: mockResidents[14].id, submittedAt: isoDaysAgo(0, 10), field: 'Civil status',
+    id: 'chg-001', residentId: SAMPLE_IDS.johnPaulPanganiban, submittedAt: isoDaysAgo(0, 10), field: 'Civil status',
     originalValue: 'Single', requestedValue: 'Married', reason: 'Married last September; marriage certificate attached.', status: 'pending',
   },
   {
-    id: 'chg-002', residentId: mockResidents[52].id, submittedAt: isoDaysAgo(1, 13), field: 'Contact number',
-    originalValue: '09181112233', requestedValue: '09275554411', reason: 'Changed SIM.', status: 'pending',
+    id: 'chg-002', residentId: SAMPLE_IDS.danielGarcia, submittedAt: isoDaysAgo(1, 13), field: 'Contact number',
+    originalValue: '09191230003', requestedValue: '09275554411', reason: 'Changed SIM.', status: 'pending',
   },
   {
-    id: 'chg-003', residentId: mockResidents[101].id, submittedAt: isoDaysAgo(2, 16), field: 'Address',
-    originalValue: '22 Rizal St., Purok 2', requestedValue: '5 Del Pilar St., Purok 2', reason: 'Moved within the barangay.', status: 'pending',
+    id: 'chg-003', residentId: SAMPLE_IDS.mariaValdez, submittedAt: isoDaysAgo(2, 16), field: 'Employment',
+    originalValue: 'Sari-sari store owner', requestedValue: 'Sari-sari store owner and online seller', reason: 'Started selling online.', status: 'pending',
   },
   {
-    id: 'chg-004', residentId: mockResidents[230].id, submittedAt: isoDaysAgo(6, 9), field: 'Middle name',
-    originalValue: 'Lopez', requestedValue: 'Lopes', reason: 'Spelling on PSA birth certificate.', status: 'approved',
+    id: 'chg-004', residentId: SAMPLE_IDS.andreaTan, submittedAt: isoDaysAgo(6, 9), field: 'Educational attainment',
+    originalValue: 'College level', requestedValue: 'College graduate', reason: 'Graduated in June.', status: 'approved',
+    decidedBy: 'usr-sec', decidedAt: isoDaysAgo(5, 10),
   },
 ]

@@ -63,6 +63,94 @@
   }
 }
 
+/* ── Public portal transitions (View Transitions API) ───────────────── */
+:root {
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes bmis-out-forward {
+  to { opacity: 0; transform: translateX(-28px) scale(0.985); }
+}
+@keyframes bmis-in-forward {
+  from { opacity: 0; transform: translateX(36px) scale(0.985); }
+}
+@keyframes bmis-out-back {
+  to { opacity: 0; transform: translateX(28px) scale(0.985); }
+}
+@keyframes bmis-in-back {
+  from { opacity: 0; transform: translateX(-36px) scale(0.985); }
+}
+@keyframes bmis-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+}
+::view-transition-old(root) {
+  animation: 300ms var(--ease-ios) both bmis-out-forward;
+}
+::view-transition-new(root) {
+  animation: 520ms var(--ease-ios) 60ms both bmis-in-forward;
+}
+html[data-nav-dir='back']::view-transition-old(root) {
+  animation-name: bmis-out-back;
+}
+html[data-nav-dir='back']::view-transition-new(root) {
+  animation-name: bmis-in-back;
+}
+/* Staggered entrance for content inside a page */
+.bmis-rise {
+  animation: bmis-fade-up 560ms var(--ease-ios) both;
+}
+.bmis-rise-2 { animation-delay: 70ms; }
+.bmis-rise-3 { animation-delay: 140ms; }
+.bmis-rise-4 { animation-delay: 210ms; }
+.bmis-press {
+  transition: transform 180ms var(--ease-ios), box-shadow 220ms var(--ease-ios), background-color 220ms var(--ease-ios), border-color 220ms var(--ease-ios);
+}
+.bmis-press:active {
+  transform: scale(0.975);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  .bmis-rise,
+  .bmis-press {
+    animation: none !important;
+    transition: none !important;
+  }
+  .bmis-press:active {
+    transform: none;
+  }
+}
+
+/* Official document printing: only the document pages, at true size. */
+.bmis-print-root {
+  display: none;
+}
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    height: auto !important;
+  }
+  #root {
+    display: none !important;
+  }
+  .bmis-print-root {
+    display: block;
+  }
+  .bmis-print-root .bmis-doc-page {
+    break-after: page;
+    page-break-after: always;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .bmis-print-root .bmis-doc-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
+
 @layer components {
   /* Uppercase metric label: Inter 600, 10.5px, +8% tracking (figma) */
   .label-caps {

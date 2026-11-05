@@ -1,6 +1,6 @@
 import { BarElement, CategoryScale, Chart as ChartJS, LinearScale, Tooltip, type ChartOptions, type Plugin } from 'chart.js'
 import { Bar } from 'react-chartjs-2'
-import type { PurokBreakdown } from '@/services/residentService'
+import type { AreaBreakdown } from '@/services/residentService'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip)
 
@@ -25,7 +25,7 @@ const valueLabels: Plugin<'bar'> = {
   },
 }
 
-export function PurokChart({ data }: { data: PurokBreakdown[] }) {
+export function AreaChart({ data }: { data: AreaBreakdown[] }) {
   const options: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -43,12 +43,12 @@ export function PurokChart({ data }: { data: PurokBreakdown[] }) {
 
   return (
     <div>
-      <div className="h-[220px]" role="img" aria-label="Residents and households per purok">
+      <div className="h-[220px]" role="img" aria-label="Residents and households per area">
         <Bar
           options={options}
           plugins={[valueLabels]}
           data={{
-            labels: data.map((d) => d.purok),
+            labels: data.map((d) => d.area),
             datasets: [
               { label: 'Residents', data: data.map((d) => d.residents), backgroundColor: NAVY },
               { label: 'Households', data: data.map((d) => d.households), backgroundColor: SKY },
