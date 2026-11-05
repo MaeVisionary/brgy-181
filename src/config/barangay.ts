@@ -21,7 +21,7 @@ export const BARANGAY = {
   motto: 'Glorify God by serving the People.',
 } as const
 
-export type OfficialPosition = 'Barangay Chairman' | 'Barangay Secretary' | 'Barangay Kagawad' | 'SK Chairman'
+export type OfficialPosition = 'Barangay Chairman' | 'Barangay Secretary' | 'Barangay Treasurer' | 'Barangay Kagawad' | 'SK Chairman' | 'Lupon Member'
 
 export interface Official {
   id: string
@@ -30,22 +30,31 @@ export interface Official {
   /** Name as printed on the official templates, when shown there. */
   nameOnDocuments?: string
   position: OfficialPosition
-  /** Account in the prototype (mock users). */
-  userId: string
+  /** Account in the prototype. Officials without a documented system role have none. */
+  userId?: string
+  /** Where the name comes from. */
+  source: 'Study §1.1' | 'Official document templates' | 'Notice of Hearing example'
 }
 
-/** Barangay officials (study §1.1). Kagawad committee assignments are not documented, so none are shown. */
+/**
+ * Barangay officials. Study §1.1 lists the Chairman, Secretary, seven Kagawad and the SK Chairman;
+ * the official templates add the Barangay Treasurer; a supplied Notice of Hearing names two Lupon members.
+ * Kagawad committee assignments are not documented, so none are shown.
+ */
 export const OFFICIALS: Official[] = [
-  { id: 'off-chair', name: 'Robert Atad', nameOnDocuments: 'Hon. ROBERT M. ATAD', position: 'Barangay Chairman', userId: 'usr-chair' },
-  { id: 'off-sec', name: 'Ana Manila Salvador', nameOnDocuments: 'ANA MANILA A. SALVADOR', position: 'Barangay Secretary', userId: 'usr-sec' },
-  { id: 'off-k1', name: 'Angelito Dela Cruz', nameOnDocuments: 'ANGELITO B. DELA CRUZ', position: 'Barangay Kagawad', userId: 'usr-kag-1' },
-  { id: 'off-k2', name: 'Renz Alpher Cunanan', nameOnDocuments: 'RENZ ALPHER A. CUNANAN', position: 'Barangay Kagawad', userId: 'usr-kag-2' },
-  { id: 'off-k3', name: 'Manuel Cadiapa', nameOnDocuments: 'MANUEL G. CADIAPA', position: 'Barangay Kagawad', userId: 'usr-kag-3' },
-  { id: 'off-k4', name: 'Mario Antonio', nameOnDocuments: 'MARIO M. ANTONIO JR.', position: 'Barangay Kagawad', userId: 'usr-kag-4' },
-  { id: 'off-k5', name: 'Cecilia Espinosa', nameOnDocuments: 'CECILIA B. ESPINOSA', position: 'Barangay Kagawad', userId: 'usr-kag-5' },
-  { id: 'off-k6', name: 'Alver Joseph Domingo', nameOnDocuments: 'ALVER JOSEPH F. DOMINGO', position: 'Barangay Kagawad', userId: 'usr-kag-6' },
-  { id: 'off-k7', name: 'Rogelio Cristobal', nameOnDocuments: 'ROGELIO V. CRISTOBAL', position: 'Barangay Kagawad', userId: 'usr-kag-7' },
-  { id: 'off-sk', name: 'Kriscelli Ann Reyes', nameOnDocuments: 'KRISCELLIE ANN F. REYES (SK CHAIRPERSON)', position: 'SK Chairman', userId: 'usr-sk' },
+  { id: 'off-chair', name: 'Robert Atad', nameOnDocuments: 'Hon. ROBERT M. ATAD', position: 'Barangay Chairman', userId: 'usr-chair', source: 'Study §1.1' },
+  { id: 'off-sec', name: 'Ana Manila Salvador', nameOnDocuments: 'ANA MANILA A. SALVADOR', position: 'Barangay Secretary', userId: 'usr-sec', source: 'Study §1.1' },
+  { id: 'off-k1', name: 'Angelito Dela Cruz', nameOnDocuments: 'ANGELITO B. DELA CRUZ', position: 'Barangay Kagawad', userId: 'usr-kag-1', source: 'Study §1.1' },
+  { id: 'off-k2', name: 'Renz Alpher Cunanan', nameOnDocuments: 'RENZ ALPHER A. CUNANAN', position: 'Barangay Kagawad', userId: 'usr-kag-2', source: 'Study §1.1' },
+  { id: 'off-k3', name: 'Manuel Cadiapa', nameOnDocuments: 'MANUEL G. CADIAPA', position: 'Barangay Kagawad', userId: 'usr-kag-3', source: 'Study §1.1' },
+  { id: 'off-k4', name: 'Mario Antonio', nameOnDocuments: 'MARIO M. ANTONIO JR.', position: 'Barangay Kagawad', userId: 'usr-kag-4', source: 'Study §1.1' },
+  { id: 'off-k5', name: 'Cecilia Espinosa', nameOnDocuments: 'CECILIA B. ESPINOSA', position: 'Barangay Kagawad', userId: 'usr-kag-5', source: 'Study §1.1' },
+  { id: 'off-k6', name: 'Alver Joseph Domingo', nameOnDocuments: 'ALVER JOSEPH F. DOMINGO', position: 'Barangay Kagawad', userId: 'usr-kag-6', source: 'Study §1.1' },
+  { id: 'off-k7', name: 'Rogelio Cristobal', nameOnDocuments: 'ROGELIO V. CRISTOBAL', position: 'Barangay Kagawad', userId: 'usr-kag-7', source: 'Study §1.1' },
+  { id: 'off-sk', name: 'Kriscelli Ann Reyes', nameOnDocuments: 'KRISCELLIE ANN F. REYES (SK CHAIRPERSON)', position: 'SK Chairman', userId: 'usr-sk', source: 'Study §1.1' },
+  { id: 'off-treas', name: 'Mary Grace T. Dela Cruz', nameOnDocuments: 'MARY GRACE T. DELA CRUZ', position: 'Barangay Treasurer', source: 'Official document templates' },
+  { id: 'off-lupon-1', name: 'Soledad De Dios', position: 'Lupon Member', source: 'Notice of Hearing example' },
+  { id: 'off-lupon-2', name: 'Norbenita Mendoza', position: 'Lupon Member', source: 'Notice of Hearing example' },
 ]
 
 export const officialByPosition = (p: OfficialPosition) => OFFICIALS.filter((o) => o.position === p)
@@ -54,6 +63,8 @@ export const SECRETARY = OFFICIALS[1]
 
 /** Open points about the officials list, shown on the Barangay Personnel page. */
 export const OFFICIAL_NOTES = [
+  'The Barangay Treasurer is named on the official certificate templates but not in the study, and no system role is documented for the position.',
+  'Two Lupon members are named on a supplied Notice of Hearing. The complete Lupong Tagapamayapa membership is pending barangay confirmation; the Lupon is chaired by the Punong Barangay.',
   'The study spells the SK Chairman\'s name "Kriscelli Ann Reyes"; the certificate templates print "KRISCELLIE ANN F. REYES". Please confirm the correct spelling.',
   'The Property Custodian\'s name is not given in the study, so the account shows the position only. The System Administrator can set the name.',
   'Kagawad committee assignments and individual responsibilities are not documented, so none are shown.',

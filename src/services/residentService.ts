@@ -192,3 +192,76 @@ export function submitChangeRequest(residentId: string, field: string, requested
 }
 
 export const CHANGEABLE_FIELDS = Object.keys(FIELD_SETTERS)
+
+// ── CSV import (FR4–FR5) ──────────────────────────────────────────────
+
+export interface ImportRecord {
+  lastName: string
+  firstName: string
+  middleName?: string
+  suffix?: string
+  birthDate: string
+  sex: Resident['sex']
+  civilStatus: Resident['civilStatus']
+  houseNo: string
+  street: string
+  contactNo?: string
+  voter: boolean
+}
+
+const norm = (s: string | undefined) => (s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+export const dupKey = (r: { firstName: string; lastName: string; middleName?: string; birthDate: string; houseNo: string; street: string }) =>
+  [norm(r.lastName), norm(r.firstName), r.birthDate, norm(r.houseNo), norm(r.street)].join('|')
+
+/** Existing resident that matches on full name + birthdate + address (study §1.4 rule). */
+export function findDuplicate(r: ImportRecord): Resident | undefined {
+  const k = dupKey(r)
+  return mockResidents.find((x) => dupKey(x) === k) ?? mockResidents.find((x) => norm(x.lastName) === norm(r.lastName) && norm(x.firstName) === norm(r.firstName) && x.birthDate === r.birthDate)
+}
+
+/** Adds reviewed records (in memory only). Each new address becomes a household with one family. */
+export function importResidents(records: ImportRecord[], by: User): Promise<number> {
+  return mockRequest(() => {
+    if (!by) throw new ServiceError('forbidden', 'Not allowed.')
+    const now = new Date().toISOString()
+    for (const rec of records) {
+      let hh = mockHouseholds.find((h) => norm(h.houseNo) === norm(rec.houseNo) && norm(h.street) === norm(rec.street))
+      const id = `res-imp-${Math.random().toString(36).slice(2, 8)}`
+      if (!hh) {
+        hh = {
+          id: `hh-imp-${Math.random().toString(36).slice(2, 8)}`,
+          householdNo: `HH-181-I${String(mockHouseholds.length + 1).padStart(3, '0')}`,
+          houseNo: rec.houseNo,
+          street: rec.street,
+          address: `${rec.houseNo} ${rec.street}, Gagalangin, Tondo, Manila`,
+          families: [{ id: '', name: `${rec.lastName} family`, headResidentId: id, memberIds: [] }],
+        }
+        hh.families[0].id = `${hh.id}-f1`
+        mockHouseholds.push(hh)
+      }
+      const fam = hh.families[0]
+      fam.memberIds.push(id)
+      const ageNow = (() => {
+        const b = new Date(rec.birthDate)
+        const n = new Date()
+        return n.getFullYear() - b.getFullYear() - (n < new Date(n.getFullYear(), b.getMonth(), b.getDate()) ? 1 : 0)
+      })()
+      mockResidents.push({
+        id,
+        residentNo: `181-IMP-${String(mockResidents.length + 1).padStart(4, '0')}`,
+        ...rec,
+        householdId: hh.id,
+        familyId: fam.id,
+        relationship: fam.headResidentId === id ? 'Head' : 'Relative',
+        residentSince: 'Not recorded',
+        employment: 'Not recorded',
+        education: 'Not recorded',
+        sectors: { seniorCitizen: ageNow >= 60, pwd: false, soloParent: false, fourPs: false, programBeneficiary: false },
+        registrationStatus: 'not_registered',
+        createdAt: now,
+        updatedAt: now,
+      })
+    }
+    return records.length
+  })
+}

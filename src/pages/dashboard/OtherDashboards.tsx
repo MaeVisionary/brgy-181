@@ -35,12 +35,14 @@ function CouncilList({ highlight }: { highlight?: string }) {
     </li>
   )
   return (
-    <Panel title="Barangay Council" subtitle="Study §1.1 organizational structure">
+    <Panel title="Barangay officials" subtitle="Study §1.1, official templates and case documents">
       <ul className="grid gap-1 sm:grid-cols-2">
         <Person name={CHAIRMAN.name} position="Barangay Chairman" />
         <Person name={SECRETARY.name} position="Barangay Secretary" />
         {kagawads.map((k) => <Person key={k.id} name={k.name} position="Barangay Kagawad" />)}
         <Person name={sk.name} position="SK Chairman" />
+        {officialByPosition('Barangay Treasurer').map((t) => <Person key={t.id} name={t.name} position="Barangay Treasurer" />)}
+        {officialByPosition('Lupon Member').map((l) => <Person key={l.id} name={l.name} position="Lupon Member" />)}
       </ul>
     </Panel>
   )

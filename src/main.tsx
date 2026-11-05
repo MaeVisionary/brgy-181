@@ -9,12 +9,15 @@ import '@fontsource/manrope/800.css'
 import './index.css'
 import App from './App'
 import { AuthProvider } from './auth/AuthContext'
+import { AnalyticsProvider } from './analytics/AnalyticsContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <AnalyticsProvider>
+          <App />
+        </AnalyticsProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

@@ -11,6 +11,8 @@ export function HomePage() {
   const go = useSmoothNavigate()
   const kagawads = officialByPosition('Barangay Kagawad')
   const sk = officialByPosition('SK Chairman')[0]
+  const treasurer = officialByPosition('Barangay Treasurer')[0]
+  const lupon = officialByPosition('Lupon Member')
   const certificates = DOCUMENT_TYPES.filter((d) => d.category !== 'case')
   const caseDocs = DOCUMENT_TYPES.filter((d) => d.category === 'case' && d.id !== 'notice-of-hearing')
 
@@ -101,9 +103,19 @@ export function HomePage() {
                   <li key={k.id} className="text-[14px] font-semibold text-navy-900">{k.name}</li>
                 ))}
               </ul>
-              <div className="mt-5 border-t border-line-soft pt-4">
+              <div className="mt-5 grid gap-4 border-t border-line-soft pt-4 sm:grid-cols-2">
                 <Person name={sk.name} position="SK Chairman" />
+                {treasurer && <Person name={treasurer.name} position="Barangay Treasurer" />}
               </div>
+              {lupon.length > 0 && (
+                <div className="mt-4 border-t border-line-soft pt-4">
+                  <p className="label-caps mb-2">Lupong Tagapamayapa members</p>
+                  <ul className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+                    {lupon.map((l) => <li key={l.id} className="text-[14px] font-semibold text-navy-900">{l.name}</li>)}
+                  </ul>
+                  <p className="mt-2 text-[12px] text-ink-muted">Chaired by the Punong Barangay. Full membership to be confirmed.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
