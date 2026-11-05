@@ -4,6 +4,7 @@ import { mockUsers } from '@/mocks/users'
 import type { RoleId, Session, User } from '@/types/auth'
 import { addFailure, addResetRequest, clearFailures, failedCount, getCredential, hashPassword } from './credentialStore'
 import { ServiceError, mockRequest } from './mockApi'
+import { pendingAccountMessage } from './registrationService'
 
 /**
  * PROTOTYPE sign-in. Passwords exist only after the System Administrator resets an
@@ -48,7 +49,10 @@ export async function signIn(input: SignInInput): Promise<{ user: User; session:
   const cred = user ? getCredential(user.id) : undefined
   if (!user || !cred || !input.roles.includes(user.roleId)) fail()
   if ((await hashPassword(user!.id, input.password)) !== cred!.hash) fail()
-  if (user!.status !== 'active') throw new ServiceError('inactive', 'This account is deactivated. Please contact the System Administrator.')
+  if (user!.status !== 'active') {
+    clearFailures(lockKey)
+    throw new ServiceError('inactive', pendingAccountMessage(user!.id) ?? 'This account is deactivated. Please contact the System Administrator.')
+  }
   clearFailures(lockKey)
   user!.lastLoginAt = new Date().toISOString()
   return mockRequest(() => ({ user: user!, session: createSession(user!.id, cred!.mustChange) }))

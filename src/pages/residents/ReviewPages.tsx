@@ -11,7 +11,8 @@ import { formatDateTime } from '@/lib/format'
 import { residentById } from '@/mocks/residents'
 import { userById } from '@/mocks/users'
 import { ServiceError } from '@/services/mockApi'
-import { decideChangeRequest, decideRegistration, listChangeRequests, listRegistrations } from '@/services/residentService'
+import { decideRegistration, listRegistrations } from '@/services/registrationService'
+import { decideChangeRequest, listChangeRequests } from '@/services/residentService'
 import type { ResidentChangeRequest, ResidentRegistration } from '@/types/resident'
 import { fullName } from './common'
 
@@ -63,27 +64,73 @@ export function RegistrationsPage() {
   return (
     <>
       <PageHeader title="Resident Registrations" subtitle="Online registrations that need manual verification. A failed face or liveness check is never an automatic denial; in-person verification at the Barangay Hall is always possible." />
-      <p className="mb-3 text-[12.5px] text-ink-muted">Prototype: OCR, face matching and liveness results are sample values. The real checks run on the server (NFR7).</p>
+      <p className="mb-3 text-[12.5px] text-ink-muted">
+        Online registrations are approved automatically only when the ID name, face comparison, live selfie and barangay records all match. Everything else lands here.
+        Prototype: these checks run in the applicant's browser and registrations are saved on this device only; the backend will repeat the checks on the server (NFR7).
+      </p>
       <div className="space-y-3">
         {queue.length === 0 && items && <Card className="px-5 py-6 text-[13px] text-ink-muted">No registrations waiting for review.</Card>}
         {queue.map((r) => {
           const match = r.matchedResidentId ? residentById(r.matchedResidentId) : undefined
+          const a = r.applicant
+          const ev = r.evidence
           return (
-            <Card key={r.id} className="grid gap-4 px-5 py-4 lg:grid-cols-[1.2fr_1fr_1fr]">
-              <div>
-                <p className="label-caps">{r.referenceNo} · {formatDateTime(r.submittedAt)}</p>
-                <p className="mt-1 font-display text-[16px] font-extrabold text-navy-900">{r.applicant.firstName} {r.applicant.lastName}</p>
-                <p className="text-[12.5px] text-ink-muted">Born {r.applicant.birthDate} · {r.applicant.address}</p>
-                <p className="mt-2 text-[12.5px]">
-                  {match ? <>Possible master-list record: <Link to={`/residents/${match.id}`} className="font-semibold text-info hover:underline">{fullName(match)}</Link></> : <span className="text-warning">No matching master-list record found.</span>}
-                </p>
+            <Card key={r.id} className="space-y-4 px-5 py-4">
+              <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr_1fr]">
+                <div>
+                  <p className="label-caps">{r.referenceNo} · {formatDateTime(r.submittedAt)}</p>
+                  <p className="mt-1 font-display text-[16px] font-extrabold text-navy-900">{[a.firstName, a.middleName, a.lastName, a.suffix].filter(Boolean).join(' ')}</p>
+                  <p className="text-[12.5px] text-ink-muted">Born {a.birthDate} · {a.address}</p>
+                  {(a.sex || a.contactNo || a.email) && (
+                    <p className="text-[12.5px] text-ink-muted">
+                      {[a.sex && (a.sex === 'male' ? 'Male' : 'Female'), a.civilStatus?.replace('_', '-'), a.contactNo, a.email, a.residentSince && `Resident since ${a.residentSince}`, a.voter !== undefined && (a.voter ? 'Voter' : 'Not a voter')].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+                  {(a.pwd || a.soloParent || a.fourPs || a.oscaId) && (
+                    <p className="text-[12.5px] text-ink-muted">{[a.oscaId && `OSCA ID ${a.oscaId}`, a.pwd && 'PWD', a.soloParent && 'Solo parent', a.fourPs && '4Ps'].filter(Boolean).join(' · ')}</p>
+                  )}
+                  <p className="mt-2 text-[12.5px]">
+                    {match ? (
+                      <>Matching resident record: <Link to={`/residents/${match.id}`} className="font-semibold text-info hover:underline">{fullName(match)}</Link></>
+                    ) : ev?.recordSource === 'osca_masterlist' ? (
+                      <span className="text-navy-900">Found in the senior citizen (OSCA) masterlist; no resident record yet. Approving creates one.</span>
+                    ) : (
+                      <span className="text-warning">No matching record found. Approving creates a new resident record.</span>
+                    )}
+                  </p>
+                </div>
+                <ul className="space-y-1.5">
+                  {(Object.keys(CHECK_LABEL) as (keyof typeof CHECK_LABEL)[]).map((k) => (
+                    <li key={k} className="flex items-center gap-2 text-[12.5px] text-navy-900"><CheckIcon v={r.verification[k]} /> {CHECK_LABEL[k]}: {r.verification[k]}</li>
+                  ))}
+                  {ev?.faceSimilarity !== undefined && <li className="pl-6 text-[12px] text-ink-muted">Face similarity: {ev.faceSimilarity}%</li>}
+                  {ev && (
+                    <li className="pl-6 text-[12px] text-ink-muted">
+                      On the ID: first name {ev.ocrFound.firstName ? '✓' : '✗'} · last name {ev.ocrFound.lastName ? '✓' : '✗'} · ID no. {ev.ocrFound.idNumber ? '✓' : '✗'}
+                    </li>
+                  )}
+                </ul>
+                <Decide disabled={!can('residents.approve')} onDecide={async (d, note) => { await decideRegistration(r.id, d, note, user!); await load() }} />
               </div>
-              <ul className="space-y-1.5">
-                {(Object.keys(CHECK_LABEL) as (keyof typeof CHECK_LABEL)[]).map((k) => (
-                  <li key={k} className="flex items-center gap-2 text-[12.5px] text-navy-900"><CheckIcon v={r.verification[k]} /> {CHECK_LABEL[k]}: {r.verification[k]}</li>
-                ))}
-              </ul>
-              <Decide disabled={!can('residents.approve')} onDecide={async (d, note) => { await decideRegistration(r.id, d, note, user!); await load() }} />
+              {ev && (
+                <div className="grid gap-4 border-t border-line-soft pt-4 md:grid-cols-[1fr_auto_1.2fr]">
+                  <figure>
+                    <img src={ev.idImage} alt={`ID submitted by ${a.firstName} ${a.lastName}`} className="max-h-[220px] w-full rounded-lg border border-line bg-surface-muted object-contain" />
+                    <figcaption className="mt-1 text-[12px] text-ink-muted">{ev.idType} · No. {ev.idNumber}</figcaption>
+                  </figure>
+                  <figure>
+                    <img src={ev.selfieImage} alt={`Selfie of ${a.firstName} ${a.lastName}`} className={`h-[220px] w-[165px] rounded-lg border border-line object-cover ${r.verification.liveness === 'passed' ? '-scale-x-100' : ''}`} />
+                    <figcaption className="mt-1 text-[12px] text-ink-muted">{r.verification.liveness === 'passed' ? 'Live selfie' : 'Uploaded photo'}</figcaption>
+                  </figure>
+                  <div className="text-[12.5px]">
+                    <p className="font-semibold text-navy-900">Why it needs review</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-5 text-navy-900">
+                      {ev.reasons.map((x) => <li key={x}>{x}</li>)}
+                    </ul>
+                    <p className="mt-3 text-ink-muted">Compare the selfie with the ID photo and the details with the barangay records. If unsure, ask the applicant to visit the Barangay Hall with the original ID.</p>
+                  </div>
+                </div>
+              )}
             </Card>
           )
         })}

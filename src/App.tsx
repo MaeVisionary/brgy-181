@@ -8,6 +8,7 @@ import { HomePage } from '@/pages/public/HomePage'
 import { PortalPage } from '@/pages/public/PortalPage'
 import { RoleLoginPage } from '@/pages/public/RoleLoginPage'
 import { ForgotPasswordPage } from '@/pages/public/ForgotPasswordPage'
+import { RegisterPage } from '@/pages/public/RegisterPage'
 import { AccountPage } from '@/pages/AccountPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { DocumentRequestsPage } from '@/pages/documents/DocumentRequestsPage'
@@ -56,6 +57,7 @@ export default function App() {
       <Route path="/login" element={<Navigate to="/portal" replace />} />
       <Route path="/login/:role" element={<RoleLoginPage />} />
       <Route path="/forgot-password/:role" element={<ForgotPasswordPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       {DevPreviewPage && <Route path="/preview" element={<Suspense fallback={null}><DevPreviewPage /></Suspense>} />}
 
       <Route element={<RequireAuth />}>
