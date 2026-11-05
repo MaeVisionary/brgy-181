@@ -34,7 +34,7 @@ const LETTER = { widthMm: 215.9, heightMm: 279.4, name: 'Letter' } as const
 const LEGAL = { widthMm: 215.9, heightMm: 355.6, name: 'Legal' } as const
 const FOLIO = { widthMm: 215.9, heightMm: 330.2, name: 'Folio (8.5 × 13 in)' } as const
 
-const pages = (id: string, n = 1) => Array.from({ length: n }, (_, i) => `/templates/${id}/page-${i + 1}.png`)
+const pages = (id: string, n = 1) => Array.from({ length: n }, (_, i) => `${import.meta.env.BASE_URL}templates/${id}/page-${i + 1}.png`)
 
 /** Values every "Given/Issued this __ day of __" document computes from the issue date. */
 const issueFields: FieldDef[] = [
