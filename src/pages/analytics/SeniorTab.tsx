@@ -50,6 +50,10 @@ export function SeniorTab() {
   const all = useMemo(() => (dataset ? deriveRows(dataset, reportingDate) : []), [dataset, reportingDate])
   const rows = useMemo(() => applyFilters(all, filters, { searchNames: showPii }), [all, filters, showPii])
   const s = useMemo(() => summarize(rows), [rows])
+  // Senior status is decided by age on the reporting date (RA 9994: 60 and above), not by the list itself.
+  const seniors = rows.filter((r) => r.age !== null && r.age >= 60).length
+  const belowSixty = rows.filter((r) => r.age !== null && r.age < 60).length
+  const turningSixty = rows.filter((r) => r.age === 59).length
 
   if (!dataset) {
     return (
@@ -143,7 +147,9 @@ export function SeniorTab() {
 
       {/* KPIs */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Senior citizen records" value={s.total} onClick={() => setFilters({})} />
+        <Kpi label="Senior citizens (60+)" value={seniors} hint={`by age as of ${reportingDate.toISOString().slice(0, 10)}`} onClick={() => setFilters({})} />
+        <Kpi label="Below 60 (not yet senior)" value={belowSixty} hint={`of ${s.total} records`} attention={belowSixty > 0} onClick={() => set({ ageGroup: 'Below 60' })} />
+        <Kpi label="Turning 60 within a year" value={turningSixty} hint="becoming eligible soon" onClick={() => set({ ageGroup: 'Below 60' })} />
         <Kpi label="Male" value={s.male} hint={pct(s.male, s.total)} onClick={() => set({ gender: 'Male' })} />
         <Kpi label="Female" value={s.female} hint={pct(s.female, s.total)} onClick={() => set({ gender: 'Female' })} />
         <Kpi label="Active" value={s.active} onClick={() => set({ status: 'Active' })} />

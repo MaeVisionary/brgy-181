@@ -13,7 +13,7 @@ const long = (d: Date) => d.toLocaleDateString('en-US', { month: 'long', day: 'n
 /** Dataset loader + reporting date. Data stays in this browser tab only. */
 export function DataSource() {
   const { user, can } = useAuth()
-  const { dataset, loading, error, loadFile, reportingDate, setReportingDate } = useAnalytics()
+  const { dataset, source, loading, error, loadFile, reportingDate, setReportingDate } = useAnalytics()
   const input = useRef<HTMLInputElement>(null)
   const canImport = can('residents.import')
 
@@ -35,7 +35,9 @@ export function DataSource() {
               <>
                 <p className="truncate text-[13.5px] font-semibold text-navy-900" title={dataset.fileName}>{dataset.fileName}</p>
                 <p className="text-[12px] text-ink-muted">
-                  {dataset.records.length} records · {dataset.skippedRows} rows without a name skipped · loaded {formatDateTime(dataset.loadedAt)} · kept in this browser tab only
+                  {source === 'snapshot'
+                    ? `${dataset.records.length} records · built into the system · names, house numbers, OSCA ID numbers and contact numbers removed`
+                    : `${dataset.records.length} records · ${dataset.skippedRows} rows without a name skipped · loaded ${formatDateTime(dataset.loadedAt)} · kept in this browser tab only`}
                 </p>
               </>
             ) : (
@@ -67,7 +69,7 @@ export function DataSource() {
             <>
               <input ref={input} type="file" accept=".xlsx" className="sr-only" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = '' }} />
               <Button size="sm" icon={<Upload className="size-3.5" />} loading={loading} onClick={() => input.current?.click()}>
-                {dataset ? 'Load updated masterlist' : 'Load masterlist (.xlsx)'}
+                {source === 'snapshot' ? 'Load full file (with names)' : dataset ? 'Load updated masterlist' : 'Load masterlist (.xlsx)'}
               </Button>
             </>
           )}
@@ -89,8 +91,11 @@ export function DataSource() {
         </ul>
       )}
       <p className="mt-3 text-[11.5px] text-ink-subtle">
-        This is the senior citizen masterlist, not the complete resident database. The file is read in your browser and is not uploaded or saved; reloading the
-        page clears it.
+        This is the senior citizen masterlist, not the complete resident database. Senior status is decided by age on the reporting date (60 and above),
+        not by being on the list.{' '}
+        {source === 'snapshot'
+          ? 'The built-in copy has no names; a full file you load is read in your browser only and is not uploaded or saved.'
+          : 'The file is read in your browser and is not uploaded or saved; reloading the page returns to the built-in copy (if any).'}
       </p>
     </Card>
   )
