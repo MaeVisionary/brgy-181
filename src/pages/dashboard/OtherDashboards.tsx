@@ -20,7 +20,7 @@ import { listBorrowings } from '@/services/equipmentService'
 import { getResident } from '@/services/residentService'
 import { BORROW_STATUS } from '@/pages/equipment/badges'
 import type { RoleId } from '@/types/auth'
-import { DashHeader, ListPanel, PopulationCards, Row, Stat } from './shared'
+import { DashHeader, ListPanel, PopulationByStreet, Row, Stat } from './shared'
 
 function CouncilList({ highlight }: { highlight?: string }) {
   const kagawads = officialByPosition('Barangay Kagawad')
@@ -54,7 +54,7 @@ export function KagawadDashboard() {
       <DashHeader subtitle="Barangay Council member view: community summaries and reports permitted for your account." />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="space-y-4">
-          <PopulationCards />
+          <PopulationByStreet />
           <Card className="flex items-start gap-3 px-5 py-4 text-[13px] text-navy-900">
             <Info className="mt-0.5 size-4 shrink-0 text-info" />
             <span>

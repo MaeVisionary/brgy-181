@@ -1,6 +1,5 @@
 import { CalendarClock, Gavel } from 'lucide-react'
 import { StatusBadge } from '@/components/documents/DocParts'
-import { AreaChart } from '@/components/charts/AreaChart'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { Panel } from '@/components/ui/Panel'
@@ -10,15 +9,13 @@ import { useDocActor } from '@/hooks/useDocActor'
 import { formatDateTime } from '@/lib/format'
 import { STAGE_LABEL, STAGE_TONE, listCases, mediationDay, upcomingHearings } from '@/services/caseService'
 import { listRequests } from '@/services/documentService'
-import { getAreaBreakdown } from '@/services/residentService'
-import { DashHeader, ListPanel, PopulationCards, Row, SampleBadge, Stat } from './shared'
+import { DashHeader, ListPanel, PopulationByStreet, Row, Stat } from './shared'
 
 /** Robert Atad: executive oversight, approvals, assessment of complaints, KP mediation. */
 export function ChairmanDashboard() {
   const actor = useDocActor()!
   const docs = useAsync(() => listRequests(actor), [actor]).data
   const cases = useAsync(() => listCases(actor), [actor]).data
-  const areas = useAsync(getAreaBreakdown).data
 
   const forApproval = docs?.filter((d) => d.status === 'pending_approval' || d.status === 'for_assessment') ?? null
   const awaitingSeal = docs?.filter((d) => d.status === 'approved') ?? null
@@ -105,10 +102,7 @@ export function ChairmanDashboard() {
       </section>
 
       <section className="mt-4 space-y-4">
-        <PopulationCards />
-        <Panel title="Residents and households per area" subtitle="For community and ayuda planning" actions={<SampleBadge />}>
-          {areas ? <AreaChart data={areas} /> : <div className="h-[244px] animate-pulse rounded bg-surface-muted" />}
-        </Panel>
+        <PopulationByStreet />
       </section>
     </>
   )
