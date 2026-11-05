@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/*
+ * BMIS design tokens.
+ * (figma)   measured from the Final Inspo frame (node 249-3847)
+ * (derived) extends the palette for states the frame does not show
+ */
+@theme {
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-canvas: #f4f7f8;          /* (figma) page background */
+  --color-surface: #ffffff;         /* (figma) cards, sidebar, header */
+  --color-surface-muted: #f5f6f7;   /* (figma, gray-50) inset areas, table header */
+
+  --color-navy-950: #00151f;        /* (derived) pressed */
+  --color-navy-900: #002132;        /* (figma) titles, values, primary */
+  --color-navy-800: #0b3449;        /* (derived) primary hover */
+  --color-navy-600: #2c5871;        /* (derived) focus ring */
+  --color-sky-300: #accee1;         /* (figma) secondary chart series */
+  --color-sky-100: #e4f0f6;         /* (derived) icon tiles, active nav */
+  --color-sky-50: #f1f7fa;          /* (derived) row hover */
+
+  --color-ink: #002132;             /* primary text */
+  --color-ink-nav: #4a4f57;         /* (figma) nav text */
+  --color-ink-muted: #687280;       /* (figma, gray-600) labels, secondary text */
+  --color-ink-subtle: #8a919b;      /* (derived) placeholders */
+
+  --color-line: #d6d9de;            /* (figma, gray-200) borders */
+  --color-line-soft: #e8eaed;       /* (derived) inner dividers */
+
+  --color-danger: #ff3300;          /* (figma, red-500) attention */
+  --color-danger-ink: #c22700;      /* (derived) text on tint */
+  --color-danger-tint: #fff0eb;     /* (derived) */
+  --color-success: #507c01;         /* (figma, green-500) */
+  --color-success-tint: #eef7da;    /* (derived) */
+  --color-warning: #8a5800;         /* (derived) pending */
+  --color-warning-tint: #fdf3dc;    /* (derived) */
+  --color-info: #1d5f86;            /* (derived) in review */
+  --color-info-tint: #e4f0f6;       /* (derived) */
+  --color-neutral-tint: #eef0f2;    /* (derived) closed, cancelled */
+
+  --radius-card: 15px;              /* (figma) stat card */
+  --radius-control: 8px;            /* buttons, inputs */
+  --radius-badge: 4px;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-navy-600);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Uppercase metric label: Inter 600, 10.5px, +8% tracking (figma) */
+  .label-caps {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+}
