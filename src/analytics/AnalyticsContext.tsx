@@ -1,17 +1,23 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { readSheet } from 'read-excel-file/browser'
 import { parseMasterlist } from './parseMasterlist'
+import { loadSnapshot } from './snapshot'
 import type { Filters } from './compute'
 import type { SeniorDataset } from './seniorTypes'
 
 /**
- * Holds the loaded senior citizen masterlist IN MEMORY for this browser tab only.
- * Nothing is uploaded or saved; reloading the page clears it. The backend phase
- * will replace this with a server-side import shared by all users.
+ * Senior citizen masterlist for the analytics.
+ *  - On start it loads the built-in DE-IDENTIFIED snapshot (no names) automatically,
+ *    so figures are available without uploading anything.
+ *  - Staff may load the full Excel file to see names; that copy stays IN MEMORY in
+ *    this browser tab only (reloading returns to the built-in snapshot).
+ * The backend phase replaces both with a protected server-side dataset.
  */
 
 interface Ctx {
   dataset: SeniorDataset | null
+  /** Where the current data came from. */
+  source: 'snapshot' | 'file' | null
   loading: boolean
   error: string | null
   loadFile: (file: File) => Promise<SeniorDataset | null>
@@ -31,7 +37,23 @@ const todayUtc = () => {
 
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const [dataset, setDataset] = useState<SeniorDataset | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [source, setSource] = useState<'snapshot' | 'file' | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let alive = true
+    loadSnapshot().then((ds) => {
+      if (!alive) return
+      if (ds) {
+        setDataset((cur) => cur ?? ds)
+        setSource((cur) => cur ?? 'snapshot')
+      }
+      setLoading(false)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
   const [error, setError] = useState<string | null>(null)
   const [reportingDate, setReportingDate] = useState<Date>(todayUtc)
   const [filters, setFilters] = useState<Filters>({})
@@ -44,6 +66,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       const rows = (await readSheet(file)) as (string | number | boolean | Date | null)[][]
       const ds = parseMasterlist(rows, file.name, 'Sheet 1')
       setDataset(ds)
+      setSource('file')
       setFilters({})
       return ds
     } catch (e) {
@@ -55,8 +78,8 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<Ctx>(
-    () => ({ dataset, loading, error, loadFile, clear: () => setDataset(null), reportingDate, setReportingDate, filters, setFilters }),
-    [dataset, loading, error, loadFile, reportingDate, filters],
+    () => ({ dataset, source, loading, error, loadFile, clear: () => setDataset(null), reportingDate, setReportingDate, filters, setFilters }),
+    [dataset, source, loading, error, loadFile, reportingDate, filters],
   )
   return <AnalyticsContext.Provider value={value}>{children}</AnalyticsContext.Provider>
 }
