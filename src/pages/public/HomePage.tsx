@@ -49,8 +49,13 @@ export function HomePage() {
           {/* Identity card: wording as printed on the barangay's official documents */}
           <div className="bmis-rise bmis-rise-3 relative mx-auto w-full max-w-[440px]">
             <div className="relative overflow-hidden rounded-[28px] bg-navy-900 px-8 pt-10 pb-8 text-center text-white">
-              <div aria-hidden className="absolute -top-24 left-1/2 size-[420px] -translate-x-1/2 rounded-full border border-white/10" />
-              <div aria-hidden className="absolute -top-10 left-1/2 size-[300px] -translate-x-1/2 rounded-full border border-white/10" />
+              {/* Faint seal watermark behind the card content */}
+              <img
+                aria-hidden
+                alt=""
+                src={`${import.meta.env.BASE_URL}seal.png`}
+                className="pointer-events-none absolute top-1/2 left-1/2 size-[460px] max-w-none -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.06] select-none"
+              />
               <BarangaySeal className="relative mx-auto size-36 drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)]" />
               <p className="relative mt-6 text-[13px] tracking-wide text-white/75">Republic of the Philippines · City of Manila</p>
               <p className="relative mt-1 font-display text-[22px] font-extrabold">Barangay 181</p>
