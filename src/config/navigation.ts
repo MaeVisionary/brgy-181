@@ -6,7 +6,6 @@ import {
   Home,
   Layers,
   LayoutDashboard,
-  MessageSquareWarning,
   Package,
   ScrollText,
   Settings2,
@@ -63,8 +62,9 @@ const PERSONNEL_NAV: NavGroup[] = [
     label: 'Services',
     icon: Layers,
     children: [
-      { label: 'Document Requests', path: '/documents', anyOf: ['documents.view'], phase: 5, summary: 'Per-document workflows from submission to release.' },
-      { label: 'Approvals', path: '/documents/approvals', anyOf: ['documents.approve'], phase: 5, summary: 'Documents verified by the Secretary awaiting your decision.' },
+      { label: 'Document Requests', path: '/documents', anyOf: ['documents.view'] },
+      { label: 'Approvals', path: '/documents/approvals', anyOf: ['documents.approve'] },
+      { label: 'Document Templates', path: '/documents/templates', anyOf: ['documents.view'] },
       { label: 'Complaints & Blotter', path: '/cases', anyOf: ['complaints.view', 'cases.view'], phase: 6, summary: 'Complaints, incident reports, blotter records and KP cases.' },
       { label: 'Hearings', path: '/hearings', anyOf: ['hearings.view', 'hearings.manage'], phase: 6, summary: 'Hearing and mediation schedules, attendance and outcomes.' },
     ],
@@ -81,7 +81,7 @@ const PERSONNEL_NAV: NavGroup[] = [
     label: 'Insights',
     icon: ChartColumn,
     children: [
-      { label: 'Analytics & Ayuda', path: '/analytics', anyOf: ['analytics.view'], phase: 8, summary: 'Population analytics and disaster/ayuda planning by area.' },
+      { label: 'Analytics', path: '/analytics', anyOf: ['analytics.view'], phase: 8, summary: 'Population analytics by area.' },
       { label: 'Reports', path: '/reports', anyOf: ['reports.view'], phase: 8, summary: 'Report selection, preview and export. Templates follow the formats you provide.' },
     ],
   },
@@ -112,8 +112,7 @@ const ADMIN_NAV: NavGroup[] = [
 
 const RESIDENT_NAV: NavGroup[] = [
   { label: 'Home', icon: Home, path: '/dashboard' },
-  { label: 'My Documents', icon: FileText, path: '/my/documents', anyOf: ['self.documents'], phase: 5, summary: 'Request barangay documents and track their status.' },
-  { label: 'My Reports', icon: MessageSquareWarning, path: '/my/complaints', anyOf: ['self.complaints'], phase: 6, summary: 'Submit complaints or incident reports and follow their status.' },
+  { label: 'My Requests', icon: FileText, path: '/my/documents', anyOf: ['self.documents'] },
   { label: 'Borrow Equipment', icon: Package, path: '/my/borrowing', anyOf: ['self.borrowing'], phase: 7, summary: 'Request barangay equipment and see due dates.' },
   { label: 'My Profile', icon: UserRound, path: '/my/profile', anyOf: ['self.profile'], phase: 4, summary: 'Your resident information and correction requests.' },
   { label: 'Notifications', icon: Bell, path: '/notifications' },

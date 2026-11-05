@@ -8,6 +8,8 @@ export type RoleId =
   | 'system_admin'
   | 'chairman'
   | 'secretary'
+  | 'kagawad'
+  | 'sk_chairman'
   | 'property_custodian'
   | 'staff'
   | 'resident'
@@ -39,6 +41,7 @@ export type Permission =
   | 'complaints.update'
   | 'cases.view'
   | 'cases.manage'
+  | 'cases.decide'
   | 'hearings.view'
   | 'hearings.manage'
   // Inventory (Module 7)

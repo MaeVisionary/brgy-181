@@ -30,6 +30,21 @@ export const ROLES: Record<RoleId, Role> = {
     portalLabel: 'Personnel Portal',
     description: 'Resident records, document processing, complaints, cases and hearings.',
   },
+  kagawad: {
+    id: 'kagawad',
+    name: 'Barangay Kagawad',
+    portal: 'personnel',
+    portalLabel: 'Barangay Council',
+    description:
+      'Member of the Barangay Council. Base access is community summaries and reports; anything more is granted per account once the barangay confirms the responsibility.',
+  },
+  sk_chairman: {
+    id: 'sk_chairman',
+    name: 'SK Chairman',
+    portal: 'personnel',
+    portalLabel: 'Sangguniang Kabataan',
+    description: 'Heads youth programs (study §1.1). SK-specific records are pending barangay confirmation.',
+  },
   property_custodian: {
     id: 'property_custodian',
     name: 'Property Custodian',
@@ -64,9 +79,17 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
     'documents.reject',
     'complaints.view',
     'cases.view',
+    'cases.decide',
     'hearings.view',
     'reports.view',
   ],
+
+  // Study §1.5: Kagawads may access community population summaries and reports
+  // related to their responsibilities. Further access is granted per account.
+  kagawad: ['analytics.view', 'reports.view'],
+
+  // Study §1.1: the SK Chairman heads youth programs; no system functions are documented yet.
+  sk_chairman: [],
 
   secretary: [
     'residents.view',
@@ -119,8 +142,13 @@ export const GRANTABLE_STAFF_PERMISSIONS: readonly Permission[] = [
   'complaints.create',
   'hearings.view',
   'inventory.view',
+  'analytics.view',
   'reports.view',
+  'cases.view',
 ]
+
+/** Same grantable set applies to Kagawad and SK accounts (per-account, once confirmed). */
+export const GRANTABLE_ROLES: readonly string[] = ['staff', 'kagawad', 'sk_chairman']
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   'residents.view': 'View resident records',
@@ -143,6 +171,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'complaints.update': 'Update complaint status',
   'cases.view': 'View case summaries',
   'cases.manage': 'Create and manage cases and blotter records',
+  'cases.decide': 'Assess complaints, record settlement or Lupon referral',
   'hearings.view': 'View hearing schedules',
   'hearings.manage': 'Schedule hearings and record attendance',
   'inventory.view': 'View equipment inventory',

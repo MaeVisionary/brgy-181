@@ -1,0 +1,115 @@
+import { CalendarClock, Gavel } from 'lucide-react'
+import { StatusBadge } from '@/components/documents/DocParts'
+import { AreaChart } from '@/components/charts/AreaChart'
+import { Badge } from '@/components/ui/Badge'
+import { ButtonLink } from '@/components/ui/Button'
+import { Panel } from '@/components/ui/Panel'
+import { getDocumentType } from '@/documents/catalog'
+import { useAsync } from '@/hooks/useAsync'
+import { useDocActor } from '@/hooks/useDocActor'
+import { formatDateTime } from '@/lib/format'
+import { STAGE_LABEL, STAGE_TONE, listCases, mediationDay, upcomingHearings } from '@/services/caseService'
+import { listRequests } from '@/services/documentService'
+import { getAreaBreakdown } from '@/services/residentService'
+import { DashHeader, ListPanel, PopulationCards, Row, SampleBadge, Stat } from './shared'
+
+/** Robert Atad: executive oversight, approvals, assessment of complaints, KP mediation. */
+export function ChairmanDashboard() {
+  const actor = useDocActor()!
+  const docs = useAsync(() => listRequests(actor), [actor]).data
+  const cases = useAsync(() => listCases(actor), [actor]).data
+  const areas = useAsync(getAreaBreakdown).data
+
+  const forApproval = docs?.filter((d) => d.status === 'pending_approval' || d.status === 'for_assessment') ?? null
+  const awaitingSeal = docs?.filter((d) => d.status === 'approved') ?? null
+  const forAssessment = cases?.filter((c) => c.stage === 'for_assessment') ?? null
+  const active = cases?.filter((c) => !['closed', 'settled'].includes(c.stage)) ?? null
+  const hearings = cases ? upcomingHearings(cases) : null
+  const resolved = cases?.filter((c) => c.outcome) ?? []
+
+  return (
+    <>
+      <DashHeader
+        subtitle="Approvals, complaints for assessment and Katarungang Pambarangay mediation."
+        actions={<ButtonLink to="/documents/approvals" icon={<Gavel className="size-4" />}>Review approvals</ButtonLink>}
+      />
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <Stat label="Pending approvals" value={forApproval?.length ?? null} attention={!!forApproval?.length} to="/documents/approvals" />
+        <Stat label="For signing and sealing" value={awaitingSeal?.length ?? null} to="/documents" />
+        <Stat label="Complaints for assessment" value={forAssessment?.length ?? null} attention={!!forAssessment?.length} to="/cases" />
+        <Stat label="Active KP cases" value={active?.length ?? null} to="/cases" />
+        <Stat label="Upcoming hearings" value={hearings?.length ?? null} to="/hearings" />
+      </section>
+
+      <section className="mt-4 grid gap-4 xl:grid-cols-2">
+        <ListPanel
+          title="Routed to you for approval"
+          subtitle="Verified and forwarded by the Barangay Secretary"
+          items={forApproval}
+          to="/documents/approvals"
+          empty="Nothing is waiting for your approval."
+          render={(d) => (
+            <Row to={`/documents/${d.id}`} title={`${getDocumentType(d.typeId).name} · ${d.requesterName}`} meta={`${d.referenceNo} · updated ${formatDateTime(d.updatedAt)}`} right={<StatusBadge status={d.status} />} />
+          )}
+        />
+        <ListPanel
+          title="Hearing and mediation schedule"
+          subtitle="Barangay 181 Hall"
+          items={hearings}
+          to="/hearings"
+          empty="No upcoming hearings."
+          render={({ c, h }) => (
+            <Row
+              to={`/cases/${c.id}`}
+              title={`${c.caseNo} · ${c.title}`}
+              meta={`${formatDateTime(h.scheduledAt)} · ${h.kind === 'lupon_mediation' ? 'Lupon mediation' : 'Mediation under the Barangay Chairman'}`}
+              right={<CalendarClock className="size-4 text-ink-subtle" />}
+            />
+          )}
+        />
+      </section>
+
+      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <ListPanel
+          title="Katarungang Pambarangay cases"
+          subtitle="Open cases and the 15-day mediation period"
+          items={active}
+          to="/cases"
+          empty="No open cases."
+          render={(c) => {
+            const md = mediationDay(c)
+            return (
+              <Row
+                to={`/cases/${c.id}`}
+                title={`${c.caseNo} · ${c.title}`}
+                meta={md ? `Mediation day ${md.day} of ${md.total}${md.overdue ? ' (period ended)' : ''}` : c.nature}
+                right={<Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>}
+              />
+            )
+          }}
+        />
+        <Panel title="Case outcomes" subtitle="Settled and closed cases">
+          {resolved.length === 0 ? (
+            <p className="text-[13px] text-ink-muted">No outcomes recorded yet.</p>
+          ) : (
+            <ul className="space-y-2.5">
+              {resolved.map((c) => (
+                <li key={c.id} className="text-[13px]">
+                  <span className="font-semibold text-navy-900">{c.caseNo} · {c.title}</span>
+                  <span className="block text-ink-muted">{c.outcome!.summary}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </section>
+
+      <section className="mt-4 space-y-4">
+        <PopulationCards />
+        <Panel title="Residents and households per area" subtitle="For community and ayuda planning" actions={<SampleBadge />}>
+          {areas ? <AreaChart data={areas} /> : <div className="h-[244px] animate-pulse rounded bg-surface-muted" />}
+        </Panel>
+      </section>
+    </>
+  )
+}
