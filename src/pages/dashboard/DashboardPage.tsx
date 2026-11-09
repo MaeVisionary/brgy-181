@@ -1,7 +1,8 @@
 import { useAuth } from '@/auth/useAuth'
 import { ChairmanDashboard } from './ChairmanDashboard'
 import { CustodianDashboard } from './CustodianDashboard'
-import { AdminDashboard, KagawadDashboard, ResidentDashboard, StaffDashboard } from './OtherDashboards'
+import { AdminDashboard, KagawadDashboard, StaffDashboard } from './OtherDashboards'
+import { ResidentHome } from '@/pages/resident/ResidentV2Pages'
 import { SecretaryDashboard } from './SecretaryDashboard'
 
 /** Each role gets its own dashboard; none share the same layout. */
@@ -20,7 +21,7 @@ export function DashboardPage() {
     case 'system_admin':
       return <AdminDashboard />
     case 'resident':
-      return <ResidentDashboard />
+      return <ResidentHome />
     default:
       return <StaffDashboard />
   }

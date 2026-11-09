@@ -1,6 +1,8 @@
 import {
   Bell,
   Boxes,
+  ClipboardList,
+  Database,
   ChartColumn,
   FileText,
   Gavel,
@@ -40,6 +42,11 @@ export interface NavGroup {
   phase?: number
   summary?: string
   children?: NavLeaf[]
+  /**
+   * Flat-menu section heading (Resident and Admin portals, Figma v2/v3): items
+   * are shown in always-open groups instead of collapsible ones.
+   */
+  section?: string
 }
 
 const PERSONNEL_NAV: NavGroup[] = [
@@ -92,38 +99,29 @@ const PERSONNEL_NAV: NavGroup[] = [
   { label: 'Account Settings', icon: Settings2, path: '/account' },
 ]
 
+/** System Administrator (Figma v3): flat groups, always open. */
 const ADMIN_NAV: NavGroup[] = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  {
-    label: 'Users and Access',
-    icon: ShieldCheck,
-    children: [
-      { label: 'User Accounts', path: '/admin/users', anyOf: ['users.manage'] },
-      { label: 'Roles and Permissions', path: '/admin/roles', anyOf: ['roles.manage'] },
-      { label: 'Barangay Personnel', path: '/admin/personnel', anyOf: ['users.manage'] },
-    ],
-  },
-  { label: 'Activity Log', icon: ScrollText, path: '/admin/activity', anyOf: ['audit_logs.view'] },
-  {
-    label: 'System',
-    icon: SlidersHorizontal,
-    children: [
-      { label: 'Settings', path: '/admin/settings', anyOf: ['system.settings'] },
-      { label: 'Health and Backups', path: '/admin/health', anyOf: ['system.health'] },
-    ],
-  },
-  { label: 'Notifications', icon: Bell, path: '/notifications' },
-  { label: 'Account Settings', icon: Settings2, path: '/account' },
+  { section: 'Users and Access', label: 'User Accounts', icon: Users, path: '/admin/users', anyOf: ['users.manage'] },
+  { section: 'Users and Access', label: 'Roles and Permissions', icon: ShieldCheck, path: '/admin/roles', anyOf: ['roles.manage'] },
+  { section: 'Users and Access', label: 'Barangay Personnel', icon: UserRound, path: '/admin/personnel', anyOf: ['users.manage'] },
+  { section: 'Records', label: 'Activity Log', icon: ScrollText, path: '/admin/activity', anyOf: ['audit_logs.view'] },
+  { section: 'System', label: 'System Settings', icon: SlidersHorizontal, path: '/admin/settings', anyOf: ['system.settings'] },
+  { section: 'System', label: 'Health and Backups', icon: Database, path: '/admin/health', anyOf: ['system.health'] },
+  { section: 'Account', label: 'Notifications', icon: Bell, path: '/notifications' },
+  { section: 'Account', label: 'Account Settings', icon: Settings2, path: '/account' },
 ]
 
+/** Resident portal (Figma Revision v2): Main menu + Account. */
 const RESIDENT_NAV: NavGroup[] = [
-  { label: 'Home', icon: Home, path: '/dashboard' },
-  { label: 'My Document Requests', icon: FileText, path: '/my/documents', anyOf: ['self.documents'] },
-  { label: 'My Complaints', icon: MessageSquareWarning, path: '/my/complaints', anyOf: ['self.complaints'] },
-  { label: 'Borrow Equipment', icon: Package, path: '/my/borrowing', anyOf: ['self.borrowing'] },
-  { label: 'My Profile', icon: UserRound, path: '/my/profile', anyOf: ['self.profile'] },
-  { label: 'Notifications', icon: Bell, path: '/notifications' },
-  { label: 'Account Settings', icon: Settings2, path: '/account' },
+  { section: 'Main menu', label: 'Home', icon: Home, path: '/dashboard' },
+  { section: 'Main menu', label: 'Document Requests', icon: FileText, path: '/my/documents', anyOf: ['self.documents'] },
+  { section: 'Main menu', label: 'My Complaints', icon: MessageSquareWarning, path: '/my/complaints', anyOf: ['self.complaints'] },
+  { section: 'Main menu', label: 'Equipment Borrowing', icon: Package, path: '/my/borrowing', anyOf: ['self.borrowing'] },
+  { section: 'Main menu', label: 'My Transactions', icon: ClipboardList, path: '/my/transactions', anyOf: ['self.documents', 'self.complaints', 'self.borrowing'] },
+  { section: 'Main menu', label: 'Notifications', icon: Bell, path: '/notifications' },
+  { section: 'Account', label: 'My Profile', icon: UserRound, path: '/my/profile', anyOf: ['self.profile'] },
+  { section: 'Account', label: 'Account Settings', icon: Settings2, path: '/account' },
 ]
 
 export const NAVIGATION: Record<Portal, NavGroup[]> = {

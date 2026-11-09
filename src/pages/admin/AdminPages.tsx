@@ -1,11 +1,12 @@
-import { Check, Copy, Info, KeyRound, Minus } from 'lucide-react'
+import { Check, ChevronRight, Copy, Info, KeyRound, Minus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Panel'
+import { Pagination, usePaged } from '@/components/ui/Pagination'
+import { StatusLabel } from '@/components/ui/StatusLabel'
 import { APP_CONFIG } from '@/config/app'
 import { BORROWING, KP, OFFICIALS } from '@/config/barangay'
 import { GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS, PERMISSION_LABELS, ROLES, ROLE_PERMISSIONS } from '@/config/permissions'
@@ -87,15 +88,19 @@ export function UsersPage() {
       <Card className="divide-y divide-line-soft">
         {accounts.map((u) => (
           <div key={u.id} className="px-5 py-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-navy-900 text-[11px] font-semibold text-white">{initials(u.fullName)}</span>
+            <div className="flex flex-wrap items-start gap-3 sm:flex-nowrap sm:items-center">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sky-100 text-[11px] font-semibold text-navy-900">{initials(u.fullName)}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[13.5px] font-semibold text-navy-900">{u.fullName}</span>
                 <span className="block text-[12px] text-ink-muted">{u.position} · {u.username} · {ROLES[u.roleId].name}</span>
+                <span className="block text-[11.5px] text-ink-muted">{getCredential(u.id === 'usr-test' ? TEST_ACCOUNT.credentialKey : u.id)?.mustChange ? 'Temporary password issued' : u.id === 'usr-test' || getCredential(u.id) ? 'Password set' : 'No password yet'}</span>
               </span>
-              <span className="text-[11.5px] text-ink-muted">{getCredential(u.id === 'usr-test' ? TEST_ACCOUNT.credentialKey : u.id)?.mustChange ? 'Temporary password issued' : u.id === 'usr-test' || getCredential(u.id) ? 'Password set' : 'No password yet'}</span>
-              <Badge tone={u.status === 'active' ? 'success' : 'neutral'}>{u.status === 'active' ? 'Active' : u.status === 'locked' ? 'Locked' : 'Inactive'}</Badge>
-              <Button size="sm" variant="ghost" onClick={() => setOpen(open === u.id ? null : u.id)}>{open === u.id ? 'Close' : 'Manage'}</Button>
+              <span className="flex w-full items-center gap-3 pl-12 sm:w-auto sm:pl-0">
+                <StatusLabel status={u.status === 'active' ? 'Active' : u.status === 'locked' ? 'Locked' : 'Inactive'} tone={u.status === 'active' ? 'success' : u.status === 'locked' ? 'danger' : 'danger'} />
+                <button type="button" aria-expanded={open === u.id} onClick={() => setOpen(open === u.id ? null : u.id)} className="inline-flex min-h-9 items-center gap-0.5 rounded-md px-1 text-[12.5px] font-semibold text-info hover:underline">
+                  {open === u.id ? 'Close' : <>Manage Account <ChevronRight className="size-4" /></>}
+                </button>
+              </span>
             </div>
             {open === u.id && (u.id === 'usr-test' ? (
               <div className="mt-3 flex flex-wrap items-center gap-3 rounded-[var(--radius-control)] bg-surface-muted p-4 text-[12.5px] text-navy-900">
@@ -158,6 +163,7 @@ export function RolesPage() {
   return (
     <>
       <PageHeader title="Roles and Permissions" subtitle="Proposed matrix, pending barangay review. Personnel and Kagawad accounts can receive extra permissions per account." />
+      <p className="mb-2 text-[12px] text-ink-muted lg:hidden">Swipe sideways to see every role.</p>
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[900px] text-[12.5px]">
           <thead>
@@ -187,29 +193,46 @@ export function RolesPage() {
 /** FR24: who did what and when. In memory for this session; the backend keeps the protected log. */
 export function ActivityPage() {
   const entries = listAudit()
+  const paged = usePaged(entries)
+  const who = (id: string) => mockUsers.find((u) => u.id === id)?.fullName ?? id
   return (
     <>
       <PageHeader title="Activity Log" subtitle="Record views, report generation, exports, imports and account changes made in this browser session. The permanent, tamper-protected log is a backend feature." />
-      <Card>
+      <Card className="overflow-hidden">
         {entries.length === 0 ? (
           <p className="px-5 py-6 text-[13px] text-ink-muted">No activity recorded in this session yet.</p>
         ) : (
-          <table className="w-full text-[13px]">
-            <thead><tr className="bg-surface-muted text-left">{['When', 'User', 'Role at the time', 'Action', 'Module', 'Reference', 'Outcome'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}</tr></thead>
-            <tbody>
-              {entries.map((e) => (
-                <tr key={e.id} className="border-t border-line-soft">
-                  <td className="px-4 py-2 whitespace-nowrap text-ink-muted">{formatDateTime(e.timestamp)}</td>
-                  <td className="px-4 py-2 text-navy-900">{mockUsers.find((u) => u.id === e.userId)?.fullName}</td>
-                  <td className="px-4 py-2">{ROLES[e.roleAtTime].name}</td>
-                  <td className="px-4 py-2 text-navy-900">{e.action}</td>
-                  <td className="px-4 py-2">{e.module}</td>
-                  <td className="px-4 py-2 text-ink-muted">{e.recordRef ?? '–'}</td>
-                  <td className="px-4 py-2"><Badge tone={e.outcome === 'success' ? 'success' : 'danger'}>{e.outcome}</Badge></td>
-                </tr>
+          <>
+            <table className="hidden w-full text-[13px] lg:table">
+              <thead><tr className="bg-surface-muted text-left">{['When', 'User', 'Role at the time', 'Action', 'Module', 'Reference', 'Outcome'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}</tr></thead>
+              <tbody>
+                {paged.slice.map((e) => (
+                  <tr key={e.id} className="border-t border-line-soft">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-ink-muted">{formatDateTime(e.timestamp)}</td>
+                    <td className="px-4 py-2.5 text-navy-900">{who(e.userId)}</td>
+                    <td className="px-4 py-2.5">{ROLES[e.roleAtTime]?.name}</td>
+                    <td className="px-4 py-2.5 text-navy-900">{e.action}</td>
+                    <td className="px-4 py-2.5">{e.module}</td>
+                    <td className="px-4 py-2.5 text-ink-muted">{e.recordRef ?? '–'}</td>
+                    <td className="px-4 py-2.5"><StatusLabel status={e.outcome === 'success' ? 'Success' : 'Failed'} tone={e.outcome === 'success' ? 'success' : 'danger'} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <ul className="divide-y divide-line-soft lg:hidden">
+              {paged.slice.map((e) => (
+                <li key={e.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-[13.5px] font-semibold text-navy-900">{e.action}</p>
+                    <StatusLabel status={e.outcome === 'success' ? 'Success' : 'Failed'} tone={e.outcome === 'success' ? 'success' : 'danger'} />
+                  </div>
+                  <p className="text-[12.5px] text-ink-nav">{who(e.userId)} · {ROLES[e.roleAtTime]?.name}</p>
+                  <p className="text-[12px] text-ink-muted">{e.module}{e.recordRef ? ` · ${e.recordRef}` : ''} · {formatDateTime(e.timestamp)}</p>
+                </li>
               ))}
-            </tbody>
-          </table>
+            </ul>
+            <Pagination page={paged.page} pages={paged.pages} total={paged.total} size={paged.size} onPage={paged.setPage} noun="entries" />
+          </>
         )}
       </Card>
     </>
@@ -218,24 +241,41 @@ export function ActivityPage() {
 
 /** Barangay officials as documented, with sources. */
 export function PersonnelPage() {
+  const rows = [
+    ...OFFICIALS.map((o) => ({ id: o.id, name: o.name, position: o.position, source: o.source, account: !!o.userId })),
+    { id: 'custodian', name: 'Not named in the study', position: 'Property Custodian', source: 'Study §1.5', account: true },
+  ]
+  const paged = usePaged(rows)
   return (
     <>
       <PageHeader title="Barangay Personnel" subtitle="Officials of Barangay 181, Zone 16, District II, Manila." />
-      <Card className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-[13px]">
+      <Card className="overflow-hidden">
+        <table className="hidden w-full text-[13px] md:table">
           <thead><tr className="bg-surface-muted text-left">{['Name', 'Position', 'Source', 'System account'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}</tr></thead>
           <tbody>
-            {OFFICIALS.map((o) => (
+            {paged.slice.map((o) => (
               <tr key={o.id} className="border-t border-line-soft">
-                <td className="px-4 py-2.5 font-semibold text-navy-900">{o.name}</td>
-                <td className="px-4 py-2.5">{o.position}</td>
-                <td className="px-4 py-2.5 text-ink-muted">{o.source}</td>
-                <td className="px-4 py-2.5">{o.userId ? <Badge tone="success">Yes</Badge> : <Badge tone="neutral">None</Badge>}</td>
+                <td className="px-4 py-3 font-semibold text-navy-900">{o.name}</td>
+                <td className="px-4 py-3">{o.position}</td>
+                <td className="px-4 py-3 text-ink-muted">{o.source}</td>
+                <td className="px-4 py-3">{o.account ? <StatusLabel status="Yes" tone="success" /> : <StatusLabel status="None" tone="neutral" />}</td>
               </tr>
             ))}
-            <tr className="border-t border-line-soft"><td className="px-4 py-2.5 font-semibold text-navy-900">Not named in the study</td><td className="px-4 py-2.5">Property Custodian</td><td className="px-4 py-2.5 text-ink-muted">Study §1.5</td><td className="px-4 py-2.5"><Badge tone="success">Yes</Badge></td></tr>
           </tbody>
         </table>
+        <ul className="divide-y divide-line-soft md:hidden">
+          {paged.slice.map((o) => (
+            <li key={o.id} className="flex items-start justify-between gap-3 px-4 py-3">
+              <span className="min-w-0">
+                <span className="block text-[14px] font-semibold text-navy-900">{o.name}</span>
+                <span className="block text-[12.5px] text-ink-nav">{o.position}</span>
+                <span className="block text-[12px] text-ink-muted">Source: {o.source}</span>
+              </span>
+              {o.account ? <StatusLabel status="Has account" tone="success" /> : <StatusLabel status="No account" tone="neutral" />}
+            </li>
+          ))}
+        </ul>
+        <Pagination page={paged.page} pages={paged.pages} total={paged.total} size={paged.size} onPage={paged.setPage} noun="officials" />
       </Card>
     </>
   )
@@ -257,9 +297,9 @@ export function SettingsPage() {
       <PageHeader title="System Settings" subtitle="Values currently used by the prototype. Editing will be enabled with the backend." />
       <Card className="divide-y divide-line-soft">
         {rows.map(([k, v]) => (
-          <div key={k} className="flex items-center justify-between gap-4 px-5 py-3 text-[13px]">
-            <span className="text-navy-900">{k}</span>
-            <strong className="text-navy-900">{v}</strong>
+          <div key={k} className="flex flex-col gap-0.5 px-5 py-3 text-[13px] sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <span className="text-ink-nav">{k}</span>
+            <strong className="text-navy-900 sm:text-right">{v}</strong>
           </div>
         ))}
       </Card>
@@ -278,12 +318,12 @@ export function HealthPage() {
   ]
   return (
     <>
-      <PageHeader title="System Health and Backups" subtitle="Status of the services the BMIS depends on." />
+      <PageHeader title="Health and Backups" subtitle="Status of the services the BMIS depends on." />
       <Card className="divide-y divide-line-soft">
         {items.map(([k, v, s]) => (
-          <div key={k} className="flex items-center justify-between gap-4 px-5 py-3 text-[13px]">
-            <span className="text-navy-900">{k}</span>
-            <span className={cn('flex items-center gap-2', s === 'ok' ? 'text-success' : 'text-ink-muted')}>{s === 'ok' ? <Check className="size-4" /> : <Info className="size-4" />}{v}</span>
+          <div key={k} className="flex flex-col gap-1 px-5 py-3 text-[13px] sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <span className="font-semibold text-navy-900">{k}</span>
+            <span className={cn('flex items-center gap-2 sm:text-right', s === 'ok' ? 'text-success' : 'text-ink-muted')}>{s === 'ok' ? <Check className="size-4" /> : <Info className="size-4" />}{v}</span>
           </div>
         ))}
       </Card>

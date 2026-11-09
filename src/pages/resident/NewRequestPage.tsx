@@ -1,6 +1,6 @@
 import { ArrowLeft, Building2, Paperclip } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { FieldInput, groupFields } from '@/components/documents/DocParts'
 import { Button } from '@/components/ui/Button'
@@ -23,6 +23,7 @@ export function NewRequestPage() {
   const actor = useDocActor()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const [resident, setResident] = useState<Resident | null>(null)
   const [typeId, setTypeId] = useState<DocumentTypeId | null>(null)
   const [values, setValues] = useState<Record<string, FieldValue>>({})
@@ -71,12 +72,13 @@ export function NewRequestPage() {
     }
   }
 
-  const groups = (['certificate', 'clearance', 'case'] as const).map((cat) => [cat, activeDocumentTypes().filter((d) => d.category === cat)] as const)
+  const order = params.get('category') === 'case' ? (['case', 'certificate', 'clearance'] as const) : (['certificate', 'clearance', 'case'] as const)
+  const groups = order.map((cat) => [cat, activeDocumentTypes().filter((d) => d.category === cat)] as const)
 
   return (
     <>
       <Link to="/my/documents" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-navy-900">
-        <ArrowLeft className="size-4" /> My Requests
+        <ArrowLeft className="size-4" /> Document Requests
       </Link>
       <PageHeader title="New request" subtitle="Choose what you need. Documents are claimed at the Barangay Hall once ready." />
 

@@ -1,0 +1,646 @@
+import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Info, Mail, MapPin, MessageSquareWarning, Package, Phone, ReceiptText, XCircle } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { useAuth } from '@/auth/useAuth'
+import { TransitionPanel } from '@/components/documents/TransitionPanel'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { GreetingCard } from '@/components/ui/GreetingCard'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Panel'
+import { BORROWING, KP } from '@/config/barangay'
+import { ROLES } from '@/config/permissions'
+import { getDocumentType } from '@/documents/catalog'
+import { isFilled } from '@/documents/fill'
+import { WORKFLOWS } from '@/documents/workflows'
+import { useAsync } from '@/hooks/useAsync'
+import { useDocActor } from '@/hooks/useDocActor'
+import { cn } from '@/lib/cn'
+import { formatDate, formatDateTime } from '@/lib/format'
+import { ALL_RESIDENT_STATUSES, borrowingStatusForResident, caseStageForResident, documentStatusForResident, type ResidentStatus } from '@/lib/residentStatus'
+import { mockUsers } from '@/mocks/users'
+import { getCase } from '@/services/caseService'
+import { availableTransitions, getRequest } from '@/services/documentService'
+import { actOnBorrowing, getBorrowing } from '@/services/equipmentService'
+import { ServiceError } from '@/services/mockApi'
+import { listMyTransactions, type Transaction, type TransactionKind } from '@/services/transactionService'
+import type { KPCase } from '@/types/case'
+import type { DocumentRequest, StatusEvent } from '@/types/document'
+import type { Borrowing } from '@/types/equipment'
+import { itemsText } from '@/pages/equipment/BorrowingPages'
+import { NotFound } from '@/pages/system/NotFound'
+import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, NumberedSteps, Progress, Section, TransactionList, Updates, stepsFrom } from './parts'
+
+const SAMPLE_NOTE = 'Sample content'
+
+/** Announcements module does not exist yet: every item is clearly labelled sample content (Figma placeholder rule). */
+const ANNOUNCEMENTS = [
+  { kind: 'Public advisory', date: '2026-11-06', title: 'Sample advisory title', body: 'Advisories posted by barangay personnel will appear here with a short summary.' },
+  { kind: 'Office schedule', date: '2026-11-04', title: 'Sample office schedule notice', body: 'Changes to Barangay Hall office hours, such as holiday closures, will appear here.' },
+  { kind: 'Community activity', date: '2026-11-01', title: 'Sample community activity', body: 'Community activities will show the date, the place and who can join.' },
+]
+
+// ── Home ─────────────────────────────────────────────────────────────
+
+/** Resident Home (Figma "Resident v2 / Home (simplified)"). */
+export function ResidentHome() {
+  const actor = useDocActor()!
+  const tx = useAsync(() => listMyTransactions(actor), [actor]).data
+  const recent = tx?.slice(0, 4) ?? null
+  const actions = [
+    { to: '/my/documents/new', icon: FileText, title: 'Request a document', body: 'Apply for barangay certificates and clearances' },
+    { to: '/my/documents/new?category=case', icon: MessageSquareWarning, title: 'Report or complain', body: 'Report an incident or submit a complaint' },
+    { to: '/my/borrowing?new=1', icon: Package, title: 'Borrow equipment', body: 'Request chairs, tables, ladders and other equipment.' },
+  ]
+  return (
+    <>
+      <GreetingCard subtitle="Your Barangay 181 services in one place." profileTo="/my/profile" />
+
+      <h2 className="font-display text-[17px] font-bold text-navy-900">How can we help you today?</h2>
+      <p className="text-[13px] text-ink-muted">Choose a service to get started.</p>
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        {actions.map(({ to, icon: Icon, title, body }) => (
+          <Link key={title} to={to} className="bmis-press flex min-h-[72px] items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3.5 transition-colors hover:border-navy-600/40 hover:bg-sky-50">
+            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-sky-100 text-navy-900"><Icon className="size-[18px]" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-semibold text-navy-900">{title}</span>
+              <span className="block text-[12.5px] text-ink-muted">{body}</span>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
+          </Link>
+        ))}
+      </div>
+
+      <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <DarkHeadCard title="My Recent Activities" subtitle="Your latest requests, complaints and borrowing, newest first." to="/my/transactions">
+          {recent === null ? (
+            <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-14 animate-pulse rounded bg-surface-muted" />)}</div>
+          ) : recent.length === 0 ? (
+            <EmptyState icon={<ReceiptText className="size-5" />} title="No transactions yet" body="Your requests, complaints and borrowing will appear here." />
+          ) : (
+            <>
+              <ul className="divide-y divide-line-soft">
+                {recent.map((t) => <ActivityRow key={`${t.kind}-${t.id}`} t={t} />)}
+              </ul>
+              <p className="border-t border-line-soft px-5 py-3 text-[12px] text-ink-muted">Showing your most recent transactions. Select one to see its details.</p>
+            </>
+          )}
+        </DarkHeadCard>
+
+        <DarkHeadCard title="Barangay Announcements" subtitle="Latest notices from the barangay." to="/my/announcements">
+          <ul className="divide-y divide-line-soft">
+            {ANNOUNCEMENTS.map((a) => <AnnouncementItem key={a.title} a={a} />)}
+          </ul>
+        </DarkHeadCard>
+      </div>
+
+      <NeedAssistance />
+    </>
+  )
+}
+
+function DarkHeadCard({ title, subtitle, to, children }: { title: string; subtitle: string; to: string; children: React.ReactNode }) {
+  return (
+    <Card className="overflow-hidden">
+      <div className="flex items-start justify-between gap-3 bg-navy-900 px-5 py-3.5 text-white">
+        <div>
+          <h2 className="font-display text-[15.5px] font-bold">{title}</h2>
+          <p className="text-[12px] text-white/75">{subtitle}</p>
+        </div>
+        <Link to={to} className="inline-flex min-h-9 shrink-0 items-center gap-1 text-[12.5px] font-semibold text-white hover:underline">
+          View all <ChevronRight className="size-4" />
+        </Link>
+      </div>
+      {children}
+    </Card>
+  )
+}
+
+function ActivityRow({ t }: { t: Transaction }) {
+  return (
+    <li>
+      <Link to={t.to} className="flex items-center gap-3 px-5 py-3.5 hover:bg-sky-50">
+        <span className="min-w-0 flex-1">
+          <span className="block text-[10.5px] font-semibold tracking-[0.06em] text-ink-muted uppercase">{t.kindLabel}</span>
+          <span className="block truncate text-[14px] font-semibold text-navy-900">{t.title}</span>
+          <span className="block text-[12px] text-ink-muted">Ref. no. {t.referenceNo} · Submitted {formatDate(t.submittedAt)}</span>
+        </span>
+        <span className="hidden sm:block"><StatusDot status={t.status} /></span>
+        <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
+      </Link>
+      <span className="block px-5 pb-3 sm:hidden"><StatusDot status={t.status} /></span>
+    </li>
+  )
+}
+
+function StatusDot({ status }: { status: ResidentStatus }) {
+  // Lazy import avoided: StatusLabel is tiny.
+  return <StatusLabelInline status={status} />
+}
+import { StatusLabel as StatusLabelInline } from '@/components/ui/StatusLabel'
+
+function AnnouncementItem({ a, full }: { a: (typeof ANNOUNCEMENTS)[number]; full?: boolean }) {
+  return (
+    <li className={cn('px-5 py-4', full && 'sm:px-6')}>
+      <p className="text-[11px] font-semibold tracking-[0.06em] text-navy-600 uppercase">
+        {a.kind} <span className="font-normal tracking-normal text-ink-muted normal-case">· Published {formatDate(a.date)}</span>
+      </p>
+      <span className="mt-1 inline-flex h-5 items-center rounded-[var(--radius-badge)] border border-line px-1.5 text-[11px] font-semibold text-ink-muted">{SAMPLE_NOTE}</span>
+      <p className="mt-1 font-display text-[15px] font-bold text-navy-900">{a.title}</p>
+      <p className="text-[13px] text-ink-nav">{a.body}</p>
+    </li>
+  )
+}
+
+/** Placeholder chip: details the barangay has not provided yet (Figma orange outline). */
+function Placeholder({ children }: { children: React.ReactNode }) {
+  return <span className="inline-flex rounded-md border border-warning/60 bg-warning-tint px-2 py-0.5 text-[12px] font-semibold text-warning">{children}</span>
+}
+
+function NeedAssistance() {
+  return (
+    <section className="mt-6 border-t border-line pt-5">
+      <h2 className="font-display text-[17px] font-bold text-navy-900">Need Assistance?</h2>
+      <p className="text-[13px] text-ink-muted">Having trouble using the portal or accessing a barangay service? Our personnel are here to help.</p>
+      <div className="mt-3 grid gap-4 sm:grid-cols-3">
+        <div>
+          <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
+          <p className="mt-1 text-[13px] text-navy-900">Barangay 181 Hall, Gagalangin, Tondo, Manila</p>
+          <p className="text-[12.5px] text-ink-muted">Visit in person for help with requests and other barangay services.</p>
+        </div>
+        <div>
+          <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
+          <div className="mt-1 flex flex-col items-start gap-1">
+            <Placeholder>Phone number: to be provided</Placeholder>
+            <Placeholder>Email address: to be provided</Placeholder>
+          </div>
+        </div>
+        <div>
+          <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
+          <div className="mt-1"><Placeholder>Office hours: to be confirmed by the barangay</Placeholder></div>
+          <p className="mt-1 text-[12.5px] text-ink-muted">Check announcements for holiday or schedule changes.</p>
+        </div>
+      </div>
+      <Link to="/my/contact" className="mt-4 inline-flex h-11 items-center rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[13px] font-semibold text-navy-900 hover:bg-surface-muted">
+        View contact information
+      </Link>
+    </section>
+  )
+}
+
+// ── My Transactions ─────────────────────────────────────────────────
+
+const FILTERS: { key: 'all' | TransactionKind; label: string }[] = [
+  { key: 'all', label: 'All Transactions' },
+  { key: 'document', label: 'Document Requests' },
+  { key: 'complaint', label: 'Complaints and Reports' },
+  { key: 'borrowing', label: 'Equipment Borrowing' },
+]
+
+export function MyTransactionsPage() {
+  const actor = useDocActor()!
+  const [params, setParams] = useSearchParams()
+  const kind = (params.get('type') as 'all' | TransactionKind | null) ?? 'all'
+  const status = params.get('status') ?? ''
+  const all = useAsync(() => listMyTransactions(actor), [actor]).data
+  const count = (k: 'all' | TransactionKind) => (all ?? []).filter((t) => k === 'all' || t.kind === k).length
+  const shown = (all ?? []).filter((t) => (kind === 'all' || t.kind === kind) && (!status || t.status === status))
+  const set = (patch: Record<string, string>) => {
+    const next = new URLSearchParams(params)
+    for (const [k, v] of Object.entries(patch)) if (v && v !== 'all') next.set(k, v); else next.delete(k)
+    setParams(next, { replace: true })
+  }
+  const emptyText =
+    kind === 'complaint' ? 'You have not filed any complaints or reports yet.' : kind === 'document' ? 'You have not requested any documents yet.' : kind === 'borrowing' ? 'You have not borrowed any equipment yet.' : 'Your requests, complaints and borrowing will appear here.'
+
+  return (
+    <>
+      <PageHeader title="My Transactions" subtitle="View and track all your requests and transactions with Barangay 181." />
+      <div role="tablist" aria-label="Transaction type" className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            role="tab"
+            type="button"
+            aria-selected={kind === f.key}
+            onClick={() => set({ type: f.key })}
+            className={cn(
+              'inline-flex h-11 items-center justify-between gap-2 rounded-[var(--radius-control)] border px-4 text-[13.5px] font-semibold transition-colors sm:justify-start',
+              kind === f.key ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-surface-muted',
+            )}
+          >
+            {f.label} <span className={kind === f.key ? 'text-white/75' : 'text-ink-muted'}>({all ? count(f.key) : '–'})</span>
+          </button>
+        ))}
+      </div>
+      <label className="mt-4 flex items-center gap-3 text-[13px] font-semibold text-navy-900">
+        Status
+        <select
+          value={status}
+          onChange={(e) => set({ status: e.target.value })}
+          className="h-11 min-w-[180px] rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[13.5px] font-normal text-navy-900 focus:border-navy-600 focus:outline-none"
+        >
+          <option value="">All statuses</option>
+          {ALL_RESIDENT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </label>
+
+      <Card className="mt-4 overflow-hidden">
+        {all === null ? (
+          <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-12 animate-pulse rounded bg-surface-muted" />)}</div>
+        ) : shown.length === 0 ? (
+          <EmptyState
+            icon={<ReceiptText className="size-5" />}
+            title={status ? 'No transactions with this status' : 'No transactions yet'}
+            body={status ? 'Try another status, or choose "All statuses".' : emptyText}
+            action={!status && kind !== 'borrowing' ? <Link to={kind === 'complaint' ? '/my/documents/new?category=case' : '/my/documents/new'} className="inline-flex h-11 items-center rounded-[var(--radius-control)] bg-navy-900 px-4 text-[13px] font-semibold text-white">{kind === 'complaint' ? 'File a complaint or report' : 'Request a document'}</Link> : undefined}
+          />
+        ) : (
+          <>
+            <TransactionList items={shown} showType={kind === 'all'} />
+            <p className="border-t border-line-soft px-5 py-3 text-[12px] text-ink-muted">Showing {shown.length} transaction{shown.length === 1 ? '' : 's'}, newest first. Select a row to see its details.</p>
+          </>
+        )}
+      </Card>
+    </>
+  )
+}
+
+// ── Document request details ────────────────────────────────────────
+
+/** Notes the requester is meant to read; other staff notes stay internal. */
+const PUBLIC_REMARKS = new Set<StatusEvent['status']>(['needs_info', 'rejected', 'cancelled', 'under_review'])
+const byLabel = (e: StatusEvent) => {
+  if (e.byRole === 'resident') return 'You'
+  return ROLES[e.byRole]?.name ?? mockUsers.find((u) => u.id === e.byUserId)?.fullName
+}
+
+export function DocumentDetailsPage() {
+  const { id = '' } = useParams()
+  const actor = useDocActor()
+  const [req, setReq] = useState<DocumentRequest | null>(null)
+  const [notFound, setNotFound] = useState(false)
+  useEffect(() => {
+    if (actor) getRequest(id, actor).then(setReq).catch(() => setNotFound(true))
+  }, [id, actor])
+  if (notFound) return <NotFound />
+  if (!req || !actor) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
+
+  const type = getDocumentType(req.typeId)
+  const report = type.category === 'case'
+  const rs = documentStatusForResident(req.status)
+  const shown = type.fields.filter((f) => f.by !== 'system' && !f.staffOnly && isFilled(req.values[f.key]))
+  const needInfo = [...req.history].reverse().find((h) => h.status === 'needs_info')
+  const usesApproval = WORKFLOWS[type.workflow].path.includes('approved')
+
+  // Progress follows the request's own workflow, in resident words.
+  const labels: ResidentStatus[] = usesApproval ? ['Submitted', 'Under Review', 'Approved', 'Ready for Pickup', 'Completed'] : ['Submitted', 'Under Review', 'Completed']
+  const order = (s: ResidentStatus) => labels.indexOf(s === 'Needs Additional Information' ? 'Under Review' : s)
+  const reached = (label: ResidentStatus) => req.history.find((h) => order(documentStatusForResident(h.status)) >= order(label))
+  const idx = order(rs)
+  const ended = rs === 'Rejected' || rs === 'Cancelled'
+  const notes: Record<number, string | undefined> = {}
+  labels.forEach((l, i) => {
+    const ev = reached(l)
+    if (ev && (i < idx || (i === idx && !ended))) notes[i] = formatDate(ev.at)
+  })
+  if (rs === 'Ready for Pickup') notes[labels.length - 1] = 'After you claim the document'
+  const steps = stepsFrom(labels, ended ? labels.length : Math.max(0, idx), notes, rs === 'Completed')
+
+  return (
+    <>
+      <BackLink to="/my/transactions">Back to My Transactions</BackLink>
+      <DetailHeader kind={report ? 'Report' : 'Document request'} title={type.name} referenceNo={req.referenceNo} status={rs} date={req.submittedAt} />
+      <DetailBody
+        main={
+          <>
+            {rs === 'Ready for Pickup' && (
+              <Banner tone="success" icon={<CheckCircle2 />} title="Your document is ready for pickup">
+                Your {type.name} has been signed and sealed. You can claim it at the Barangay 181 Hall.
+              </Banner>
+            )}
+            {rs === 'Needs Additional Information' && (
+              <Banner tone="warning" icon={<CircleAlert />} title="We need more information from you">
+                Your request is on hold until you send what the barangay asked for below.
+              </Banner>
+            )}
+            {rs === 'Submitted' && (
+              <Banner tone="info" icon={<Info />} title="Your request has been received">
+                The Barangay Secretary will check your information. We will notify you when there is an update.
+              </Banner>
+            )}
+            {rs === 'Rejected' && <Banner tone="danger" icon={<XCircle />} title="Your request was not approved">See the update below for the reason. You may visit the Barangay Hall for help.</Banner>}
+
+            {rs === 'Needs Additional Information' && needInfo?.remarks && (
+              <Section title="Message from the barangay">
+                <p className="rounded-md bg-surface-muted px-3 py-2 text-[13.5px] text-navy-900">“{needInfo.remarks}”</p>
+                <p className="mt-1 text-[12px] text-ink-muted">From the {ROLES[needInfo.byRole].name} · {formatDateTime(needInfo.at)}</p>
+              </Section>
+            )}
+            {availableTransitions(req, actor).some((t) => t.by === 'owner') && <TransitionPanel req={req} actor={actor} ownerView onChange={(r) => setReq({ ...r })} />}
+
+            {rs === 'Ready for Pickup' && (
+              <Section title="How to claim your document">
+                <NumberedSteps steps={['Go to the Barangay 181 Hall during office hours.', 'Bring a valid ID.', `Give your reference number: ${req.referenceNo}.`]} />
+              </Section>
+            )}
+
+            <Section title={report ? 'Report details' : 'Request details'}>
+              <InfoRows
+                rows={[
+                  ['Document', type.name],
+                  ...shown.map((f): [string, React.ReactNode] => [
+                    `${f.group ? `${f.group}: ` : ''}${f.label}`,
+                    Array.isArray(req.values[f.key]) ? (req.values[f.key] as string[]).join(', ') : req.values[f.key] === true ? 'Yes' : String(req.values[f.key]),
+                  ]),
+                ]}
+              />
+            </Section>
+
+            {Object.keys(req.requirements).length > 0 && (
+              <Section title="Requirements">
+                <InfoRows rows={Object.entries(req.requirements).map(([k, v]) => [k, v.provided ? 'Provided' : v.note ? `Needs a clearer copy: ${v.note}` : 'Not yet provided'])} />
+              </Section>
+            )}
+
+            <Updates
+              items={[...req.history].reverse().map((h) => ({ title: h.action, at: h.at, by: byLabel(h), note: h.remarks && PUBLIC_REMARKS.has(h.status) ? h.remarks : undefined }))}
+            />
+          </>
+        }
+        side={
+          <>
+            <Progress steps={steps} ended={ended ? `${rs} on ${formatDate(req.updatedAt)}` : undefined} />
+            <NeedHelp />
+          </>
+        }
+      />
+    </>
+  )
+}
+
+// ── Complaint details ───────────────────────────────────────────────
+
+/** Complainant's view of a case: no internal notes, no other party's contact details. */
+export function ComplaintDetailsPage() {
+  const { id = '' } = useParams()
+  const actor = useDocActor()!
+  const [c, setC] = useState<KPCase | null>(null)
+  const [missing, setMissing] = useState(false)
+  useEffect(() => {
+    getCase(id, actor).then(setC).catch(() => setMissing(true))
+  }, [id, actor])
+  if (missing) return <NotFound />
+  if (!c) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
+
+  const rs = caseStageForResident(c.stage)
+  const next = c.hearings.filter((h) => h.status === 'scheduled').sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))[0]
+  const labels: ResidentStatus[] = ['Submitted', 'Under Review', 'Scheduled', 'Completed']
+  const idx = labels.indexOf(rs)
+  const firstAt = (pred: (s: ResidentStatus) => boolean) => c.history.find((h) => pred(caseStageForResident(h.stage)))?.at
+  const notes: Record<number, string | undefined> = {
+    0: formatDate(c.filedAt),
+    1: firstAt((s) => s !== 'Submitted') ? formatDate(firstAt((s) => s !== 'Submitted')!) : undefined,
+    2: next ? `Hearing on ${formatDateTime(next.scheduledAt)}` : undefined,
+    3: rs === 'Completed' ? undefined : 'When the complaint is settled or closed',
+  }
+  const respondent = c.respondents?.map((r) => r.name).join(', ')
+
+  return (
+    <>
+      <BackLink to="/my/transactions">Back to My Transactions</BackLink>
+      <DetailHeader kind="Complaint · Katarungang Pambarangay" title={`Complaint: ${c.nature}`} referenceNo={c.caseNo} status={rs} date={c.filedAt} />
+      <DetailBody
+        main={
+          <>
+            {next && (
+              <Banner tone="info" icon={<CalendarClock />} title={next.kind === 'lupon_mediation' ? 'A Lupon mediation hearing has been scheduled' : 'A mediation hearing has been scheduled'}>
+                Please attend the hearing below. {next.kind === 'lupon_mediation' ? 'The Lupon Tagapamayapa' : 'The Barangay Chairman'} will meet with you and the other party to help you both reach an agreement.
+              </Banner>
+            )}
+            {c.outcome && <Banner tone="success" icon={<CheckCircle2 />} title="Outcome">{c.outcome.summary}</Banner>}
+            {next && (
+              <Section title="Hearing schedule">
+                <InfoRows
+                  rows={[
+                    ['Date', new Date(next.scheduledAt).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })],
+                    ['Time', new Date(next.scheduledAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })],
+                    ['Location', next.place],
+                    ['Type of meeting', next.kind === 'lupon_mediation' ? 'Mediation with the Lupon' : 'Mediation with the Barangay Chairman'],
+                  ]}
+                />
+                <p className="mt-2 text-[12.5px] text-ink-muted">
+                  Please attend in person. You will receive a reminder {KP.reminderDaysBefore} day before the hearing. If you have questions, visit or contact the Barangay Hall.
+                </p>
+              </Section>
+            )}
+            <Section title="Complaint details">
+              <InfoRows
+                rows={[
+                  ['Type of complaint', c.nature],
+                  ...(respondent ? ([['Filed against', respondent]] as [string, string][]) : []),
+                  ['Date submitted', formatDateTime(c.filedAt)],
+                  ['Incident date', (c as { incidentDate?: string }).incidentDate ? formatDate((c as { incidentDate?: string }).incidentDate!) : 'Not provided'],
+                ]}
+              />
+            </Section>
+            {c.details && (
+              <Section title="Your complaint">
+                <p className="text-[13.5px] whitespace-pre-wrap text-navy-900">{c.details}</p>
+              </Section>
+            )}
+            <Updates items={[...c.history].reverse().map((h) => ({ title: h.action, at: h.at, by: h.byRole === 'resident' ? 'You' : ROLES[h.byRole]?.name }))} />
+          </>
+        }
+        side={
+          <>
+            <Progress steps={stepsFrom(labels, idx, notes, rs === 'Completed')} />
+            <Card className="px-5 py-4">
+              <h2 className="font-display text-[16px] font-bold text-navy-900">What these words mean</h2>
+              <p className="mt-2 text-[13px] font-semibold text-navy-900">Mediation</p>
+              <p className="text-[12.5px] text-ink-nav">A meeting where the Barangay Chairman helps both sides agree on a solution.</p>
+              <p className="mt-2 text-[13px] font-semibold text-navy-900">Lupon</p>
+              <p className="text-[12.5px] text-ink-nav">If there is no agreement, the case may go to the Lupon Tagapamayapa, a barangay panel that continues the mediation.</p>
+            </Card>
+            <NeedHelp />
+          </>
+        }
+      />
+    </>
+  )
+}
+
+// ── Equipment borrowing details ─────────────────────────────────────
+
+export function BorrowingDetailsPage() {
+  const { id = '' } = useParams()
+  const actor = useDocActor()!
+  const { user } = useAuth()
+  const [b, setB] = useState<Borrowing | null>(null)
+  const [missing, setMissing] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const [confirm, setConfirm] = useState(false)
+  useEffect(() => {
+    getBorrowing(id, actor).then(setB).catch(() => setMissing(true))
+  }, [id, actor])
+  const rs = useMemo(() => (b ? borrowingStatusForResident(b) : null), [b])
+  if (missing) return <NotFound />
+  if (!b || !rs) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
+
+  const labels: ResidentStatus[] = ['Submitted', 'Approved', 'Borrowed', 'Completed']
+  const idx = rs === 'Overdue' ? 2 : labels.indexOf(rs)
+  const ended = rs === 'Rejected' || rs === 'Cancelled'
+  const at = (needle: string) => b.history.find((h) => h.action.toLowerCase().includes(needle))?.at
+  const notes: Record<number, string | undefined> = {
+    0: formatDate(b.requestedAt),
+    1: at('approv') ? formatDate(at('approv')!) : undefined,
+    2: b.releasedAt ? `Released ${formatDate(b.releasedAt)}` : undefined,
+    3: b.returnedAt ? `Returned ${formatDate(b.returnedAt)}` : 'After you return the equipment',
+  }
+  const cancel = async () => {
+    setErr(null)
+    try {
+      setB({ ...(await actOnBorrowing(b.id, 'cancel', actor, { remarks: 'Cancelled by the resident' })) })
+      setConfirm(false)
+    } catch (e) {
+      setErr(e instanceof ServiceError ? e.message : 'The request could not be cancelled.')
+    }
+  }
+
+  return (
+    <>
+      <BackLink to="/my/transactions">Back to My Transactions</BackLink>
+      <DetailHeader kind="Equipment borrowing" title={`Borrow ${itemsText(b).replace(/ × /g, ' ')}`} referenceNo={b.refNo} status={rs} date={b.requestedAt} />
+      <DetailBody
+        main={
+          <>
+            {rs === 'Submitted' && (
+              <Banner tone="info" icon={<Info />} title="Your request has been received">
+                The Property Custodian will check if the equipment is available. We will notify you when your request is approved.
+              </Banner>
+            )}
+            {rs === 'Approved' && (
+              <Banner tone="success" icon={<CheckCircle2 />} title="Approved: ready to claim">
+                Claim the equipment at the Barangay 181 Hall. The {BORROWING.periodDays}-day borrowing period starts on the day it is released to you.
+              </Banner>
+            )}
+            {rs === 'Borrowed' && b.dueAt && (
+              <Banner tone="info" icon={<Package />} title={`Please return it by ${formatDate(b.dueAt)}`}>
+                A {BORROWING.graceDays}-day grace period applies until {formatDate(b.graceEndsAt!)}.
+              </Banner>
+            )}
+            {rs === 'Overdue' && (
+              <Banner tone="danger" icon={<CircleAlert />} title="This equipment is overdue">
+                The grace period ended on {formatDate(b.graceEndsAt!)}. Please return the equipment to the Barangay 181 Hall as soon as possible.
+              </Banner>
+            )}
+            {rs === 'Rejected' && <Banner tone="danger" icon={<XCircle />} title="Your request was not approved">See the update below for the reason.</Banner>}
+
+            {rs === 'Submitted' && b.residentId && b.residentId === user?.residentId && (
+              <div className="flex flex-wrap items-center gap-2">
+                {confirm ? (
+                  <>
+                    <span className="text-[13px] text-navy-900">Cancel this request?</span>
+                    <Button size="sm" variant="danger" onClick={cancel}>Yes, cancel request</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setConfirm(false)}>Keep it</Button>
+                  </>
+                ) : (
+                  <Button size="sm" variant="danger" onClick={() => setConfirm(true)}>Cancel request</Button>
+                )}
+                {err && <span className="text-[12.5px] text-danger-ink">{err}</span>}
+              </div>
+            )}
+
+            <Section title="Borrowing details">
+              <InfoRows
+                rows={[
+                  ['Requested equipment', itemsText(b)],
+                  ['Date of use', formatDate(b.dateOfUse)],
+                  ...(b.statedReturnDate ? ([['Return date you gave', formatDate(b.statedReturnDate)]] as [string, string][]) : []),
+                  ...(b.dueAt ? ([['Return by', `${formatDate(b.dueAt)} (grace until ${formatDate(b.graceEndsAt!)})`]] as [string, string][]) : []),
+                  ['Borrowing period', `${BORROWING.periodDays} days from release, plus a ${BORROWING.graceDays}-day grace period`],
+                ]}
+              />
+            </Section>
+            <Updates items={[...b.history].reverse().map((h) => ({ title: h.action, at: h.at, by: h.byRole === 'resident' ? 'You' : ROLES[h.byRole]?.name, note: h.remarks }))} />
+          </>
+        }
+        side={
+          <>
+            <Progress steps={stepsFrom(labels, ended ? labels.length : idx, notes, rs === 'Completed')} ended={ended ? `${rs}` : undefined} />
+            <NeedHelp />
+          </>
+        }
+      />
+    </>
+  )
+}
+
+// ── Contact and Assistance / Announcements ──────────────────────────
+
+export function ContactPage() {
+  const help = [
+    'Creating your account, or registering in person with a valid ID',
+    'Requesting certificates and clearances',
+    'Filing a complaint, incident report or blotter report',
+    'Borrowing barangay equipment',
+    'Correcting your information in the barangay records',
+    'If you do not have a phone or computer, personnel can encode your request for you at the Barangay Hall',
+  ]
+  return (
+    <>
+      <BackLink to="/dashboard">Back to Home</BackLink>
+      <PageHeader title="Contact and Assistance" subtitle="Having trouble using the portal or accessing a barangay service? Our personnel are here to help." />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="px-5 py-4">
+          <p className="flex items-center gap-2 text-[14px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
+          <p className="mt-2 text-[13.5px] font-semibold text-navy-900">Barangay 181 Hall</p>
+          <p className="text-[13px] text-navy-900">Gagalangin, Tondo, Manila</p>
+          <div className="mt-2"><Placeholder>Street address: to be confirmed</Placeholder></div>
+          <p className="mt-2 text-[12.5px] text-ink-muted">You may visit in person for help with requests and other services.</p>
+        </Card>
+        <Card className="px-5 py-4">
+          <p className="flex items-center gap-2 text-[14px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
+          <p className="mt-2 text-[12px] text-ink-muted">Phone</p>
+          <Placeholder>Phone number: to be provided</Placeholder>
+          <p className="mt-2 flex items-center gap-1 text-[12px] text-ink-muted"><Mail className="size-3.5" /> Email</p>
+          <Placeholder>Email address: to be provided</Placeholder>
+          <p className="mt-2 text-[12.5px] text-ink-muted">Once provided, tapping the number starts a call and tapping the email opens your email app.</p>
+        </Card>
+        <Card className="px-5 py-4">
+          <p className="flex items-center gap-2 text-[14px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
+          <div className="mt-2"><Placeholder>Office hours: to be confirmed by the barangay</Placeholder></div>
+          <p className="mt-2 text-[12.5px] text-ink-muted">Schedule changes, such as holiday closures, are posted in Barangay Announcements.</p>
+        </Card>
+      </div>
+      <Card className="mt-4 max-w-3xl px-5 py-4">
+        <h2 className="font-display text-[16px] font-bold text-navy-900">What personnel can help you with</h2>
+        <ul className="mt-2 divide-y divide-line-soft">
+          {help.map((h) => (
+            <li key={h} className="flex items-start gap-2.5 py-2.5 text-[13.5px] text-navy-900">
+              <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" /> {h}
+            </li>
+          ))}
+        </ul>
+      </Card>
+      <p className="mt-3 text-[12px] text-ink-muted">Details in orange outline are placeholders until the barangay confirms them.</p>
+    </>
+  )
+}
+
+export function AnnouncementsPage() {
+  return (
+    <>
+      <BackLink to="/dashboard">Back to Home</BackLink>
+      <PageHeader title="Barangay Announcements" subtitle="Advisories, office schedules and community activities from Barangay 181." />
+      <Card className="max-w-3xl">
+        <ul className="divide-y divide-line-soft">
+          {ANNOUNCEMENTS.map((a) => <AnnouncementItem key={a.title} a={a} full />)}
+        </ul>
+      </Card>
+      <p className="mt-3 max-w-3xl text-[12px] text-ink-muted">
+        Barangay personnel cannot post announcements in the system yet, so the items above are sample content showing how announcements will appear.
+      </p>
+    </>
+  )
+}

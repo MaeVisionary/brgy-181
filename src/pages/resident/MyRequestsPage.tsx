@@ -1,6 +1,7 @@
 import { ChevronRight, FilePlus2, FileText } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { StatusBadge } from '@/components/documents/DocParts'
+import { StatusLabel } from '@/components/ui/StatusLabel'
+import { documentStatusForResident } from '@/lib/residentStatus'
 import { ButtonLink } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -14,13 +15,14 @@ import { listRequests } from '@/services/documentService'
 /** Resident portal: only the signed-in resident's own requests (filtered by the service). */
 export function MyRequestsPage() {
   const actor = useDocActor()
-  const { data, loading } = useAsync(() => listRequests(actor!), [actor])
+  const { data: all, loading } = useAsync(() => listRequests(actor!), [actor])
+  const data = all?.filter((r) => getDocumentType(r.typeId).category !== 'case')
 
   return (
     <>
       <PageHeader
-        title="My Requests"
-        subtitle="Documents and reports you've requested, and where each one is."
+        title="Document Requests"
+        subtitle="Certificates and clearances you requested, and where each one is. Complaints and reports are under My Complaints."
         actions={
           <ButtonLink to="/my/documents/new" icon={<FilePlus2 className="size-4" />}>
             New request
@@ -45,14 +47,14 @@ export function MyRequestsPage() {
           <ul>
             {data.map((r) => (
               <li key={r.id} className="border-b border-line-soft last:border-0">
-                <Link to={`/my/documents/${r.id}`} className="flex items-center gap-3 px-5 py-4 hover:bg-sky-50">
+                <Link to={`/my/documents/${r.id}`} className="flex flex-wrap items-center gap-3 px-4 py-4 hover:bg-sky-50 sm:flex-nowrap sm:px-5">
                   <span className="min-w-0 flex-1">
                     <span className="block text-[14px] font-semibold text-navy-900">{getDocumentType(r.typeId).name}</span>
                     <span className="block text-[12px] text-ink-muted">
                       {r.referenceNo} · updated {formatDateTime(r.updatedAt)}
                     </span>
                   </span>
-                  <StatusBadge status={r.status} />
+                  <StatusLabel status={documentStatusForResident(r.status)} />
                   <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
                 </Link>
               </li>

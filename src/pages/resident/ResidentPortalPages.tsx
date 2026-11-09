@@ -1,8 +1,9 @@
-import { ArrowLeft, Plus } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Plus } from 'lucide-react'
+import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import { StatusBadge } from '@/components/documents/DocParts'
+import { StatusLabel } from '@/components/ui/StatusLabel'
+import { borrowingStatusForResident, caseStageForResident, documentStatusForResident } from '@/lib/residentStatus'
 import { Badge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { FieldLabel, Select, TextArea, TextInput } from '@/components/ui/Field'
@@ -12,17 +13,15 @@ import { BORROWING } from '@/config/barangay'
 import { getDocumentType } from '@/documents/catalog'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
-import { formatDate, formatDateTime } from '@/lib/format'
-import { STAGE_LABEL, STAGE_TONE, getCase, listCases } from '@/services/caseService'
+import { formatDate } from '@/lib/format'
+import { listCases } from '@/services/caseService'
 import { listRequests } from '@/services/documentService'
 import { listBorrowings, returnState } from '@/services/equipmentService'
 import { ServiceError } from '@/services/mockApi'
 import { CHANGEABLE_FIELDS, getHousehold, getResident, listChangeRequests, submitChangeRequest } from '@/services/residentService'
-import type { KPCase } from '@/types/case'
-import { BORROW_STATUS, RETURN_BADGE } from '@/pages/equipment/badges'
+import { RETURN_BADGE } from '@/pages/equipment/badges'
 import { BorrowForm, itemsText } from '@/pages/equipment/BorrowingPages'
 import { CIVIL_LABEL, age, fullName } from '@/pages/residents/common'
-import { NotFound } from '@/pages/system/NotFound'
 
 /** Resident's own record; changes go through the Secretary's review (FR11). */
 export function MyProfilePage() {
@@ -95,44 +94,13 @@ export function MyComplaintsPage() {
       <div className="grid gap-4 xl:grid-cols-2">
         <Panel title="Submitted reports" bodyClassName="px-0 py-0">
           {docs.length === 0 ? <p className="px-5 py-6 text-[13px] text-ink-muted">No reports submitted.</p> : (
-            <ul>{docs.map((d) => <li key={d.id} className="border-b border-line-soft last:border-0"><Link to={`/my/documents/${d.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-sky-50"><span><span className="block text-[13px] font-semibold text-navy-900">{getDocumentType(d.typeId).name}</span><span className="block text-[12px] text-ink-muted">{d.referenceNo}</span></span><StatusBadge status={d.status} /></Link></li>)}</ul>
+            <ul>{docs.map((d) => <li key={d.id} className="border-b border-line-soft last:border-0"><Link to={`/my/documents/${d.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-sky-50"><span><span className="block text-[13px] font-semibold text-navy-900">{getDocumentType(d.typeId).name}</span><span className="block text-[12px] text-ink-muted">{d.referenceNo}</span></span><StatusLabel status={documentStatusForResident(d.status)} /></Link></li>)}</ul>
           )}
         </Panel>
         <Panel title="My cases" subtitle="Cases where you are the complainant" bodyClassName="px-0 py-0">
           {cases.length === 0 ? <p className="px-5 py-6 text-[13px] text-ink-muted">No cases.</p> : (
-            <ul>{cases.map((c) => <li key={c.id} className="border-b border-line-soft last:border-0"><Link to={`/my/complaints/${c.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-sky-50"><span><span className="block text-[13px] font-semibold text-navy-900">{c.caseNo} · {c.title}</span><span className="block text-[12px] text-ink-muted">{c.nature}</span></span><Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge></Link></li>)}</ul>
+            <ul>{cases.map((c) => <li key={c.id} className="border-b border-line-soft last:border-0"><Link to={`/my/complaints/${c.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-sky-50"><span><span className="block text-[13px] font-semibold text-navy-900">{c.caseNo} · {c.title}</span><span className="block text-[12px] text-ink-muted">{c.nature}</span></span><StatusLabel status={caseStageForResident(c.stage)} /></Link></li>)}</ul>
           )}
-        </Panel>
-      </div>
-    </>
-  )
-}
-
-/** Complainant's view of a case: no internal notes, no other party's contact details. */
-export function MyCaseDetailPage() {
-  const { id = '' } = useParams()
-  const actor = useDocActor()!
-  const [c, setC] = useState<KPCase | null>(null)
-  const [missing, setMissing] = useState(false)
-  useEffect(() => {
-    getCase(id, actor).then(setC).catch(() => setMissing(true))
-  }, [id, actor])
-  if (missing) return <NotFound />
-  if (!c) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
-  const upcoming = c.hearings.filter((h) => h.status === 'scheduled')
-  return (
-    <>
-      <Link to="/my/complaints" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-navy-900"><ArrowLeft className="size-4" /> My Complaints</Link>
-      <PageHeader eyebrow={c.caseNo} title={c.title} subtitle={c.nature} actions={<Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>} />
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Your hearings">
-          {upcoming.length === 0 ? <p className="text-[13px] text-ink-muted">No upcoming hearing.</p> : upcoming.map((h) => (
-            <p key={h.id} className="text-[13.5px] text-navy-900"><strong>{formatDateTime(h.scheduledAt)}</strong> at the {h.place}<span className="block text-[12px] text-ink-muted">{h.kind === 'lupon_mediation' ? 'Lupon mediation' : 'Mediation with the Barangay Chairman'}. Please bring your witnesses and any documents.</span></p>
-          ))}
-          {c.outcome && <p className="mt-3 rounded-md bg-success-tint px-3 py-2 text-[13px] text-navy-900">{c.outcome.summary}</p>}
-        </Panel>
-        <Panel title="Updates">
-          <ol className="space-y-2">{[...c.history].reverse().map((h, i) => <li key={i} className="text-[13px]"><span className="font-semibold text-navy-900">{h.action}</span><span className="block text-[12px] text-ink-muted">{formatDateTime(h.at)}</span></li>)}</ol>
         </Panel>
       </div>
     </>
@@ -144,25 +112,29 @@ export function MyBorrowingPage() {
   const { user } = useAuth()
   const actor = useDocActor()!
   const [tick, setTick] = useState(0)
-  const [form, setForm] = useState(false)
+  const [params] = useSearchParams()
+  const [form, setForm] = useState(params.get('new') === '1')
   const me = useAsync(() => getResident(user!.residentId!), [user?.residentId]).data
   const list = useAsync(() => listBorrowings(actor), [actor, tick]).data ?? []
   return (
     <>
-      <PageHeader title="Borrow Equipment" subtitle={`Chairs, tables, ladders and nebulizers. Claim approved equipment at the Barangay 181 Hall; return it within ${BORROWING.periodDays} days (plus a ${BORROWING.graceDays}-day grace period).`} actions={!form && <Button icon={<Plus className="size-4" />} onClick={() => setForm(true)}>New request</Button>} />
+      <PageHeader title="Equipment Borrowing" subtitle={`Chairs, tables, ladders and nebulizers. Claim approved equipment at the Barangay 181 Hall; return it within ${BORROWING.periodDays} days (plus a ${BORROWING.graceDays}-day grace period).`} actions={!form && <Button icon={<Plus className="size-4" />} onClick={() => setForm(true)}>New request</Button>} />
       {form && me && <BorrowForm resident={me} onDone={() => { setForm(false); setTick((t) => t + 1) }} />}
       <Card className="divide-y divide-line-soft">
         {list.length === 0 && <p className="px-5 py-6 text-[13px] text-ink-muted">No borrowing requests yet.</p>}
         {list.map((b) => {
           const rs = returnState(b)
           return (
-            <div key={b.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+            <Link key={b.id} to={`/my/borrowing/${b.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 hover:bg-sky-50 sm:px-5">
               <span>
                 <span className="block text-[13.5px] font-semibold text-navy-900">{b.refNo} · {itemsText(b)}</span>
                 <span className="block text-[12px] text-ink-muted">Date of use {formatDate(b.dateOfUse)}{b.dueAt && ` · return by ${formatDate(b.dueAt)} (grace until ${formatDate(b.graceEndsAt!)})`}</span>
               </span>
-              {b.status === 'released' ? <Badge tone={RETURN_BADGE[rs].tone}>{RETURN_BADGE[rs].label}</Badge> : <Badge tone={BORROW_STATUS[b.status].tone}>{BORROW_STATUS[b.status].label}</Badge>}
-            </div>
+              <span className="flex items-center gap-2">
+                {b.status === 'released' && rs !== 'overdue' && <Badge tone={RETURN_BADGE[rs].tone}>{RETURN_BADGE[rs].label}</Badge>}
+                <StatusLabel status={borrowingStatusForResident(b)} />
+              </span>
+            </Link>
           )
         })}
       </Card>

@@ -1,24 +1,15 @@
-import { Boxes, FileText, Gavel, Info, Package, UserRound, Users } from 'lucide-react'
+import { Boxes, Info, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import { StatusBadge } from '@/components/documents/DocParts'
-import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
+import { GreetingCard } from '@/components/ui/GreetingCard'
 import { Card, Panel } from '@/components/ui/Panel'
 import { CHAIRMAN, OFFICIALS, SECRETARY, officialByPosition } from '@/config/barangay'
 import { NAVIGATION } from '@/config/navigation'
 import { PERMISSION_LABELS, ROLES } from '@/config/permissions'
-import { getDocumentType } from '@/documents/catalog'
-import { useAsync } from '@/hooks/useAsync'
-import { useDocActor } from '@/hooks/useDocActor'
 import { formatDateTime, initials } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { listAudit } from '@/services/auditService'
-import { STAGE_LABEL, STAGE_TONE, listCases } from '@/services/caseService'
-import { listRequests } from '@/services/documentService'
-import { listBorrowings } from '@/services/equipmentService'
-import { getResident } from '@/services/residentService'
-import { BORROW_STATUS } from '@/pages/equipment/badges'
 import type { RoleId } from '@/types/auth'
 import { DashHeader, ListPanel, PopulationByStreet, Row, Stat } from './shared'
 
@@ -80,7 +71,7 @@ export function AdminDashboard() {
   const audit = listAudit().slice(0, 6)
   return (
     <>
-      <DashHeader subtitle="Accounts, roles and permissions, activity log and system configuration." />
+      <GreetingCard subtitle="Accounts, roles and permissions, activity log and system configuration." profileTo="/account" />
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="User accounts" value={mockUsers.length} to="/admin/users" />
         <Stat label="Active" value={active} to="/admin/users" />
@@ -106,9 +97,9 @@ export function AdminDashboard() {
               ['Backups', 'Not available until the backend is set up (NFR12)'],
               ['Email notifications', 'Not configured (FR23, backend phase)'],
             ].map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-4">
-                <dt className="text-ink-muted">{k}</dt>
-                <dd className="text-right font-semibold text-navy-900">{v}</dd>
+              <div key={k} className="border-b border-line-soft pb-2.5 last:border-0 last:pb-0">
+                <dt className="text-[12px] text-ink-muted">{k}</dt>
+                <dd className="font-semibold text-navy-900">{v}</dd>
               </div>
             ))}
           </dl>
@@ -121,56 +112,6 @@ export function AdminDashboard() {
         empty="No activity recorded in this session yet. Report generation, exports and record access appear here."
         render={(a) => <Row to="/admin/activity" title={a.action} meta={`${mockUsers.find((u) => u.id === a.userId)?.fullName ?? a.userId} · ${formatDateTime(a.timestamp)}`} />}
       />
-    </>
-  )
-}
-
-/** Resident portal home: own profile, requests, complaints and borrowing. */
-export function ResidentDashboard() {
-  const { user } = useAuth()
-  const actor = useDocActor()!
-  const me = useAsync(() => getResident(user!.residentId!), [user?.residentId]).data
-  const docs = useAsync(() => listRequests(actor), [actor]).data
-  const cases = useAsync(() => listCases(actor), [actor]).data
-  const borrowings = useAsync(() => listBorrowings(actor), [actor]).data
-
-  const services = [
-    { to: '/my/documents/new', icon: FileText, label: 'Request a document', body: 'Certificates and clearances, claimed at the Barangay Hall.' },
-    { to: '/my/documents/new', icon: Gavel, label: 'Report or complain', body: 'Incident reports, blotter reports and summons requests.' },
-    { to: '/my/borrowing', icon: Package, label: 'Borrow equipment', body: 'Chairs, tables, ladders and nebulizers.' },
-    { to: '/my/profile', icon: UserRound, label: 'My profile', body: 'Your record and correction requests.' },
-  ]
-
-  return (
-    <>
-      <DashHeader subtitle="Your Barangay 181 services in one place." />
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {services.map(({ to, icon: Icon, label, body }) => (
-          <Link key={label} to={to} className="rounded-[var(--radius-card)] border border-line bg-surface p-4 transition-colors hover:bg-sky-50">
-            <span className="grid size-9 place-items-center rounded-lg bg-sky-100 text-navy-900"><Icon className="size-[18px]" /></span>
-            <span className="mt-3 block font-display text-[15px] font-bold text-navy-900">{label}</span>
-            <span className="mt-0.5 block text-[12.5px] text-ink-muted">{body}</span>
-          </Link>
-        ))}
-      </section>
-      <section className="mt-4 grid gap-4 xl:grid-cols-3">
-        <ListPanel title="My document requests" to="/my/documents" items={docs?.filter((d) => getDocumentType(d.typeId).category !== 'case') ?? null} empty="No requests yet."
-          render={(d) => <Row to={`/my/documents/${d.id}`} title={getDocumentType(d.typeId).name} meta={d.referenceNo} right={<StatusBadge status={d.status} />} />} />
-        <ListPanel title="My complaints and reports" to="/my/complaints" items={[...(docs?.filter((d) => getDocumentType(d.typeId).category === 'case').map((d) => ({ kind: 'doc' as const, d })) ?? []), ...(cases?.map((c) => ({ kind: 'case' as const, c })) ?? [])]} empty="No complaints or reports."
-          render={(x) => x.kind === 'doc'
-            ? <Row to={`/my/documents/${x.d.id}`} title={getDocumentType(x.d.typeId).name} meta={x.d.referenceNo} right={<StatusBadge status={x.d.status} />} />
-            : <Row to={`/my/complaints/${x.c.id}`} title={`${x.c.caseNo} · ${x.c.title}`} meta={x.c.nature} right={<Badge tone={STAGE_TONE[x.c.stage]}>{STAGE_LABEL[x.c.stage]}</Badge>} />} />
-        <ListPanel title="My equipment borrowing" to="/my/borrowing" items={borrowings} empty="No borrowing requests."
-          render={(b) => <Row to="/my/borrowing" title={b.refNo} meta={`Date of use ${b.dateOfUse}`} right={<Badge tone={BORROW_STATUS[b.status].tone}>{BORROW_STATUS[b.status].label}</Badge>} />} />
-      </section>
-      {me && (
-        <Card className="mt-4 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <span className="text-[13px] text-navy-900">
-            <strong>{me.firstName} {me.lastName}</strong> · {me.houseNo} {me.street} · Resident since {me.residentSince}
-          </span>
-          <ButtonLink to="/my/profile" variant="secondary" size="sm">View profile</ButtonLink>
-        </Card>
-      )}
     </>
   )
 }

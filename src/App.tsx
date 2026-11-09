@@ -26,11 +26,11 @@ import { ImportPage } from '@/pages/residents/ImportPage'
 import { ResidentProfilePage } from '@/pages/residents/ResidentProfilePage'
 import { ResidentsPage } from '@/pages/residents/ResidentsPage'
 import { ChangeRequestsPage, RegistrationsPage } from '@/pages/residents/ReviewPages'
-import { MyBorrowingPage, MyCaseDetailPage, MyComplaintsPage, MyProfilePage } from '@/pages/resident/ResidentPortalPages'
+import { MyBorrowingPage, MyComplaintsPage, MyProfilePage } from '@/pages/resident/ResidentPortalPages'
 import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage'
 import { ReportsPage } from '@/pages/analytics/ReportsPage'
 import { NotificationsPage } from '@/pages/NotificationsPage'
-import { MyRequestDetailPage } from '@/pages/resident/MyRequestDetailPage'
+import { AnnouncementsPage, BorrowingDetailsPage, ComplaintDetailsPage, ContactPage, DocumentDetailsPage, MyTransactionsPage } from '@/pages/resident/ResidentV2Pages'
 import { MyRequestsPage } from '@/pages/resident/MyRequestsPage'
 import { NewRequestPage } from '@/pages/resident/NewRequestPage'
 import { ModulePending } from '@/pages/system/ModulePending'
@@ -103,8 +103,12 @@ export default function App() {
 
           {/* Resident portal */}
           <Route path="/my/complaints" element={guard(['self.complaints'], 'resident', <MyComplaintsPage />)} />
-          <Route path="/my/complaints/:id" element={guard(['self.complaints'], 'resident', <MyCaseDetailPage />)} />
+          <Route path="/my/complaints/:id" element={guard(['self.complaints'], 'resident', <ComplaintDetailsPage />)} />
           <Route path="/my/borrowing" element={guard(['self.borrowing'], 'resident', <MyBorrowingPage />)} />
+          <Route path="/my/borrowing/:id" element={guard(['self.borrowing'], 'resident', <BorrowingDetailsPage />)} />
+          <Route path="/my/transactions" element={guard(['self.documents', 'self.complaints', 'self.borrowing'], 'resident', <MyTransactionsPage />)} />
+          <Route path="/my/contact" element={guard([], 'resident', <ContactPage />)} />
+          <Route path="/my/announcements" element={guard([], 'resident', <AnnouncementsPage />)} />
           <Route path="/my/profile" element={guard(['self.profile'], 'resident', <MyProfilePage />)} />
 
           {/* Analytics and reports */}
@@ -114,7 +118,7 @@ export default function App() {
           {/* Documents: resident portal (own records only, enforced in the service) */}
           <Route path="/my/documents" element={guard(['self.documents'], 'resident', <MyRequestsPage />)} />
           <Route path="/my/documents/new" element={guard(['self.documents'], 'resident', <NewRequestPage />)} />
-          <Route path="/my/documents/:id" element={guard(['self.documents'], 'resident', <MyRequestDetailPage />)} />
+          <Route path="/my/documents/:id" element={guard(['self.documents'], 'resident', <DocumentDetailsPage />)} />
 
           {pendingRoutes.map((leaf) => (
             <Route key={leaf.portal + leaf.path} path={leaf.path} element={guard(leaf.anyOf ?? [], leaf.portal, <ModulePending title={leaf.label} phase={leaf.phase} summary={leaf.summary} />)} />

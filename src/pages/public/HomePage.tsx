@@ -1,4 +1,5 @@
 import { ArrowRight, Building2, ClipboardList, FileText, Gavel, MapPin, Package, UserCheck, UserPlus } from 'lucide-react'
+import { BarangaySeal } from '@/components/layout/BarangaySeal'
 import { BARANGAY, CHAIRMAN, SECRETARY, officialByPosition } from '@/config/barangay'
 import { activeDocumentTypes } from '@/services/templateService'
 import { cn } from '@/lib/cn'
@@ -60,57 +61,57 @@ export function HomePage() {
 
       {/* About */}
       <section id="about" className="scroll-mt-20">
-        <div className="mx-auto max-w-[1180px] px-4 py-16 sm:px-6">
-          <p className="label-caps text-navy-600">About Barangay 181</p>
-          <h2 className="mt-2 font-display text-[28px] font-extrabold text-navy-900">A community in Gagalangin, Tondo, Manila</h2>
-          <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_1.1fr]">
-            <div>
-              <dl className="grid grid-cols-2 gap-3">
-                {[
-                  ['Barangay', '181'],
-                  ['Zone', '16'],
-                  ['District', 'II'],
-                  ['City', 'Manila'],
-                ].map(([k, v]) => (
-                  <div key={k} className="rounded-[var(--radius-card)] border border-line bg-surface px-5 py-4">
-                    <dt className="label-caps">{k}</dt>
-                    <dd className="mt-1 font-display text-[26px] leading-none font-extrabold text-navy-900">{v}</dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="mt-5 text-[14.5px] leading-relaxed text-ink-nav">
-                Barangay 181 is led by the Barangay Chairman, seven Barangay Kagawad and the Barangay Secretary. The BMIS study describes a
-                community of around 6,000 residents and about 2,000 registered voters as of 2025.
-              </p>
-              <p className="mt-3 text-[14.5px] leading-relaxed text-ink-nav">
-                This portal brings resident records, document requests, complaints and Katarungang Pambarangay proceedings, equipment borrowing and barangay
-                reports into one place, so residents spend less time going back and forth and personnel spend less time searching records.
-              </p>
-            </div>
-            <div className="rounded-[var(--radius-card)] border border-line bg-surface p-6">
-              <p className="label-caps">Barangay Council</p>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <Person name={CHAIRMAN.name} position="Barangay Chairman" lead />
-                <Person name={SECRETARY.name} position="Barangay Secretary" lead />
+        <div className="mx-auto max-w-[1180px] px-4 py-14 sm:px-6">
+          <p className="flex flex-wrap items-center gap-2 text-[12px] font-semibold tracking-[0.06em] text-navy-600 uppercase">
+            <BarangaySeal className="size-6" /> Tondo, Manila <span className="text-ink-subtle">•</span>
+            <span className="tracking-normal text-ink-muted normal-case">Official Public Governance &amp; Resident Services Portal</span>
+          </p>
+          <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {[
+              ['Barangay', '181'],
+              ['Zone', '16'],
+              ['District', 'II'],
+              ['City', 'Manila'],
+            ].map(([k, v]) => (
+              <div key={k} className="relative overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface px-5 py-4">
+                <img aria-hidden alt="" src={`${import.meta.env.BASE_URL}seal.png`} className="pointer-events-none absolute -top-4 -right-6 w-[110px] max-w-none opacity-[0.08] grayscale select-none" />
+                <dt className="label-caps relative">{k}</dt>
+                <dd className="relative mt-1 font-display text-[28px] leading-none font-extrabold text-navy-900">{v}</dd>
               </div>
-              <p className="label-caps mt-5 mb-2">Barangay Kagawad</p>
-              <ul className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
-                {kagawads.map((k) => (
-                  <li key={k.id} className="text-[14px] font-semibold text-navy-900">{k.name}</li>
-                ))}
-              </ul>
-              <div className="mt-5 grid gap-4 border-t border-line-soft pt-4 sm:grid-cols-2">
-                {treasurer && <Person name={treasurer.name} position="Barangay Treasurer" />}
+            ))}
+          </dl>
+          <p className="mt-5 max-w-3xl text-[14.5px] leading-relaxed text-ink-nav">
+            Barangay 181 serves its residents in Gagalangin, Tondo, Manila. It is led by the Barangay Chairman, seven Barangay Kagawad and the Barangay
+            Secretary. The BMIS study describes a community of around 6,000 residents and about 2,000 registered voters as of 2025. This portal brings resident
+            records, document requests, complaints and Katarungang Pambarangay proceedings, equipment borrowing and barangay reports into one place.
+          </p>
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            <div className="space-y-4">
+              <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
+                <p className="label-caps">Barangay Council</p>
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <Person name={CHAIRMAN.name} position="Barangay Chairman" lead />
+                  <Person name={SECRETARY.name} position="Barangay Secretary" lead />
+                  {treasurer && <Person name={treasurer.name} position="Barangay Treasurer" />}
+                </div>
               </div>
               {lupon.length > 0 && (
-                <div className="mt-4 border-t border-line-soft pt-4">
-                  <p className="label-caps mb-2">Lupong Tagapamayapa members</p>
-                  <ul className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+                <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
+                  <p className="label-caps">Lupong Tagapamayapa members</p>
+                  <ul className="mt-3 grid gap-x-4 gap-y-1 sm:grid-cols-2">
                     {lupon.map((l) => <li key={l.id} className="text-[14px] font-semibold text-navy-900">{l.name}</li>)}
                   </ul>
                   <p className="mt-2 text-[12px] text-ink-muted">Chaired by the Punong Barangay.</p>
                 </div>
               )}
+            </div>
+            <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
+              <p className="label-caps">Barangay Kagawad</p>
+              <ul className="mt-3 grid gap-x-4 gap-y-2.5 sm:grid-cols-2">
+                {kagawads.map((k) => (
+                  <li key={k.id} className="text-[14px] font-semibold text-navy-900">{k.name}</li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
@@ -119,9 +120,9 @@ export function HomePage() {
       {/* Services */}
       <section id="services" className="scroll-mt-20 border-y border-line bg-surface">
         <div className="mx-auto max-w-[1180px] px-4 py-16 sm:px-6">
-          <p className="label-caps text-navy-600">Barangay services</p>
-          <h2 className="mt-2 font-display text-[28px] font-extrabold text-navy-900">What you can do through the portal</h2>
-          <p className="mt-2 max-w-2xl text-[14.5px] text-ink-muted">
+          <p className="label-caps text-center text-navy-600">Barangay services</p>
+          <h2 className="mt-2 text-center font-display text-[28px] font-extrabold text-navy-900">What you can do through the portal</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-center text-[14.5px] text-ink-muted">
             If you have no gadget or need help using the portal, you can visit the Barangay 181 Hall and personnel will assist you.
           </p>
 
@@ -144,6 +145,7 @@ export function HomePage() {
             </ServiceGroup>
           </div>
 
+          <h3 className="mt-14 text-center font-display text-[24px] font-extrabold text-navy-900">How a request moves</h3>
           <ProcessSteps
             steps={[
               { icon: ClipboardList, title: 'Submit your request', body: 'Through the portal or at the Barangay Hall.' },
@@ -156,7 +158,7 @@ export function HomePage() {
       </section>
 
       {/* Contact */}
-      <section id="contact" className="scroll-mt-20">
+      <section id="contact" className="scroll-mt-20 bg-surface-muted">
         <div className="mx-auto grid max-w-[1180px] gap-6 px-4 py-16 sm:px-6 lg:grid-cols-2">
           <div>
             <p className="label-caps text-navy-600">Contact and assistance</p>
@@ -218,9 +220,8 @@ function ServiceItem({ name, online }: { name: string; online: boolean }) {
 /** Numbered steps joined by a line: horizontal on wide screens, vertical on phones. */
 function ProcessSteps({ steps }: { steps: { icon: typeof FileText; title: string; body: string }[] }) {
   return (
-    <div className="mt-12">
-      <p className="label-caps text-navy-600">How a request moves</p>
-      <ol className="relative mt-6 grid gap-8 md:grid-cols-4 md:gap-4">
+    <div className="mt-2">
+      <ol className="relative mt-8 grid gap-8 md:grid-cols-4 md:gap-4">
         {/* Connector line */}
         <span aria-hidden className="absolute top-6 right-[12.5%] left-[12.5%] hidden h-[3px] rounded-full bg-sky-300 md:block" />
         <span aria-hidden className="absolute top-6 bottom-6 left-6 w-[3px] rounded-full bg-sky-300 md:hidden" />
