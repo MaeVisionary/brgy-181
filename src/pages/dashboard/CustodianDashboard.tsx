@@ -1,4 +1,4 @@
-import { PackagePlus } from 'lucide-react'
+import { ChevronRight, PackagePlus } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { Panel } from '@/components/ui/Panel'
@@ -8,9 +8,9 @@ import { useDocActor } from '@/hooks/useDocActor'
 import { formatDate, formatDateTime } from '@/lib/format'
 import { availableQty, borrowedQty, listBorrowings, listEquipment, returnState } from '@/services/equipmentService'
 import { RETURN_BADGE } from '@/pages/equipment/badges'
-import { DashHeader, ListPanel, Row, SampleBadge, Stat } from './shared'
+import { DashHeader, ListPanel, Row, Stat, ViewAll } from './shared'
 
-/** Property Custodian: barangay equipment and borrowing transactions (FR21–FR22). */
+/** Property Custodian: barangay equipment and borrowing transactions. */
 export function CustodianDashboard() {
   const actor = useDocActor()!
   const equipment = useAsync(listEquipment).data
@@ -25,8 +25,9 @@ export function CustodianDashboard() {
   return (
     <>
       <DashHeader
+        actionInGreeting
         subtitle={`Barangay equipment and borrowing. Borrowing period ${BORROWING.periodDays} days plus a ${BORROWING.graceDays}-day grace period.`}
-        actions={<ButtonLink to="/inventory" icon={<PackagePlus className="size-4" />}>Equipment records</ButtonLink>}
+        actions={<ButtonLink to="/inventory" icon={<PackagePlus className="size-4" />}>Equipment Records</ButtonLink>}
       />
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Total equipment units" value={sum((e) => e.totalQty)} to="/inventory" />
@@ -41,6 +42,7 @@ export function CustodianDashboard() {
 
       <section className="mt-4 grid gap-4 xl:grid-cols-2">
         <ListPanel
+          dark
           title="Requests to review"
           subtitle="Check availability, then approve"
           items={pending}
@@ -61,7 +63,7 @@ export function CustodianDashboard() {
         />
       </section>
 
-      <Panel className="mt-4" title="Equipment records" actions={<SampleBadge />} bodyClassName="px-0 py-0">
+      <Panel className="mt-4" title="Equipment records" actions={<ViewAll to="/inventory" />} bodyClassName="px-0 py-0">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-[13px]">
             <thead>
@@ -86,10 +88,11 @@ export function CustodianDashboard() {
       </Panel>
 
       <ListPanel
+        className="mt-4"
         title="Recent transactions"
         items={borrowings ? borrowings.flatMap((b) => b.history.map((h) => ({ b, h }))).sort((x, y) => y.h.at.localeCompare(x.h.at)).slice(0, 6) : null}
         empty="No transactions yet."
-        render={({ b, h }) => <Row to={`/borrowing/${b.id}`} title={`${h.action} · ${b.refNo}`} meta={`${b.borrowerName} · ${formatDateTime(h.at)}`} />}
+        render={({ b, h }) => <Row to={`/borrowing/${b.id}`} title={`${h.action} · ${b.refNo}`} meta={`${b.borrowerName} · ${formatDateTime(h.at)}`} right={<ChevronRight className="size-4 text-ink-subtle" />} />}
       />
     </>
   )

@@ -116,7 +116,7 @@ export function TemplatesPage() {
             title={selected.name}
             subtitle={`Printed title: ${selected.printedTitle}`}
             actions={
-              isRemoved ? <Badge tone="danger">Removed</Badge> : <Badge tone={selected.online ? 'info' : 'neutral'}>{selected.online ? 'Online request' : 'Barangay Hall only'}</Badge>
+              isRemoved ? <Badge tone="danger">Removed</Badge> : <Badge dot={false} tone={selected.online ? 'info' : 'neutral'}>{selected.online ? 'Online request' : 'Barangay Hall only'}</Badge>
             }
           >
             <div className="mb-4 flex flex-wrap items-center gap-2">

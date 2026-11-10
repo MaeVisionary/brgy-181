@@ -5,9 +5,9 @@ import { useAuth } from '@/auth/useAuth'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Field'
-import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
 import { parseCsv } from '@/lib/csv'
+import { readSheet } from 'read-excel-file/browser'
 import { audit } from '@/services/auditService'
 import { dupKey, findDuplicate, importResidents, type ImportRecord } from '@/services/residentService'
 import { fullName } from './common'
@@ -47,7 +47,8 @@ interface Checked {
   duplicateInFile?: number
 }
 
-export function ImportPage() {
+/** Import panel shown inside the Resident Master List (no separate page). */
+export function ImportPanel({ onClose }: { onClose: () => void }) {
   const { user } = useAuth()
   const fileRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState<string | null>(null)
@@ -62,8 +63,10 @@ export function ImportPage() {
 
   const onFile = async (f?: File) => {
     if (!f) return
-    const text = await f.text()
-    const parsed = parseCsv(text)
+    // Excel (.xlsx) straight from the barangay's file, or a CSV saved from it.
+    const parsed = /\.xlsx$/i.test(f.name)
+      ? ((await readSheet(f)) as unknown[][]).map((r) => r.map((c) => (c instanceof Date ? c.toISOString().slice(0, 10) : c == null ? '' : String(c))))
+      : parseCsv(await f.text())
     setFileName(f.name)
     setRows(parsed)
     setDone(null)
@@ -131,24 +134,30 @@ export function ImportPage() {
     if (!user) return
     setBusy(true)
     const n = await importResidents(toImport.map((c) => c.record!), user)
-    audit(user, 'Imported resident master list (CSV)', 'Residents', `${n} records from ${fileName}`)
+    audit(user, 'Imported resident master list', 'Residents', `${n} records from ${fileName}`)
     setDone(n)
     setBusy(false)
   }
 
   return (
     <>
-      <PageHeader title="Master List Import" subtitle="Import the census-based master list kept in Microsoft Excel (save it as CSV). Possible duplicates are compared by full name, birthdate and address and wait for your review." />
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-[17px] font-bold text-navy-900">Import Master List</h2>
+          <p className="text-[12.5px] text-ink-muted">Upload the census-based master list file. Possible duplicates are compared by full name, birthdate and address and wait for your review.</p>
+        </div>
+        <Button variant="ghost" onClick={onClose}>Close</Button>
+      </div>
 
       <Card className="mb-4 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-        <span className="text-[13px] text-navy-900">{fileName ? <><strong>{fileName}</strong> · {body.length} data rows</> : 'Choose a CSV file. The first row must contain the column names.'}</span>
-        <input ref={fileRef} type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = '' }} />
-        <Button icon={<FileUp className="size-4" />} onClick={() => fileRef.current?.click()}>{fileName ? 'Choose another file' : 'Upload CSV'}</Button>
+        <span className="text-[13px] text-navy-900">{fileName ? <><strong>{fileName}</strong> · {body.length} data rows</> : 'Choose the master list file (Excel or CSV). The first row must contain the column names.'}</span>
+        <input ref={fileRef} type="file" accept=".xlsx,.csv,text/csv" className="sr-only" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = '' }} />
+        <Button icon={<FileUp className="size-4" />} onClick={() => fileRef.current?.click()}>{fileName ? 'Choose another file' : 'Choose file'}</Button>
       </Card>
 
       {done !== null && (
         <Card className="mb-4 flex items-center gap-3 border-success/40 bg-success-tint px-5 py-4 text-[13.5px] text-navy-900">
-          <CheckCircle2 className="size-5 text-success" /> {done} records added to the master list in this browser session (prototype: not saved to a database). <Link to="/residents" className="font-semibold text-info hover:underline">Open the master list</Link>
+          <CheckCircle2 className="size-5 text-success" /> {done} records added to the master list in this browser session. <Link to="/residents" className="font-semibold text-info hover:underline">Open the master list</Link>
         </Card>
       )}
 

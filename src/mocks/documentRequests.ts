@@ -51,7 +51,7 @@ function make(
   status: DocumentStatus,
   history: StatusEvent[],
   extra: Record<string, FieldValue> = {},
-  opts: { requesterName?: string; assistedBy?: string; issuedDaysAgo?: number; messages?: DocumentRequest['messages']; caseId?: string } = {},
+  opts: { requesterName?: string; assistedBy?: string; issuedDaysAgo?: number; messages?: DocumentRequest['messages']; caseId?: string; requestedItems?: string[] } = {},
 ): DocumentRequest {
   const resident = residentId === null ? undefined : residentById(residentId)
   const base = resident ? prefillFromResident(typeId, resident) : {}
@@ -68,6 +68,7 @@ function make(
     issuedAt: opts.issuedDaysAgo !== undefined ? isoDaysAgo(opts.issuedDaysAgo, 14) : undefined,
     values: { ...base, ...extra },
     requirements: {},
+    requestedItems: opts.requestedItems,
     assisted: opts.assistedBy ? { encodedByUserId: opts.assistedBy, at: history[0].at } : undefined,
     history,
     messages: opts.messages ?? [],
@@ -89,7 +90,7 @@ export const mockDocumentRequests: DocumentRequest[] = [
     ev('submitted', 2, 8, RES, 'resident', 'Submitted online'),
     ev('under_review', 2, 10, SEC, 'secretary', 'Start review'),
     ev('needs_info', 1, 9, SEC, 'secretary', 'Request more information', 'The uploaded ID is blurred. Please upload a clearer photo of the front of your ID, or bring it to the Barangay Hall.'),
-  ], { assistance: ['Medical Assistance'] }),
+  ], { assistance: ['Medical Assistance'] }, { requestedItems: ['Clearer photo of a valid ID'] }),
   make('clearance-person', SAMPLE_IDS.mariaDizon, 'submitted', [ev('submitted', 0, 8, RES, 'resident', 'Submitted online')], {
     residingSince: '2012',
     purpose: 'Employment requirement',

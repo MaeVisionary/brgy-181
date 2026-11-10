@@ -97,11 +97,16 @@ export function addEquipment(input: { name: string; category: EquipmentCategory;
   })
 }
 
-export function updateEquipment(id: string, patch: Partial<Pick<Equipment, 'name' | 'description' | 'totalQty' | 'damagedQty' | 'missingQty'>>, a: EqActor): Promise<Equipment> {
+export function updateEquipment(id: string, patch: Partial<Pick<Equipment, 'name' | 'category' | 'description' | 'totalQty' | 'damagedQty' | 'missingQty'>>, a: EqActor): Promise<Equipment> {
   return mockRequest(() => {
     if (!a.permissions.has('inventory.manage')) throw new ServiceError('forbidden', 'Not allowed.')
     const e = mockEquipment.find((x) => x.id === id)
     if (!e) throw new ServiceError('not_found', 'Equipment not found.')
+    if (patch.name !== undefined && !patch.name.trim()) throw new ServiceError('name', 'Enter the equipment name.')
+    if (patch.category !== undefined && !patch.category.trim()) throw new ServiceError('category', 'Enter a category.')
+    const total = patch.totalQty ?? e.totalQty
+    if ((patch.damagedQty ?? e.damagedQty) + (patch.missingQty ?? e.missingQty) > total) throw new ServiceError('qty', 'Damaged and missing units cannot be more than the total.')
+    if (total - (patch.damagedQty ?? e.damagedQty) - (patch.missingQty ?? e.missingQty) < borrowedQty(e.id)) throw new ServiceError('qty', 'The total is lower than the units currently borrowed.')
     const changes = Object.entries(patch).filter(([k, v]) => (e as unknown as Record<string, unknown>)[k] !== v)
     Object.assign(e, patch)
     if (changes.length) e.history.push({ at: new Date().toISOString(), byUserId: a.user.id, action: 'Record updated', detail: changes.map(([k, v]) => `${k}: ${v}`).join(', ') })

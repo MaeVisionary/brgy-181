@@ -1,4 +1,4 @@
-import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Info, Mail, MapPin, MessageSquareWarning, Package, Phone, ReceiptText, XCircle } from 'lucide-react'
+import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Inbox, Info, Mail, MapPin, MessageSquareWarning, Package, Paperclip, Phone, ReceiptText, XCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -20,24 +20,37 @@ import { formatDate, formatDateTime } from '@/lib/format'
 import { ALL_RESIDENT_STATUSES, borrowingStatusForResident, caseStageForResident, documentStatusForResident, type ResidentStatus } from '@/lib/residentStatus'
 import { mockUsers } from '@/mocks/users'
 import { getCase } from '@/services/caseService'
-import { availableTransitions, getRequest } from '@/services/documentService'
+import { applyTransition, availableTransitions, getRequest } from '@/services/documentService'
 import { actOnBorrowing, getBorrowing } from '@/services/equipmentService'
 import { ServiceError } from '@/services/mockApi'
 import { listMyTransactions, type Transaction, type TransactionKind } from '@/services/transactionService'
 import type { KPCase } from '@/types/case'
-import type { DocumentRequest, StatusEvent } from '@/types/document'
+import type { DocumentRequest, StatusEvent, Transition } from '@/types/document'
 import type { Borrowing } from '@/types/equipment'
 import { itemsText } from '@/pages/equipment/BorrowingPages'
 import { NotFound } from '@/pages/system/NotFound'
-import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, NumberedSteps, Progress, Section, TransactionList, Updates, stepsFrom } from './parts'
+import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, NumberedSteps, Progress, Pulse, Section, TransactionList, Updates, needsYou, stepsFrom } from './parts'
 
-const SAMPLE_NOTE = 'Sample content'
-
-/** Announcements module does not exist yet: every item is clearly labelled sample content (Figma placeholder rule). */
+/** Example announcements showing the format barangay posts will take. */
 const ANNOUNCEMENTS = [
-  { kind: 'Public advisory', date: '2026-11-06', title: 'Sample advisory title', body: 'Advisories posted by barangay personnel will appear here with a short summary.' },
-  { kind: 'Office schedule', date: '2026-11-04', title: 'Sample office schedule notice', body: 'Changes to Barangay Hall office hours, such as holiday closures, will appear here.' },
-  { kind: 'Community activity', date: '2026-11-01', title: 'Sample community activity', body: 'Community activities will show the date, the place and who can join.' },
+  {
+    kind: 'Public advisory',
+    date: '2026-11-06',
+    title: 'Free anti-rabies vaccination for dogs and cats',
+    body: 'Bring your pets to the Barangay 181 Hall on Saturday, 14 November, 8:00 AM to 12:00 NN. Pets must be at least three months old. Bring their previous vaccination card if they have one.',
+  },
+  {
+    kind: 'Office schedule',
+    date: '2026-11-04',
+    title: 'Barangay Hall closed on 30 November (Bonifacio Day)',
+    body: 'The Barangay Hall will be closed in observance of Bonifacio Day. Online requests submitted on that day will be processed on the next working day.',
+  },
+  {
+    kind: 'Community activity',
+    date: '2026-11-01',
+    title: 'Linis Barangay: community clean-up drive',
+    body: 'Join the clean-up on Sunday, 22 November, 6:00 AM, starting at Asa St. corner Apog St. Bring gloves and a sack; drinking water will be provided. Open to all residents.',
+  },
 ]
 
 // ── Home ─────────────────────────────────────────────────────────────
@@ -119,8 +132,9 @@ function DarkHeadCard({ title, subtitle, to, children }: { title: string; subtit
 function ActivityRow({ t }: { t: Transaction }) {
   return (
     <li>
-      <Link to={t.to} className="flex items-center gap-3 px-5 py-3.5 hover:bg-sky-50">
+      <Link to={t.to} className={cn('flex items-center gap-3 px-5 py-3.5', needsYou(t) ? 'border-l-4 border-l-warning bg-warning-tint/60 hover:bg-warning-tint' : 'hover:bg-sky-50')}>
         <span className="min-w-0 flex-1">
+          {needsYou(t) && <span className="mb-1 flex items-center gap-2 text-[12px] font-semibold text-warning"><Pulse /> Action needed: reply to the barangay</span>}
           <span className="block text-[10.5px] font-semibold tracking-[0.06em] text-ink-muted uppercase">{t.kindLabel}</span>
           <span className="block truncate text-[14px] font-semibold text-navy-900">{t.title}</span>
           <span className="block text-[12px] text-ink-muted">Ref. no. {t.referenceNo} · Submitted {formatDate(t.submittedAt)}</span>
@@ -145,7 +159,6 @@ function AnnouncementItem({ a, full }: { a: (typeof ANNOUNCEMENTS)[number]; full
       <p className="text-[11px] font-semibold tracking-[0.06em] text-navy-600 uppercase">
         {a.kind} <span className="font-normal tracking-normal text-ink-muted normal-case">· Published {formatDate(a.date)}</span>
       </p>
-      <span className="mt-1 inline-flex h-5 items-center rounded-[var(--radius-badge)] border border-line px-1.5 text-[11px] font-semibold text-ink-muted">{SAMPLE_NOTE}</span>
       <p className="mt-1 font-display text-[15px] font-bold text-navy-900">{a.title}</p>
       <p className="text-[13px] text-ink-nav">{a.body}</p>
     </li>
@@ -190,6 +203,13 @@ function NeedAssistance() {
 
 // ── My Transactions ─────────────────────────────────────────────────
 
+const EMPTY: Record<'all' | TransactionKind, { title: string; body: string; action: string; to: string }> = {
+  all: { title: 'You have no transactions yet.', body: 'Document requests, complaints and equipment borrowing you submit will appear here.', action: 'Request a document', to: '/my/documents/new' },
+  document: { title: 'You have no document requests yet.', body: 'You can request certificates and clearances online, then claim them at the Barangay Hall.', action: 'Request a document', to: '/my/documents/new' },
+  complaint: { title: 'You have no complaints or reports yet.', body: 'If you need to report an incident or ask for a summons, you can do it online or at the Barangay Hall.', action: 'Report or complain', to: '/my/documents/new?category=case' },
+  borrowing: { title: 'You have not borrowed any equipment yet.', body: 'You can borrow chairs, tables, ladders and other barangay equipment.', action: 'Borrow equipment', to: '/my/borrowing?new=1' },
+}
+
 const FILTERS: { key: 'all' | TransactionKind; label: string }[] = [
   { key: 'all', label: 'All Transactions' },
   { key: 'document', label: 'Document Requests' },
@@ -210,8 +230,6 @@ export function MyTransactionsPage() {
     for (const [k, v] of Object.entries(patch)) if (v && v !== 'all') next.set(k, v); else next.delete(k)
     setParams(next, { replace: true })
   }
-  const emptyText =
-    kind === 'complaint' ? 'You have not filed any complaints or reports yet.' : kind === 'document' ? 'You have not requested any documents yet.' : kind === 'borrowing' ? 'You have not borrowed any equipment yet.' : 'Your requests, complaints and borrowing will appear here.'
 
   return (
     <>
@@ -249,12 +267,23 @@ export function MyTransactionsPage() {
         {all === null ? (
           <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-12 animate-pulse rounded bg-surface-muted" />)}</div>
         ) : shown.length === 0 ? (
-          <EmptyState
-            icon={<ReceiptText className="size-5" />}
-            title={status ? 'No transactions with this status' : 'No transactions yet'}
-            body={status ? 'Try another status, or choose "All statuses".' : emptyText}
-            action={!status && kind !== 'borrowing' ? <Link to={kind === 'complaint' ? '/my/documents/new?category=case' : '/my/documents/new'} className="inline-flex h-11 items-center rounded-[var(--radius-control)] bg-navy-900 px-4 text-[13px] font-semibold text-white">{kind === 'complaint' ? 'File a complaint or report' : 'Request a document'}</Link> : undefined}
-          />
+          <div className="flex flex-col items-center px-6 py-12 text-center">
+            <Inbox className="size-9 text-ink-subtle" strokeWidth={1.5} />
+            <p className="mt-3 font-display text-[17px] font-bold text-navy-900">{status ? 'No transactions with this status.' : EMPTY[kind].title}</p>
+            <p className="mt-1 max-w-md text-[13.5px] text-ink-muted">{status ? 'Try another status, or choose "All statuses".' : EMPTY[kind].body}</p>
+            <div className="mt-5 flex flex-wrap justify-center gap-2">
+              {!status && (
+                <Link to={EMPTY[kind].to} className="inline-flex h-11 items-center rounded-[var(--radius-control)] bg-navy-900 px-5 text-[13.5px] font-semibold text-white hover:bg-navy-800">
+                  {EMPTY[kind].action}
+                </Link>
+              )}
+              {(status || kind !== 'all') && (
+                <button type="button" onClick={() => set({ type: 'all', status: '' })} className="inline-flex h-11 items-center rounded-[var(--radius-control)] border border-line bg-surface px-5 text-[13.5px] font-semibold text-navy-900 hover:bg-surface-muted">
+                  Show all transactions
+                </button>
+              )}
+            </div>
+          </div>
         ) : (
           <>
             <TransactionList items={shown} showType={kind === 'all'} />
@@ -292,6 +321,7 @@ export function DocumentDetailsPage() {
   const shown = type.fields.filter((f) => f.by !== 'system' && !f.staffOnly && isFilled(req.values[f.key]))
   const needInfo = [...req.history].reverse().find((h) => h.status === 'needs_info')
   const usesApproval = WORKFLOWS[type.workflow].path.includes('approved')
+  const replyStep = availableTransitions(req, actor).find((t) => t.by === 'owner' && t.from.includes('needs_info') && t.to === 'under_review')
 
   // Progress follows the request's own workflow, in resident words.
   const labels: ResidentStatus[] = usesApproval ? ['Submitted', 'Under Review', 'Approved', 'Ready for Pickup', 'Completed'] : ['Submitted', 'Under Review', 'Completed']
@@ -332,12 +362,22 @@ export function DocumentDetailsPage() {
             {rs === 'Rejected' && <Banner tone="danger" icon={<XCircle />} title="Your request was not approved">See the update below for the reason. You may visit the Barangay Hall for help.</Banner>}
 
             {rs === 'Needs Additional Information' && needInfo?.remarks && (
-              <Section title="Message from the barangay">
-                <p className="rounded-md bg-surface-muted px-3 py-2 text-[13.5px] text-navy-900">“{needInfo.remarks}”</p>
+              <Card className="border-warning/50 bg-warning-tint/50 px-5 py-4">
+                <h2 className="flex items-center gap-2 font-display text-[16px] font-bold text-navy-900">
+                  <span className="relative flex size-2.5">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-70" />
+                    <span className="relative inline-flex size-2.5 rounded-full bg-warning" />
+                  </span>
+                  Message from the barangay
+                </h2>
+                <p className="mt-2 rounded-md bg-surface px-3 py-2 text-[13.5px] text-navy-900">“{needInfo.remarks}”</p>
                 <p className="mt-1 text-[12px] text-ink-muted">From the {ROLES[needInfo.byRole].name} · {formatDateTime(needInfo.at)}</p>
-              </Section>
+              </Card>
             )}
-            {availableTransitions(req, actor).some((t) => t.by === 'owner') && <TransitionPanel req={req} actor={actor} ownerView onChange={(r) => setReq({ ...r })} />}
+            {replyStep && <ReplyForm req={req} step={replyStep} actor={actor} onDone={(r) => setReq({ ...r })} />}
+            {availableTransitions(req, actor).some((t) => t.by === 'owner' && t !== replyStep) && (
+              <TransitionPanel req={req} actor={actor} ownerView exclude={(t) => t.label === replyStep?.label} onChange={(r) => setReq({ ...r })} />
+            )}
 
             {rs === 'Ready for Pickup' && (
               <Section title="How to claim your document">
@@ -642,5 +682,65 @@ export function AnnouncementsPage() {
         Barangay personnel cannot post announcements in the system yet, so the items above are sample content showing how announcements will appear.
       </p>
     </>
+  )
+}
+
+/**
+ * Reply to "Request more information": attach each item the Secretary asked for,
+ * then send. The request goes back to the Secretary's review.
+ */
+function ReplyForm({ req, step, actor, onDone }: { req: DocumentRequest; step: Transition; actor: NonNullable<ReturnType<typeof useDocActor>>; onDone: (r: DocumentRequest) => void }) {
+  const items = req.requestedItems?.length ? req.requestedItems : []
+  const [files, setFiles] = useState<Record<string, string>>({})
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const ready = message.trim() && items.every((i) => files[i])
+  const send = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      onDone(await applyTransition(req.id, step, message, actor, { files }))
+    } catch (e) {
+      setError(e instanceof ServiceError ? e.message : 'Your reply could not be sent. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Section title="Send what the barangay asked for" subtitle="Attach each item, add a short message, then send your reply.">
+      <div className="space-y-3">
+        {items.map((item) => (
+          <div key={item}>
+            <p className="mb-1 text-[12.5px] font-semibold text-navy-900">{item} <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></p>
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line px-3 py-2 text-[13px] text-navy-900 hover:border-navy-600 hover:bg-sky-50">
+              <Paperclip className="size-4 shrink-0 text-ink-muted" />
+              <span className="min-w-0 flex-1 truncate">{files[item] ?? 'Choose a photo or PDF'}</span>
+              {files[item] && <span className="text-[12px] font-semibold text-info">Change</span>}
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) setFiles((x) => ({ ...x, [item]: f.name }))
+                }}
+              />
+            </label>
+          </div>
+        ))}
+        <label className="block">
+          <span className="mb-1 block text-[12.5px] font-semibold text-navy-900">Your message <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></span>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="For example: Here is a clearer photo of my ID."
+            className="min-h-[80px] w-full rounded-[var(--radius-control)] border border-line px-3 py-2 text-[13.5px] text-navy-900 focus:border-navy-600 focus:outline-none"
+          />
+        </label>
+        {error && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[12.5px] text-danger-ink">{error}</p>}
+        <Button className="h-11 w-full sm:w-auto" loading={busy} disabled={!ready} onClick={send}>Send reply</Button>
+      </div>
+    </Section>
   )
 }

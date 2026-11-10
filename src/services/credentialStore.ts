@@ -96,3 +96,34 @@ export function passwordProblem(pw: string): string | null {
   if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return 'Use both letters and numbers.'
   return null
 }
+
+// ── Password change limit ────────────────────────────────────────────
+
+const CHANGE_KEY = 'bmis.passwordChanges'
+/** Own password changes allowed per account within the window (forced changes after a reset are not counted). */
+export const PASSWORD_CHANGE_LIMIT = 3
+export const PASSWORD_CHANGE_WINDOW_DAYS = 30
+
+function recentChanges(key: string, now = Date.now()): string[] {
+  const all = read<Record<string, string[]>>(CHANGE_KEY, {})
+  const since = now - PASSWORD_CHANGE_WINDOW_DAYS * 86_400_000
+  return (all[key] ?? []).filter((at) => new Date(at).getTime() >= since)
+}
+
+/** How many more times this account may change its password in the current window. */
+export function passwordChangesLeft(key: string): number {
+  return Math.max(0, PASSWORD_CHANGE_LIMIT - recentChanges(key).length)
+}
+
+/** Date the next change becomes available when the limit is reached. */
+export function nextPasswordChangeAt(key: string): Date | null {
+  const recent = recentChanges(key).sort()
+  if (recent.length < PASSWORD_CHANGE_LIMIT) return null
+  return new Date(new Date(recent[0]).getTime() + PASSWORD_CHANGE_WINDOW_DAYS * 86_400_000)
+}
+
+export function recordPasswordChange(key: string) {
+  const all = read<Record<string, string[]>>(CHANGE_KEY, {})
+  all[key] = [...recentChanges(key), new Date().toISOString()]
+  write(CHANGE_KEY, all)
+}

@@ -1,6 +1,7 @@
-import { ArrowLeft, Check, ChevronRight, LifeBuoy } from 'lucide-react'
+import { Check, ChevronRight, LifeBuoy } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { BackLink as SmartBack } from '@/components/ui/BackLink'
 import { Card } from '@/components/ui/Panel'
 import { StatusLabel } from '@/components/ui/StatusLabel'
 import { cn } from '@/lib/cn'
@@ -13,12 +14,9 @@ import type { Transaction } from '@/services/transactionService'
  * My Transactions and every transaction details page.
  */
 
+/** Back to the page the resident came from; falls back to `to`. */
 export function BackLink({ to, children }: { to: string; children: ReactNode }) {
-  return (
-    <Link to={to} className="mb-4 inline-flex min-h-9 items-center gap-1.5 text-[13px] font-semibold text-info hover:underline">
-      <ArrowLeft className="size-4" /> {children}
-    </Link>
-  )
+  return <SmartBack fallbackTo={to} fallbackLabel={String(children).replace(/^Back to /, '')} />
 }
 
 /** Title block of a details page: kind label, title, then reference / status / date strip. */
@@ -216,9 +214,13 @@ export function TransactionList({ items, showType = true }: { items: Transaction
         </thead>
         <tbody>
           {items.map((t) => (
-            <tr key={`${t.kind}-${t.id}`} onClick={() => navigate(t.to)} className="cursor-pointer border-b border-line-soft last:border-0 hover:bg-sky-50">
-              <td className="px-5 py-3.5">
-                <Link to={t.to} onClick={(e) => e.stopPropagation()} className="font-semibold text-navy-900 hover:underline">{t.title}</Link>
+            <tr key={`${t.kind}-${t.id}`} onClick={() => navigate(t.to)} className={cn('cursor-pointer border-b border-line-soft last:border-0', needsYou(t) ? 'bg-warning-tint/60 hover:bg-warning-tint' : 'hover:bg-sky-50')}>
+              <td className={cn('px-5 py-3.5', needsYou(t) && 'border-l-4 border-l-warning')}>
+                <Link to={t.to} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-2 font-semibold text-navy-900 hover:underline">
+                  {needsYou(t) && <Pulse />}
+                  {t.title}
+                </Link>
+                {needsYou(t) && <span className="block text-[12px] font-semibold text-warning">Action needed: reply to the barangay</span>}
               </td>
               <td className="px-5 py-3.5 whitespace-nowrap text-ink-nav">{t.referenceNo}</td>
               {showType && <td className="px-5 py-3.5 whitespace-nowrap text-ink-nav">{t.kind === 'document' ? 'Document Request' : t.kind === 'borrowing' ? 'Equipment Borrowing' : 'Complaint or Report'}</td>}
@@ -232,8 +234,9 @@ export function TransactionList({ items, showType = true }: { items: Transaction
       <ul className="divide-y divide-line-soft md:hidden">
         {items.map((t) => (
           <li key={`${t.kind}-${t.id}`}>
-            <Link to={t.to} className="flex items-center gap-3 px-4 py-3.5 active:bg-sky-50">
+            <Link to={t.to} className={cn('flex items-center gap-3 px-4 py-3.5 active:bg-sky-50', needsYou(t) && 'border-l-4 border-l-warning bg-warning-tint/60')}>
               <span className="min-w-0 flex-1">
+                {needsYou(t) && <span className="mb-1 flex items-center gap-2 text-[12px] font-semibold text-warning"><Pulse /> Action needed: reply to the barangay</span>}
                 <span className="block text-[10.5px] font-semibold tracking-[0.06em] text-ink-muted uppercase">{t.kindLabel}</span>
                 <span className="block text-[14px] font-semibold text-navy-900">{t.title}</span>
                 <span className="block text-[12px] text-ink-muted">Ref. no. {t.referenceNo} · Submitted {formatDate(t.submittedAt)}</span>
@@ -245,5 +248,18 @@ export function TransactionList({ items, showType = true }: { items: Transaction
         ))}
       </ul>
     </>
+  )
+}
+
+/** The barangay is waiting for the resident (Needs Additional Information). */
+export const needsYou = (t: Transaction) => t.status === 'Needs Additional Information'
+
+/** Pulsing dot: stops once the resident replies (the status changes). */
+export function Pulse() {
+  return (
+    <span aria-hidden className="relative flex size-2.5 shrink-0">
+      <span className="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-70" />
+      <span className="relative inline-flex size-2.5 rounded-full bg-warning" />
+    </span>
   )
 }

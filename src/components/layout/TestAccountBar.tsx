@@ -15,7 +15,7 @@ export function TestAccountBar() {
       <span className="inline-flex items-center gap-1.5 font-semibold text-white">
         <FlaskConical className="size-3.5" /> Test account
       </span>
-      <span className="hidden text-white/75 md:inline">{user.email} · sample data</span>
+      <span className="hidden text-white/75 md:inline">{user.email}</span>
       <label className="ml-auto inline-flex items-center gap-2">
         <span className="text-white/75">Viewing as</span>
         <select

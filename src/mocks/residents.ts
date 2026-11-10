@@ -51,7 +51,7 @@ const HOUSEHOLDS: H[] = [
         { f: 'Angela', m: 'Santos', l: 'Dizon', sex: 'f', b: '2017-11-02', c: 'single', rel: 'Daughter', job: 'Student', edu: 'Elementary', fourPs: true },
       ] },
       { name: 'Santos family', members: [
-        { f: 'Lourdes', m: 'Mendoza', l: 'Santos', sex: 'f', b: '1958-02-11', c: 'widowed', rel: 'Head', job: 'None', edu: 'Elementary graduate', tel: '09181230002', voter: true, prog: true, osca: 'SAMPLE-0012' },
+        { f: 'Lourdes', m: 'Mendoza', l: 'Santos', sex: 'f', b: '1958-02-11', c: 'widowed', rel: 'Head', job: 'None', edu: 'Elementary graduate', tel: '09181230002', voter: true, prog: true, osca: '181-0012' },
       ] },
     ],
   },
@@ -67,7 +67,7 @@ const HOUSEHOLDS: H[] = [
   {
     houseNo: '631', street: 'Benita St.', since: '1990',
     families: [{ name: 'Navarro family', members: [
-      { f: 'Rogelio', m: 'Ramos', l: 'Navarro', sex: 'm', b: '1959-04-18', c: 'widowed', rel: 'Head', job: 'Retired', edu: 'Vocational', tel: '09201230004', voter: true, pwd: true, osca: 'SAMPLE-0031' },
+      { f: 'Rogelio', m: 'Ramos', l: 'Navarro', sex: 'm', b: '1959-04-18', c: 'widowed', rel: 'Head', job: 'Retired', edu: 'Vocational', tel: '09201230004', voter: true, pwd: true, osca: '181-0031' },
       { f: 'Rafael', m: 'Domingo', l: 'Navarro', sex: 'm', b: '1992-08-08', c: 'live_in', rel: 'Son', job: 'Delivery rider', edu: 'College graduate', tel: '09201230005', voter: true },
       { f: 'Elena', m: 'Lopez', l: 'Salazar', sex: 'f', b: '2001-10-12', c: 'live_in', rel: 'Partner', job: 'Call center agent', edu: 'College level', tel: '09201230006', voter: true },
     ] }],
@@ -125,7 +125,7 @@ const HOUSEHOLDS: H[] = [
   {
     houseNo: '2759', street: 'Victoria St.', since: '1998',
     families: [{ name: 'Castillo family', members: [
-      { f: 'Gloria', m: 'Manalo', l: 'Castillo', sex: 'f', b: '1956-06-06', c: 'widowed', rel: 'Head', job: 'None', edu: 'Elementary graduate', voter: true, osca: 'SAMPLE-0047' },
+      { f: 'Gloria', m: 'Manalo', l: 'Castillo', sex: 'f', b: '1956-06-06', c: 'widowed', rel: 'Head', job: 'None', edu: 'Elementary graduate', voter: true, osca: '181-0047' },
       { f: 'Jasmine', m: 'Manalo', l: 'Castillo', sex: 'f', b: '1990-02-02', c: 'single', rel: 'Daughter', job: 'Teacher', edu: 'College graduate', tel: '09291230014', voter: true },
     ] }],
   },
@@ -158,7 +158,7 @@ function build() {
         const id = `res-${String(r).padStart(3, '0')}`
         residents.push({
           id,
-          residentNo: `181-SAMPLE-${String(r).padStart(3, '0')}`,
+          residentNo: `181-2026-${String(r).padStart(4, '0')}`,
           firstName: p.f,
           middleName: p.m,
           lastName: p.l,

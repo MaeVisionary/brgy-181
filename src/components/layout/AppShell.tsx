@@ -1,7 +1,7 @@
 import { Menu, X } from 'lucide-react'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { APP_CONFIG } from '@/config/app'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { cn } from '@/lib/cn'
 import { formatDate, formatWeekday } from '@/lib/format'
@@ -10,6 +10,7 @@ import { NotificationMenu } from './NotificationMenu'
 import { TestAccountBar } from './TestAccountBar'
 import { isTestUser } from '@/config/testAccount'
 import { Sidebar } from './Sidebar'
+import { useTrail } from '@/components/ui/BackLink'
 
 /** Development-only; not bundled in production builds. */
 const DevPreviewBar = import.meta.env.DEV ? lazy(() => import('./DevPreviewBar').then((m) => ({ default: m.DevPreviewBar }))) : null
@@ -29,6 +30,13 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(readCollapsed)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [today] = useState(() => new Date())
+  const { pathname } = useLocation()
+  useTrail()
+
+  // The page scrolls inside <main>, so each new page starts at the top.
+  useEffect(() => {
+    document.getElementById('main-scroll')?.scrollTo({ top: 0 })
+  }, [pathname])
 
   const toggle = () => {
     if (window.matchMedia('(min-width: 1024px)').matches) {
@@ -46,10 +54,10 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex h-dvh flex-col overflow-hidden">
       {isTestUser(user?.id) ? <TestAccountBar /> : DevPreviewBar && <Suspense fallback={null}><DevPreviewBar /></Suspense>}
 
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-surface px-4 sm:px-5">
+      <header className="relative z-30 flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface px-4 sm:px-5">
         <button
           type="button"
           onClick={toggle}
@@ -75,11 +83,11 @@ export function AppShell() {
         </div>
       </header>
 
-      <div className="relative flex flex-1">
+      <div className="relative flex min-h-0 flex-1">
         {/* Desktop sidebar */}
         <aside
           className={cn(
-            'sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 border-r border-line transition-[width] lg:block',
+            'hidden h-full shrink-0 border-r border-line transition-[width] lg:block',
             collapsed ? 'w-[68px]' : 'w-[248px]',
           )}
         >
@@ -108,7 +116,7 @@ export function AppShell() {
           </div>
         )}
 
-        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
+        <main id="main-scroll" className="min-w-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
           <div className="mx-auto max-w-[1180px]">
             <Outlet />
           </div>

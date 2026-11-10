@@ -108,8 +108,8 @@ export function SeniorTab() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
-          <div className="relative sm:col-span-2">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="relative sm:col-span-2 lg:col-span-4">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" />
             <TextInput className="pl-9" placeholder={showPii ? 'Search name or address' : 'Search address'} value={filters.search ?? ''} onChange={(e) => { setPage(0); setFilters((f) => ({ ...f, search: e.target.value || undefined })) }} aria-label="Search records" />
           </div>
@@ -121,7 +121,7 @@ export function SeniorTab() {
           <FilterSelect label="Status" value={filters.status} options={['Active', 'Inactive', 'Bedridden', 'Other', 'Missing']} onChange={(v) => set({ status: v as Filters['status'] })} />
           <FilterSelect label="Voter" value={filters.voter} options={['Yes', 'No', 'Missing']} onChange={(v) => set({ voter: v as Filters['voter'] })} />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 border-t border-line-soft pt-3">
           <span className="text-[12.5px] text-ink-muted">
             Showing <strong className="text-navy-900">{rows.length}</strong> of {all.length} records
           </span>
@@ -279,7 +279,7 @@ export function SeniorTab() {
               <li key={i.code}>
                 <button type="button" onClick={() => set({ issue: i.code })} className="flex w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line px-3 py-2 text-left hover:bg-sky-50">
                   <span className="text-[13px] text-navy-900">{ISSUE_LABELS[i.code]}</span>
-                  <Badge tone={i.code === 'age_column_mismatch' ? 'neutral' : 'warning'}>{i.count}</Badge>
+                  <Badge dot={false} tone={i.code === 'age_column_mismatch' ? 'neutral' : 'warning'}>{i.count}</Badge>
                 </button>
               </li>
             ))}

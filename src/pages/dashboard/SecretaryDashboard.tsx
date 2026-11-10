@@ -34,6 +34,7 @@ export function SecretaryDashboard() {
   return (
     <>
       <DashHeader
+        overview="Secretary Overview"
         subtitle="Resident records, document requests, complaints and reports for Barangay 181."
         actions={<ButtonLink to="/reports" icon={<BarChart3 className="size-4" />}>Reports</ButtonLink>}
       />
@@ -45,15 +46,17 @@ export function SecretaryDashboard() {
         <Stat label="Ready for release" value={forRelease} to="/documents" />
       </section>
 
-      <section className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="mt-3 grid auto-rows-fr grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <TaskTile icon={<ShieldCheck className="size-4" />} label="Registrations to verify" count={q?.registrationsForReview ?? null} to="/residents/registrations" attention={!!q?.registrationsForReview} />
         <TaskTile icon={<UserRoundPen className="size-4" />} label="Resident update requests" count={q?.pendingChangeRequests ?? null} to="/residents/change-requests" />
         <TaskTile icon={<FileText className="size-4" />} label="Complaint, incident and blotter submissions" count={submissions} to="/documents" />
         <TaskTile icon={<Gavel className="size-4" />} label="Cases needing updates" count={caseUpdates?.length ?? null} to="/cases" />
       </section>
 
-      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      {/* Work queue across the full width; hearings and case records side by side below it. */}
+      <section className="mt-4">
         <ListPanel
+          dark
           title="Your work queue"
           subtitle="Requests waiting for your next step"
           items={myQueue?.slice(0, 8) ?? null}
@@ -63,7 +66,8 @@ export function SecretaryDashboard() {
             <Row to={`/documents/${d.id}`} title={`${getDocumentType(d.typeId).name} · ${d.requesterName}`} meta={`${d.referenceNo} · ${formatDateTime(d.updatedAt)}`} right={<StatusBadge status={d.status} />} />
           )}
         />
-        <div className="space-y-4">
+      </section>
+      <section className="mt-4 grid gap-4 lg:grid-cols-2">
           <ListPanel
             title="Upcoming hearings"
             items={hearings}
@@ -80,18 +84,17 @@ export function SecretaryDashboard() {
             empty="All case records are up to date."
             render={(c) => <Row to={`/cases/${c.id}`} title={`${c.caseNo} · ${c.title}`} meta={c.nature} right={<Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>} />}
           />
-        </div>
       </section>
 
       <Panel className="mt-4" title="Reports to prepare" subtitle="Recurring reports for DILG, OSCA, MADAO and Barangay Bureau">
         <ul className="grid gap-2 sm:grid-cols-2">
           {RECURRING_REPORTS.map((r) => (
-            <li key={r.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line px-3 py-2.5">
+            <li key={r.id} className={`flex items-center justify-between gap-3 rounded-[var(--radius-control)] border px-3 py-2.5 ${r.id === 'senior-masterlist' ? 'border-line' : 'border-warning/40 bg-warning-tint/40'}`}>
               <span>
                 <span className="block text-[13px] font-semibold text-navy-900">{r.name}</span>
-                <span className="block text-[11.5px] text-ink-muted">{r.schedule}</span>
+                <span className="block text-[11.5px] text-ink-muted">{r.schedule.replace(/\s*\(format pending\)/i, '')}</span>
               </span>
-              <Badge tone={r.id === 'senior-masterlist' ? 'info' : 'neutral'}>{r.id === 'senior-masterlist' ? 'Analytics ready' : 'Format pending'}</Badge>
+              <Badge tone={r.id === 'senior-masterlist' ? 'success' : 'warning'}>{r.id === 'senior-masterlist' ? 'Analytics ready' : 'Format pending'}</Badge>
             </li>
           ))}
         </ul>

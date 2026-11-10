@@ -2,14 +2,14 @@ import { ArrowDownUp, Search, Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import { ButtonLink } from '@/components/ui/Button'
+import { Button } from '@/components/ui/Button'
 import { Select, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Panel'
 import { useAsync } from '@/hooks/useAsync'
-import { AREAS, SAMPLE_DATA_NOTICE } from '@/mocks/residents'
+import { AREAS } from '@/mocks/residents'
 import { listHouseholds, listResidents } from '@/services/residentService'
-import { SampleBadge } from '@/pages/dashboard/shared'
+import { ImportPanel } from './ImportPage'
 import { RegistrationBadge, SectorBadges, age, fullName } from './common'
 
 const PAGE = 15
@@ -42,6 +42,7 @@ export function ResidentsPage() {
     return sorted
   }, [residents, q, area, sector, voter, sort])
 
+  const [importing, setImporting] = useState(false)
   const reset = (fn: () => void) => {
     fn()
     setPage(0)
@@ -53,13 +54,18 @@ export function ResidentsPage() {
         title="Resident Master List"
         subtitle="Official resident records of Barangay 181."
         actions={
-          <>
-            <SampleBadge />
-            {can('residents.import') && <ButtonLink to="/residents/import" variant="secondary" icon={<Upload className="size-4" />}>Import CSV</ButtonLink>}
-          </>
+          can('residents.import') && (
+            <Button variant={importing ? 'secondary' : 'primary'} icon={<Upload className="size-4" />} onClick={() => setImporting((x) => !x)}>
+              {importing ? 'Hide import' : 'Import Master List'}
+            </Button>
+          )
         }
       />
-      <p className="mb-3 text-[12.5px] text-ink-muted">{SAMPLE_DATA_NOTICE}</p>
+      {importing && (
+        <Card className="mb-4 p-4">
+          <ImportPanel onClose={() => setImporting(false)} />
+        </Card>
+      )}
       <Card>
         <div className="grid gap-2 border-b border-line-soft p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
           <div className="relative">

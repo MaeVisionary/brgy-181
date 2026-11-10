@@ -117,7 +117,30 @@ const FIELD_SETTERS: Record<string, (r: Resident, v: string) => void> = {
   'Contact number': (r, v) => (r.contactNo = v),
   Employment: (r, v) => (r.employment = v),
   'Educational attainment': (r, v) => (r.education = v),
+  // "First|Middle|Last|Suffix" (shown to the Secretary with spaces)
+  'Full name': (r, v) => {
+    const [first, middle, last, suffix] = v.split('|').map((x) => x.trim())
+    if (first) r.firstName = first
+    r.middleName = middle || undefined
+    if (last) r.lastName = last
+    r.suffix = suffix || undefined
+  },
+  // Age is always computed from the birthdate, so it updates by itself.
+  Birthdate: (r, v) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return
+    r.birthDate = v
+    const b = new Date(`${v}T00:00:00`)
+    const n = new Date()
+    const age = n.getFullYear() - b.getFullYear() - (n < new Date(n.getFullYear(), b.getMonth(), b.getDate()) ? 1 : 0)
+    r.sectors.seniorCitizen = age >= 60
+  },
+  'Relationship in the family': (r, v) => (r.relationship = v as Resident['relationship']),
 }
+
+/** Fields a resident may ask to correct, in the order shown. */
+export const CORRECTABLE_FIELDS = ['Full name', 'Birthdate', 'Civil status', 'Contact number', 'Employment', 'Educational attainment', 'Relationship in the family'] as const
+
+export const displayRequestedValue = (field: string, v: string) => (field === 'Full name' ? v.split('|').filter(Boolean).join(' ') : v)
 
 export function listChangeRequests(): Promise<ResidentChangeRequest[]> {
   return mockRequest(() => [...mockChangeRequests].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)))
@@ -144,17 +167,22 @@ export function decideChangeRequest(id: string, decision: 'approved' | 'rejected
   })
 }
 
-/** Resident-submitted correction request (own record only). */
+/** Resident-submitted correction request: own record, or a member of the same family. */
 export function submitChangeRequest(residentId: string, field: string, requestedValue: string, reason: string, by: User): Promise<ResidentChangeRequest> {
   return mockRequest(() => {
-    if (by.residentId !== residentId) throw new ServiceError('forbidden', 'You can only request changes to your own record.')
+    const me = mockResidents.find((r) => r.id === by.residentId)
     const res = mockResidents.find((r) => r.id === residentId)
-    if (!res) throw new ServiceError('not_found', 'Record not found.')
+    if (!res || !me) throw new ServiceError('not_found', 'Record not found.')
+    if (res.id !== me.id && res.familyId !== me.familyId) throw new ServiceError('forbidden', 'You can only request changes for yourself or your family members.')
+    if (!requestedValue.replace(/\|/g, '').trim()) throw new ServiceError('value', 'Enter the correct information.')
     const current: Record<string, string> = {
+      'Full name': [res.firstName, res.middleName, res.lastName, res.suffix].filter(Boolean).join(' '),
+      Birthdate: res.birthDate,
       'Civil status': res.civilStatus,
       'Contact number': res.contactNo ?? '',
       Employment: res.employment,
       'Educational attainment': res.education,
+      'Relationship in the family': res.relationship,
     }
     const cr: ResidentChangeRequest = {
       id: `chg-${Date.now().toString(36)}`,
@@ -165,13 +193,14 @@ export function submitChangeRequest(residentId: string, field: string, requested
       requestedValue,
       reason,
       status: 'pending',
+      requestedByResidentId: res.id !== me.id ? me.id : undefined,
     }
     mockChangeRequests.unshift(cr)
     return cr
   })
 }
 
-export const CHANGEABLE_FIELDS = Object.keys(FIELD_SETTERS)
+export const CHANGEABLE_FIELDS: string[] = [...CORRECTABLE_FIELDS]
 
 // ── CSV import (FR4–FR5) ──────────────────────────────────────────────
 

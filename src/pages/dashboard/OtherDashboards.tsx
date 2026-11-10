@@ -1,7 +1,6 @@
 import { Boxes, Info, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import { ButtonLink } from '@/components/ui/Button'
 import { GreetingCard } from '@/components/ui/GreetingCard'
 import { Card, Panel } from '@/components/ui/Panel'
 import { CHAIRMAN, OFFICIALS, SECRETARY, officialByPosition } from '@/config/barangay'
@@ -25,7 +24,7 @@ function CouncilList({ highlight }: { highlight?: string }) {
     </li>
   )
   return (
-    <Panel title="Barangay officials" subtitle="Study §1.1, official templates and case documents">
+    <Panel className="self-start" title="Barangay officials" subtitle="Elected and appointed officials of Barangay 181">
       <ul className="grid gap-1 sm:grid-cols-2">
         <Person name={CHAIRMAN.name} position="Barangay Chairman" />
         <Person name={SECRETARY.name} position="Barangay Secretary" />
@@ -39,11 +38,11 @@ function CouncilList({ highlight }: { highlight?: string }) {
 
 /** Kagawad: member of the Barangay Council; no committee assignments are documented. */
 export function KagawadDashboard() {
-  const { user, can } = useAuth()
+  const { user } = useAuth()
   return (
     <>
-      <DashHeader subtitle="Barangay Council member view: community summaries and reports permitted for your account." />
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <DashHeader overview="Barangay Overview" subtitle="Barangay Council member view: community summaries and reports permitted for your account." />
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="space-y-4">
           <PopulationByStreet />
           <Card className="flex items-start gap-3 px-5 py-4 text-[13px] text-navy-900">
@@ -53,10 +52,6 @@ export function KagawadDashboard() {
               responsibility, is granted per account by the System Administrator.
             </span>
           </Card>
-          <div className="flex flex-wrap gap-2">
-            {can('analytics.view') && <ButtonLink to="/analytics" variant="secondary">Community analytics</ButtonLink>}
-            {can('reports.view') && <ButtonLink to="/reports" variant="secondary">Reports</ButtonLink>}
-          </div>
         </div>
         <CouncilList highlight={user?.fullName} />
       </div>
@@ -92,10 +87,10 @@ export function AdminDashboard() {
         <Panel title="System status">
           <dl className="space-y-2.5 text-[13px]">
             {[
-              ['Application', 'Frontend prototype running'],
-              ['Database', 'Not connected (backend phase)'],
-              ['Backups', 'Not available until the backend is set up (NFR12)'],
-              ['Email notifications', 'Not configured (FR23, backend phase)'],
+              ['Application', 'Running'],
+              ['Database', 'Not connected'],
+              ['Backups', 'Not yet set up'],
+              ['Email notifications', 'Not configured'],
             ].map(([k, v]) => (
               <div key={k} className="border-b border-line-soft pb-2.5 last:border-0 last:pb-0">
                 <dt className="text-[12px] text-ink-muted">{k}</dt>
@@ -106,6 +101,7 @@ export function AdminDashboard() {
         </Panel>
       </section>
       <ListPanel
+        className="mt-4"
         title="Recent activity"
         to="/admin/activity"
         items={audit}
@@ -122,7 +118,7 @@ export function StaffDashboard() {
   const modules = role ? NAVIGATION[role.portal].flatMap((g) => (g.children ? g.children : g.path ? [{ label: g.label, path: g.path, anyOf: g.anyOf }] : [])).filter((l) => l.path !== '/dashboard' && l.path !== '/notifications' && (!l.anyOf || canAny(l.anyOf))) : []
   return (
     <>
-      <DashHeader subtitle="Your access is configured per account by the System Administrator." />
+      <DashHeader overview="Your Overview" subtitle="Your access is configured per account by the System Administrator." />
       <div className="grid gap-4 xl:grid-cols-2">
         <Panel title="Your assigned modules">
           {modules.length === 0 ? <p className="text-[13px] text-ink-muted">No modules have been assigned to this account yet.</p> : (

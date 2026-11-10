@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react'
 import { AreaChart } from '@/components/charts/AreaChart'
-import { Card, Panel } from '@/components/ui/Panel'
+import { Panel } from '@/components/ui/Panel'
 import { StatCard } from '@/components/ui/StatCard'
 import { useAsync } from '@/hooks/useAsync'
 import { cn } from '@/lib/cn'
-import { SAMPLE_DATA_NOTICE } from '@/mocks/residents'
 import { getAreaBreakdown, listHouseholds, listResidents } from '@/services/residentService'
-import { SampleBadge } from '@/pages/dashboard/shared'
 
 /**
  * Community and ayuda planning (study §1.4, FR16): choose the affected areas and
@@ -40,12 +38,6 @@ export function CommunityTab() {
 
   return (
     <>
-      <Card className="mb-4 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-        <p className="text-[13px] text-navy-900">
-          <strong>Resident records:</strong> {SAMPLE_DATA_NOTICE} When the full resident master list is imported, these figures update automatically.
-        </p>
-        <SampleBadge />
-      </Card>
 
       <Panel title="1. Select the affected areas" subtitle="For example, the streets reached by flooding during a typhoon. No areas selected = whole barangay.">
         <div className="flex flex-wrap gap-2">
@@ -86,7 +78,7 @@ export function CommunityTab() {
       </section>
 
       <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-        <Panel title="Residents and households per area" actions={<SampleBadge />}>
+        <Panel title="Residents and households per area">
           {areas ? <AreaChart data={areas} /> : <div className="h-[244px] animate-pulse rounded bg-surface-muted" />}
         </Panel>
         <Panel title="Vulnerable residents per area" bodyClassName="px-0 py-0">

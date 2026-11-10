@@ -1,12 +1,12 @@
-import { ArrowLeft, BellRing, Check, Lock, X } from 'lucide-react'
+import { BellRing, Check, Lock, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { BackLink } from '@/components/ui/BackLink'
 import { useAuth } from '@/auth/useAuth'
 import { StatusBadge } from '@/components/documents/DocParts'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { TextArea, TextInput } from '@/components/ui/Field'
-import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
 import { KP } from '@/config/barangay'
 import { getDocumentType } from '@/documents/catalog'
@@ -64,19 +64,48 @@ export function CaseDetailPage() {
 
   return (
     <>
-      <Link to="/cases" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-navy-900"><ArrowLeft className="size-4" /> Katarungang Pambarangay</Link>
-      <PageHeader eyebrow={`${c.caseNo} · filed ${formatDate(c.filedAt)} (${c.filedVia === 'online' ? 'online' : 'walk-in'}) · sample case`} title={c.title} subtitle={c.nature} actions={<Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>} />
+      <BackLink fallbackTo="/cases" fallbackLabel="Cases" />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="flex flex-wrap items-center gap-x-2 text-[12.5px] text-ink-muted">
+            <span className="font-semibold text-navy-900">{c.caseNo}</span>
+            <span aria-hidden>·</span>
+            <span>Filed {formatDate(c.filedAt)}</span>
+            <span aria-hidden>·</span>
+            <span>{c.filedVia === 'online' ? 'Online' : 'Walk-in'}</span>
+          </p>
+          <h1 className="mt-1 font-display text-[24px] leading-tight font-extrabold text-navy-900 sm:text-[28px]">{c.title}</h1>
+          <p className="mt-0.5 text-[14px] text-ink-nav">{c.nature}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] text-ink-muted">Current stage</span>
+          <Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>
+        </div>
+      </div>
 
       <Card className="mb-4 overflow-x-auto px-5 py-4">
-        <ol className="flex min-w-[720px] items-center gap-1">
-          {PATH.map((s, i) => (
-            <li key={s} className="flex flex-1 items-center gap-1">
-              <span className={cn('rounded-full px-2.5 py-1 text-[11.5px] font-semibold whitespace-nowrap', c.stage === s ? 'bg-navy-900 text-white' : reached.has(s) ? 'bg-sky-100 text-navy-900' : 'text-ink-subtle')}>{STAGE_LABEL[s]}</span>
-              {i < PATH.length - 1 && <span className="h-px flex-1 bg-line" />}
-            </li>
-          ))}
+        <ol className="relative flex min-w-[760px] justify-between">
+          {/* Connecting line behind the steps */}
+          <span aria-hidden className="absolute top-3 right-[5.5%] left-[5.5%] h-0.5 bg-line" />
+          {PATH.map((s, i) => {
+            const current = c.stage === s
+            const done = reached.has(s) && !current
+            return (
+              <li key={s} className="relative z-10 flex w-[11%] flex-col items-center text-center">
+                <span
+                  className={cn(
+                    'grid size-6 place-items-center rounded-full border-2 text-[11px] font-bold',
+                    current ? 'border-navy-900 bg-navy-900 text-white' : done ? 'border-navy-900 bg-sky-100 text-navy-900' : 'border-line bg-surface text-ink-subtle',
+                  )}
+                >
+                  {done ? <Check className="size-3.5" strokeWidth={3} /> : i + 1}
+                </span>
+                <span className={cn('mt-1.5 text-[11.5px] leading-tight font-semibold', current ? 'text-navy-900' : done ? 'text-navy-900' : 'text-ink-subtle')}>{STAGE_LABEL[s]}</span>
+              </li>
+            )
+          })}
         </ol>
-        <p className="mt-2 text-[12px] text-ink-muted">Not every case goes through every stage. Mediation under the Barangay Chairman: up to {KP.chairmanMediationDays} days. Lupon (Pangkat) conciliation: {KP.luponMediationDays} days, extendable by {KP.luponExtensionDays} (RA 7160 Sec. 410).</p>
+        <p className="mt-3 text-[12px] text-ink-muted">Not every case goes through every stage. Mediation under the Barangay Chairman: up to {KP.chairmanMediationDays} days. Lupon (Pangkat) conciliation: {KP.luponMediationDays} days, extendable by {KP.luponExtensionDays}.</p>
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
@@ -90,9 +119,9 @@ export function CaseDetailPage() {
             </Card>
           )}
           <Panel title="Parties">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {(['complainants', 'respondents'] as const).map((side) => (
-                <div key={side}>
+                <div key={side} className="rounded-md border border-line bg-surface px-4 py-3">
                   <p className="label-caps mb-1.5">{side === 'complainants' ? 'Complainant' : 'Respondent'}</p>
                   {c[side].map((p) => (
                     <div key={p.name} className="text-[13px]">
@@ -104,8 +133,10 @@ export function CaseDetailPage() {
                 </div>
               ))}
             </div>
-            <p className="label-caps mt-4 mb-1">Complaint details (confidential)</p>
-            <p className="text-[13.5px] text-navy-900">{c.details}</p>
+            <div className="mt-3 rounded-md border border-line border-l-4 border-l-navy-600 bg-sky-50 px-4 py-3">
+              <p className="label-caps mb-1 flex items-center gap-1.5"><Lock className="size-3.5" /> Complaint details (confidential)</p>
+              <p className="text-[13.5px] text-navy-900">{c.details}</p>
+            </div>
             {c.outcome && (
               <div className="mt-4 rounded-md bg-success-tint px-3 py-2 text-[13px] text-navy-900"><strong className="capitalize">{c.outcome.type.replace('_', ' ')}:</strong> {c.outcome.summary}</div>
             )}
@@ -187,14 +218,18 @@ function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase
           {h.remindersSentAt.length > 0 && <span className="text-[11.5px] text-ink-muted">Reminder sent {formatDate(h.remindersSentAt[h.remindersSentAt.length - 1])}</span>}
         </span>
       </div>
-      <ul className="mt-2 flex flex-wrap gap-2">
-        {h.attendance.map((a) => (
-          <li key={a.name} className="flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-1 text-[12px] text-navy-900">
-            {a.present === true ? <Check className="size-3.5 text-success" /> : a.present === false ? <X className="size-3.5 text-danger" /> : null}
-            {a.name} <span className="text-ink-muted">({a.side})</span>
-          </li>
-        ))}
-      </ul>
+      <div className="mt-3 rounded-md border border-line px-3 py-2">
+        <p className="label-caps mb-1.5">Parties called{h.status === 'held' ? ' · attendance' : ''}</p>
+        <ul className="grid gap-1.5 sm:grid-cols-2">
+          {h.attendance.map((a) => (
+            <li key={a.name} className="flex items-center gap-2 text-[12.5px] text-navy-900">
+              {a.present === true ? <Check className="size-3.5 shrink-0 text-success" /> : a.present === false ? <X className="size-3.5 shrink-0 text-danger" /> : <span className="size-1.5 shrink-0 rounded-full bg-ink-subtle" />}
+              <span className="font-semibold">{a.name}</span>
+              <span className="text-ink-muted capitalize">{a.side}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
       {h.notes && <p className="mt-2 text-[12.5px] text-ink-muted">{h.notes}</p>}
       {manage && h.status === 'scheduled' && mode === 'none' && (
         <div className="mt-2 flex flex-wrap gap-2">

@@ -25,13 +25,16 @@ export function StatCard({
   loading?: boolean
 }) {
   const body = (
-    <Card attention={attention} className={cn('flex h-full flex-col justify-between px-6 py-[18px]', to && 'transition-colors hover:bg-sky-50')}>
-      <p className={cn('label-caps', attention && 'text-danger-ink')}>{label}</p>
-      <div className="mt-3 flex items-end justify-between gap-2">
+    <Card className={cn('flex h-full flex-col justify-between px-4 py-3.5 sm:px-5', to && 'transition-colors hover:bg-sky-50')}>
+      <p className="flex items-center gap-1.5 text-[12.5px] text-ink-nav">
+        {attention && <span aria-label="Needs attention" className="size-1.5 shrink-0 rounded-full bg-danger" />}
+        {label}
+      </p>
+      <div className="mt-1.5 flex items-end justify-between gap-2">
         {loading || value === null ? (
-          <span className="h-[30px] w-20 animate-pulse rounded bg-surface-muted" />
+          <span className="h-[26px] w-16 animate-pulse rounded bg-surface-muted" />
         ) : (
-          <span className="font-display text-[30px] leading-none font-extrabold text-navy-900">{formatNumber(value)}</span>
+          <span className="font-display text-[24px] leading-none font-extrabold text-navy-900">{formatNumber(value)}</span>
         )}
         {hint && <span className="text-[12px] text-ink-muted">{hint}</span>}
       </div>
@@ -61,8 +64,8 @@ export function TaskTile({
   attention?: boolean
 }) {
   return (
-    <Link to={to} className="block rounded-[var(--radius-control)]">
-      <Card attention={attention} className="flex items-center gap-3 rounded-[10px] px-4 py-3 transition-colors hover:bg-sky-50">
+    <Link to={to} className="block h-full rounded-[var(--radius-control)]">
+      <Card className="flex h-full items-center gap-3 rounded-[10px] px-4 py-3 transition-colors hover:bg-sky-50">
         <span
           className={cn(
             'grid size-8 shrink-0 place-items-center rounded-md',

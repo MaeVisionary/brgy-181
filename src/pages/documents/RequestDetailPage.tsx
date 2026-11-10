@@ -1,6 +1,7 @@
-import { AlertTriangle, ArrowLeft, Eye, Save } from 'lucide-react'
+import { AlertTriangle, Eye, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { BackLink } from '@/components/ui/BackLink'
 import { FieldInput, HistoryList, ProgressTracker, StatusBadge, groupFields } from '@/components/documents/DocParts'
 import { TransitionPanel } from '@/components/documents/TransitionPanel'
 import { Button, ButtonLink } from '@/components/ui/Button'
@@ -63,9 +64,7 @@ export function RequestDetailPage() {
 
   return (
     <>
-      <Link to="/documents" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-navy-900">
-        <ArrowLeft className="size-4" /> Document Requests
-      </Link>
+      <BackLink fallbackTo="/documents" fallbackLabel="Document Requests" />
       <PageHeader
         eyebrow={req.referenceNo}
         title={type.name}
@@ -144,7 +143,7 @@ export function RequestDetailPage() {
           </Panel>
 
           {type.requirements.length > 0 && (
-            <Panel title="Requirements" subtitle="Tick each one after checking the original. Files are not stored in this prototype.">
+            <Panel title="Requirements" subtitle="Tick each one after checking the original.">
               <ul className="space-y-2">
                 {type.requirements.map((r) => {
                   const state = req.requirements[r.label]

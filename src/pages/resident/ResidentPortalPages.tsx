@@ -18,32 +18,54 @@ import { listCases } from '@/services/caseService'
 import { listRequests } from '@/services/documentService'
 import { listBorrowings, returnState } from '@/services/equipmentService'
 import { ServiceError } from '@/services/mockApi'
-import { CHANGEABLE_FIELDS, getHousehold, getResident, listChangeRequests, submitChangeRequest } from '@/services/residentService'
+import { CHANGEABLE_FIELDS, displayRequestedValue, getHousehold, getResident, listChangeRequests, submitChangeRequest } from '@/services/residentService'
 import { RETURN_BADGE } from '@/pages/equipment/badges'
 import { BorrowForm, itemsText } from '@/pages/equipment/BorrowingPages'
 import { CIVIL_LABEL, age, fullName } from '@/pages/residents/common'
 
-/** Resident's own record; changes go through the Secretary's review (FR11). */
+/** Resident's own record and family; corrections go through the Secretary's review. */
 export function MyProfilePage() {
   const { user } = useAuth()
   const [tick, setTick] = useState(0)
   const me = useAsync(() => getResident(user!.residentId!), [user?.residentId, tick]).data
-  const hh = useAsync(() => (me ? getHousehold(me.householdId) : Promise.resolve(undefined)), [me?.householdId]).data
-  const mine = useAsync(() => listChangeRequests(), [tick]).data?.filter((c) => c.residentId === user?.residentId) ?? []
-  const [field, setField] = useState(CHANGEABLE_FIELDS[0])
+  const hh = useAsync(() => (me ? getHousehold(me.householdId) : Promise.resolve(undefined)), [me?.householdId, tick]).data
+  const family = hh?.members.filter((m) => m.familyId === me?.familyId) ?? []
+  const mine = useAsync(() => listChangeRequests(), [tick]).data?.filter((c) => c.residentId === user?.residentId || c.requestedByResidentId === user?.residentId) ?? []
+  const [whoId, setWhoId] = useState('')
+  const [field, setField] = useState<string>(CHANGEABLE_FIELDS[0])
   const [value, setValue] = useState('')
+  const [name, setName] = useState({ first: '', middle: '', last: '', suffix: '' })
   const [reason, setReason] = useState('')
-  const [msg, setMsg] = useState<string | null>(null)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   if (!me) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
+  const who = family.find((m) => m.id === whoId) ?? me
+  const requested = field === 'Full name' ? [name.first, name.middle, name.last, name.suffix].join('|') : value
+  const filled = field === 'Full name' ? !!(name.first.trim() && name.last.trim()) : !!value.trim()
+  const reset = () => {
+    setValue('')
+    setName({ first: '', middle: '', last: '', suffix: '' })
+    setReason('')
+  }
+  const submit = async () => {
+    try {
+      await submitChangeRequest(who.id, field, requested.trim(), reason.trim(), user!)
+      reset()
+      setMsg({ ok: true, text: 'Sent to the Barangay Secretary for review. The record changes once it is approved.' })
+      setTick((t) => t + 1)
+    } catch (e) {
+      setMsg({ ok: false, text: e instanceof ServiceError ? e.message : 'Your request could not be sent.' })
+    }
+  }
   const F = ({ k, v }: { k: string; v?: string | number }) => (
-    <div><dt className="text-[11.5px] text-ink-muted">{k}</dt><dd className="text-[13.5px] text-navy-900">{v ?? '–'}</dd></div>
+    <div><dt className="text-[11.5px] text-ink-muted">{k}</dt><dd className="text-[13.5px] text-navy-900">{v || '–'}</dd></div>
   )
+  const sectors = [me.sectors.seniorCitizen && 'Senior citizen', me.sectors.pwd && 'PWD', me.sectors.soloParent && 'Solo parent', me.sectors.fourPs && '4Ps member', me.sectors.programBeneficiary && 'Program beneficiary'].filter(Boolean) as string[]
   return (
     <>
       <PageHeader title="My Profile" subtitle="Your record in the Barangay 181 master list." />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="space-y-4">
-          <Panel title={fullName(me)} subtitle={`${me.residentNo} · sample record`}>
+          <Panel title={fullName(me)} subtitle={`Resident no. ${me.residentNo}`}>
             <dl className="grid gap-3 sm:grid-cols-3">
               <F k="Birthdate" v={formatDate(me.birthDate)} />
               <F k="Age" v={age(me)} />
@@ -55,28 +77,85 @@ export function MyProfilePage() {
               <F k="Educational attainment" v={me.education} />
               <F k="Registered voter" v={me.voter ? 'Yes' : 'No'} />
             </dl>
+            <div className="mt-4 border-t border-line-soft pt-3">
+              <p className="text-[11.5px] text-ink-muted">Sectors</p>
+              {sectors.length ? (
+                <p className="mt-1 flex flex-wrap gap-1.5">{sectors.map((x) => <Badge key={x} dot={false} tone="info">{x}</Badge>)}</p>
+              ) : (
+                <p className="mt-1 text-[13px] text-ink-muted">No sector recorded (senior citizen, PWD, solo parent, 4Ps or program beneficiary).</p>
+              )}
+            </div>
           </Panel>
           {hh && (
-            <Panel title="My household" subtitle={`${hh.household.householdNo} · ${hh.household.families.length} famil${hh.household.families.length > 1 ? 'ies' : 'y'} at this address`}>
-              <ul className="space-y-1">{hh.members.filter((m) => m.familyId === me.familyId).map((m) => <li key={m.id} className="flex justify-between text-[13px]"><span className="text-navy-900">{fullName(m)}</span><span className="text-ink-muted">{m.relationship}</span></li>)}</ul>
+            <Panel title="My family" subtitle={`Household ${hh.household.householdNo} · ${hh.household.families.length} famil${hh.household.families.length > 1 ? 'ies' : 'y'} at this address`} bodyClassName="px-0 py-0">
+              <table className="w-full text-[13px]">
+                <thead><tr className="bg-surface-muted text-left">{['Name', 'Relationship', 'Age'].map((h) => <th key={h} className="label-caps px-5 py-2">{h}</th>)}</tr></thead>
+                <tbody>
+                  {family.map((m) => (
+                    <tr key={m.id} className="border-t border-line-soft">
+                      <td className="px-5 py-2.5 font-semibold text-navy-900">{fullName(m)}{m.id === me.id && <span className="ml-1 font-normal text-ink-muted">(you)</span>}</td>
+                      <td className="px-5 py-2.5 text-ink-nav">{m.relationship}</td>
+                      <td className="px-5 py-2.5 tabular-nums text-ink-nav">{age(m)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="border-t border-line-soft px-5 py-2.5 text-[12px] text-ink-muted">To correct a family member\u2019s name, birthdate or relationship, choose them under Request a correction.</p>
             </Panel>
           )}
         </div>
         <div className="space-y-4">
-          <Panel title="Request a correction" subtitle="The Barangay Secretary reviews it before your official record changes.">
+          <Panel title="Request a correction" subtitle="The Barangay Secretary reviews it before the official record changes.">
             <div className="space-y-3">
-              <FieldLabel label="What needs correcting"><Select value={field} onChange={(e) => setField(e.target.value)}>{CHANGEABLE_FIELDS.map((f) => <option key={f}>{f}</option>)}</Select></FieldLabel>
-              <FieldLabel label="Correct information" required><TextInput value={value} onChange={(e) => setValue(e.target.value)} /></FieldLabel>
-              <FieldLabel label="Reason" required><TextArea className="min-h-[60px]" value={reason} onChange={(e) => setReason(e.target.value)} /></FieldLabel>
-              {msg && <p className="text-[12.5px] text-navy-900">{msg}</p>}
-              <Button disabled={!value.trim() || !reason.trim()} onClick={async () => { try { await submitChangeRequest(me.id, field, value.trim(), reason.trim(), user!); setValue(''); setReason(''); setMsg('Sent to the Barangay Secretary for review.'); setTick((t) => t + 1) } catch (e) { setMsg(e instanceof ServiceError ? e.message : 'Failed.') } }}>Submit request</Button>
+              <FieldLabel label="Whose record">
+                <Select value={who.id} onChange={(e) => { setWhoId(e.target.value === me.id ? '' : e.target.value); setMsg(null) }}>
+                  {family.map((m) => <option key={m.id} value={m.id}>{m.id === me.id ? `Me (${fullName(m)})` : `${fullName(m)} · ${m.relationship}`}</option>)}
+                </Select>
+              </FieldLabel>
+              <FieldLabel label="What needs correcting">
+                <Select value={field} onChange={(e) => { setField(e.target.value); reset(); setMsg(null) }}>{CHANGEABLE_FIELDS.map((f) => <option key={f}>{f}</option>)}</Select>
+              </FieldLabel>
+              {field === 'Full name' ? (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <FieldLabel label="First name" required><TextInput value={name.first} onChange={(e) => setName((n) => ({ ...n, first: e.target.value }))} /></FieldLabel>
+                  <FieldLabel label="Middle name"><TextInput value={name.middle} onChange={(e) => setName((n) => ({ ...n, middle: e.target.value }))} /></FieldLabel>
+                  <FieldLabel label="Last name" required><TextInput value={name.last} onChange={(e) => setName((n) => ({ ...n, last: e.target.value }))} /></FieldLabel>
+                  <FieldLabel label="Suffix"><TextInput value={name.suffix} onChange={(e) => setName((n) => ({ ...n, suffix: e.target.value }))} placeholder="Jr., Sr., III" /></FieldLabel>
+                </div>
+              ) : field === 'Birthdate' ? (
+                <FieldLabel label="Correct birthdate" required hint="Age updates automatically once the correction is approved.">
+                  <TextInput type="date" max={new Date().toISOString().slice(0, 10)} value={value} onChange={(e) => setValue(e.target.value)} />
+                </FieldLabel>
+              ) : field === 'Civil status' ? (
+                <FieldLabel label="Correct civil status" required>
+                  <Select value={value} onChange={(e) => setValue(e.target.value)}><option value="">Select</option>{['Single', 'Married', 'Widowed', 'Separated', 'Live-in'].map((o) => <option key={o}>{o}</option>)}</Select>
+                </FieldLabel>
+              ) : field === 'Relationship in the family' ? (
+                <FieldLabel label="Correct relationship" required>
+                  <Select value={value} onChange={(e) => setValue(e.target.value)}><option value="">Select</option>{['Head', 'Spouse', 'Partner', 'Son', 'Daughter', 'Mother', 'Father', 'Grandchild', 'Sibling', 'Relative'].map((o) => <option key={o}>{o}</option>)}</Select>
+                </FieldLabel>
+              ) : (
+                <FieldLabel label="Correct information" required><TextInput value={value} onChange={(e) => setValue(e.target.value)} /></FieldLabel>
+              )}
+              <FieldLabel label="Reason" required><TextArea className="min-h-[60px]" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="For example: My birthdate on record does not match my birth certificate." /></FieldLabel>
+              {msg && <p className={`rounded-md px-3 py-2 text-[12.5px] ${msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink'}`}>{msg.text}</p>}
+              <Button disabled={!filled || !reason.trim()} onClick={submit}>Submit request</Button>
             </div>
           </Panel>
-          {mine.length > 0 && (
-            <Panel title="My correction requests">
-              <ul className="space-y-2">{mine.map((c) => <li key={c.id} className="flex items-center justify-between gap-2 text-[13px]"><span className="text-navy-900">{c.field}: {c.requestedValue}</span><Badge tone={c.status === 'pending' ? 'warning' : c.status === 'approved' ? 'success' : 'danger'}>{c.status === 'pending' ? 'Under review' : c.status === 'approved' ? 'Approved' : 'Not approved'}</Badge></li>)}</ul>
-            </Panel>
-          )}
+          <Panel title="My correction requests" bodyClassName={mine.length ? undefined : 'px-0 py-0'}>
+            {mine.length === 0 ? (
+              <p className="px-5 py-5 text-[13px] text-ink-muted">You have not requested any corrections.</p>
+            ) : (
+              <ul className="space-y-2">
+                {mine.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between gap-2 text-[13px]">
+                    <span className="text-navy-900">{c.field}: {displayRequestedValue(c.field, c.requestedValue)}</span>
+                    <Badge tone={c.status === 'pending' ? 'warning' : c.status === 'approved' ? 'success' : 'danger'}>{c.status === 'pending' ? 'Under review' : c.status === 'approved' ? 'Approved' : 'Not approved'}</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
         </div>
       </div>
     </>

@@ -1,7 +1,8 @@
 import type { RoleId } from './auth'
 
 /** Equipment categories documented in the study (§1.4): chairs, tables, ladders, nebulizers. */
-export type EquipmentCategory = 'Chairs' | 'Tables' | 'Ladders' | 'Nebulizers'
+/** Chairs, Tables, Ladders, Nebulizers, or any category the Property Custodian adds. */
+export type EquipmentCategory = string
 
 export interface Equipment {
   id: string

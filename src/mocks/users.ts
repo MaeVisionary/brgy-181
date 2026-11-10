@@ -57,7 +57,7 @@ export const mockUsers: User[] = [
     extraPermissions: ['residents.search', 'residents.view', 'documents.view', 'documents.create'],
   },
   {
-    id: 'usr-res', username: 'maria.dizon', fullName: 'Maria Clara Dizon', position: 'Resident (sample)',
+    id: 'usr-res', username: 'maria.dizon', fullName: 'Maria Clara Dizon', position: 'Resident',
     roleId: 'resident', email: 'maria.dizon@example.test', status: 'active', residentId: DEMO_RESIDENT_ID,
     lastLoginAt: isoDaysAgo(3, 19),
   },

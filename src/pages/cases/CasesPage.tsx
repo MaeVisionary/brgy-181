@@ -62,7 +62,7 @@ export function CasesPage() {
         </div>
         {error && <p className="border-b border-line-soft bg-danger-tint px-4 py-2 text-[12.5px] text-danger-ink">{error}</p>}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-[13px]">
+          <table className="w-full min-w-[820px] text-[13.5px]">
             <thead>
               <tr className="bg-surface-muted text-left">{['Case no.', 'Parties', 'Nature', 'Filed', 'Stage', 'Next hearing', ...(canRemove ? [''] : [])].map((h, i) => <th key={i} className="label-caps px-4 py-2.5">{h}</th>)}</tr>
             </thead>
@@ -72,13 +72,13 @@ export function CasesPage() {
                 const md = mediationDay(c)
                 return (
                   <tr key={c.id} onClick={() => navigate(`/cases/${c.id}`)} className="cursor-pointer border-t border-line-soft hover:bg-sky-50">
-                    <td className="px-4 py-3 font-semibold whitespace-nowrap text-navy-900">{c.caseNo}</td>
+                    <td className="px-4 py-3.5 font-semibold whitespace-nowrap text-navy-900">{c.caseNo}</td>
                     <td className="px-4 py-3 text-navy-900">{c.title}</td>
                     <td className="px-4 py-3">{c.nature}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-ink-muted">{formatDate(c.filedAt)}</td>
                     <td className="px-4 py-3">
+                      {md && <span className={`mb-1 block text-[12px] font-semibold ${md.overdue ? 'text-danger-ink' : 'text-navy-900'}`}>Day {md.day} of {md.total}</span>}
                       <Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>
-                      {md && <span className={`mt-0.5 block text-[11px] ${md.overdue ? 'text-danger-ink' : 'text-ink-muted'}`}>Day {md.day} of {md.total}</span>}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">{next ? formatDateTime(next.scheduledAt) : <span className="text-ink-subtle">–</span>}</td>
                     {canRemove && (
@@ -92,7 +92,7 @@ export function CasesPage() {
                               <button type="button" className="text-[12px] font-semibold text-ink-muted hover:text-navy-900" onClick={() => setConfirmId(null)}>Cancel</button>
                             </span>
                           ) : (
-                            <Button size="sm" variant="ghost" icon={<Trash2 className="size-3.5" />} onClick={() => setConfirmId(c.id)} aria-label={`Remove ${c.caseNo} from the list`}>
+                            <Button size="sm" variant="secondary" icon={<Trash2 className="size-3.5" />} onClick={() => setConfirmId(c.id)} aria-label={`Remove ${c.caseNo} from the list`}>
                               Remove
                             </Button>
                           )
@@ -134,7 +134,7 @@ export function HearingsPage() {
           <span className="block text-[12px] text-ink-muted">{formatDateTime(h.scheduledAt)} · {h.kind === 'lupon_mediation' ? 'Lupon mediation' : 'Mediation under the Barangay Chairman'} · {h.place}</span>
         </span>
         {h.status === 'held' ? (
-          <Badge tone="neutral">{h.attendance.filter((a) => a.present).length}/{h.attendance.length} attended</Badge>
+          <Badge dot={false} tone="neutral">{h.attendance.filter((a) => a.present).length}/{h.attendance.length} attended</Badge>
         ) : (
           <Badge tone={h.remindersSentAt.length ? 'success' : 'warning'}>{h.remindersSentAt.length ? 'Reminder sent' : 'No reminder yet'}</Badge>
         )}
@@ -143,7 +143,7 @@ export function HearingsPage() {
   )
   return (
     <>
-      <PageHeader title="Hearings and Mediation" subtitle="Schedules come from case records. Reminders go to the parties before each hearing (FR20)." actions={<SampleBadge />} />
+      <PageHeader title="Hearings and Mediation" subtitle="Schedules come from case records. Reminders go to the parties before each hearing." actions={<SampleBadge />} />
       <div className="mb-4 grid gap-4 sm:grid-cols-2">
         <Total icon={<CalendarClock className="size-5" />} label="Upcoming hearings" value={cases ? upcoming.length : null} hint={upcoming[0] ? `Next: ${formatDateTime(upcoming[0].h.scheduledAt)}` : 'Nothing scheduled'} tone="navy" />
         <Total icon={<CalendarCheck2 className="size-5" />} label="Hearings held" value={cases ? past.length : null} hint={past[0] ? `Last: ${formatDateTime(past[0].h.scheduledAt)}` : 'None yet'} tone="sky" />

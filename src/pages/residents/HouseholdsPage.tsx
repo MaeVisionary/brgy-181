@@ -1,7 +1,7 @@
-import { ArrowLeft, ChevronRight, Home, Search, Users } from 'lucide-react'
+import { ChevronRight, Home, Search, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Badge } from '@/components/ui/Badge'
+import { BackLink } from '@/components/ui/BackLink'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Pagination, usePaged } from '@/components/ui/Pagination'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -9,7 +9,6 @@ import { Card, Panel } from '@/components/ui/Panel'
 import { useAsync } from '@/hooks/useAsync'
 import { getHousehold, listHouseholds, listResidents } from '@/services/residentService'
 import { NotFound } from '@/pages/system/NotFound'
-import { SampleBadge } from '@/pages/dashboard/shared'
 import { SectorBadges, age, fullName } from './common'
 
 /** Households: everyone at one address; one household can hold several families (study §1.4). */
@@ -44,7 +43,7 @@ export function HouseholdsPage() {
 
   return (
     <>
-      <PageHeader title="Households" subtitle="A household is everyone living at one address. It can contain more than one family." actions={<SampleBadge />} />
+      <PageHeader title="Households" subtitle="A household is everyone living at one address. It can contain more than one family." />
 
       <Card className="overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-line-soft p-4 sm:flex-row sm:items-center">
@@ -85,28 +84,33 @@ export function HouseholdsPage() {
         ) : (
           <>
             {/* Desktop and tablet: table */}
-            <table className="hidden w-full text-[13px] md:table">
+            <table className="hidden w-full text-[13.5px] md:table">
               <thead>
                 <tr className="bg-surface-muted text-left">
-                  {['Household no.', 'Address', 'Families', 'Head of family', 'Residents', ''].map((t, i) => <th key={i} className="label-caps px-4 py-2.5">{t}</th>)}
+                  {['Household no.', 'Address', 'Families', 'Head of family', 'Residents', ''].map((t, i) => <th key={i} className="label-caps px-4 py-2.5 align-middle">{t}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {paged.slice.map(({ h, members, heads }) => (
                   <tr key={h.id} onClick={() => navigate(`/residents/households/${h.id}`)} className="cursor-pointer border-t border-line-soft hover:bg-sky-50">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <Link to={`/residents/households/${h.id}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-2 font-semibold text-navy-900 hover:underline">
-                        <Home className="size-4 text-ink-muted" /> {h.householdNo}
+                    <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                      <Link to={`/residents/households/${h.id}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-2 leading-none font-semibold text-navy-900 hover:underline">
+                        <Home className="size-4 shrink-0 text-ink-muted" />
+                        <span>{h.householdNo}</span>
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-navy-900">{h.houseNo} {h.street}</td>
-                    <td className="px-4 py-3">
-                      <span className="text-navy-900">{h.families.map((f) => f.name).join(', ')}</span>
-                      {h.families.length > 1 && <Badge tone="info" className="ml-2">{h.families.length} families</Badge>}
+                    <td className="px-4 py-3.5 align-middle text-navy-900">{h.houseNo} {h.street}</td>
+                    <td className="px-4 py-3.5 align-middle">
+                      {h.families.length > 1 && (
+                        <span className="mb-1 inline-flex items-center gap-1 rounded-md bg-navy-900 px-2 py-0.5 text-[12px] font-semibold text-white">
+                          <Users className="size-3.5" /> {h.families.length} families
+                        </span>
+                      )}
+                      <span className="block text-navy-900">{h.families.map((f) => f.name).join(', ')}</span>
                     </td>
-                    <td className="px-4 py-3 text-ink-nav">{heads.map((m) => fullName(m)).join(', ') || '–'}</td>
-                    <td className="px-4 py-3 tabular-nums text-navy-900">{members.length}</td>
-                    <td className="px-3 py-3 text-ink-subtle"><ChevronRight className="size-4" /></td>
+                    <td className="px-4 py-3.5 align-middle text-ink-nav">{heads.map((m) => fullName(m)).join(', ') || '–'}</td>
+                    <td className="px-4 py-3.5 align-middle font-semibold tabular-nums text-navy-900">{members.length}</td>
+                    <td className="px-3 py-3.5 align-middle text-ink-subtle"><ChevronRight className="size-4" /></td>
                   </tr>
                 ))}
               </tbody>
@@ -120,7 +124,7 @@ export function HouseholdsPage() {
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2 font-semibold text-navy-900">
                         <Home className="size-4 text-ink-muted" /> {h.householdNo}
-                        {h.families.length > 1 && <Badge tone="info">{h.families.length} families</Badge>}
+                        {h.families.length > 1 && <span className="rounded-md bg-navy-900 px-2 py-0.5 text-[11.5px] font-semibold text-white">{h.families.length} families</span>}
                       </span>
                       <span className="block text-[13px] text-navy-900">{h.houseNo} {h.street}</span>
                       <span className="mt-0.5 flex items-center gap-1.5 text-[12px] text-ink-muted"><Users className="size-3.5" /> {members.length} residents · {h.families.map((f) => f.name).join(', ')}</span>
@@ -138,6 +142,8 @@ export function HouseholdsPage() {
   )
 }
 
+const hasSector = (m: { sectors: object }) => Object.values(m.sectors).some(Boolean)
+
 export function HouseholdDetailPage() {
   const { id = '' } = useParams()
   const { data, loading } = useAsync(() => getHousehold(id), [id])
@@ -146,23 +152,30 @@ export function HouseholdDetailPage() {
   const { household, members } = data
   return (
     <>
-      <Link to="/residents/households" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-navy-900"><ArrowLeft className="size-4" /> Households</Link>
-      <PageHeader eyebrow={household.householdNo} title={household.address} subtitle={`${household.families.length} famil${household.families.length > 1 ? 'ies' : 'y'} · ${members.length} residents`} actions={<SampleBadge />} />
+      <BackLink fallbackTo="/residents/households" fallbackLabel="Households" />
+      <PageHeader eyebrow={`Household ${household.householdNo}`} title={household.address} subtitle={`${household.families.length} famil${household.families.length > 1 ? 'ies' : 'y'} · ${members.length} residents`} />
       <div className="grid gap-4 lg:grid-cols-2">
         {household.families.map((f) => (
           <Panel key={f.id} title={f.name} subtitle={`Head: ${fullName(members.find((m) => m.id === f.headResidentId)!)}`} bodyClassName="px-0 py-0">
-            <table className="w-full text-[13px]">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[460px] text-[13px]">
+              <thead>
+                <tr className="bg-surface-muted text-left">
+                  {['Name', 'Relationship to the head', 'Age', 'Sectors'].map((h) => <th key={h} className="label-caps px-4 py-2 first:pl-5">{h}</th>)}
+                </tr>
+              </thead>
               <tbody>
                 {members.filter((m) => m.familyId === f.id).map((m) => (
-                  <tr key={m.id} className="border-t border-line-soft first:border-0">
-                    <td className="px-5 py-2.5"><Link to={`/residents/${m.id}`} className="font-semibold text-navy-900 hover:underline">{fullName(m)}</Link></td>
-                    <td className="px-2 py-2.5 text-ink-muted">{m.relationship}</td>
-                    <td className="px-2 py-2.5 tabular-nums">{age(m)}</td>
-                    <td className="px-5 py-2.5"><SectorBadges r={m} /></td>
+                  <tr key={m.id} className="border-t border-line-soft">
+                    <td className="py-2.5 pr-4 pl-5"><Link to={`/residents/${m.id}`} className="font-semibold text-navy-900 hover:underline">{fullName(m)}</Link></td>
+                    <td className="px-4 py-2.5 text-ink-nav">{m.relationship}</td>
+                    <td className="px-4 py-2.5 tabular-nums text-navy-900">{age(m)}</td>
+                    <td className="px-4 py-2.5">{hasSector(m) ? <SectorBadges r={m} /> : <span className="text-[12px] text-ink-muted">None</span>}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           </Panel>
         ))}
       </div>

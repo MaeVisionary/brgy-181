@@ -128,4 +128,6 @@ export interface DocumentRequest {
   caseId?: string
   history: StatusEvent[]
   messages: RequestMessage[]
+  /** Set by the Secretary with "Request more information": what the resident must send. */
+  requestedItems?: string[]
 }

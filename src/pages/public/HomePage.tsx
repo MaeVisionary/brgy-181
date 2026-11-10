@@ -1,7 +1,6 @@
 import { ArrowRight, Building2, ClipboardList, FileText, Gavel, MapPin, Package, UserCheck, UserPlus } from 'lucide-react'
 import { BarangaySeal } from '@/components/layout/BarangaySeal'
 import { BARANGAY, CHAIRMAN, SECRETARY, officialByPosition } from '@/config/barangay'
-import { activeDocumentTypes } from '@/services/templateService'
 import { cn } from '@/lib/cn'
 import { useSmoothNavigate } from '@/lib/transition'
 import { PublicLayout } from './PublicLayout'
@@ -12,9 +11,6 @@ export function HomePage() {
   const kagawads = officialByPosition('Barangay Kagawad')
   const treasurer = officialByPosition('Barangay Treasurer')[0]
   const lupon = officialByPosition('Lupon Member')
-  const docTypes = activeDocumentTypes()
-  const certificates = docTypes.filter((d) => d.category !== 'case')
-  const caseDocs = docTypes.filter((d) => d.category === 'case' && d.id !== 'notice-of-hearing')
 
   return (
     <PublicLayout>
@@ -126,23 +122,20 @@ export function HomePage() {
             If you have no gadget or need help using the portal, you can visit the Barangay 181 Hall and personnel will assist you.
           </p>
 
-          <div className="mt-8 grid gap-4 lg:grid-cols-3">
-            <ServiceGroup icon={FileText} title="Certificates and clearances" body="Request online, then claim the signed and sealed document at the Barangay Hall.">
-              {certificates.map((d) => (
-                <ServiceItem key={d.id} name={d.name} online={d.online} />
-              ))}
-            </ServiceGroup>
-            <ServiceGroup icon={Gavel} title="Complaints and reports" body="Report incidents and request summons. Cases go through the Katarungang Pambarangay process.">
-              {caseDocs.map((d) => (
-                <ServiceItem key={d.id} name={d.id === 'summon' ? 'Complaint submission (Barangay Summon)' : d.name} online={d.online} />
-              ))}
-            </ServiceGroup>
-            <ServiceGroup icon={Package} title="Equipment borrowing" body="Borrow barangay equipment for community or family use.">
-              {['Chairs', 'Tables', 'Ladders', 'Nebulizers'].map((n) => (
-                <ServiceItem key={n} name={n} online />
-              ))}
-              <li className="pt-2 text-[12.5px] text-ink-muted">Fixed 15-day borrowing period with a 3-day grace period.</li>
-            </ServiceGroup>
+          <div className="mx-auto mt-8 grid max-w-[900px] gap-3 md:grid-cols-3">
+            {[
+              { icon: FileText, title: 'Certificates and clearances', body: 'Request online, then claim the signed and sealed document at the Barangay Hall.' },
+              { icon: Gavel, title: 'Complaints and reports', body: 'Report incidents and request summons. Cases go through the Katarungang Pambarangay process.' },
+              { icon: Package, title: 'Equipment borrowing', body: `Borrow barangay equipment for community or family use. Fixed 15-day borrowing period with a 3-day grace period.` },
+            ].map(({ icon: Icon, title, body }) => (
+              <div key={title} className="rounded-[var(--radius-card)] border border-line bg-canvas p-5">
+                <p className="flex items-center gap-2.5 font-display text-[15.5px] font-bold text-navy-900">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-sky-100 text-navy-900"><Icon className="size-[18px]" /></span>
+                  {title}
+                </p>
+                <p className="mt-2.5 text-[13px] leading-relaxed text-ink-muted">{body}</p>
+              </div>
+            ))}
           </div>
 
           <h3 className="mt-14 text-center font-display text-[24px] font-extrabold text-navy-900">How a request moves</h3>
@@ -195,27 +188,7 @@ function Person({ name, position, lead }: { name: string; position: string; lead
   )
 }
 
-function ServiceGroup({ icon: Icon, title, body, children }: { icon: typeof FileText; title: string; body: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-[var(--radius-card)] border border-line bg-canvas p-6">
-      <span className="grid size-10 place-items-center rounded-xl bg-sky-100 text-navy-900">
-        <Icon className="size-5" />
-      </span>
-      <h3 className="mt-4 font-display text-[17px] font-extrabold text-navy-900">{title}</h3>
-      <p className="mt-1 text-[13px] text-ink-muted">{body}</p>
-      <ul className="mt-4 space-y-1.5">{children}</ul>
-    </div>
-  )
-}
 
-function ServiceItem({ name, online }: { name: string; online: boolean }) {
-  return (
-    <li className="flex items-center justify-between gap-3 border-b border-line-soft pb-1.5 text-[13.5px] last:border-0">
-      <span className="text-navy-900">{name}</span>
-      <span className={cn('shrink-0 text-[11px] font-semibold', online ? 'text-info' : 'text-ink-muted')}>{online ? 'Online' : 'At the Hall'}</span>
-    </li>
-  )
-}
 
 /** Numbered steps joined by a line: horizontal on wide screens, vertical on phones. */
 function ProcessSteps({ steps }: { steps: { icon: typeof FileText; title: string; body: string }[] }) {

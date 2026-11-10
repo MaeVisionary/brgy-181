@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react'
+import { ChevronRight, Inbox } from 'lucide-react'
+import { GreetingCard } from '@/components/ui/GreetingCard'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import { Badge } from '@/components/ui/Badge'
-import { PageHeader } from '@/components/ui/PageHeader'
 import { Panel } from '@/components/ui/Panel'
 import { StatCard } from '@/components/ui/StatCard'
-import { formatDateTime, greeting } from '@/lib/format'
+import { formatDateTime } from '@/lib/format'
 import { useAsync } from '@/hooks/useAsync'
 import { getAreaBreakdown, getPopulationSummary } from '@/services/residentService'
-import { AREAS, SAMPLE_DATA_NOTICE } from '@/mocks/residents'
+import { AREAS } from '@/mocks/residents'
 import { BarChart3, FileDown, Sheet } from 'lucide-react'
 import { exportExcel, exportPdf, type ReportOutput } from '@/analytics/exporters'
 import { AreaChart } from '@/components/charts/AreaChart'
@@ -18,26 +18,48 @@ import { Card } from '@/components/ui/Panel'
 import { BARANGAY } from '@/config/barangay'
 import { useState } from 'react'
 
-export function DashHeader({ subtitle, actions }: { subtitle: string; actions?: ReactNode }) {
+/**
+ * Dashboard top (Figma v3): greeting card, then an "… Overview" row that carries
+ * the page's main action. With `actionInGreeting` the action sits in the
+ * greeting card instead (Property Custodian).
+ */
+export function DashHeader({ subtitle, actions, overview, actionInGreeting }: { subtitle: string; actions?: ReactNode; overview?: string; actionInGreeting?: boolean }) {
   const { user } = useAuth()
-  const [now] = useState(() => new Date())
   if (!user) return null
   return (
-    <PageHeader
-      eyebrow={`${user.position} · As of ${formatDateTime(now)}`}
-      title={`${greeting(now)}, ${user.fullName}`}
-      subtitle={subtitle}
-      actions={actions}
-    />
+    <>
+      <GreetingCard subtitle={subtitle} profileTo="/account" action={actionInGreeting ? actions : undefined} />
+      {overview && (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-[18px] font-extrabold text-navy-900">{overview}</h2>
+          {!actionInGreeting && actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+        </div>
+      )}
+    </>
   )
 }
 
-export function SampleBadge() {
+/** "View All >" link used in every panel header. */
+export function ViewAll({ to, label = 'View All' }: { to: string; label?: string }) {
   return (
-    <span title={SAMPLE_DATA_NOTICE}>
-      <Badge tone="neutral">Sample data</Badge>
-    </span>
+    <Link to={to} className="inline-flex min-h-8 shrink-0 items-center gap-0.5 text-[12.5px] font-semibold text-info hover:underline">
+      {label} <ChevronRight className="size-4" />
+    </Link>
   )
+}
+
+/** Empty container note: tells the user there is nothing here yet. */
+export function EmptyNote({ children }: { children: ReactNode }) {
+  return (
+    <p className="flex items-center gap-2 px-5 py-6 text-[13px] text-ink-muted">
+      <Inbox className="size-4 shrink-0 text-ink-subtle" /> {children}
+    </p>
+  )
+}
+
+/** Kept for compatibility: the "Sample data" label is no longer shown. */
+export function SampleBadge() {
+  return null
 }
 
 /** Barangay population overview from resident records (FR15). */
@@ -74,7 +96,9 @@ export function ListPanel<T>({
   render,
   empty,
   to,
-  toLabel = 'View all',
+  toLabel = 'View All',
+  dark,
+  className,
 }: {
   title: string
   subtitle?: string
@@ -83,18 +107,16 @@ export function ListPanel<T>({
   empty: string
   to?: string
   toLabel?: string
+  /** Navy title bar: only for the containers to look at first. */
+  dark?: boolean
+  className?: string
 }) {
   return (
-    <Panel
-      title={title}
-      subtitle={subtitle}
-      bodyClassName="px-0 py-0"
-      actions={to && <Link to={to} className="text-[12.5px] font-semibold text-info hover:underline">{toLabel}</Link>}
-    >
+    <Panel title={title} subtitle={subtitle} dark={dark} className={className} bodyClassName="px-0 py-0" actions={to && <ViewAll to={to} label={toLabel} />}>
       {items === null ? (
         <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-9 animate-pulse rounded bg-surface-muted" />)}</div>
       ) : items.length === 0 ? (
-        <p className="px-5 py-6 text-[13px] text-ink-muted">{empty}</p>
+        <EmptyNote>{empty}</EmptyNote>
       ) : (
         <ul>{items.map((it, i) => <li key={i} className="border-b border-line-soft last:border-0">{render(it)}</li>)}</ul>
       )}
@@ -148,7 +170,7 @@ export function PopulationByStreet() {
     meta: [
       ['Barangay', BARANGAY.fullName],
       ['Scope', scope],
-      ['Source', 'Resident records (sample data in this prototype)'],
+      ['Source', 'Resident records'],
       ['Generated', formatDateTime(new Date().toISOString())],
     ],
     summary: items.map(([k, v]) => [k, v ?? 0]),
@@ -158,46 +180,49 @@ export function PopulationByStreet() {
       .map((a) => [a.area, a.residents, a.households, a.families, a.seniorCitizens, a.pwds, a.soloParents, a.fourPsMembers, a.programBeneficiaries]),
   })
 
-  const controls = (
-    <div className="flex flex-wrap items-center gap-2">
-      <select
-        value={street}
-        onChange={(e) => setStreet(e.target.value)}
-        aria-label="Street"
-        className="h-9 rounded-full border border-line bg-surface px-3 text-[13px] font-semibold text-navy-900 focus:border-navy-600 focus:outline-none"
-      >
-        <option value="">All streets</option>
-        {AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
-      </select>
-      <span className="inline-flex h-9 items-center gap-1.5 rounded-full bg-surface-muted px-3 text-[12.5px] font-semibold text-ink-muted">
-        <span className="size-1.5 rounded-full bg-ink-muted" /> {year}
-      </span>
-      {canExport && (
-        <>
-          <Button size="sm" variant="secondary" icon={<FileDown className="size-3.5" />} onClick={() => exportPdf(report())} disabled={!summary || !areas}>
-            Export PDF
-          </Button>
-          <Button size="sm" variant="secondary" icon={<Sheet className="size-3.5" />} onClick={() => void exportExcel(report())} disabled={!summary || !areas}>
-            Excel
-          </Button>
-        </>
-      )}
-    </div>
-  )
-
   return (
     <div className="space-y-4">
-      <Card className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-sky-100 text-navy-900"><BarChart3 className="size-5" /></span>
-          <div>
-            <h2 className="font-display text-[16px] font-bold text-navy-900">Population by street</h2>
-            <p className="text-[12.5px] text-ink-muted">Registered residents and households per area · switch a street to filter everything below</p>
+      {/* Header: title on the left; the street switch first, exports after it. */}
+      <Card className="px-5 py-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-navy-900 text-white">
+              <BarChart3 className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-2 font-display text-[17px] font-bold text-navy-900">
+                Population by street
+                <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11.5px] font-semibold text-ink-muted">{year}</span>
+              </h2>
+              <p className="text-[12.5px] text-ink-muted">Residents and households per area. Choose a street to filter the figures below.</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <label className="flex items-center gap-2 text-[12.5px] font-semibold text-navy-900">
+              <span className="whitespace-nowrap">Street</span>
+              <select
+                value={street}
+                onChange={(e) => setStreet(e.target.value)}
+                className="h-10 min-w-[170px] flex-1 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[13px] font-semibold text-navy-900 focus:border-navy-600 focus:outline-none"
+              >
+                <option value="">All streets</option>
+                {AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </label>
+            {canExport && (
+              <div className="flex gap-2 sm:border-l sm:border-line-soft sm:pl-3">
+                <Button variant="secondary" icon={<FileDown className="size-4" />} onClick={() => exportPdf(report())} disabled={!summary || !areas}>
+                  Export PDF
+                </Button>
+                <Button variant="secondary" icon={<Sheet className="size-4" />} onClick={() => void exportExcel(report())} disabled={!summary || !areas}>
+                  Export Excel
+                </Button>
+              </div>
+            )}
           </div>
         </div>
-        {controls}
       </Card>
-      <Panel title={street ? `Overview: ${street}` : 'Barangay overview'} subtitle="Counts from the resident records" actions={<SampleBadge />}>
+      <Panel title={street ? `Overview: ${street}` : 'Barangay overview'} subtitle="Counts from the resident records" >
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
           {items.map(([label, v]) => (
             <div key={label}>
@@ -207,7 +232,7 @@ export function PopulationByStreet() {
           ))}
         </dl>
       </Panel>
-      <Panel title={street ? `${street}: population figures` : 'Residents and households per area'} subtitle="For community and ayuda planning" actions={<SampleBadge />}>
+      <Panel title={street ? `${street}: population figures` : 'Residents and households per area'} subtitle="For community and ayuda planning" >
         {!areas || !summary ? (
           <div className="h-[244px] animate-pulse rounded bg-surface-muted" />
         ) : street ? (

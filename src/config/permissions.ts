@@ -138,8 +138,8 @@ export const GRANTABLE_STAFF_PERMISSIONS: readonly Permission[] = [
   'cases.view',
 ]
 
-/** Same grantable set applies to Kagawad accounts (per-account, once confirmed). */
-export const GRANTABLE_ROLES: readonly string[] = ['staff', 'kagawad']
+/** Every barangay official account can receive these per account (residents and the administrator cannot). */
+export const GRANTABLE_ROLES: readonly string[] = ['chairman', 'secretary', 'kagawad', 'property_custodian', 'staff']
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   'residents.view': 'View resident records',

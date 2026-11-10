@@ -27,7 +27,7 @@ export function PortalPage() {
         <div className="grid gap-5 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:items-stretch">
           <aside className="bmis-rise relative flex flex-col items-center justify-center overflow-hidden rounded-[24px] bg-gradient-to-b from-navy-900 to-navy-800 px-6 py-10 text-center text-white md:py-14">
             <img aria-hidden alt="" src={`${import.meta.env.BASE_URL}seal.png`} className="pointer-events-none absolute -right-20 -bottom-24 w-[320px] max-w-none opacity-[0.07] grayscale select-none" />
-            <BarangaySeal className="relative size-16" />
+            <BarangaySeal onDark className="relative size-16" />
             <h1 className="relative mt-4 font-display text-[26px] leading-tight font-extrabold tracking-tight sm:text-[28px]">Welcome to Barangay 181</h1>
             <p className="relative mt-2 text-[14.5px] text-white/85">How would you like to access the portal?</p>
             <p className="relative text-[13px] text-white/65">Select your account type to continue.</p>

@@ -1,5 +1,5 @@
-import { Download, FileClock, FileSpreadsheet, FileText, Lock } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Download, FileClock, FileSpreadsheet, FileText, Lock, Trash2, Upload } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { useAnalytics } from '@/analytics/AnalyticsContext'
@@ -13,6 +13,9 @@ import { Card, Panel } from '@/components/ui/Panel'
 import { BARANGAY, RECURRING_REPORTS, REPORT_CATEGORIES } from '@/config/barangay'
 import { cn } from '@/lib/cn'
 import { audit } from '@/services/auditService'
+import { ServiceError } from '@/services/mockApi'
+import { deleteReportTemplate, listReportTemplates, saveReportTemplate, type ReportTemplate } from '@/services/reportTemplateService'
+import { downloadBlob } from '@/services/templateService'
 
 export function ReportsPage() {
   const { user, can } = useAuth()
@@ -49,6 +52,29 @@ export function ReportsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reportId, dataset])
 
+  // Official templates: the Secretary uploads, replaces or deletes them.
+  const canManageTemplates = can('documents.process') || can('residents.import')
+  const [templates, setTemplates] = useState<Record<string, ReportTemplate>>({})
+  const [templateMsg, setTemplateMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  useEffect(() => {
+    listReportTemplates().then(setTemplates)
+  }, [])
+  const upload = async (id: string, label: string, file: File) => {
+    setTemplateMsg(null)
+    try {
+      await saveReportTemplate(id, label, file, user!)
+      setTemplates(await listReportTemplates())
+      setTemplateMsg({ ok: true, text: `${label}: "${file.name}" uploaded.` })
+    } catch (e) {
+      setTemplateMsg({ ok: false, text: e instanceof ServiceError ? e.message : 'The file could not be uploaded.' })
+    }
+  }
+  const remove = async (id: string, label: string) => {
+    await deleteReportTemplate(id, label, user!)
+    setTemplates(await listReportTemplates())
+    setTemplateMsg({ ok: true, text: `${label}: template deleted.` })
+  }
+
   const doExport = async (kind: 'pdf' | 'xlsx') => {
     if (!output || !user) return
     audit(user, `Exported ${kind.toUpperCase()}: ${def.name}`, 'Reports', def.pii ? 'contains identifiable information' : undefined)
@@ -60,32 +86,30 @@ export function ReportsPage() {
     <>
       <PageHeader title="Barangay Reports" subtitle="Recurring reports for government offices and internal analytics reports." />
 
-      <Panel title="Official reports" subtitle="Recipients identified in the workflows document and the study. Formats will follow the files the barangay provides.">
+      <Panel title="Official reports" subtitle="Each office's required format. Upload the file the office provides; reports follow it once it is here.">
+        {templateMsg && <p role="status" className={cn('mb-3 rounded-md px-3 py-2 text-[12.5px]', templateMsg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{templateMsg.text}</p>}
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {REPORT_CATEGORIES.map((c) => (
-            <div key={c.id} className="rounded-[var(--radius-control)] border border-line px-4 py-3">
-              <p className="font-display text-[15px] font-extrabold text-navy-900">{c.name}</p>
-              <p className="text-[12px] text-ink-muted">{c.full}</p>
-              <p className="mt-2"><Badge tone="neutral">Template pending</Badge></p>
-            </div>
+            <TemplateSlot key={c.id} id={c.id} title={c.name} subtitle={c.full} template={templates[c.id]} canManage={canManageTemplates} onUpload={upload} onDelete={remove} />
           ))}
         </div>
-        <ul className="mt-4 divide-y divide-line-soft rounded-[var(--radius-control)] border border-line">
+        <p className="label-caps mt-5 mb-2">Recurring reports</p>
+        <div className="grid gap-3 md:grid-cols-2">
           {RECURRING_REPORTS.map((r) => (
-            <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
-              <span className="flex items-center gap-2.5">
-                <FileClock className="size-4 text-ink-muted" />
-                <span>
-                  <span className="block text-[13px] font-semibold text-navy-900">{r.name}</span>
-                  <span className="block text-[11.5px] text-ink-muted">{r.schedule}</span>
-                </span>
-              </span>
-              <span className="text-right text-[11.5px] text-ink-muted">
-                {r.id === 'senior-masterlist' ? 'Official OSCA format pending. Use the internal masterlist report below meanwhile.' : 'Waiting for the official template'}
-              </span>
-            </li>
+            <TemplateSlot
+              key={r.id}
+              id={`recurring-${r.id}`}
+              title={r.name}
+              subtitle={r.schedule.replace(/\s*\(format pending\)/i, '')}
+              template={templates[`recurring-${r.id}`]}
+              canManage={canManageTemplates}
+              onUpload={upload}
+              onDelete={remove}
+              note={r.id === 'senior-masterlist' && !templates[`recurring-${r.id}`] ? 'Until the OSCA format is uploaded, use the internal masterlist report below.' : undefined}
+              icon={<FileClock className="size-4" />}
+            />
           ))}
-        </ul>
+        </div>
       </Panel>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
@@ -166,5 +190,72 @@ export function ReportsPage() {
         </Panel>
       </div>
     </>
+  )
+}
+
+/** One report format: amber while missing (needs a file), green once uploaded. */
+function TemplateSlot({
+  id,
+  title,
+  subtitle,
+  template,
+  canManage,
+  onUpload,
+  onDelete,
+  note,
+  icon,
+}: {
+  id: string
+  title: string
+  subtitle: string
+  template?: ReportTemplate
+  canManage: boolean
+  onUpload: (id: string, label: string, file: File) => void
+  onDelete: (id: string, label: string) => void
+  note?: string
+  icon?: React.ReactNode
+}) {
+  const input = useRef<HTMLInputElement>(null)
+  const [confirm, setConfirm] = useState(false)
+  return (
+    <div className={cn('flex flex-col rounded-[var(--radius-control)] border px-4 py-3', template ? 'border-line' : 'border-warning/50 border-l-4 border-l-warning bg-warning-tint/30')}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 font-display text-[14.5px] font-extrabold text-navy-900">{icon}{title}</p>
+          <p className="text-[12px] text-ink-muted">{subtitle}</p>
+        </div>
+        <Badge tone={template ? 'success' : 'warning'}>{template ? 'Template uploaded' : 'Template pending'}</Badge>
+      </div>
+      {template ? (
+        <p className="mt-2 truncate text-[12px] text-ink-nav" title={template.fileName}>
+          {template.fileName} · {template.uploadedBy} · {new Date(template.uploadedAt).toLocaleDateString('en-PH', { day: '2-digit', month: 'short', year: 'numeric' })}
+        </p>
+      ) : (
+        <p className="mt-2 text-[12px] text-warning">{note ?? 'No template yet. Upload the official file to use this report.'}</p>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {template && (
+          <Button size="sm" variant="secondary" icon={<Download className="size-3.5" />} onClick={() => downloadBlob(template.blob, template.fileName)}>
+            Download
+          </Button>
+        )}
+        {canManage && (
+          <>
+            <input ref={input} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(id, title, f); e.target.value = '' }} />
+            <Button size="sm" variant={template ? 'secondary' : 'primary'} icon={<Upload className="size-3.5" />} onClick={() => input.current?.click()}>
+              {template ? 'Replace' : 'Upload template'}
+            </Button>
+            {template && (confirm ? (
+              <>
+                <Button size="sm" variant="danger" onClick={() => { onDelete(id, title); setConfirm(false) }}>Yes, delete</Button>
+                <Button size="sm" variant="ghost" onClick={() => setConfirm(false)}>Cancel</Button>
+              </>
+            ) : (
+              <Button size="sm" variant="danger" icon={<Trash2 className="size-3.5" />} onClick={() => setConfirm(true)}>Delete</Button>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
   )
 }

@@ -82,13 +82,13 @@ export function NewRequestPage() {
       </Link>
       <PageHeader title="New request" subtitle="Choose what you need. Documents are claimed at the Barangay Hall once ready." />
 
-      <div className="max-w-3xl space-y-4">
+      <div className="space-y-4">
         <Panel title="What do you need?">
           <div className="space-y-4">
             {groups.map(([cat, docs]) => (
               <section key={cat}>
                 <p className="label-caps mb-2">{CATEGORY_LABEL[cat]}</p>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {docs
                     .filter((d) => d.id !== 'notice-of-hearing')
                     .map((d) => (
@@ -98,7 +98,7 @@ export function NewRequestPage() {
                         disabled={!d.online}
                         onClick={() => choose(d.id)}
                         className={cn(
-                          'rounded-[var(--radius-control)] border px-3 py-2.5 text-left transition-colors',
+                          'min-h-12 cursor-pointer rounded-[var(--radius-control)] border px-3.5 py-2.5 text-left transition-colors',
                           typeId === d.id ? 'border-navy-900 bg-sky-100' : 'border-line hover:bg-sky-50',
                           !d.online && 'cursor-not-allowed bg-surface-muted hover:bg-surface-muted',
                         )}
@@ -124,7 +124,7 @@ export function NewRequestPage() {
                 {groupFields(fields).map(([group, fs]) => (
                   <section key={group || 'main'}>
                     {group && <p className="label-caps mb-2">{group}</p>}
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                       {fs.map((f) => (
                         <FieldInput
                           key={f.key}
@@ -141,13 +141,13 @@ export function NewRequestPage() {
             </Panel>
 
             {type.requirements.length > 0 && (
-              <Panel title="Requirements" subtitle="Prototype: the file name is recorded, but the file itself is not uploaded or stored.">
-                <ul className="space-y-3">
+              <Panel title="Requirements" subtitle="Attach a clear photo or PDF of each requirement.">
+                <ul className="grid gap-3 md:grid-cols-2">
                   {type.requirements.map((r) => (
                     <li key={r.label}>
-                      <label className="block">
+                      <label className="block cursor-pointer">
                         <span className="mb-1 block text-[12.5px] font-semibold text-navy-900">{r.label}</span>
-                        <span className="flex items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line px-3 py-2.5 text-[12.5px] text-ink-muted">
+                        <span className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line px-3 py-2.5 text-[12.5px] text-ink-muted transition-colors hover:border-navy-600 hover:bg-sky-50 hover:text-navy-900">
                           <Paperclip className="size-4" />
                           {files[r.label] ?? 'Choose a photo or PDF'}
                           <input
@@ -168,7 +168,7 @@ export function NewRequestPage() {
             )}
 
             <Card className="px-5 py-4 text-[12.5px] text-ink-muted">
-              Your information is used only to process this request, in line with the Data Privacy Act of 2012 (RA 10173). The full privacy notice will be added after review by the barangay's Data Protection Officer.
+              Your information is used only to process this request, in line with the Data Privacy Act of 2012 (RA 10173).
             </Card>
 
             {touched && missing.length > 0 && (

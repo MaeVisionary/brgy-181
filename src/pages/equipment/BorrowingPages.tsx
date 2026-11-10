@@ -1,6 +1,7 @@
-import { ArrowLeft, BellRing, Plus } from 'lucide-react'
+import { BellRing, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { BackLink } from '@/components/ui/BackLink'
 import { useAuth } from '@/auth/useAuth'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -106,7 +107,7 @@ export function BorrowingDetailPage() {
 
   return (
     <>
-      <Link to="/borrowing" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-navy-900"><ArrowLeft className="size-4" /> Equipment Borrowing</Link>
+      <BackLink fallbackTo="/borrowing" fallbackLabel="Borrowing" />
       <PageHeader eyebrow={`${b.refNo} · requested ${formatDateTime(b.requestedAt)}`} title={b.borrowerName} subtitle={b.address} actions={b.status === 'released' ? <Badge tone={RETURN_BADGE[rs].tone}>{RETURN_BADGE[rs].label}</Badge> : <Badge tone={BORROW_STATUS[b.status].tone}>{BORROW_STATUS[b.status].label}</Badge>} />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="space-y-4">
@@ -232,7 +233,7 @@ export function BorrowForm({ assisted, resident, onDone }: { assisted?: boolean;
   }
 
   return (
-    <Panel className="mb-4" title={assisted ? 'Encode walk-in borrowing request' : 'Request to borrow equipment'} subtitle="Name, address, equipment, quantity, date of use and expected return date (workflows docx).">
+    <Panel className="mb-4" title={assisted ? 'Encode walk-in borrowing request' : 'Request to borrow equipment'} subtitle="Name, address, equipment, quantity, date of use and expected return date.">
       {assisted && !who && (
         <FieldLabel label="Borrower (resident)" required>
           <TextInput placeholder="Search name" value={q} onChange={(e) => setQ(e.target.value)} />

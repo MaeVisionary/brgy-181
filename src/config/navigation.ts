@@ -1,13 +1,20 @@
 import {
+  BadgeCheck,
   Bell,
+  BookOpenCheck,
   Boxes,
+  CalendarClock,
+  FileCheck2,
+  FilePen,
+  Files,
+  HandHelping,
+  Home as HouseIcon,
+  ChartPie,
   ClipboardList,
   Database,
-  ChartColumn,
   FileText,
   Gavel,
   Home,
-  Layers,
   LayoutDashboard,
   MessageSquareWarning,
   Package,
@@ -49,54 +56,29 @@ export interface NavGroup {
   section?: string
 }
 
+/**
+ * Barangay personnel (Chairman, Secretary, Kagawad, Property Custodian, other
+ * authorized personnel). Same flat format as the other portals; each item only
+ * appears when the account has its permission. The Secretary, who sees the most
+ * items, can fold sections (see Sidebar).
+ */
 const PERSONNEL_NAV: NavGroup[] = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  {
-    label: 'Resident Records',
-    icon: Users,
-    children: [
-      { label: 'Master List', path: '/residents', anyOf: ['residents.view', 'residents.search'] },
-      { label: 'Households', path: '/residents/households', anyOf: ['residents.view'] },
-      { label: 'Registrations', path: '/residents/registrations', anyOf: ['residents.verify'] },
-      { label: 'Update Requests', path: '/residents/change-requests', anyOf: ['residents.approve'] },
-      { label: 'Master List Import', path: '/residents/import', anyOf: ['residents.import'] },
-    ],
-  },
-  {
-    label: 'Services',
-    icon: Layers,
-    children: [
-      { label: 'Document Requests', path: '/documents', anyOf: ['documents.view'] },
-      { label: 'Approvals', path: '/documents/approvals', anyOf: ['documents.approve'] },
-      { label: 'Document Templates', path: '/documents/templates', anyOf: ['documents.view'] },
-    ],
-  },
-  {
-    label: 'Katarungang Pambarangay',
-    icon: Gavel,
-    children: [
-      { label: 'Cases', path: '/cases', anyOf: ['cases.view', 'cases.manage'] },
-      { label: 'Hearings and Mediation', path: '/hearings', anyOf: ['hearings.view', 'hearings.manage'] },
-    ],
-  },
-  {
-    label: 'Property and Equipment',
-    icon: Boxes,
-    children: [
-      { label: 'Equipment Records', path: '/inventory', anyOf: ['inventory.view'] },
-      { label: 'Borrowing', path: '/borrowing', anyOf: ['borrowing.approve', 'borrowing.release'] },
-    ],
-  },
-  {
-    label: 'Insights',
-    icon: ChartColumn,
-    children: [
-      { label: 'Analytics', path: '/analytics', anyOf: ['analytics.view'] },
-      { label: 'Reports', path: '/reports', anyOf: ['reports.view'] },
-    ],
-  },
-  { label: 'Notifications', icon: Bell, path: '/notifications' },
-  { label: 'Account Settings', icon: Settings2, path: '/account' },
+  { section: 'Resident Records', label: 'Resident Master List', icon: Users, path: '/residents', anyOf: ['residents.view', 'residents.search'] },
+  { section: 'Resident Records', label: 'Households', icon: HouseIcon, path: '/residents/households', anyOf: ['residents.view'] },
+  { section: 'Resident Records', label: 'Registrations', icon: BadgeCheck, path: '/residents/registrations', anyOf: ['residents.verify'] },
+  { section: 'Resident Records', label: 'Record Update Requests', icon: FilePen, path: '/residents/change-requests', anyOf: ['residents.approve'] },
+  { section: 'Services', label: 'Document Requests', icon: FileText, path: '/documents', anyOf: ['documents.view'] },
+  { section: 'Services', label: 'Approvals', icon: FileCheck2, path: '/documents/approvals', anyOf: ['documents.approve'] },
+  { section: 'Services', label: 'Document Templates', icon: Files, path: '/documents/templates', anyOf: ['documents.view'] },
+  { section: 'Katarungang Pambarangay', label: 'Cases', icon: Gavel, path: '/cases', anyOf: ['cases.view', 'cases.manage'] },
+  { section: 'Katarungang Pambarangay', label: 'Hearings and Mediation', icon: CalendarClock, path: '/hearings', anyOf: ['hearings.view', 'hearings.manage'] },
+  { section: 'Property and Equipment', label: 'Equipment Records', icon: Boxes, path: '/inventory', anyOf: ['inventory.view'] },
+  { section: 'Property and Equipment', label: 'Borrowing', icon: HandHelping, path: '/borrowing', anyOf: ['borrowing.approve', 'borrowing.release'] },
+  { section: 'Insights', label: 'Analytics', icon: ChartPie, path: '/analytics', anyOf: ['analytics.view'] },
+  { section: 'Insights', label: 'Reports', icon: BookOpenCheck, path: '/reports', anyOf: ['reports.view'] },
+  { section: 'Account', label: 'Notifications', icon: Bell, path: '/notifications' },
+  { section: 'Account', label: 'Account Settings', icon: Settings2, path: '/account' },
 ]
 
 /** System Administrator (Figma v3): flat groups, always open. */

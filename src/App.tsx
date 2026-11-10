@@ -22,7 +22,6 @@ import { CasesPage, HearingsPage } from '@/pages/cases/CasesPage'
 import { BorrowingDetailPage, BorrowingPage } from '@/pages/equipment/BorrowingPages'
 import { InventoryPage } from '@/pages/equipment/InventoryPage'
 import { HouseholdDetailPage, HouseholdsPage } from '@/pages/residents/HouseholdsPage'
-import { ImportPage } from '@/pages/residents/ImportPage'
 import { ResidentProfilePage } from '@/pages/residents/ResidentProfilePage'
 import { ResidentsPage } from '@/pages/residents/ResidentsPage'
 import { ChangeRequestsPage, RegistrationsPage } from '@/pages/residents/ReviewPages'
@@ -80,7 +79,7 @@ export default function App() {
           <Route path="/residents/households/:id" element={guard(['residents.view'], 'personnel', <HouseholdDetailPage />)} />
           <Route path="/residents/registrations" element={guard(['residents.verify'], 'personnel', <RegistrationsPage />)} />
           <Route path="/residents/change-requests" element={guard(['residents.approve'], 'personnel', <ChangeRequestsPage />)} />
-          <Route path="/residents/import" element={guard(['residents.import'], 'personnel', <ImportPage />)} />
+          <Route path="/residents/import" element={<Navigate to="/residents" replace />} />
           <Route path="/residents/:id" element={guard(['residents.view'], 'personnel', <ResidentProfilePage />)} />
 
           {/* Katarungang Pambarangay */}

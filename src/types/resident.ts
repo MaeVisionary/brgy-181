@@ -133,7 +133,10 @@ export interface RegistrationEvidence {
 
 export interface ResidentChangeRequest {
   id: string
+  /** Record to correct (the requester or a member of their household). */
   residentId: string
+  /** Resident who asked, when it is not the record's owner. */
+  requestedByResidentId?: string
   submittedAt: string
   field: string
   originalValue: string

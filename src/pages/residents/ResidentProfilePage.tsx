@@ -1,6 +1,7 @@
-import { ArrowLeft, Home } from 'lucide-react'
+import { Home } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { BackLink } from '@/components/ui/BackLink'
 import { useAuth } from '@/auth/useAuth'
 import { StatusBadge } from '@/components/documents/DocParts'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -47,8 +48,13 @@ export function ResidentProfilePage() {
 
   return (
     <>
-      <Link to="/residents" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-navy-900"><ArrowLeft className="size-4" /> Resident Master List</Link>
-      <PageHeader eyebrow={`${res.residentNo} · Sample record`} title={fullName(res)} subtitle={`${res.houseNo} ${res.street}, Gagalangin, Tondo, Manila`} actions={<RegistrationBadge status={res.registrationStatus} />} />
+      <BackLink fallbackTo="/residents" fallbackLabel="Resident Master List" />
+      <PageHeader eyebrow={`Resident no. ${res.residentNo}`} title={fullName(res)} subtitle={`${res.houseNo} ${res.street}, Gagalangin, Tondo, Manila`} actions={
+          <div className="rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-2">
+            <p className="text-[11px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Portal account</p>
+            <div className="mt-1 [&>span]:h-7 [&>span]:px-2.5 [&>span]:text-[12.5px]"><RegistrationBadge status={res.registrationStatus} /></div>
+          </div>
+        } />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="space-y-4">
           <Panel title="Personal information">
@@ -70,7 +76,7 @@ export function ResidentProfilePage() {
               <Field k="Educational attainment" v={res.education} />
             </dl>
           </Panel>
-          <Panel title="Sectors"><SectorBadges r={res} /></Panel>
+          <Panel title="Sectors">{Object.values(res.sectors).some(Boolean) ? <SectorBadges r={res} /> : <p className="text-[13px] text-ink-muted">No sector recorded for this resident (senior citizen, PWD, solo parent, 4Ps or program beneficiary).</p>}</Panel>
           {(requests.length > 0 || cases.length > 0) && (
             <Panel title="Transactions" bodyClassName="px-0 py-0">
               <ul>

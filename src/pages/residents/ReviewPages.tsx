@@ -12,7 +12,7 @@ import { residentById } from '@/mocks/residents'
 import { userById } from '@/mocks/users'
 import { ServiceError } from '@/services/mockApi'
 import { decideRegistration, listRegistrations } from '@/services/registrationService'
-import { decideChangeRequest, listChangeRequests } from '@/services/residentService'
+import { decideChangeRequest, displayRequestedValue, listChangeRequests } from '@/services/residentService'
 import type { ResidentChangeRequest, ResidentRegistration } from '@/types/resident'
 import { fullName } from './common'
 
@@ -66,7 +66,6 @@ export function RegistrationsPage() {
       <PageHeader title="Resident Registrations" subtitle="Online registrations that need manual verification. A failed face or liveness check is never an automatic denial; in-person verification at the Barangay Hall is always possible." />
       <p className="mb-3 text-[12.5px] text-ink-muted">
         Online registrations are approved automatically only when the ID name, face comparison, live selfie and barangay records all match. Everything else lands here.
-        Prototype: these checks run in the applicant's browser and registrations are saved on this device only; the backend will repeat the checks on the server (NFR7).
       </p>
       <div className="space-y-3">
         {queue.length === 0 && items && <Card className="px-5 py-6 text-[13px] text-ink-muted">No registrations waiting for review.</Card>}
@@ -101,7 +100,9 @@ export function RegistrationsPage() {
                 </div>
                 <ul className="space-y-1.5">
                   {(Object.keys(CHECK_LABEL) as (keyof typeof CHECK_LABEL)[]).map((k) => (
-                    <li key={k} className="flex items-center gap-2 text-[12.5px] text-navy-900"><CheckIcon v={r.verification[k]} /> {CHECK_LABEL[k]}: {r.verification[k]}</li>
+                    <li key={k} className={r.verification[k] === 'passed' ? 'flex items-center gap-2 text-[12.5px] text-navy-900' : 'flex items-center gap-2 rounded-md bg-danger-tint px-2 py-1 text-[12.5px] font-semibold text-danger-ink'}>
+                      <CheckIcon v={r.verification[k]} /> {CHECK_LABEL[k]}: {r.verification[k] === 'passed' ? 'passed' : r.verification[k] === 'failed' ? 'failed' : 'not certain'}
+                    </li>
                   ))}
                   {ev?.faceSimilarity !== undefined && <li className="pl-6 text-[12px] text-ink-muted">Face similarity: {ev.faceSimilarity}%</li>}
                   {ev && (
@@ -174,9 +175,10 @@ export function ChangeRequestsPage() {
               <div>
                 <p className="label-caps">{formatDateTime(c.submittedAt)}</p>
                 <p className="mt-1 text-[14px] font-semibold text-navy-900">{r ? <Link to={`/residents/${r.id}`} className="hover:underline">{fullName(r)}</Link> : 'Unknown resident'} · {c.field}</p>
+                {c.requestedByResidentId && residentById(c.requestedByResidentId) && <p className="text-[12px] text-ink-muted">Requested by {fullName(residentById(c.requestedByResidentId)!)} (same family)</p>}
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   <div className="rounded-md bg-surface-muted px-3 py-2"><p className="text-[11px] text-ink-muted">Current record</p><p className="text-[13px] text-navy-900">{c.originalValue || '–'}</p></div>
-                  <div className="rounded-md bg-sky-100 px-3 py-2"><p className="text-[11px] text-ink-muted">Requested</p><p className="text-[13px] font-semibold text-navy-900">{c.requestedValue}</p></div>
+                  <div className="rounded-md bg-sky-100 px-3 py-2"><p className="text-[11px] text-ink-muted">Requested</p><p className="text-[13px] font-semibold text-navy-900">{displayRequestedValue(c.field, c.requestedValue)}</p></div>
                 </div>
                 <p className="mt-2 text-[12.5px] text-ink-muted">Reason: {c.reason}</p>
               </div>

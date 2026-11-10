@@ -8,7 +8,7 @@ import { formatDateTime, greeting } from '@/lib/format'
  * Dashboard greeting (Figma Resident v2 / Admin v3): eyebrow with the role and
  * the time, "Magandang …, Name", a one-line subtitle and a "View Profile" action.
  */
-export function GreetingCard({ subtitle, profileTo }: { subtitle: string; profileTo?: string }) {
+export function GreetingCard({ subtitle, profileTo, action }: { subtitle: string; profileTo?: string; action?: React.ReactNode }) {
   const { user } = useAuth()
   const [now] = useState(() => new Date())
   if (!user) return null
@@ -23,7 +23,7 @@ export function GreetingCard({ subtitle, profileTo }: { subtitle: string; profil
         </h1>
         <p className="mt-1 text-[13px] text-ink-muted">{subtitle}</p>
       </div>
-      {profileTo && (
+      {action ? <div className="shrink-0 self-start sm:self-center">{action}</div> : profileTo && (
         <Link
           to={profileTo}
           className="bmis-press inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-[var(--radius-control)] bg-navy-900 px-4 text-[13px] font-semibold text-white hover:bg-navy-800 sm:self-center"

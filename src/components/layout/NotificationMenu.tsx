@@ -1,4 +1,4 @@
-import { Bell } from 'lucide-react'
+import { Bell, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -49,7 +49,12 @@ export function NotificationMenu() {
             )}
           </div>
           <ul className="max-h-[360px] overflow-y-auto">
-            {items.length === 0 && <li className="px-4 py-8 text-center text-[13px] text-ink-muted">No notifications yet.</li>}
+            {items.length === 0 && (
+              <li className="px-4 py-5">
+                <p className="text-[13px] font-semibold text-navy-900">No notifications yet</p>
+                <p className="text-[12.5px] text-ink-muted">You\u2019ll see updates here when something needs your attention.</p>
+              </li>
+            )}
             {items.slice(0, 6).map((n) => (
               <li key={n.id} className="border-b border-line-soft last:border-0">
                 <Link
@@ -70,9 +75,9 @@ export function NotificationMenu() {
           <Link
             to="/notifications"
             onClick={() => setOpen(false)}
-            className="block border-t border-line-soft px-4 py-2.5 text-center text-[12.5px] font-semibold text-navy-900 hover:bg-surface-muted"
+            className="flex items-center gap-1 border-t border-line-soft px-4 py-3 text-[12.5px] font-semibold text-info hover:bg-surface-muted"
           >
-            View all
+            View All Notifications <ChevronRight className="size-4" />
           </Link>
         </div>
       )}

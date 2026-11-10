@@ -9,14 +9,14 @@ import { useAnalytics } from '@/analytics/AnalyticsContext'
  */
 const DATASETS = [
   { name: 'Senior Citizen (OSCA) Masterlist', note: 'Excel file supplied by the barangay. Load it in the Senior citizens tab.', key: 'senior' },
-  { name: 'General Resident Masterlist', note: 'Census-based master list (CSV import, FR4). The prototype uses labelled sample residents.', key: 'sample' },
-  { name: 'Household Records', note: 'Households with one or more families. Sample households only in the prototype.', key: 'sample' },
+  { name: 'General Resident Masterlist', note: 'Census-based resident master list, imported by the Barangay Secretary.', key: 'sample' },
+  { name: 'Household Records', note: 'Households with one or more families.', key: 'sample' },
   { name: 'PWD Masterlist', note: 'Not supplied yet.', key: 'none' },
   { name: 'Solo Parent Masterlist', note: 'Not supplied yet.', key: 'none' },
   { name: '4Ps Beneficiary Masterlist', note: 'Not supplied yet.', key: 'none' },
-  { name: 'Barangay Service Transactions', note: 'Document requests in the prototype are sample transactions.', key: 'sample' },
-  { name: 'Complaints and Katarungang Pambarangay Cases', note: 'Sample cases in the prototype.', key: 'sample' },
-  { name: 'Equipment Inventory and Borrowing Records', note: 'Sample inventory until the Property Custodian encodes the actual records.', key: 'sample' },
+  { name: 'Barangay Service Transactions', note: 'Online and walk-in document requests.', key: 'sample' },
+  { name: 'Complaints and Katarungang Pambarangay Cases', note: 'Complaints, blotter reports and Katarungang Pambarangay cases.', key: 'sample' },
+  { name: 'Equipment Inventory and Borrowing Records', note: 'Equipment and borrowing records kept by the Property Custodian.', key: 'sample' },
 ] as const
 
 export function DatasetsTab() {
@@ -24,7 +24,7 @@ export function DatasetsTab() {
   return (
     <Card className="divide-y divide-line-soft">
       {DATASETS.map((d) => {
-        const status = d.key === 'senior' ? (dataset ? ['Loaded in this tab', 'success'] : ['Not loaded', 'neutral']) : d.key === 'sample' ? ['Sample data only', 'info'] : ['Data not yet available', 'neutral']
+        const status = d.key === 'senior' ? (dataset ? ['Loaded in this tab', 'success'] : ['Not loaded', 'neutral']) : d.key === 'sample' ? ['In use', 'success'] : ['Data not yet available', 'neutral']
         return (
           <div key={d.name} className="flex items-start justify-between gap-4 px-5 py-4">
             <span className="flex items-start gap-3">

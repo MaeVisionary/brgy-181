@@ -1,6 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { cn } from '@/lib/cn'
 
 /** Rows per page on desktop tables (Figma v3: "up to 10 rows drawn per page"). */
 export const PAGE_SIZE = 10
@@ -26,38 +25,18 @@ export function Pagination({ page, pages, total, size, onPage, noun = 'records' 
         Showing {from}–{to} of {total} {noun}
       </span>
       {pages > 1 && (
-        <nav aria-label="Pages" className="flex items-center gap-1">
-          <PageBtn label="Previous page" disabled={page === 0} onClick={() => onPage(page - 1)}>
-            <ChevronLeft className="size-4" />
-          </PageBtn>
-          {Array.from({ length: pages }, (_, i) => (
-            <PageBtn key={i} label={`Page ${i + 1}`} current={i === page} onClick={() => onPage(i)}>
-              {i + 1}
-            </PageBtn>
-          ))}
-          <PageBtn label="Next page" disabled={page >= pages - 1} onClick={() => onPage(page + 1)}>
-            <ChevronRight className="size-4" />
-          </PageBtn>
+        <nav aria-label="Pages" className="flex items-center gap-2">
+          <button type="button" disabled={page === 0} onClick={() => onPage(page - 1)} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[12.5px] font-semibold text-navy-900 hover:bg-surface-muted disabled:opacity-40">
+            <ChevronLeft className="size-4" /> Previous
+          </button>
+          <span className="px-1 text-[12.5px] font-semibold whitespace-nowrap text-navy-900" aria-live="polite">
+            Page {page + 1} of {pages}
+          </span>
+          <button type="button" disabled={page >= pages - 1} onClick={() => onPage(page + 1)} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[12.5px] font-semibold text-navy-900 hover:bg-surface-muted disabled:opacity-40">
+            Next <ChevronRight className="size-4" />
+          </button>
         </nav>
       )}
     </div>
-  )
-}
-
-function PageBtn({ children, label, onClick, disabled, current }: { children: React.ReactNode; label: string; onClick: () => void; disabled?: boolean; current?: boolean }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-current={current ? 'page' : undefined}
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(
-        'grid size-9 place-items-center rounded-[var(--radius-control)] text-[12.5px] font-semibold transition-colors disabled:opacity-40',
-        current ? 'bg-navy-900 text-white' : 'text-navy-900 hover:bg-surface-muted',
-      )}
-    >
-      {children}
-    </button>
   )
 }

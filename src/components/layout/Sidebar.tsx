@@ -21,117 +21,12 @@ function useVisibleNav(): NavGroup[] {
 export function Sidebar({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const { user, role, logout } = useAuth()
   const groups = useVisibleNav()
-  const { pathname } = useLocation()
-  const [open, setOpen] = useState<Record<string, boolean>>({})
-
   if (!user || !role) return null
-
-  const isGroupActive = (g: NavGroup) => g.children?.some((c) => pathname === c.path || pathname.startsWith(c.path + '/'))
-  const flat = role.portal !== 'personnel'
-  if (flat) return <FlatNav groups={groups} collapsed={collapsed} onNavigate={onNavigate} user={user} logout={logout} />
-
-  return (
-    <nav aria-label="Main" className="flex h-full flex-col bg-surface">
-      {!collapsed && <p className="label-caps px-6 pt-5 pb-2 text-navy-900">{role.portalLabel}</p>}
-      <ul className={cn('flex-1 space-y-0.5 overflow-y-auto', collapsed ? 'px-2 pt-4' : 'px-3')}>
-        {groups.map((g) => {
-          const Icon = g.icon
-          if (!g.children) {
-            return (
-              <li key={g.label}>
-                <NavLink
-                  to={g.path!}
-                  end
-                  onClick={onNavigate}
-                  title={collapsed ? g.label : undefined}
-                  className={({ isActive }) =>
-                    cn(itemBase, collapsed && 'justify-center px-0', isActive ? 'bg-sky-100 text-navy-900' : 'text-ink-nav hover:bg-surface-muted hover:text-navy-900')
-                  }
-                >
-                  <Icon className="size-[18px] shrink-0" strokeWidth={1.75} />
-                  {!collapsed && <span className="truncate">{g.label}</span>}
-                </NavLink>
-              </li>
-            )
-          }
-          const expanded = open[g.label] ?? isGroupActive(g)
-          return (
-            <li key={g.label}>
-              <button
-                type="button"
-                onClick={() => setOpen((o) => ({ ...o, [g.label]: !expanded }))}
-                aria-expanded={expanded}
-                title={collapsed ? g.label : undefined}
-                className={cn(
-                  itemBase,
-                  collapsed && 'justify-center px-0',
-                  isGroupActive(g) ? 'text-navy-900' : 'text-ink-nav hover:bg-surface-muted hover:text-navy-900',
-                )}
-              >
-                <Icon className="size-[18px] shrink-0" strokeWidth={1.75} />
-                {!collapsed && (
-                  <>
-                    <span className="flex-1 text-left leading-snug">{g.label}</span>
-                    <ChevronRight className={cn('size-4 shrink-0 transition-transform', expanded && 'rotate-90')} />
-                  </>
-                )}
-              </button>
-              {expanded && !collapsed && (
-                <ul className="mt-0.5 mb-1 ml-[21px] space-y-0.5 border-l border-line-soft pl-3">
-                  {g.children.map((c) => (
-                    <li key={c.path}>
-                      <NavLink
-                        to={c.path}
-                        end
-                        onClick={onNavigate}
-                        className={({ isActive }) =>
-                          cn(
-                            'block rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors',
-                            isActive ? 'bg-sky-100 text-navy-900' : 'text-ink-nav hover:bg-surface-muted hover:text-navy-900',
-                          )
-                        }
-                      >
-                        {c.label}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          )
-        })}
-      </ul>
-
-      <div className={cn('p-3', collapsed && 'px-2')}>
-        <div className={cn('flex items-center gap-3 rounded-[10px] bg-surface-muted p-2.5', collapsed && 'justify-center p-1.5')}>
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-navy-900 text-[11px] font-semibold text-white">
-            {initials(user.fullName)}
-          </span>
-          {!collapsed && (
-            <>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[12.5px] font-semibold text-navy-900">{user.fullName}</span>
-                <span className="block truncate text-[11px] text-ink-muted">{user.position}</span>
-              </span>
-              <button
-                type="button"
-                onClick={logout}
-                aria-label="Sign out"
-                title="Sign out"
-                className="rounded-md p-1.5 text-ink-nav hover:bg-surface hover:text-navy-900"
-              >
-                <LogOut className="size-4" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </nav>
-  )
+  return <FlatNav groups={groups} collapsed={collapsed} onNavigate={onNavigate} user={user} logout={logout} foldable={role.id === 'secretary'} />
 }
 
 /**
- * Resident and Admin menus (Figma v2/v3): flat groups that are always open,
+ * Menus for every portal (Figma v2/v3): flat groups that are always open,
  * section labels in caps, active page highlighted. A child route (e.g. a request
  * detail) keeps its parent item highlighted.
  */
@@ -141,14 +36,34 @@ function FlatNav({
   onNavigate,
   user,
   logout,
+  foldable,
 }: {
   groups: NavGroup[]
   collapsed: boolean
   onNavigate?: () => void
   user: { fullName: string; position: string }
   logout: () => void
+  /** Sections can be folded (Secretary: the longest menu). */
+  foldable?: boolean
 }) {
   const { pathname } = useLocation()
+  const [folded, setFolded] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('bmis.nav.folded') ?? '{}') as Record<string, boolean>
+    } catch {
+      return {}
+    }
+  })
+  const toggleSection = (label: string) =>
+    setFolded((f) => {
+      const next = { ...f, [label]: !f[label] }
+      try {
+        localStorage.setItem('bmis.nav.folded', JSON.stringify(next))
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
   // Longest matching path wins, so /my/documents/new keeps "Document Requests" active.
   // A transaction's details page belongs to My Transactions (Figma v2), whichever list it came from.
   const isDetails = /^\/my\/(documents|complaints|borrowing)\/(?!new$)[^/]+$/.test(pathname) && groups.some((g) => g.path === '/my/transactions')
@@ -167,8 +82,21 @@ function FlatNav({
       <div className={cn('flex-1 overflow-y-auto pt-4', collapsed ? 'px-2' : 'px-3')}>
         {sections.map((sec, i) => (
           <div key={sec.label ?? i} className={i > 0 ? 'mt-4' : undefined}>
-            {sec.label && !collapsed && <p className="mb-1 px-3 text-[10.5px] font-semibold tracking-[0.08em] text-ink-muted uppercase">{sec.label}</p>}
+            {sec.label && !collapsed && (foldable ? (
+              <button
+                type="button"
+                onClick={() => toggleSection(sec.label!)}
+                aria-expanded={!folded[sec.label] || sec.items.some((g) => g.path === activePath)}
+                className="mb-1 flex w-full items-center justify-between gap-2 rounded-md px-3 py-1 text-left text-[10.5px] leading-snug font-semibold tracking-[0.08em] text-ink-muted uppercase hover:text-navy-900"
+              >
+                <span className="min-w-0">{sec.label}</span>
+                <ChevronRight className={cn('size-3.5 shrink-0 transition-transform', (!folded[sec.label] || sec.items.some((g) => g.path === activePath)) && 'rotate-90')} />
+              </button>
+            ) : (
+              <p className="mb-1 px-3 text-[10.5px] font-semibold tracking-[0.08em] text-ink-muted uppercase">{sec.label}</p>
+            ))}
             {sec.label && collapsed && i > 0 && <hr className="mx-2 mb-2 border-line-soft" />}
+            {!(foldable && !collapsed && sec.label && folded[sec.label] && !sec.items.some((g) => g.path === activePath)) && (
             <ul className="space-y-0.5">
               {sec.items.map((g) => {
                 const Icon = g.icon
@@ -195,6 +123,7 @@ function FlatNav({
                 )
               })}
             </ul>
+            )}
           </div>
         ))}
       </div>

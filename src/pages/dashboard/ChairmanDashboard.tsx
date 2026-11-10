@@ -9,7 +9,7 @@ import { useDocActor } from '@/hooks/useDocActor'
 import { formatDateTime } from '@/lib/format'
 import { STAGE_LABEL, STAGE_TONE, listCases, mediationDay, upcomingHearings } from '@/services/caseService'
 import { listRequests } from '@/services/documentService'
-import { DashHeader, ListPanel, PopulationByStreet, Row, Stat } from './shared'
+import { DashHeader, EmptyNote, ListPanel, PopulationByStreet, Row, Stat } from './shared'
 
 /** Robert Atad: executive oversight, approvals, assessment of complaints, KP mediation. */
 export function ChairmanDashboard() {
@@ -27,8 +27,9 @@ export function ChairmanDashboard() {
   return (
     <>
       <DashHeader
+        overview="Barangay Overview"
         subtitle="Approvals, complaints for assessment and Katarungang Pambarangay mediation."
-        actions={<ButtonLink to="/documents/approvals" icon={<Gavel className="size-4" />}>Review approvals</ButtonLink>}
+        actions={<ButtonLink to="/documents/approvals" icon={<Gavel className="size-4" />}>Review Approvals</ButtonLink>}
       />
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Stat label="Pending approvals" value={forApproval?.length ?? null} attention={!!forApproval?.length} to="/documents/approvals" />
@@ -40,6 +41,7 @@ export function ChairmanDashboard() {
 
       <section className="mt-4 grid gap-4 xl:grid-cols-2">
         <ListPanel
+          dark
           title="Routed to you for approval"
           subtitle="Verified and forwarded by the Barangay Secretary"
           items={forApproval}
@@ -85,9 +87,9 @@ export function ChairmanDashboard() {
             )
           }}
         />
-        <Panel title="Case outcomes" subtitle="Settled and closed cases">
+        <Panel title="Case outcomes" subtitle="Settled and closed cases" bodyClassName={resolved.length === 0 ? "px-0 py-0" : undefined}>
           {resolved.length === 0 ? (
-            <p className="text-[13px] text-ink-muted">No outcomes recorded yet.</p>
+            <EmptyNote>No settled or closed cases yet.</EmptyNote>
           ) : (
             <ul className="space-y-2.5">
               {resolved.map((c) => (

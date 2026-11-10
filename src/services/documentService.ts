@@ -153,7 +153,13 @@ export function setRequirement(id: string, label: string, provided: boolean, act
   })
 }
 
-export function applyTransition(id: string, transition: Transition, remarks: string, actor: DocActor): Promise<DocumentRequest> {
+export function applyTransition(
+  id: string,
+  transition: Transition,
+  remarks: string,
+  actor: DocActor,
+  extra: { requestedItems?: string[]; files?: Record<string, string> } = {},
+): Promise<DocumentRequest> {
   return mockRequest(() => {
     const req = find(id, actor)
     const allowed = availableTransitions(req, actor).find((t) => t.to === transition.to && t.label === transition.label && t.by === transition.by)
@@ -171,6 +177,13 @@ export function applyTransition(id: string, transition: Transition, remarks: str
       req.issuedAt = now
       // Freeze computed values (issue date etc.) into the record.
       Object.assign(req.values, Object.fromEntries(Object.entries(systemValues(req)).filter(([k]) => type.fields.some((f) => f.key === k))))
+    }
+    if (allowed.to === 'needs_info') req.requestedItems = extra.requestedItems?.filter(Boolean) ?? []
+    if (allowed.by === 'owner' && allowed.to === 'under_review') {
+      const missing = (req.requestedItems ?? []).filter((item) => !extra.files?.[item])
+      if (missing.length) throw new ServiceError('files', `Attach: ${missing.join(', ')}.`)
+      for (const [item, file] of Object.entries(extra.files ?? {})) req.requirements[item] = { provided: true, note: `Sent by the requester: ${file}` }
+      req.requestedItems = undefined
     }
     req.history.push({ status: allowed.to, at: now, byUserId: actor.user.id, byRole: actor.user.roleId, action: allowed.label, remarks: remarks.trim() || undefined })
     if (allowed.by === 'owner' && remarks.trim()) {
@@ -191,7 +204,8 @@ export function applyTransition(id: string, transition: Transition, remarks: str
       for_assessment: 'Your request was forwarded for assessment.',
     }
     if (owner && owner !== actor.user.id && ownerMsg[allowed.to]) {
-      notify([owner], 'document', `${req.referenceNo}: ${type.name}`, ownerMsg[allowed.to]! + (remarks.trim() ? ` Note: ${remarks.trim()}` : ''), link)
+      const items = allowed.to === 'needs_info' && req.requestedItems?.length ? ` Please send: ${req.requestedItems.join(', ')}.` : ''
+      notify([owner], 'document', `${req.referenceNo}: ${type.name}`, ownerMsg[allowed.to]! + items + (remarks.trim() ? ` Note: ${remarks.trim()}` : ''), link)
     }
     if (allowed.to === 'pending_approval' || allowed.to === 'for_assessment') {
       notify(usersWith('documents.approve'), 'document', allowed.to === 'for_assessment' ? 'Summons request for assessment' : 'Document awaiting your approval', `${req.referenceNo}: ${type.name} (${req.requesterName}).`, `/documents/${req.id}`)

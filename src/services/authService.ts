@@ -96,3 +96,15 @@ export function findUser(userId: string): User | undefined {
 export function listPreviewAccounts(): User[] {
   return APP_CONFIG.devPreview ? mockUsers.filter((u) => u.status === 'active') : []
 }
+
+/**
+ * Confirms the signed-in user's own password before a sensitive change
+ * (e.g. account permissions). Accounts without a password yet (development
+ * preview) cannot confirm.
+ */
+export async function verifyOwnPassword(user: User, password: string): Promise<boolean> {
+  const key = isTestUser(user.id) ? TEST_ACCOUNT.credentialKey : user.id
+  const expected = getCredential(key)?.hash ?? (isTestUser(user.id) ? TEST_ACCOUNT.passwordHash : undefined)
+  if (!expected) return false
+  return passwordMatches(key, password, expected)
+}
