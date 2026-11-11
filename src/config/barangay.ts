@@ -63,7 +63,7 @@ export const OFFICIALS: Official[] = [
   { id: 'off-k5', name: 'Cecilia Espinosa', nameOnDocuments: 'CECILIA B. ESPINOSA', position: 'Barangay Kagawad', userId: 'usr-kag-5', source: 'Study §1.1' },
   { id: 'off-k6', name: 'Alver Joseph Domingo', nameOnDocuments: 'ALVER JOSEPH F. DOMINGO', position: 'Barangay Kagawad', userId: 'usr-kag-6', source: 'Study §1.1' },
   { id: 'off-k7', name: 'Rogelio Cristobal', nameOnDocuments: 'ROGELIO V. CRISTOBAL', position: 'Barangay Kagawad', userId: 'usr-kag-7', source: 'Study §1.1' },
-  { id: 'off-treas', name: 'Mary Grace T. Dela Cruz', nameOnDocuments: 'MARY GRACE T. DELA CRUZ', position: 'Barangay Treasurer', source: 'Official document templates' },
+  { id: 'off-treas', userId: 'usr-treas', name: 'Mary Grace T. Dela Cruz', nameOnDocuments: 'MARY GRACE T. DELA CRUZ', position: 'Barangay Treasurer', source: 'Official document templates' },
   { id: 'off-lupon-1', name: 'Soledad De Dios', position: 'Lupon Member', source: 'Notice of Hearing example' },
   { id: 'off-lupon-2', name: 'Norbenita Mendoza', position: 'Lupon Member', source: 'Notice of Hearing example' },
 ]

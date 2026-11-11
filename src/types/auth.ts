@@ -10,6 +10,7 @@ export type RoleId =
   | 'secretary'
   | 'kagawad'
   | 'property_custodian'
+  | 'treasurer'
   | 'staff'
   | 'resident'
 
@@ -34,6 +35,10 @@ export type Permission =
   | 'documents.approve'
   | 'documents.reject'
   | 'documents.release'
+  /** Record a verification or ocular inspection for a request. */
+  | 'documents.inspect'
+  /** Record the fee paid (official receipt) for a request. */
+  | 'documents.payment'
   // Complaints, cases, hearings (Modules 5 and 6)
   | 'complaints.view'
   | 'complaints.create'

@@ -12,12 +12,15 @@ import { RegisterPage } from '@/pages/public/RegisterPage'
 import { AccountPage } from '@/pages/AccountPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { DocumentRequestsPage } from '@/pages/documents/DocumentRequestsPage'
+import { ApprovalsPage } from '@/pages/documents/ApprovalsPage'
 import { NewAssistedRequestPage } from '@/pages/documents/NewAssistedRequestPage'
 import { PreviewPage } from '@/pages/documents/PreviewPage'
 import { RequestDetailPage } from '@/pages/documents/RequestDetailPage'
 import { TemplatesPage } from '@/pages/documents/TemplatesPage'
 import { ActivityPage, HealthPage, PersonnelPage, RolesPage, SettingsPage, UsersPage } from '@/pages/admin/AdminPages'
 import { CaseDetailPage } from '@/pages/cases/CaseDetailPage'
+import { NewCasePage } from '@/pages/cases/NewCasePage'
+import { CaseRecordPrintPage } from '@/pages/cases/CaseRecordPrintPage'
 import { CasesPage, HearingsPage } from '@/pages/cases/CasesPage'
 import { BorrowingDetailPage, BorrowingPage } from '@/pages/equipment/BorrowingPages'
 import { InventoryPage } from '@/pages/equipment/InventoryPage'
@@ -67,7 +70,7 @@ export default function App() {
 
           {/* Documents: personnel */}
           <Route path="/documents" element={guard(['documents.view'], 'personnel', <DocumentRequestsPage />)} />
-          <Route path="/documents/approvals" element={guard(['documents.approve'], 'personnel', <DocumentRequestsPage approvalsOnly />)} />
+          <Route path="/documents/approvals" element={guard(['documents.approve'], 'personnel', <ApprovalsPage />)} />
           <Route path="/documents/templates" element={guard(['documents.view'], 'personnel', <TemplatesPage />)} />
           <Route path="/documents/new" element={guard(['documents.create'], 'personnel', <NewAssistedRequestPage />)} />
           <Route path="/documents/:id" element={guard(['documents.view'], 'personnel', <RequestDetailPage />)} />
@@ -84,7 +87,9 @@ export default function App() {
 
           {/* Katarungang Pambarangay */}
           <Route path="/cases" element={guard(['cases.view', 'cases.manage'], 'personnel', <CasesPage />)} />
+          <Route path="/cases/new" element={guard(['cases.manage'], 'personnel', <NewCasePage />)} />
           <Route path="/cases/:id" element={guard(['cases.view', 'cases.manage'], 'personnel', <CaseDetailPage />)} />
+          <Route path="/cases/:id/print/:kind" element={guard(['cases.view', 'cases.manage'], 'personnel', <CaseRecordPrintPage />)} />
           <Route path="/hearings" element={guard(['hearings.view', 'hearings.manage'], 'personnel', <HearingsPage />)} />
 
           {/* Property and equipment */}

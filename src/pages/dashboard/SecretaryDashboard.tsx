@@ -24,9 +24,9 @@ export function SecretaryDashboard() {
   const myQueue = docs?.filter((d) => availableTransitions(d, actor).some((t) => t.by !== 'owner' && !t.label.startsWith('Cancel'))) ?? null
   const isCase = (id: string) => getDocumentType(id as never).category === 'case'
   const newDocs = docs?.filter((d) => d.status === 'submitted' && !isCase(d.typeId)).length ?? null
-  const toPrepare = docs?.filter((d) => ['under_review', 'processing'].includes(d.status) && !isCase(d.typeId)).length ?? null
+  const toPrepare = docs?.filter((d) => ['under_review', 'needs_info', 'processing'].includes(d.status) && !isCase(d.typeId)).length ?? null
+  const completed = docs?.filter((d) => d.status === 'released').length ?? null
   const awaitingChairman = docs?.filter((d) => d.status === 'pending_approval').length ?? null
-  const forRelease = docs?.filter((d) => d.status === 'ready_for_pickup').length ?? null
   const submissions = docs?.filter((d) => isCase(d.typeId) && ['submitted', 'under_review', 'needs_info'].includes(d.status)).length ?? null
   const caseUpdates = cases?.filter((c) => ['filed', 'under_review', 'referred_to_lupon', 'mediation_scheduled'].includes(c.stage)) ?? null
   const hearings = cases ? upcomingHearings(cases) : null
@@ -39,11 +39,12 @@ export function SecretaryDashboard() {
         actions={<ButtonLink to="/reports" icon={<BarChart3 className="size-4" />}>Reports</ButtonLink>}
       />
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="New document requests" value={newDocs} to="/documents" />
-        <Stat label="Documents to prepare" value={toPrepare} to="/documents" />
-        <Stat label="Awaiting the Chairman" value={awaitingChairman} to="/documents" />
-        <Stat label="Ready for release" value={forRelease} to="/documents" />
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <Stat label="Pending registrations" value={q?.registrationsForReview ?? null} attention={!!q?.registrationsForReview} to="/residents/registrations" />
+        <Stat label="Pending document requests" value={newDocs} attention={!!newDocs} to="/documents" />
+        <Stat label="Under verification" value={toPrepare} to="/documents" />
+        <Stat label="Forwarded to Chairman" value={awaitingChairman} to="/documents" />
+        <Stat label="Completed requests" value={completed} to="/documents" />
       </section>
 
       <section className="mt-3 grid auto-rows-fr grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -63,7 +64,7 @@ export function SecretaryDashboard() {
           to="/documents"
           empty="Nothing is waiting on you."
           render={(d) => (
-            <Row to={`/documents/${d.id}`} title={`${getDocumentType(d.typeId).name} · ${d.requesterName}`} meta={`${d.referenceNo} · ${formatDateTime(d.updatedAt)}`} right={<StatusBadge status={d.status} />} />
+            <Row to={`/documents/${d.id}`} title={`${getDocumentType(d.typeId).name} · ${d.requesterName}`} meta={`${d.referenceNo} · ${formatDateTime(d.updatedAt)}`} right={<StatusBadge status={d.status} typeId={d.typeId} />} />
           )}
         />
       </section>

@@ -1,9 +1,10 @@
-import { CalendarCheck2, CalendarClock, Gavel, RotateCcw, Trash2 } from 'lucide-react'
+import { CalendarCheck2, CalendarClock, Gavel, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { HearingCalendar } from './HearingCalendar'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
-import { Select } from '@/components/ui/Field'
+import { Button, ButtonLink } from '@/components/ui/Button'
+import { Select, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
 import { useAsync } from '@/hooks/useAsync'
@@ -23,11 +24,13 @@ export function CasesPage() {
   const [version, setVersion] = useState(0)
   const cases = useAsync(() => listCases(actor, { includeRemoved: showRemoved }), [actor, showRemoved, version]).data
   const [stage, setStage] = useState('')
+  const [q, setQ] = useState('')
   const [confirmId, setConfirmId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const canRemove = actor.permissions.has('cases.decide')
   const removed = removedCaseIds()
-  const rows = (cases ?? []).filter((c) => !stage || c.stage === stage)
+  const needle = q.trim().toLowerCase()
+  const rows = (cases ?? []).filter((c) => (!stage || c.stage === stage) && (!needle || [c.caseNo, c.blotterNo, c.title, c.nature, ...c.complainants.map((p) => p.name), ...c.respondents.map((p) => p.name)].some((v) => v?.toLowerCase().includes(needle))))
   const act = async (fn: () => Promise<void>) => {
     setError(null)
     try {
@@ -44,10 +47,11 @@ export function CasesPage() {
       <PageHeader
         title="Katarungang Pambarangay"
         subtitle={`Complaints and disputes: mediation under the Barangay Chairman (up to ${KP.chairmanMediationDays} days), then the Lupon if not settled.`}
-        actions={<SampleBadge />}
+        actions={<>{actor.permissions.has('cases.manage') && <ButtonLink to="/cases/new" icon={<Plus className="size-4" />}>New blotter entry</ButtonLink>}<SampleBadge /></>}
       />
       <Card>
         <div className="flex flex-wrap items-center gap-3 border-b border-line-soft p-4">
+          <TextInput className="w-full sm:w-72" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search case no., blotter no., name" aria-label="Search the blotter" />
           <Select className="w-56" value={stage} onChange={(e) => setStage(e.target.value)} aria-label="Filter by stage">
             <option value="">All stages</option>
             {(Object.keys(STAGE_LABEL) as CaseStage[]).map((s) => <option key={s} value={s}>{STAGE_LABEL[s]}</option>)}
@@ -64,7 +68,7 @@ export function CasesPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-[15.5px]">
             <thead>
-              <tr className="bg-surface-muted text-left">{['Case no.', 'Parties', 'Nature', 'Filed', 'Stage', 'Next hearing', ...(canRemove ? [''] : [])].map((h, i) => <th key={i} className="label-caps px-4 py-2.5">{h}</th>)}</tr>
+              <tr className="bg-surface-muted text-left">{['Case / blotter no.', 'Parties', 'Nature', 'Filed', 'Stage', 'Next hearing', ...(canRemove ? [''] : [])].map((h, i) => <th key={i} className="label-caps px-4 py-2.5">{h}</th>)}</tr>
             </thead>
             <tbody>
               {rows.map((c) => {
@@ -72,7 +76,7 @@ export function CasesPage() {
                 const md = mediationDay(c)
                 return (
                   <tr key={c.id} onClick={() => navigate(`/cases/${c.id}`)} className="cursor-pointer border-t border-line-soft hover:bg-sky-50">
-                    <td className="px-4 py-3.5 font-semibold whitespace-nowrap text-navy-900">{c.caseNo}</td>
+                    <td className="px-4 py-3.5 whitespace-nowrap"><span className="block font-semibold text-navy-900">{c.caseNo}</span>{c.blotterNo && <span className="block text-[14px] text-ink-muted">{c.blotterNo}</span>}</td>
                     <td className="px-4 py-3 text-navy-900">{c.title}</td>
                     <td className="px-4 py-3">{c.nature}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-ink-muted">{formatDate(c.filedAt)}</td>
@@ -148,6 +152,7 @@ export function HearingsPage() {
         <Total icon={<CalendarClock className="size-5" />} label="Upcoming hearings" value={cases ? upcoming.length : null} hint={upcoming[0] ? `Next: ${formatDateTime(upcoming[0].h.scheduledAt)}` : 'Nothing scheduled'} tone="navy" />
         <Total icon={<CalendarCheck2 className="size-5" />} label="Hearings held" value={cases ? past.length : null} hint={past[0] ? `Last: ${formatDateTime(past[0].h.scheduledAt)}` : 'None yet'} tone="sky" />
       </div>
+      {cases && <HearingCalendar cases={cases} />}
       <div className="grid gap-4 xl:grid-cols-2">
         <Panel title="Upcoming" bodyClassName="px-0 py-0" icon={<CalendarClock className="size-[18px]" />}>
           {upcoming.length === 0 ? <p className="px-5 py-6 text-[15px] text-ink-muted">No hearings scheduled.</p> : <ul>{upcoming.map((x) => <Item key={x.h.id} {...x} />)}</ul>}

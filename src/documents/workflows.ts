@@ -2,13 +2,14 @@ import type { BadgeTone } from '@/components/ui/Badge'
 import type { DocumentStatus, Workflow, WorkflowId } from '@/types/document'
 
 export const STATUS_META: Record<DocumentStatus, { label: string; tone: BadgeTone }> = {
-  submitted: { label: 'Submitted', tone: 'info' },
-  under_review: { label: 'Under Review', tone: 'info' },
-  needs_info: { label: 'Needs Additional Information', tone: 'warning' },
+  submitted: { label: 'Pending Review', tone: 'info' },
+  under_review: { label: 'Under Verification', tone: 'info' },
+  needs_info: { label: 'Needs Revision', tone: 'warning' },
   for_assessment: { label: 'For Assessment', tone: 'warning' },
   processing: { label: 'Processing', tone: 'info' },
   pending_approval: { label: 'Pending Approval', tone: 'warning' },
   approved: { label: 'Approved', tone: 'success' },
+  for_signature: { label: 'For Signature', tone: 'warning' },
   ready_for_pickup: { label: 'Ready for Pickup', tone: 'success' },
   released: { label: 'Released', tone: 'neutral' },
   served: { label: 'Served', tone: 'neutral' },
@@ -21,7 +22,7 @@ export const STATUS_META: Record<DocumentStatus, { label: string; tone: BadgeTon
 /** Steps shared by workflows that start with Secretary review. */
 const reviewSteps = [
   { from: ['submitted' as const], to: 'under_review' as const, label: 'Start review', by: 'documents.process' as const, hint: 'Check the requester and the submitted requirements.' },
-  { from: ['under_review' as const], to: 'needs_info' as const, label: 'Request more information', by: 'documents.process' as const, remarks: 'required' as const, tone: 'secondary' as const, hint: 'The requester is notified with your note.' },
+  { from: ['under_review' as const], to: 'needs_info' as const, label: 'Return for revision', by: 'documents.process' as const, remarks: 'required' as const, tone: 'secondary' as const, hint: 'Ask the requester to correct or add something. They are notified with your note.' },
   { from: ['needs_info' as const], to: 'under_review' as const, label: 'Resume review', by: 'documents.process' as const, tone: 'secondary' as const, hint: 'Use when the information was given in person.' },
   { from: ['needs_info' as const], to: 'under_review' as const, label: 'Send reply', by: 'owner' as const, remarks: 'required' as const },
 ]
@@ -39,20 +40,30 @@ export const WORKFLOWS: Record<WorkflowId, Workflow> = {
    */
   standard: {
     id: 'standard',
-    name: 'Secretary verification → Chairman approval → pickup',
-    path: ['submitted', 'under_review', 'processing', 'pending_approval', 'approved', 'ready_for_pickup', 'released'],
+    name: 'Secretary verification → Chairman approval → printing and signing → pickup',
+    path: ['submitted', 'under_review', 'processing', 'pending_approval', 'approved', 'for_signature', 'ready_for_pickup', 'released'],
+    labels: {
+      processing: 'Approved by Secretary',
+      pending_approval: 'Forwarded to Chairman',
+      approved: 'Ready for Printing',
+      released: 'Completed',
+    },
     assistedStart: 'under_review',
     issueOn: 'approved',
-    printableIn: ['approved', 'ready_for_pickup', 'released'],
+    printableIn: ['approved', 'for_signature', 'ready_for_pickup', 'released'],
     editableIn: ['submitted', 'under_review', 'needs_info', 'processing'],
     transitions: [
       ...reviewSteps,
-      { from: ['under_review'], to: 'processing', label: 'Mark as verified', by: 'documents.process', hint: 'Identity and records checked. Prepare the document details.' },
+      { from: ['under_review'], to: 'processing', label: 'Approve (verified)', by: 'documents.process', requiresVerification: true, hint: 'Identity, requirements and any required verification are checked.' },
+      { from: ['under_review'], to: 'rejected', label: 'Reject', by: 'documents.process', remarks: 'required', tone: 'danger', hint: 'Give the reason. The requester is notified.' },
       { from: ['processing'], to: 'pending_approval', label: 'Forward to Chairman', by: 'documents.process', requiresComplete: true, hint: 'All document details must be complete.' },
-      { from: ['pending_approval'], to: 'approved', label: 'Approve', by: 'documents.approve', remarks: 'optional', hint: 'Stamps today as the issue date. Signing and sealing follow.' },
+      { from: ['processing'], to: 'under_review', label: 'Reopen verification', by: 'documents.process', tone: 'secondary' },
+      { from: ['pending_approval'], to: 'approved', label: 'Approve', by: 'documents.approve', remarks: 'optional', hint: 'Records you as the approving official and today as the issue date.' },
+      { from: ['pending_approval'], to: 'under_review', label: 'Return for revision', by: 'documents.approve', remarks: 'required', tone: 'secondary', hint: 'Goes back to the Secretary for re-checking, with your note.' },
       { from: ['pending_approval'], to: 'rejected', label: 'Reject', by: 'documents.reject', remarks: 'required', tone: 'danger' },
-      { from: ['approved'], to: 'ready_for_pickup', label: 'Signed and sealed: ready for pickup', by: 'documents.process', hint: 'The requester is told to claim it at the Barangay Hall.' },
-      { from: ['ready_for_pickup'], to: 'released', label: 'Record release', by: 'documents.release', remarks: 'optional', hint: 'Note who received the document.' },
+      { from: ['approved'], to: 'for_signature', label: 'Printed: send for signature', by: 'documents.process', hint: 'Print the document, then give it to the Chairman to sign and seal.' },
+      { from: ['for_signature'], to: 'ready_for_pickup', label: 'Signed and sealed: ready for pickup', by: 'documents.process', hint: 'The requester is told to claim it at the Barangay Hall.' },
+      { from: ['ready_for_pickup'], to: 'released', label: 'Mark as Completed', by: 'documents.release', remarks: 'optional', hint: 'Released to the requester. Note who received it.' },
       ...cancel(['submitted', 'under_review', 'needs_info']),
     ],
   },
@@ -127,3 +138,8 @@ export const WORKFLOWS: Record<WorkflowId, Workflow> = {
 }
 
 export const TERMINAL: DocumentStatus[] = ['released', 'served', 'forwarded', 'rejected', 'cancelled']
+
+/** Status name as this request's workflow calls it. */
+export function statusLabel(status: DocumentStatus, workflow?: WorkflowId): string {
+  return (workflow && WORKFLOWS[workflow].labels?.[status]) || STATUS_META[status].label
+}

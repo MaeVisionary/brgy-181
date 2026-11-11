@@ -23,6 +23,7 @@ export type DocumentStatus =
   | 'processing'
   | 'pending_approval'
   | 'approved'
+  | 'for_signature'
   | 'ready_for_pickup'
   | 'released'
   | 'served'
@@ -46,6 +47,8 @@ export interface Transition {
   remarks?: 'required' | 'optional'
   /** Every required template field must be filled first. */
   requiresComplete?: boolean
+  /** The document type's verification (e.g. ocular inspection) must be recorded first. */
+  requiresVerification?: boolean
   tone?: 'primary' | 'secondary' | 'danger'
 }
 
@@ -63,6 +66,8 @@ export interface Workflow {
   printableIn: DocumentStatus[]
   /** Statuses in which staff may still edit the document details. */
   editableIn: DocumentStatus[]
+  /** Status names specific to this workflow (e.g. "Approved by Secretary"). */
+  labels?: Partial<Record<DocumentStatus, string>>
 }
 
 export type FieldValue = string | string[] | boolean
@@ -126,8 +131,30 @@ export interface DocumentRequest {
   assisted?: { encodedByUserId: string; at: string }
   /** Katarungang Pambarangay case this document belongs to (summon, notice of hearing). */
   caseId?: string
+  /** Hearing this summons / notice is for. */
+  hearingId?: string
   history: StatusEvent[]
   messages: RequestMessage[]
   /** Set by the Secretary with "Request more information": what the resident must send. */
   requestedItems?: string[]
+  /** Verification or ocular inspection recorded by authorized personnel. */
+  verification?: VerificationRecord
+  /** Fee paid, recorded by the Treasurer (official receipt). */
+  payment?: { orNo: string; amount: number; at: string; byUserId: string }
+  /** Summons / notices: handed to the party (not the same as being received). */
+  delivery?: { deliveredTo: string; method: string; on: string; byUserId: string; at: string }
+  /** Summons / notices: the party signed or acknowledged receipt. */
+  acknowledgment?: { receivedBy: string; on: string; byUserId: string; at: string }
+  /** Official who gave the final approval. */
+  approvedBy?: string
+  approvedAt?: string
+}
+
+export interface VerificationRecord {
+  result: 'confirmed' | 'not_confirmed'
+  findings: string
+  /** Date the check or inspection was done. */
+  checkedOn: string
+  byUserId: string
+  at: string
 }

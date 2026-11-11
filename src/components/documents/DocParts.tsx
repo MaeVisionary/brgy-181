@@ -1,17 +1,17 @@
 import { Check } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { FieldLabel, Select, TextArea, TextInput } from '@/components/ui/Field'
-import { STATUS_META, TERMINAL, WORKFLOWS } from '@/documents/workflows'
+import { STATUS_META, TERMINAL, WORKFLOWS, statusLabel } from '@/documents/workflows'
 import { getDocumentType } from '@/documents/catalog'
 import { cn } from '@/lib/cn'
 import { formatDateTime } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { ROLES } from '@/config/permissions'
-import type { DocumentRequest, DocumentStatus, FieldDef, FieldValue, StatusEvent } from '@/types/document'
+import type { DocumentRequest, DocumentStatus, DocumentTypeId, FieldDef, FieldValue, StatusEvent } from '@/types/document'
 
-export function StatusBadge({ status }: { status: DocumentStatus }) {
+export function StatusBadge({ status, typeId }: { status: DocumentStatus; typeId?: DocumentTypeId }) {
   const m = STATUS_META[status]
-  return <Badge tone={m.tone}>{m.label}</Badge>
+  return <Badge tone={m.tone}>{statusLabel(status, typeId && getDocumentType(typeId).workflow)}</Badge>
 }
 
 /** Workflow progress for this document type's own path. */
@@ -39,14 +39,14 @@ export function ProgressTracker({ req }: { req: DocumentRequest }) {
               {done && <Check className="size-3" strokeWidth={3} />}
             </span>
             <span className={cn('pt-px text-[14.5px]', current ? 'font-semibold text-navy-900' : done ? 'text-navy-900' : 'text-ink-muted')}>
-              {STATUS_META[s].label}
-              {current && side && !ended && <span className="block text-[13.5px] font-medium text-warning">Now: {STATUS_META[req.status].label}</span>}
+              {statusLabel(s, wf.id)}
+              {current && side && !ended && <span className="block text-[13.5px] font-medium text-warning">Now: {statusLabel(req.status, wf.id)}</span>}
             </span>
           </li>
         )
       })}
       {ended && (
-        <li className="mt-2 text-[14.5px] font-semibold text-danger-ink">{STATUS_META[req.status].label}</li>
+        <li className="mt-2 text-[14.5px] font-semibold text-danger-ink">{statusLabel(req.status, wf.id)}</li>
       )}
     </ol>
   )

@@ -84,7 +84,7 @@ export function ResidentProfilePage() {
                   <li key={d.id} className="border-b border-line-soft last:border-0">
                     <Link to={`/documents/${d.id}`} className="flex items-center justify-between px-5 py-2.5 hover:bg-sky-50">
                       <span className="text-[15px] text-navy-900">{getDocumentType(d.typeId).name} · {d.referenceNo}</span>
-                      <StatusBadge status={d.status} />
+                      <StatusBadge status={d.status} typeId={d.typeId} />
                     </Link>
                   </li>
                 ))}

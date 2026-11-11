@@ -1,3 +1,20 @@
+# BMIS Patch Notes: Workflow improvements from the Chairman interview (12 November 2026)
+
+Full details, test results and checklist: `docs/REDESIGN_REPORT.md`.
+
+**Not in the paper** (confirm with the barangay, then add to the paper's scope):
+- Barangay Treasurer role (records document fees).
+- Chairman "Return for revision"; separate "For Signature" step; "Completed" status name.
+- Verification records (ocular inspection for Business Clearance, residency, cohabitation, civil status, indigency) required before Secretary approval.
+- Editable requirements per document.
+- Blotter entry numbers, hearing availability, summons delivery vs acknowledgment, outcome records (working layouts).
+- Equipment location and under-maintenance count; service reports.
+- Registration resubmission after rejection.
+
+Backed by the paper: Secretary verification → Chairman approval, KP mediation process, borrowing rules, role-based access.
+
+---
+
 # BMIS Patch Notes: Readability for older users (11 November 2026)
 
 - **Title bars are light blue with dark navy text** (was dark navy with white text).

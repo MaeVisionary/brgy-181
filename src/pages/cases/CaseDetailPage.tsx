@@ -3,13 +3,11 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
 import { useAuth } from '@/auth/useAuth'
-import { StatusBadge } from '@/components/documents/DocParts'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { TextArea, TextInput } from '@/components/ui/Field'
 import { Card, Panel } from '@/components/ui/Panel'
 import { KP } from '@/config/barangay'
-import { getDocumentType } from '@/documents/catalog'
 import { useDocActor } from '@/hooks/useDocActor'
 import { cn } from '@/lib/cn'
 import { formatDate, formatDateTime } from '@/lib/format'
@@ -20,6 +18,7 @@ import { ServiceError } from '@/services/mockApi'
 import { STAGE_LABEL, STAGE_TONE, addInternalNote, applyStep, getCase, mediationDay, recordHearing, reschedule, sendReminder, stepsFor, type CaseStep } from '@/services/caseService'
 import type { CaseStage, KPCase } from '@/types/case'
 import { NotFound } from '@/pages/system/NotFound'
+import { AvailabilityRow, CaseDocuments } from './CaseParts'
 
 const PATH: CaseStage[] = ['filed', 'under_review', 'for_assessment', 'mediation_scheduled', 'ongoing_mediation', 'referred_to_lupon', 'lupon_mediation', 'settled', 'closed']
 
@@ -69,6 +68,7 @@ export function CaseDetailPage() {
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-x-2 text-[14.5px] text-ink-muted">
             <span className="font-semibold text-navy-900">{c.caseNo}</span>
+            {c.blotterNo && <><span aria-hidden>·</span><span>Blotter {c.blotterNo}</span></>}
             <span aria-hidden>·</span>
             <span>Filed {formatDate(c.filedAt)}</span>
             <span aria-hidden>·</span>
@@ -148,11 +148,7 @@ export function CaseDetailPage() {
             )}
           </Panel>
 
-          {docs.length > 0 && (
-            <Panel title="Case documents" bodyClassName="px-0 py-0">
-              <ul>{docs.map((d) => <li key={d.id} className="border-b border-line-soft last:border-0"><Link to={`/documents/${d.id}`} className="flex items-center justify-between px-5 py-2.5 hover:bg-sky-50"><span className="text-[15px] text-navy-900">{getDocumentType(d.typeId).name} · {d.referenceNo}</span><StatusBadge status={d.status} /></Link></li>)}</ul>
-            </Panel>
-          )}
+          <CaseDocuments c={c} docs={docs} onPrepared={() => refresh(c)} />
         </div>
 
         <div className="space-y-4">
@@ -230,6 +226,7 @@ function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase
           ))}
         </ul>
       </div>
+      {h.status === 'scheduled' && <AvailabilityRow caseId={caseId} h={h} manage={manage} onChange={onChange} />}
       {h.notes && <p className="mt-2 text-[14.5px] text-ink-muted">{h.notes}</p>}
       {manage && h.status === 'scheduled' && mode === 'none' && (
         <div className="mt-2 flex flex-wrap gap-2">

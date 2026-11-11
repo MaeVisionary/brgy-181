@@ -134,9 +134,14 @@ export function ageOn(birthDate: string, today = new Date()): number {
 }
 
 /** Username/email must not belong to another account. */
+/** Account whose registration was rejected: its username and email can be used to register again. */
+const isRejectedAccount = (u: User) => u.status === 'inactive' && mockRegistrations.some((r) => r.accountUserId === u.id && r.status === 'rejected')
+
+const matches = (u: User, v: string) => u.username.toLowerCase() === v || u.email.toLowerCase() === v
+
 export function identifierTaken(value: string): boolean {
   const v = value.trim().toLowerCase()
-  return !!v && mockUsers.some((u) => u.username.toLowerCase() === v || u.email.toLowerCase() === v)
+  return !!v && mockUsers.some((u) => matches(u, v) && !isRejectedAccount(u))
 }
 
 // ── Submit ───────────────────────────────────────────────────────────
@@ -200,6 +205,10 @@ export async function submitRegistration(input: RegistrationInput): Promise<Resi
 
   const hash = await hashPassword(userId, input.password)
   return mockRequest(() => {
+    // Resubmission: the rejected account is replaced; its registration stays on record.
+    for (const old of mockUsers.filter((u) => isRejectedAccount(u) && (matches(u, input.username.trim().toLowerCase()) || matches(u, user.email)))) {
+      mockUsers.splice(mockUsers.indexOf(old), 1)
+    }
     mockUsers.push(user)
     mockRegistrations.push(reg)
     if (auto) linkResident(reg)
@@ -244,8 +253,8 @@ export function pendingAccountMessage(userId: string): string | null {
   const reg = mockRegistrations.find((r) => r.accountUserId === userId)
   if (!reg) return null
   if (reg.status === 'manual_review')
-    return `Your registration (${reg.referenceNo}) is still being verified by the Barangay Secretary. You can sign in once it is approved.`
+    return `Status: Pending Approval. Your registration (${reg.referenceNo}) is being reviewed by the Barangay Secretary. You can sign in once it is approved.`
   if (reg.status === 'rejected')
-    return `Your registration (${reg.referenceNo}) was not approved${reg.decisionNote ? `: ${reg.decisionNote}` : '.'} Please visit the Barangay Hall with a valid ID.`
+    return `Status: Rejected. Your registration (${reg.referenceNo}) was not approved${reg.decisionNote ? `. Reason: ${reg.decisionNote.trim().replace(/[.\s]+$/, '')}` : ''}. You can register again with corrected details, or visit the Barangay Hall with a valid ID.`
   return null
 }

@@ -1,4 +1,4 @@
-import { Building2, Gavel, Landmark, Package, ShieldCheck, UserRound, Users, type LucideIcon } from 'lucide-react'
+import { Building2, Gavel, Landmark, Package, Wallet, ShieldCheck, UserRound, Users, type LucideIcon } from 'lucide-react'
 import type { RoleId } from '@/types/auth'
 
 /** Account types offered on the portal's selection screen. */
@@ -50,6 +50,15 @@ export const ACCOUNT_TYPES: AccountType[] = [
     description: 'View community summaries, barangay reports and any functions assigned to your account.',
     icon: Landmark,
     roles: ['kagawad'],
+    recovery: 'Ask the System Administrator to reset your password.',
+  },
+  {
+    slug: 'barangay-treasurer',
+    title: 'Barangay Treasurer',
+    loginTitle: 'Barangay Treasurer Login',
+    description: 'Record fees paid for barangay documents and view collection reports.',
+    icon: Wallet,
+    roles: ['treasurer'],
     recovery: 'Ask the System Administrator to reset your password.',
   },
   {

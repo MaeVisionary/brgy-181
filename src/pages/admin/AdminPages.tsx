@@ -2,7 +2,7 @@ import { Check, CheckCircle2, ChevronRight, Copy, Info, KeyRound, Minus, Search 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/Button'
-import { TextInput } from '@/components/ui/Field'
+import { Select, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Panel'
 import { Pagination, usePaged } from '@/components/ui/Pagination'
@@ -15,7 +15,7 @@ import { mockUsers } from '@/mocks/users'
 import { listAudit } from '@/services/auditService'
 import { ServiceError } from '@/services/mockApi'
 import { verifyOwnPassword } from '@/services/authService'
-import { listUsers, resetPassword, setDisplayName, setExtraPermissions, setStatus } from '@/services/userService'
+import { ASSIGNABLE_ROLES, listUsers, resetPassword, setDisplayName, setExtraPermissions, setRole, setStatus } from '@/services/userService'
 import { getCredential, listResetRequests, type ResetRequest } from '@/services/credentialStore'
 import { TEST_ACCOUNT, testUserFor } from '@/config/testAccount'
 import { accountTypeBySlug } from '@/config/accountTypes'
@@ -161,6 +161,7 @@ export function UsersPage() {
 
 function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: (fn: () => Promise<unknown>) => Promise<void>; onReset: () => void; onSaved: (message: string) => void }) {
   const [name, setName] = useState(u.fullName)
+  const [role, setRoleValue] = useState<RoleId>(u.roleId)
   const [perms, setPerms] = useState<Set<Permission>>(new Set(u.extraPermissions ?? []))
   const [confirming, setConfirming] = useState(false)
   const [password, setPassword] = useState('')
@@ -195,6 +196,18 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
           <p className="text-[14.5px] text-ink-muted">This is an official's account; the name comes from the barangay's records.</p>
         )}
       </div>
+      {ASSIGNABLE_ROLES.includes(u.roleId) && (
+        <label className="block max-w-md border-t border-line pt-4">
+          <span className="mb-1 block text-[14px] font-semibold text-navy-900">Position (role)</span>
+          <span className="flex gap-2">
+            <Select value={role} onChange={(e) => setRoleValue(e.target.value as RoleId)}>
+              {ASSIGNABLE_ROLES.map((r) => <option key={r} value={r}>{ROLES[r].name}</option>)}
+            </Select>
+            <Button size="md" variant="secondary" disabled={role === u.roleId} onClick={async () => { await run(() => setRole(u.id, role, me)); onSaved(`${u.fullName} is now ${ROLES[role].name}.`) }}>Save</Button>
+          </span>
+          <span className="mt-1 block text-[13.5px] text-ink-muted">Changes the menu and the base permissions of this account.</span>
+        </label>
+      )}
       {GRANTABLE_ROLES.includes(u.roleId) ? (
         <div className="border-t border-line pt-4">
           <p className="text-[14.5px] font-semibold text-navy-900">Additional permissions for this account</p>

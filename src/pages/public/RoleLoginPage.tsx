@@ -1,6 +1,6 @@
 import { AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { BarangaySeal } from '@/components/layout/BarangaySeal'
 import { Button } from '@/components/ui/Button'
@@ -20,6 +20,7 @@ export function RoleLoginPage() {
   const type = accountTypeBySlug(slug)
   const go = useSmoothNavigate()
   const { signIn } = useAuth()
+  const from = (useLocation().state as { from?: string } | null)?.from
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
@@ -42,7 +43,7 @@ export function RoleLoginPage() {
     setBusy(true)
     try {
       const result = await signIn({ roles: type.roles, identifier: identifier.trim(), password, remember })
-      go(result.mustChangePassword ? '/account' : '/dashboard', 'forward')
+      go(result.mustChangePassword ? '/account' : from && from.startsWith(type.slug === 'resident' ? '/my/' : '/') ? from : '/dashboard', 'forward')
     } catch (err) {
       setNotice(err instanceof ServiceError ? err.message : 'Sign-in failed. Please try again.')
     } finally {
@@ -129,7 +130,14 @@ export function RoleLoginPage() {
             {notice && (
               <p role="alert" className="bmis-rise flex items-start gap-2.5 rounded-xl border border-danger/25 bg-danger-tint px-4 py-3 text-[15px] text-navy-900">
                 <AlertCircle className="mt-px size-4 shrink-0 text-danger" />
-                {notice}
+                <span>
+                  {notice}
+                  {notice.startsWith('Status: Rejected') && (
+                    <button type="button" onClick={() => go('/register', 'forward')} className="mt-1.5 block font-semibold text-info underline">
+                      Register again
+                    </button>
+                  )}
+                </span>
               </p>
             )}
 

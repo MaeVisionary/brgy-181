@@ -54,6 +54,7 @@ export function documentStatusForResident(s: DocumentStatus): ResidentStatus {
     case 'pending_approval':
       return 'Under Review'
     case 'approved':
+    case 'for_signature':
       return 'Approved'
     case 'ready_for_pickup':
       return 'Ready for Pickup'

@@ -13,6 +13,10 @@ export interface Equipment {
   totalQty: number
   damagedQty: number
   missingQty: number
+  /** Units set aside for repair or maintenance (not lendable). */
+  maintenanceQty?: number
+  /** Where it is kept (e.g. Barangay Hall storage room). */
+  location?: string
   history: { at: string; byUserId: string; action: string; detail?: string }[]
 }
 

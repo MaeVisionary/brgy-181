@@ -1,10 +1,11 @@
+import { mockDocumentRequests } from '@/mocks/documentRequests'
 import { KP } from '@/config/barangay'
 import { mockCases } from '@/mocks/cases'
 import { mockNotifications } from '@/mocks/notifications'
 import { mockUsers } from '@/mocks/users'
 import { ROLE_PERMISSIONS } from '@/config/permissions'
 import type { Permission, User } from '@/types/auth'
-import type { CaseStage, Hearing, HearingKind, KPCase } from '@/types/case'
+import type { CaseStage, Hearing, HearingKind, KPCase, Availability, AvailabilityWho, Party } from '@/types/case'
 import { ServiceError, mockRequest } from './mockApi'
 
 /**
@@ -202,6 +203,7 @@ function newHearing(c: KPCase, kind: HearingKind, at: string): Hearing {
     place: 'Barangay 181 Hall',
     status: 'scheduled',
     remindersSentAt: [],
+    availability: { complainant: 'unconfirmed', respondent: 'unconfirmed', chairman: 'unconfirmed' },
     attendance: [
       ...c.complainants.map((p) => ({ name: p.name, side: 'complainant' as const, present: null })),
       ...c.respondents.map((p) => ({ name: p.name, side: 'respondent' as const, present: null })),
@@ -287,3 +289,73 @@ export const upcomingHearings = (cases: KPCase[], now = new Date()) =>
     .sort((x, y) => x.h.scheduledAt.localeCompare(y.h.scheduledAt))
 
 export { isParty }
+
+export interface NewCaseInput {
+  nature: string
+  complainants: Party[]
+  respondents: Party[]
+  details: string
+  incidentDate?: string
+  incidentPlace?: string
+  filedVia: 'online' | 'walk_in'
+  /** Online complaint, incident or blotter report this entry comes from. */
+  sourceRequestId?: string
+}
+
+const pad = (n: number, w: number) => String(n).padStart(w, '0')
+
+/** Records a complaint in the barangay blotter and opens its case (cases.manage). */
+export function createCase(input: NewCaseInput, a: CaseActor): Promise<KPCase> {
+  return mockRequest(() => {
+    if (!a.permissions.has('cases.manage')) throw new ServiceError('forbidden', 'Only case personnel can record blotter entries.')
+    const complainants = input.complainants.filter((p) => p.name.trim())
+    const respondents = input.respondents.filter((p) => p.name.trim())
+    if (!complainants.length) throw new ServiceError('complainant', 'Enter the complainant.')
+    if (!respondents.length) throw new ServiceError('respondent', 'Enter the respondent.')
+    if (!input.nature.trim()) throw new ServiceError('nature', 'Enter the nature of the complaint.')
+    if (!input.details.trim()) throw new ServiceError('details', 'Describe the complaint.')
+    if (input.sourceRequestId && mockCases.some((c) => c.sourceRequestId === input.sourceRequestId)) throw new ServiceError('duplicate', 'This report is already recorded in the blotter.')
+    const year = new Date().getFullYear()
+    const seq = Math.max(0, ...mockCases.map((c) => Number(c.caseNo.split('-')[2]) || 0)) + 1
+    const now = new Date().toISOString()
+    const c: KPCase = {
+      id: `case-${Date.now().toString(36)}`,
+      caseNo: `KP-${year}-${pad(seq, 3)}`,
+      blotterNo: `BE-${year}-${pad(seq, 4)}`,
+      title: `${complainants.map((p) => p.name.split(' ').pop()).join(', ')} vs. ${respondents.map((p) => p.name.split(' ').pop()).join(', ')}`,
+      nature: input.nature.trim(),
+      complainants,
+      respondents,
+      details: input.details.trim(),
+      incidentDate: input.incidentDate || undefined,
+      incidentPlace: input.incidentPlace?.trim() || undefined,
+      filedAt: now,
+      filedVia: input.filedVia,
+      stage: 'filed',
+      hearings: [],
+      history: [{ at: now, byUserId: a.user.id, byRole: a.user.roleId, action: 'Recorded in the barangay blotter', stage: 'filed' }],
+      documentIds: [],
+      internalNotes: [],
+      sourceRequestId: input.sourceRequestId,
+    }
+    mockCases.unshift(c)
+    const src = input.sourceRequestId && mockDocumentRequests.find((r) => r.id === input.sourceRequestId)
+    if (src) {
+      src.caseId = c.id
+      src.history.push({ status: src.status, at: now, byUserId: a.user.id, byRole: a.user.roleId, action: `Recorded in the blotter as ${c.blotterNo} (case ${c.caseNo})` })
+    }
+    return c
+  })
+}
+
+/** Records whether a person can attend a scheduled hearing. */
+export function setAvailability(id: string, hearingId: string, who: AvailabilityWho, value: Availability, a: CaseActor): Promise<KPCase> {
+  return mockRequest(() => {
+    const c = mockCases.find((x) => x.id === id)
+    const h = c?.hearings.find((x) => x.id === hearingId)
+    if (!c || !h) throw new ServiceError('not_found', 'Hearing not found.')
+    if (!a.permissions.has('hearings.manage')) throw new ServiceError('forbidden', 'Not allowed.')
+    h.availability = { ...(h.availability ?? { complainant: 'unconfirmed', respondent: 'unconfirmed', chairman: 'unconfirmed' }), [who]: value }
+    return c
+  })
+}

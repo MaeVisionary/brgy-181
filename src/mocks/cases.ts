@@ -18,6 +18,7 @@ export const mockCases: KPCase[] = [
   {
     id: 'case-031',
     caseNo: 'KP-2026-031',
+    blotterNo: 'BE-2026-0031',
     title: 'Castillo vs. Mercado',
     nature: 'Unpaid debt',
     complainants: [party(SAMPLE_IDS.jasmineCastillo)],
@@ -48,6 +49,7 @@ export const mockCases: KPCase[] = [
   {
     id: 'case-034',
     caseNo: 'KP-2026-034',
+    blotterNo: 'BE-2026-0034',
     title: 'Flores vs. Lim',
     nature: 'Unpaid loan',
     complainants: [party(SAMPLE_IDS.camilleFlores)],
@@ -68,6 +70,7 @@ export const mockCases: KPCase[] = [
   {
     id: 'case-027',
     caseNo: 'KP-2026-027',
+    blotterNo: 'BE-2026-0027',
     title: 'Panganiban vs. Navarro',
     nature: 'Damage to property (fence)',
     complainants: [party(SAMPLE_IDS.johnPaulPanganiban)],
@@ -117,6 +120,7 @@ export const mockCases: KPCase[] = [
   {
     id: 'case-019',
     caseNo: 'KP-2026-019',
+    blotterNo: 'BE-2026-0019',
     title: 'Tan vs. Flores',
     nature: 'Parking dispute',
     complainants: [party(SAMPLE_IDS.andreaTan)],

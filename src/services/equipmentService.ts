@@ -33,7 +33,21 @@ export const borrowedQty = (equipmentId: string) =>
   mockBorrowings.filter((b) => b.status === 'released').flatMap((b) => b.items).filter((i) => i.equipmentId === equipmentId).reduce((n, i) => n + i.qty, 0)
 
 export function availableQty(e: Equipment, excludeId?: string) {
-  return Math.max(0, e.totalQty - e.damagedQty - e.missingQty - committedQty(e.id, excludeId))
+  return Math.max(0, e.totalQty - e.damagedQty - e.missingQty - (e.maintenanceQty ?? 0) - committedQty(e.id, excludeId))
+}
+
+/** Units by status for one item (Available, Pending Request, Reserved, Borrowed, Overdue, Under Maintenance). */
+export function equipmentStatus(e: Equipment) {
+  const sum = (pred: (b: Borrowing) => boolean) =>
+    mockBorrowings.filter(pred).flatMap((b) => b.items).filter((i) => i.equipmentId === e.id).reduce((n, i) => n + i.qty, 0)
+  return {
+    available: availableQty(e),
+    pending: sum((b) => b.status === 'pending'),
+    reserved: sum((b) => b.status === 'approved'),
+    borrowed: sum((b) => b.status === 'released'),
+    overdue: sum((b) => b.status === 'released' && returnState(b) === 'overdue'),
+    maintenance: e.maintenanceQty ?? 0,
+  }
 }
 
 export type ReturnState = 'not_released' | 'on_time' | 'due_soon' | 'grace' | 'overdue' | 'returned'
@@ -80,7 +94,7 @@ export function getBorrowing(id: string, a: EqActor): Promise<Borrowing> {
   })
 }
 
-export function addEquipment(input: { name: string; category: EquipmentCategory; description: string; totalQty: number }, a: EqActor): Promise<Equipment> {
+export function addEquipment(input: { name: string; category: EquipmentCategory; description: string; totalQty: number; location?: string }, a: EqActor): Promise<Equipment> {
   return mockRequest(() => {
     if (!a.permissions.has('inventory.manage')) throw new ServiceError('forbidden', 'Not allowed.')
     if (!input.name.trim() || input.totalQty < 1) throw new ServiceError('invalid', 'Enter a name and a quantity of at least 1.')
@@ -90,6 +104,7 @@ export function addEquipment(input: { name: string; category: EquipmentCategory;
       ...input,
       damagedQty: 0,
       missingQty: 0,
+      maintenanceQty: 0,
       history: [{ at: new Date().toISOString(), byUserId: a.user.id, action: 'Added to inventory', detail: `Quantity ${input.totalQty}` }],
     }
     mockEquipment.push(e)
@@ -97,7 +112,7 @@ export function addEquipment(input: { name: string; category: EquipmentCategory;
   })
 }
 
-export function updateEquipment(id: string, patch: Partial<Pick<Equipment, 'name' | 'category' | 'description' | 'totalQty' | 'damagedQty' | 'missingQty'>>, a: EqActor): Promise<Equipment> {
+export function updateEquipment(id: string, patch: Partial<Pick<Equipment, 'name' | 'category' | 'description' | 'totalQty' | 'damagedQty' | 'missingQty' | 'maintenanceQty' | 'location'>>, a: EqActor): Promise<Equipment> {
   return mockRequest(() => {
     if (!a.permissions.has('inventory.manage')) throw new ServiceError('forbidden', 'Not allowed.')
     const e = mockEquipment.find((x) => x.id === id)
@@ -105,8 +120,9 @@ export function updateEquipment(id: string, patch: Partial<Pick<Equipment, 'name
     if (patch.name !== undefined && !patch.name.trim()) throw new ServiceError('name', 'Enter the equipment name.')
     if (patch.category !== undefined && !patch.category.trim()) throw new ServiceError('category', 'Enter a category.')
     const total = patch.totalQty ?? e.totalQty
-    if ((patch.damagedQty ?? e.damagedQty) + (patch.missingQty ?? e.missingQty) > total) throw new ServiceError('qty', 'Damaged and missing units cannot be more than the total.')
-    if (total - (patch.damagedQty ?? e.damagedQty) - (patch.missingQty ?? e.missingQty) < borrowedQty(e.id)) throw new ServiceError('qty', 'The total is lower than the units currently borrowed.')
+    const out = (patch.damagedQty ?? e.damagedQty) + (patch.missingQty ?? e.missingQty) + (patch.maintenanceQty ?? e.maintenanceQty ?? 0)
+    if (out > total) throw new ServiceError('qty', 'Damaged, missing and maintenance units cannot be more than the total.')
+    if (total - out < borrowedQty(e.id)) throw new ServiceError('qty', 'The total is lower than the units currently borrowed.')
     const changes = Object.entries(patch).filter(([k, v]) => (e as unknown as Record<string, unknown>)[k] !== v)
     Object.assign(e, patch)
     if (changes.length) e.history.push({ at: new Date().toISOString(), byUserId: a.user.id, action: 'Record updated', detail: changes.map(([k, v]) => `${k}: ${v}`).join(', ') })

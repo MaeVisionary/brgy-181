@@ -45,6 +45,13 @@ export const ROLES: Record<RoleId, Role> = {
     portalLabel: 'Personnel Portal',
     description: 'Equipment inventory, borrowing, releases and returns.',
   },
+  treasurer: {
+    id: 'treasurer',
+    name: 'Barangay Treasurer',
+    portal: 'personnel',
+    portalLabel: 'Personnel Portal',
+    description: 'Records fees paid for documents (official receipt) and views collection reports.',
+  },
   staff: {
     id: 'staff',
     name: 'Authorized Personnel',
@@ -95,6 +102,7 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
     'documents.create',
     'documents.process',
     'documents.release',
+    'documents.inspect',
     'complaints.view',
     'complaints.create',
     'complaints.update',
@@ -115,6 +123,9 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
     'residents.lookup_borrower',
   ],
 
+  // Fees for documents such as the Business Clearance are paid to the Treasurer.
+  treasurer: ['documents.view', 'documents.payment', 'reports.view'],
+
   // Base set only; real access comes from each account's extraPermissions.
   staff: [],
 
@@ -129,6 +140,8 @@ export const GRANTABLE_STAFF_PERMISSIONS: readonly Permission[] = [
   'documents.create',
   'documents.process',
   'documents.release',
+  'documents.inspect',
+  'documents.payment',
   'complaints.view',
   'complaints.create',
   'hearings.view',
@@ -139,7 +152,7 @@ export const GRANTABLE_STAFF_PERMISSIONS: readonly Permission[] = [
 ]
 
 /** Every barangay official account can receive these per account (residents and the administrator cannot). */
-export const GRANTABLE_ROLES: readonly string[] = ['chairman', 'secretary', 'kagawad', 'property_custodian', 'staff']
+export const GRANTABLE_ROLES: readonly string[] = ['chairman', 'secretary', 'kagawad', 'property_custodian', 'treasurer', 'staff']
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   'residents.view': 'View resident records',
@@ -157,6 +170,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'documents.approve': 'Approve documents (official)',
   'documents.reject': 'Reject documents (official)',
   'documents.release': 'Record document release',
+  'documents.inspect': 'Record verification and ocular inspection findings',
+  'documents.payment': 'Record fees paid (official receipt)',
   'complaints.view': 'View complaints and incident reports',
   'complaints.create': 'Encode complaints and incident reports',
   'complaints.update': 'Update complaint status',

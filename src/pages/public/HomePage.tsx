@@ -1,6 +1,6 @@
-import { ArrowRight, Building2, ClipboardList, FileText, Gavel, MapPin, Package, UserCheck, UserPlus } from 'lucide-react'
+import { ArrowRight, Building2, ClipboardList, FileText, Gavel, LogIn, MapPin, Package, UserCheck, UserPlus } from 'lucide-react'
 import { BarangaySeal } from '@/components/layout/BarangaySeal'
-import { BARANGAY, CHAIRMAN, SECRETARY, officialByPosition } from '@/config/barangay'
+import { BARANGAY, BARANGAY_CONTACT, CHAIRMAN, SECRETARY, officialByPosition } from '@/config/barangay'
 import { cn } from '@/lib/cn'
 import { useSmoothNavigate } from '@/lib/transition'
 import { PublicLayout } from './PublicLayout'
@@ -36,13 +36,16 @@ export function HomePage() {
               Making barangay services more accessible, organized and convenient for every resident of Zone {BARANGAY.zone}, District {BARANGAY.district}, Manila.
             </p>
             <div className="bmis-rise bmis-rise-4 mt-7 flex flex-wrap gap-3">
-              <button type="button" onClick={() => go('/portal')} className="bmis-press inline-flex h-12 items-center gap-2 rounded-full bg-navy-900 px-6 text-[17px] font-semibold text-white hover:bg-navy-800">
-                Access the Portal <ArrowRight className="size-4" />
+              <button type="button" onClick={() => go('/login/resident')} className="bmis-press inline-flex h-12 items-center gap-2 rounded-full bg-navy-900 px-6 text-[17px] font-semibold text-white hover:bg-navy-800">
+                <LogIn className="size-4" /> Resident Login
               </button>
               <button type="button" onClick={() => go('/register')} className="bmis-press inline-flex h-12 items-center gap-2 rounded-full border border-navy-900 bg-surface px-6 text-[17px] font-semibold text-navy-900 hover:bg-sky-50">
-                <UserPlus className="size-4" /> Create an account
+                <UserPlus className="size-4" /> Create Account
               </button>
             </div>
+            <button type="button" onClick={() => go('/portal')} className="bmis-rise bmis-rise-4 mt-3 inline-flex min-h-11 items-center gap-1.5 text-[15.5px] font-semibold text-navy-600 hover:text-navy-900 hover:underline">
+              Barangay personnel: access the portal <ArrowRight className="size-4" />
+            </button>
             <p className="bmis-rise bmis-rise-4 mt-6 font-display text-[15px] font-bold text-navy-600 italic">“{BARANGAY.motto}”</p>
           </div>
         </div>
@@ -117,16 +120,19 @@ export function HomePage() {
 
           <div className="mx-auto mt-8 grid max-w-[1180px] gap-4 md:grid-cols-3">
             {[
-              { icon: FileText, title: 'Certificates and clearances', body: 'Request online, then claim the signed and sealed document at the Barangay Hall.' },
-              { icon: Gavel, title: 'Complaints and reports', body: 'Report incidents and request summons. Cases go through the Katarungang Pambarangay process.' },
-              { icon: Package, title: 'Equipment borrowing', body: `Borrow barangay equipment for community or family use. Fixed 15-day borrowing period with a 3-day grace period.` },
-            ].map(({ icon: Icon, title, body }) => (
-              <div key={title} className="rounded-[var(--radius-card)] border border-line bg-canvas p-6">
+              { icon: FileText, title: 'Document Requests', body: 'Request certificates and clearances online, track each step, then claim the signed and sealed document at the Barangay Hall.', action: 'Request a Document', to: '/my/documents/new' },
+              { icon: Gavel, title: 'Complaints and Incident Reports', body: 'Report incidents and file complaints. Cases go through the Katarungang Pambarangay process: blotter, hearing and mediation.', action: 'File a Complaint', to: '/my/complaints' },
+              { icon: Package, title: 'Equipment Borrowing', body: `Borrow chairs, tables, ladders and other barangay equipment. Fixed 15-day borrowing period with a 3-day grace period.`, action: 'Borrow Equipment', to: '/my/borrowing' },
+            ].map(({ icon: Icon, title, body, action, to }) => (
+              <div key={title} className="flex flex-col rounded-[var(--radius-card)] border border-line bg-canvas p-6">
                 <p className="flex items-center gap-2.5 font-display text-[17.5px] font-bold text-navy-900">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-sky-100 text-navy-900"><Icon className="size-[18px]" /></span>
+                  <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-sky-100 text-navy-900"><Icon className="size-5" /></span>
                   {title}
                 </p>
-                <p className="mt-2.5 text-[15px] leading-relaxed text-ink-muted">{body}</p>
+                <p className="mt-2.5 flex-1 text-[15.5px] leading-relaxed text-ink-nav">{body}</p>
+                <button type="button" onClick={() => go(to)} className="bmis-press mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-control)] bg-navy-900 px-5 py-2 text-center text-[15.5px] font-semibold text-white hover:bg-navy-800">
+                  {action} <ArrowRight className="size-4" />
+                </button>
               </div>
             ))}
           </div>
@@ -136,7 +142,7 @@ export function HomePage() {
             steps={[
               { icon: ClipboardList, title: 'Submit your request', body: 'Through the portal or at the Barangay Hall.' },
               { icon: UserCheck, title: 'Verification', body: 'The Barangay Secretary checks your information against the records.' },
-              { icon: Building2, title: 'Approval', body: 'Documents that need it are approved by the Barangay Chairman, then signed and sealed.' },
+              { icon: Building2, title: 'Approval', body: 'The Barangay Chairman approves it. The document is printed, signed and sealed.' },
               { icon: MapPin, title: 'Pickup', body: 'Claim your document at the Barangay 181 Hall.' },
             ]}
           />
@@ -159,6 +165,22 @@ export function HomePage() {
               <div>
                 <dt className="label-caps">Location</dt>
                 <dd className="mt-1 font-semibold text-navy-900">Barangay 181 Hall, Zone 16, District II, {BARANGAY.locality}</dd>
+              </div>
+              <div>
+                <dt className="label-caps">Phone</dt>
+                <dd className="mt-1 font-semibold text-navy-900">
+                  <a href={`tel:${BARANGAY_CONTACT.phone.replace(/[^\d+]/g, '')}`} className="text-info hover:underline">{BARANGAY_CONTACT.phone}</a>
+                  {' · '}
+                  <a href={`tel:${BARANGAY_CONTACT.mobile.replace(/[^\d+]/g, '')}`} className="text-info hover:underline">{BARANGAY_CONTACT.mobile}</a>
+                </dd>
+              </div>
+              <div>
+                <dt className="label-caps">Email</dt>
+                <dd className="mt-1 font-semibold break-all"><a href={`mailto:${BARANGAY_CONTACT.email}`} className="text-info hover:underline">{BARANGAY_CONTACT.email}</a></dd>
+              </div>
+              <div>
+                <dt className="label-caps">Office hours</dt>
+                <dd className="mt-1 text-navy-900">{BARANGAY_CONTACT.officeHours}<span className="block">{BARANGAY_CONTACT.saturdayHours}</span></dd>
               </div>
               <div>
                 <dt className="label-caps">Assistance</dt>

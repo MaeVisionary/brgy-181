@@ -21,6 +21,10 @@ export interface Party {
 
 export type HearingKind = 'chairman_mediation' | 'lupon_mediation'
 
+/** Whether a person confirmed they can attend the scheduled hearing. */
+export type Availability = 'unconfirmed' | 'confirmed' | 'unavailable'
+export type AvailabilityWho = 'complainant' | 'respondent' | 'chairman'
+
 export interface Attendance {
   name: string
   side: 'complainant' | 'respondent'
@@ -37,6 +41,8 @@ export interface Hearing {
   notes?: string
   /** Simulated reminders sent (FR20). */
   remindersSentAt: string[]
+  /** Who confirmed they can attend (Chairman interview, 10 Nov 2026). */
+  availability?: Record<AvailabilityWho, Availability>
 }
 
 export interface CaseEvent {
@@ -51,6 +57,12 @@ export interface CaseEvent {
 export interface KPCase {
   id: string
   caseNo: string
+  /** Entry number in the barangay blotter. */
+  blotterNo?: string
+  incidentDate?: string
+  incidentPlace?: string
+  /** Online complaint/report this case was recorded from. */
+  sourceRequestId?: string
   /** "Complainant vs. Respondent" as written on notices. */
   title: string
   /** "For:" on the summons. */

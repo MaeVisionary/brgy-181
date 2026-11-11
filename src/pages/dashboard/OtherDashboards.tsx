@@ -11,6 +11,11 @@ import { mockUsers } from '@/mocks/users'
 import { listAudit } from '@/services/auditService'
 import type { RoleId } from '@/types/auth'
 import { DashHeader, ListPanel, PopulationByStreet, Row, Stat } from './shared'
+import { StatusBadge } from '@/components/documents/DocParts'
+import { getDocumentType } from '@/documents/catalog'
+import { useAsync } from '@/hooks/useAsync'
+import { useDocActor } from '@/hooks/useDocActor'
+import { listRequests } from '@/services/documentService'
 
 function CouncilList({ highlight }: { highlight?: string }) {
   const kagawads = officialByPosition('Barangay Kagawad')
@@ -140,3 +145,39 @@ export function StaffDashboard() {
 }
 
 export { CouncilList, OFFICIALS }
+
+/** Barangay Treasurer: fees paid for documents (e.g. Business Clearance). */
+export function TreasurerDashboard() {
+  const actor = useDocActor()!
+  const docs = useAsync(() => listRequests(actor), [actor]).data
+  const feeDocs = docs?.filter((d) => getDocumentType(d.typeId).fee && !['rejected', 'cancelled'].includes(d.status)) ?? null
+  const toCollect = feeDocs?.filter((d) => !d.payment) ?? null
+  const paid = feeDocs?.filter((d) => d.payment).sort((a, b) => b.payment!.at.localeCompare(a.payment!.at)) ?? null
+  const total = paid?.reduce((n, d) => n + d.payment!.amount, 0) ?? null
+  return (
+    <>
+      <DashHeader overview="Treasurer Overview" subtitle="Fees paid for barangay documents. Record each payment with its official receipt number." />
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Stat label="Fees to record" value={toCollect?.length ?? null} attention={!!toCollect?.length} to="/documents" />
+        <Stat label="Payments recorded" value={paid?.length ?? null} to="/documents" />
+        <Stat label="Total recorded (₱)" value={total} to="/reports" />
+      </section>
+      <section className="mt-4 grid gap-4 xl:grid-cols-2">
+        <ListPanel
+          title="Waiting for payment"
+          items={toCollect}
+          to="/documents"
+          empty="No unpaid requests."
+          render={(d) => <Row to={`/documents/${d.id}`} title={`${getDocumentType(d.typeId).name} · ${d.requesterName}`} meta={d.referenceNo} right={<StatusBadge status={d.status} typeId={d.typeId} />} />}
+        />
+        <ListPanel
+          title="Recent payments"
+          items={paid}
+          to="/documents"
+          empty="No payments recorded yet."
+          render={(d) => <Row to={`/documents/${d.id}`} title={`₱${d.payment!.amount.toFixed(2)} · ${d.requesterName}`} meta={`O.R. ${d.payment!.orNo} · ${formatDateTime(d.payment!.at)}`} />}
+        />
+      </section>
+    </>
+  )
+}

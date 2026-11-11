@@ -1,9 +1,10 @@
 import { AlertTriangle, Eye, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
 import { FieldInput, HistoryList, ProgressTracker, StatusBadge, groupFields } from '@/components/documents/DocParts'
 import { TransitionPanel } from '@/components/documents/TransitionPanel'
+import { PaymentPanel, VerificationPanel } from '@/components/documents/RecordPanels'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Panel } from '@/components/ui/Panel'
@@ -71,7 +72,7 @@ export function RequestDetailPage() {
         subtitle={`${req.requesterName} · submitted ${formatDateTime(req.submittedAt)}`}
         actions={
           <>
-            <StatusBadge status={req.status} />
+            <StatusBadge status={req.status} typeId={req.typeId} />
             <ButtonLink to={`/documents/${req.id}/preview`} variant="secondary" icon={<Eye className="size-4" />}>
               Preview document
             </ButtonLink>
@@ -167,6 +168,20 @@ export function RequestDetailPage() {
             </Panel>
           )}
 
+          {['summon', 'incident-record', 'blotter-report'].includes(req.typeId) && actor.permissions.has('cases.manage') && (
+            <Panel title="Blotter and case">
+              {req.caseId ? (
+                <p className="text-[15px] text-navy-900">Recorded in the blotter. <Link to={`/cases/${req.caseId}`} className="font-semibold text-info hover:underline">Open the case</Link></p>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-[15px] text-navy-900">Not yet in the blotter. Record it to open a case and schedule hearings.</p>
+                  <ButtonLink to={`/cases/new?from=${req.id}`}>Record in blotter</ButtonLink>
+                </div>
+              )}
+            </Panel>
+          )}
+          <VerificationPanel req={req} actor={actor} onChange={(r) => setReq(r)} />
+          <PaymentPanel req={req} actor={actor} onChange={(r) => setReq(r)} />
         </div>
 
         <div className="space-y-4">
@@ -184,6 +199,12 @@ export function RequestDetailPage() {
                   </li>
                 ))}
               </ul>
+            </Panel>
+          )}
+          {req.approvedBy && (
+            <Panel title="Approval">
+              <p className="text-[15px] text-navy-900">Approved by <strong>{mockUsers.find((u) => u.id === req.approvedBy)?.fullName}</strong></p>
+              <p className="text-[14px] text-ink-muted">{formatDateTime(req.approvedAt!)}</p>
             </Panel>
           )}
           <Panel title="History">

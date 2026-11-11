@@ -16,6 +16,7 @@ import { audit } from '@/services/auditService'
 import { ServiceError } from '@/services/mockApi'
 import { deleteReportTemplate, listReportTemplates, saveReportTemplate, type ReportTemplate } from '@/services/reportTemplateService'
 import { downloadBlob } from '@/services/templateService'
+import { ServiceReports } from './ServiceReports'
 
 export function ReportsPage() {
   const { user, can } = useAuth()
@@ -111,6 +112,8 @@ export function ReportsPage() {
           ))}
         </div>
       </Panel>
+
+      <ServiceReports />
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
         <Card className="h-fit overflow-hidden">

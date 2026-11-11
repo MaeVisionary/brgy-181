@@ -23,6 +23,7 @@ import { Card, Panel } from '@/components/ui/Panel'
 import { DOCUMENT_TYPES, getDocumentType } from '@/documents/catalog'
 import { WORKFLOWS } from '@/documents/workflows'
 import { cn } from '@/lib/cn'
+import { RequirementsEditor } from './RequirementsEditor'
 import type { DocumentTypeId } from '@/types/document'
 
 /** Catalog of the official templates, with blank pages and every fill-in spot outlined. */
@@ -202,12 +203,6 @@ export function TemplatesPage() {
                 <dt className="label-caps">Workflow</dt>
                 <dd className="mt-0.5 text-navy-900">{WORKFLOWS[selected.workflow].name}</dd>
               </div>
-              <div>
-                <dt className="label-caps">Requirements</dt>
-                <dd className="mt-0.5 text-navy-900">
-                  {selected.requirements.length ? selected.requirements.map((r) => r.label).join(', ') : 'Not specified yet'}
-                </dd>
-              </div>
               {selected.onlineNote && (
                 <div className="sm:col-span-2">
                   <dt className="label-caps">How it is requested</dt>
@@ -215,6 +210,7 @@ export function TemplatesPage() {
                 </div>
               )}
             </dl>
+            <RequirementsEditor key={selected.id} typeId={selected.id} onSaved={() => setNotice({ tone: 'ok', text: 'Requirements saved. New requests use the updated list.' })} />
             {selected.process && (
               <div className="mt-4 rounded-[var(--radius-control)] bg-surface-muted px-4 py-3">
                 <p className="label-caps mb-1.5">How it is processed</p>

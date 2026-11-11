@@ -167,7 +167,7 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
                         {r.assisted && <span className="block text-[13.5px] text-ink-muted">Walk-in</span>}
                       </td>
                       <td className="px-3 py-2.5">
-                        <StatusBadge status={r.status} />
+                        <StatusBadge status={r.status} typeId={r.typeId} />
                       </td>
                       <td className="px-4 py-2.5 text-ink-nav">{formatDateTime(r.updatedAt)}</td>
                     </tr>
@@ -180,7 +180,7 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
                     <Link to={`/documents/${r.id}`} className="block px-4 py-3 active:bg-sky-50">
                       <span className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-navy-900">{r.referenceNo}</span>
-                        <StatusBadge status={r.status} />
+                        <StatusBadge status={r.status} typeId={r.typeId} />
                       </span>
                       <span className="block text-[15px] text-navy-900">{getDocumentType(r.typeId).name}</span>
                       <span className="block text-[14px] text-ink-muted">{r.requesterName}{r.assisted ? ' · Walk-in' : ''} · {formatDateTime(r.updatedAt)}</span>

@@ -165,6 +165,9 @@ export function applyTransition(
     const allowed = availableTransitions(req, actor).find((t) => t.to === transition.to && t.label === transition.label && t.by === transition.by)
     if (!allowed) throw new ServiceError('invalid_transition', 'This step is not available for this request right now.')
     if (allowed.remarks === 'required' && !remarks.trim()) throw new ServiceError('remarks', 'Please add a note for this step.')
+    if (allowed.requiresVerification && getDocumentType(req.typeId).verification && req.verification?.result !== 'confirmed') {
+      throw new ServiceError('verification', `Record the ${getDocumentType(req.typeId).verification!.title.toLowerCase()} first (result: confirmed).`)
+    }
     if (allowed.requiresComplete && missingFields(req).length > 0) {
       throw new ServiceError('incomplete', 'Complete the missing document details first.')
     }
@@ -177,6 +180,10 @@ export function applyTransition(
       req.issuedAt = now
       // Freeze computed values (issue date etc.) into the record.
       Object.assign(req.values, Object.fromEntries(Object.entries(systemValues(req)).filter(([k]) => type.fields.some((f) => f.key === k))))
+    }
+    if (allowed.to === 'approved' && allowed.by === 'documents.approve') {
+      req.approvedBy = actor.user.id
+      req.approvedAt = now
     }
     if (allowed.to === 'needs_info') req.requestedItems = extra.requestedItems?.filter(Boolean) ?? []
     if (allowed.by === 'owner' && allowed.to === 'under_review') {
@@ -195,7 +202,7 @@ export function applyTransition(
     const link = `/my/documents/${req.id}`
     const ownerMsg: Partial<Record<DocumentStatus, string>> = {
       needs_info: 'The barangay needs more information for your request.',
-      approved: 'Your request was approved.',
+      approved: 'Your request was approved by the Barangay Chairman. It will now be printed and signed.',
       ready_for_pickup: 'Your document is ready for pickup at the Barangay Hall.',
       rejected: 'Your request was not approved.',
       released: 'Your document was released.',
@@ -207,6 +214,9 @@ export function applyTransition(
       const items = allowed.to === 'needs_info' && req.requestedItems?.length ? ` Please send: ${req.requestedItems.join(', ')}.` : ''
       notify([owner], 'document', `${req.referenceNo}: ${type.name}`, ownerMsg[allowed.to]! + items + (remarks.trim() ? ` Note: ${remarks.trim()}` : ''), link)
     }
+    if (allowed.by === 'documents.approve' && (allowed.to === 'processing' || allowed.to === 'under_review')) {
+      notify(usersWith('documents.process'), 'document', 'Returned for revision by the Chairman', `${req.referenceNo}: ${remarks.trim()}`, `/documents/${req.id}`)
+    }
     if (allowed.to === 'pending_approval' || allowed.to === 'for_assessment') {
       notify(usersWith('documents.approve'), 'document', allowed.to === 'for_assessment' ? 'Summons request for assessment' : 'Document awaiting your approval', `${req.referenceNo}: ${type.name} (${req.requesterName}).`, `/documents/${req.id}`)
     }
@@ -214,5 +224,144 @@ export function applyTransition(
       notify(usersWith('documents.process'), 'document', 'Requester replied', `${req.referenceNo}: ${remarks.trim()}`, `/documents/${req.id}`)
     }
     return req
+  })
+}
+
+/** Record the verification or ocular inspection for a request (documents.inspect). */
+export function recordVerification(
+  id: string,
+  input: { result: 'confirmed' | 'not_confirmed'; findings: string; checkedOn: string },
+  actor: DocActor,
+): Promise<DocumentRequest> {
+  return mockRequest(() => {
+    const req = find(id, actor)
+    const def = getDocumentType(req.typeId).verification
+    if (!def) throw new ServiceError('not_applicable', 'This document has no verification step.')
+    if (!actor.permissions.has('documents.inspect')) throw new ServiceError('forbidden', 'You are not allowed to record verifications.')
+    if (!['submitted', 'under_review', 'needs_info'].includes(req.status)) throw new ServiceError('stage', 'Verification can only be recorded while the request is being reviewed.')
+    if (!input.findings.trim()) throw new ServiceError('findings', 'Describe what was found.')
+    if (!input.checkedOn) throw new ServiceError('date', 'Enter the date of the check.')
+    const now = new Date().toISOString()
+    req.verification = { result: input.result, findings: input.findings.trim(), checkedOn: input.checkedOn, byUserId: actor.user.id, at: now }
+    req.updatedAt = now
+    req.history.push({ status: req.status, at: now, byUserId: actor.user.id, byRole: actor.user.roleId, action: `${def.title} recorded: ${input.result === 'confirmed' ? 'confirmed' : 'not confirmed'}`, remarks: input.findings.trim() })
+    return req
+  })
+}
+
+/** Record the fee paid to the Treasurer (documents.payment). */
+export function recordPayment(id: string, input: { orNo: string; amount: number }, actor: DocActor): Promise<DocumentRequest> {
+  return mockRequest(() => {
+    const req = find(id, actor)
+    if (!getDocumentType(req.typeId).fee) throw new ServiceError('not_applicable', 'No fee is recorded for this document.')
+    if (!actor.permissions.has('documents.payment')) throw new ServiceError('forbidden', 'Only the Treasurer records payments.')
+    if (req.payment) throw new ServiceError('paid', 'Payment was already recorded.')
+    if (!input.orNo.trim()) throw new ServiceError('or', 'Enter the official receipt number.')
+    if (!(input.amount > 0)) throw new ServiceError('amount', 'Enter the amount paid.')
+    if (['rejected', 'cancelled'].includes(req.status)) throw new ServiceError('stage', 'This request is closed.')
+    const now = new Date().toISOString()
+    req.payment = { orNo: input.orNo.trim(), amount: input.amount, at: now, byUserId: actor.user.id }
+    req.updatedAt = now
+    req.history.push({ status: req.status, at: now, byUserId: actor.user.id, byRole: actor.user.roleId, action: `Fee paid: ₱${input.amount.toFixed(2)} (O.R. ${input.orNo.trim()})` })
+    return req
+  })
+}
+
+const SERVED_TYPES = ['summon', 'notice-of-hearing']
+const canServe = (a: DocActor) => a.permissions.has('documents.release') || a.permissions.has('cases.manage')
+
+/** Summons / notice handed to the party. Generating a document is not delivery. */
+export function recordDelivery(id: string, input: { deliveredTo: string; method: string; on: string }, actor: DocActor): Promise<DocumentRequest> {
+  return mockRequest(() => {
+    const req = find(id, actor)
+    if (!SERVED_TYPES.includes(req.typeId)) throw new ServiceError('not_applicable', 'Only summons and notices are delivered.')
+    if (!canServe(actor)) throw new ServiceError('forbidden', 'Not allowed.')
+    if (!['approved', 'served'].includes(req.status)) throw new ServiceError('stage', 'Deliver the document only after it is approved and signed.')
+    if (!input.deliveredTo.trim() || !input.on) throw new ServiceError('fields', 'Enter who received it and the date.')
+    const now = new Date().toISOString()
+    req.delivery = { deliveredTo: input.deliveredTo.trim(), method: input.method, on: input.on, byUserId: actor.user.id, at: now }
+    req.history.push({ status: req.status, at: now, byUserId: actor.user.id, byRole: actor.user.roleId, action: `Delivered to ${input.deliveredTo.trim()} (${input.method})` })
+    req.updatedAt = now
+    return req
+  })
+}
+
+/** The party acknowledged receipt (signature on the receiving copy). */
+export function recordAcknowledgment(id: string, input: { receivedBy: string; on: string }, actor: DocActor): Promise<DocumentRequest> {
+  return mockRequest(() => {
+    const req = find(id, actor)
+    if (!SERVED_TYPES.includes(req.typeId)) throw new ServiceError('not_applicable', 'Only summons and notices are acknowledged.')
+    if (!canServe(actor)) throw new ServiceError('forbidden', 'Not allowed.')
+    if (!req.delivery) throw new ServiceError('order', 'Record the delivery first.')
+    if (!input.receivedBy.trim() || !input.on) throw new ServiceError('fields', 'Enter who signed for it and the date.')
+    const now = new Date().toISOString()
+    req.acknowledgment = { receivedBy: input.receivedBy.trim(), on: input.on, byUserId: actor.user.id, at: now }
+    req.history.push({ status: req.status, at: now, byUserId: actor.user.id, byRole: actor.user.roleId, action: `Receipt acknowledged by ${input.receivedBy.trim()}` })
+    req.updatedAt = now
+    return req
+  })
+}
+
+/**
+ * Summons (to the respondent) and Notice of Hearing (to the complainant) for a
+ * scheduled hearing, filled from the case record. They then go through the
+ * usual approval → signing → delivery → acknowledgment steps.
+ */
+export function prepareHearingDocuments(
+  c: { id: string; caseNo: string; nature: string; details: string; complainants: { name: string; address: string }[]; respondents: { name: string; address: string }[] },
+  hearing: { id: string; scheduledAt: string },
+  actor: DocActor,
+): Promise<DocumentRequest[]> {
+  return mockRequest(() => {
+    if (!actor.permissions.has('cases.manage')) throw new ServiceError('forbidden', 'Only case personnel prepare summons and notices.')
+    if (mockDocumentRequests.some((r) => r.caseId === c.id && r.hearingId === hearing.id && !['cancelled', 'rejected'].includes(r.status))) {
+      throw new ServiceError('exists', 'The summons and notice for this hearing were already prepared.')
+    }
+    const at = new Date(hearing.scheduledAt)
+    const day = String(at.getDate())
+    const month = at.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' })
+    const time = at.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })
+    const join = (ps: { name: string }[]) => ps.map((p) => p.name).join(', ')
+    const now = new Date().toISOString()
+    const make = (typeId: DocumentTypeId, requesterName: string, values: Record<string, FieldValue>): DocumentRequest => {
+      const type = getDocumentType(typeId)
+      const keep = new Set(type.fields.filter((f) => f.by !== 'system').map((f) => f.key))
+      const req: DocumentRequest = {
+        id: `docreq-${Date.now().toString(36)}-${typeId}`,
+        referenceNo: nextReference(typeId),
+        typeId,
+        status: 'processing',
+        requesterName,
+        submittedAt: now,
+        updatedAt: now,
+        values: Object.fromEntries(Object.entries(values).filter(([k]) => keep.has(k))),
+        requirements: {},
+        assisted: { encodedByUserId: actor.user.id, at: now },
+        caseId: c.id,
+        hearingId: hearing.id,
+        history: [{ status: 'processing', at: now, byUserId: actor.user.id, byRole: actor.user.roleId, action: `Prepared from case ${c.caseNo}` }],
+        messages: [],
+      }
+      mockDocumentRequests.unshift(req)
+      return req
+    }
+    const common = { hearingDay: day, hearingMonth: month, hearingTime: time }
+    const summon = make('summon', join(c.complainants), {
+      ...common,
+      complainantName: join(c.complainants),
+      respondentName: join(c.respondents),
+      respondentAddress: c.respondents[0]?.address ?? '',
+      complaintDetails: c.details,
+      caseNo: c.caseNo,
+      caseFor: c.nature,
+    })
+    const notice = make('notice-of-hearing', join(c.complainants), {
+      ...common,
+      complainantNames: join(c.complainants),
+      complainantAddress: c.complainants[0]?.address ?? '',
+      respondentNames: join(c.respondents),
+      respondentAddress: c.respondents[0]?.address ?? '',
+    })
+    return [summon, notice]
   })
 }

@@ -8,7 +8,7 @@ import { useAuth } from './useAuth'
 export function RequireAuth() {
   const { user, mustChangePassword } = useAuth()
   const location = useLocation()
-  if (!user) return <Navigate to="/portal" replace state={{ from: location.pathname }} />
+  if (!user) return <Navigate to={location.pathname.startsWith('/my/') ? '/login/resident' : '/portal'} replace state={{ from: location.pathname }} />
   if (mustChangePassword && location.pathname !== '/account') return <Navigate to="/account" replace />
   return <Outlet />
 }

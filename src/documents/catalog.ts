@@ -23,6 +23,14 @@ export interface DocumentTypeDef {
   template: TemplateSpec
   /** How the request is handled, in plain words (shown to residents and personnel). */
   process?: string[]
+  /**
+   * Check personnel record before the Secretary approves (Chairman interview,
+   * 10 Nov 2026). The barangay decides what the check involves; the system only
+   * records who did it, when, and what they found.
+   */
+  verification?: { title: string; help: string }
+  /** A fee is paid to the Barangay Treasurer before release. */
+  fee?: boolean
 }
 
 const WORKFLOW_DOC = 'SE Group 4 workflows docx'
@@ -138,6 +146,7 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
   },
   {
     id: 'non-residency',
+    verification: { title: 'Residency verification', help: 'Check the resident records and, if needed, confirm with the street leader that the person does not live in Barangay 181.' },
     name: 'Certification of Non-Resident',
     printedTitle: 'BARANGAY CERTIFICATION OF NON- RESIDENCY',
     category: 'certificate',
@@ -170,6 +179,7 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
   },
   {
     id: 'cohabitation',
+    verification: { title: 'Cohabitation verification', help: 'Confirm that both persons live together at the stated address (records check or home visit).' },
     name: 'Certification of Cohabitation of Residents',
     printedTitle: 'CERTIFICATE OF COHABITATION',
     category: 'certificate',
@@ -213,6 +223,7 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
   },
   {
     id: 'no-partner',
+    verification: { title: 'Civil status verification', help: 'Confirm the applicant’s civil status from the resident record and the documents presented.' },
     name: 'Certificate of Singleness',
     printedTitle: 'CERTIFICATE OF NO PARTNER',
     category: 'certificate',
@@ -320,6 +331,7 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
   },
   {
     id: 'indigency',
+    verification: { title: 'Indigency verification', help: 'Confirm the applicant’s circumstances as the barangay requires (records check or home visit).' },
     name: 'Certificate of Indigency',
     printedTitle: 'CERTIFICATE OF INDIGENCY',
     category: 'certificate',
@@ -528,6 +540,8 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
   },
   {
     id: 'business-clearance',
+    verification: { title: 'Ocular inspection', help: 'Visit the business location and record what was found (location, nature of business, safety).' },
+    fee: true,
     name: 'Barangay Business Clearance',
     printedTitle: 'BARANGAY BUSINESS CLEARANCE',
     category: 'clearance',
@@ -714,6 +728,30 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
 
 export const DOCUMENT_TYPE_MAP = Object.fromEntries(DOCUMENT_TYPES.map((d) => [d.id, d])) as Record<DocumentTypeId, DocumentTypeDef>
 
+const REQ_KEY = 'bmis.requirements'
+
+/** Requirements set by authorized personnel (prototype: saved in this browser). */
+export function requirementOverrides(): Partial<Record<DocumentTypeId, DocumentRequirement[]>> {
+  try {
+    return JSON.parse(localStorage.getItem(REQ_KEY) ?? '{}')
+  } catch {
+    return {}
+  }
+}
+
+export function writeRequirementOverride(id: DocumentTypeId, list: DocumentRequirement[] | null) {
+  const all = requirementOverrides()
+  if (list) all[id] = list
+  else delete all[id]
+  try {
+    localStorage.setItem(REQ_KEY, JSON.stringify(all))
+  } catch {
+    /* storage unavailable: change lasts for this page only */
+  }
+}
+
 export function getDocumentType(id: DocumentTypeId): DocumentTypeDef {
-  return DOCUMENT_TYPE_MAP[id]
+  const base = DOCUMENT_TYPE_MAP[id]
+  const custom = base && requirementOverrides()[id]
+  return custom ? { ...base, requirements: custom } : base
 }

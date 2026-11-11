@@ -18,7 +18,9 @@ export function ChairmanDashboard() {
   const cases = useAsync(() => listCases(actor), [actor]).data
 
   const forApproval = docs?.filter((d) => d.status === 'pending_approval' || d.status === 'for_assessment') ?? null
-  const awaitingSeal = docs?.filter((d) => d.status === 'approved') ?? null
+  const approvedDocs = docs?.filter((d) => !!d.approvedBy && !['released'].includes(d.status)) ?? null
+  const forSignature = docs?.filter((d) => d.status === 'for_signature') ?? null
+  const completed = docs?.filter((d) => d.status === 'released') ?? null
   const forAssessment = cases?.filter((c) => c.stage === 'for_assessment') ?? null
   const active = cases?.filter((c) => !['closed', 'settled'].includes(c.stage)) ?? null
   const hearings = cases ? upcomingHearings(cases) : null
@@ -31,9 +33,13 @@ export function ChairmanDashboard() {
         subtitle="Approvals, complaints for assessment and Katarungang Pambarangay mediation."
         actions={<ButtonLink to="/documents/approvals" icon={<Gavel className="size-4" />}>Review Approvals</ButtonLink>}
       />
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Pending approvals" value={forApproval?.length ?? null} attention={!!forApproval?.length} to="/documents/approvals" />
-        <Stat label="For signing and sealing" value={awaitingSeal?.length ?? null} to="/documents" />
+        <Stat label="Approved documents" value={approvedDocs?.length ?? null} to="/documents" />
+        <Stat label="Documents for signature" value={forSignature?.length ?? null} attention={!!forSignature?.length} to="/documents" />
+        <Stat label="Completed requests" value={completed?.length ?? null} to="/documents" />
+      </section>
+      <section className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Stat label="Complaints for assessment" value={forAssessment?.length ?? null} attention={!!forAssessment?.length} to="/cases" />
         <Stat label="Active KP cases" value={active?.length ?? null} to="/cases" />
         <Stat label="Upcoming hearings" value={hearings?.length ?? null} to="/hearings" />
@@ -48,7 +54,7 @@ export function ChairmanDashboard() {
           to="/documents/approvals"
           empty="Nothing is waiting for your approval."
           render={(d) => (
-            <Row to={`/documents/${d.id}`} title={`${getDocumentType(d.typeId).name} · ${d.requesterName}`} meta={`${d.referenceNo} · updated ${formatDateTime(d.updatedAt)}`} right={<StatusBadge status={d.status} />} />
+            <Row to={`/documents/${d.id}`} title={`${getDocumentType(d.typeId).name} · ${d.requesterName}`} meta={`${d.referenceNo} · updated ${formatDateTime(d.updatedAt)}`} right={<StatusBadge status={d.status} typeId={d.typeId} />} />
           )}
         />
         <ListPanel

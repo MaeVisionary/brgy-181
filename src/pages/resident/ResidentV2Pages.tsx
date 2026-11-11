@@ -6,6 +6,7 @@ import { TransitionPanel } from '@/components/documents/TransitionPanel'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { GreetingCard } from '@/components/ui/GreetingCard'
+import { StatCard } from '@/components/ui/StatCard'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Panel'
 import { BARANGAY_CONTACT, BORROWING, KP } from '@/config/barangay'
@@ -55,6 +56,9 @@ const ANNOUNCEMENTS = [
 
 // ── Home ─────────────────────────────────────────────────────────────
 
+const PENDING: ResidentStatus[] = ['Submitted', 'Under Review', 'Needs Additional Information']
+const APPROVED: ResidentStatus[] = ['Approved', 'Ready for Pickup', 'Scheduled', 'Borrowed', 'Overdue']
+
 /** Resident Home (Figma "Resident v2 / Home (simplified)"). */
 export function ResidentHome() {
   const actor = useDocActor()!
@@ -68,6 +72,14 @@ export function ResidentHome() {
   return (
     <>
       <GreetingCard subtitle="Your Barangay 181 services in one place." profileTo="/my/profile" />
+
+      {/* Overview of everything the resident submitted (documents, complaints, borrowing). */}
+      <section aria-label="My requests overview" className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="Total requests" value={tx ? tx.length : null} to="/my/transactions" />
+        <StatCard label="Pending" value={tx ? tx.filter((t) => PENDING.includes(t.status)).length : null} attention={!!tx?.some((t) => t.status === 'Needs Additional Information')} to="/my/transactions" />
+        <StatCard label="Approved" value={tx ? tx.filter((t) => APPROVED.includes(t.status)).length : null} to="/my/transactions" />
+        <StatCard label="Completed" value={tx ? tx.filter((t) => t.status === 'Completed').length : null} to="/my/transactions" />
+      </section>
 
       <h2 className="font-display text-[19px] font-bold text-navy-900">How can we help you today?</h2>
       <p className="text-[15px] text-ink-muted">Choose a service to get started.</p>

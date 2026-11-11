@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { TextArea } from '@/components/ui/Field'
 import { Panel } from '@/components/ui/Panel'
 import { getDocumentType } from '@/documents/catalog'
-import { STATUS_META } from '@/documents/workflows'
+import { statusLabel } from '@/documents/workflows'
 import { applyTransition, availableTransitions, type DocActor } from '@/services/documentService'
 import { ServiceError } from '@/services/mockApi'
 import type { DocumentRequest, Transition } from '@/types/document'
@@ -61,7 +61,7 @@ export function TransitionPanel({
   }
 
   return (
-    <Panel title={ownerView ? 'What you can do' : 'Next step'} subtitle={`Current status: ${STATUS_META[req.status].label}`}>
+    <Panel title={ownerView ? 'What you can do' : 'Next step'} subtitle={`Current status: ${statusLabel(req.status, getDocumentType(req.typeId).workflow)}`}>
       {options.length === 0 ? (
         <p className="text-[14.5px] text-ink-muted">
           {ownerView ? 'Nothing is needed from you right now.' : 'No step is available to your role at this stage.'}

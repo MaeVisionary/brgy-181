@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Panel'
 import { getDocumentType } from '@/documents/catalog'
 import { effectiveValues, missingFields } from '@/documents/fill'
-import { STATUS_META, WORKFLOWS } from '@/documents/workflows'
+import { WORKFLOWS, statusLabel } from '@/documents/workflows'
 import { useDocActor } from '@/hooks/useDocActor'
 import { getRequest, isPrintable } from '@/services/documentService'
 import type { DocumentRequest } from '@/types/document'
@@ -46,7 +46,7 @@ export function PreviewPage() {
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={req.status} />
+          <StatusBadge status={req.status} typeId={req.typeId} />
           <Button icon={<Printer className="size-4" />} disabled={!printable} onClick={() => window.print()}>
             Print / Save as PDF
           </Button>
@@ -74,7 +74,7 @@ export function PreviewPage() {
                 </p>
                 {!wf.printableIn.includes(req.status) && (
                   <p className="text-ink-muted">
-                    Printing opens at: {wf.printableIn.map((s) => STATUS_META[s].label).join(' / ')}. Current status: {STATUS_META[req.status].label}.
+                    Printing opens at: {wf.printableIn.map((s) => statusLabel(s, wf.id)).join(' / ')}. Current status: {statusLabel(req.status, wf.id)}.
                   </p>
                 )}
                 {missing.length > 0 && (

@@ -1,6 +1,6 @@
 import { GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS } from '@/config/permissions'
 import { mockUsers } from '@/mocks/users'
-import type { Permission, User } from '@/types/auth'
+import type { Permission, RoleId, User } from '@/types/auth'
 import { audit } from './auditService'
 import { clearFailures, hashPassword, resolveResetRequests, setCredential, temporaryPassword } from './credentialStore'
 import { ServiceError, mockRequest } from './mockApi'
@@ -64,6 +64,23 @@ export function setExtraPermissions(id: string, perms: Permission[], by: User): 
     if (!GRANTABLE_ROLES.includes(u.roleId)) throw new ServiceError('invalid', 'Permissions are set per role for this account.')
     u.extraPermissions = perms.filter((p) => GRANTABLE_STAFF_PERMISSIONS.includes(p))
     audit(by, 'Changed account permissions', 'Roles and permissions', `${u.username}: ${u.extraPermissions.join(', ') || 'none'}`)
+    return u
+  })
+}
+
+/** Personnel positions the administrator may assign (elected officials keep their role). */
+export const ASSIGNABLE_ROLES: RoleId[] = ['staff', 'property_custodian', 'treasurer']
+
+export function setRole(id: string, roleId: RoleId, by: User): Promise<User> {
+  return mockRequest(() => {
+    requireAdmin(by)
+    const u = mockUsers.find((x) => x.id === id)
+    if (!u) throw new ServiceError('not_found', 'Account not found.')
+    if (!ASSIGNABLE_ROLES.includes(u.roleId) || !ASSIGNABLE_ROLES.includes(roleId)) throw new ServiceError('official', 'Only personnel positions can be reassigned here.')
+    if (u.roleId === roleId) return u
+    const before = u.roleId
+    u.roleId = roleId
+    audit(by, 'Changed account role', 'Roles and permissions', `${u.username}: ${before} to ${roleId}`)
     return u
   })
 }
