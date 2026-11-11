@@ -58,7 +58,8 @@ export function Panel({
         </div>
         {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
       </div>
-      <div className={cn('flex-1 px-5 py-4', bodyClassName)}>{children}</div>
+      {/* cn() does not merge conflicting classes, so custom padding replaces the default instead of competing with it. */}
+      <div className={cn('flex-1', !/(^|\s)(p|px|py)-/.test(bodyClassName ?? '') && 'px-5 py-4', bodyClassName)}>{children}</div>
       {footer && <div className="border-t border-line-soft px-5 py-3">{footer}</div>}
     </Card>
   )

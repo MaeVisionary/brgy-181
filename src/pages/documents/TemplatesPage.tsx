@@ -89,7 +89,7 @@ export function TemplatesPage() {
         subtitle="The barangay's official documents, used exactly as supplied. Outlined areas are where the system fills in details."
       />
       <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <Card className="h-fit overflow-hidden">
+        <Card className="h-fit overflow-hidden xl:sticky xl:top-0">
           <ul>
             {ordered.map((d) => (
               <li key={d.id} className={cn('border-b border-line-soft last:border-0', removed.some((r) => r.id === d.id) && 'opacity-55')}>

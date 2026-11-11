@@ -186,7 +186,7 @@ export function ServiceReports() {
 
   return (
     <div className="mt-4 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-      <Card className="h-fit overflow-hidden">
+      <Card className="h-fit overflow-hidden xl:sticky xl:top-0">
         <h2 className="border-b border-sky-300 bg-bar px-4 py-3 font-display text-[16px] font-bold text-navy-900">Service reports</h2>
         <ul>
           {REPORTS.map((r) => (

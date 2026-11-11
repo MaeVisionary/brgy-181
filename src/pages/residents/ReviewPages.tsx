@@ -138,7 +138,7 @@ export function RegistrationsPage() {
       </div>
       {done.length > 0 && (
         <>
-          <p className="label-caps mt-6 mb-2">Decided and auto-approved</p>
+          <p className="label-caps mt-4 mb-2">Decided and auto-approved</p>
           <Card className="divide-y divide-line-soft">
             {done.map((r) => (
               <div key={r.id} className="flex items-center justify-between gap-3 px-5 py-3 text-[15px]">

@@ -29,7 +29,7 @@ function CouncilList({ highlight }: { highlight?: string }) {
     </li>
   )
   return (
-    <Panel className="self-start" title="Barangay officials" subtitle="Elected and appointed officials of Barangay 181">
+    <Panel title="Barangay officials" subtitle="Elected and appointed officials of Barangay 181">
       <ul className="grid gap-1 sm:grid-cols-2">
         <Person name={CHAIRMAN.name} position="Barangay Chairman" />
         <Person name={SECRETARY.name} position="Barangay Secretary" />
@@ -47,7 +47,7 @@ export function KagawadDashboard() {
   return (
     <>
       <DashHeader overview="Barangay Overview" subtitle="Barangay Council member view: community summaries and reports permitted for your account." />
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="space-y-4">
           <PopulationByStreet />
           <Card className="flex items-start gap-3 px-5 py-4 text-[15px] text-navy-900">

@@ -18,7 +18,7 @@ export function AnalyticsPage() {
   return (
     <>
       <PageHeader title="Community Analytics" subtitle="Figures are calculated from loaded records only. Nothing is estimated or hardcoded." />
-      <div role="tablist" className="mb-5 flex flex-wrap gap-1 border-b border-line">
+      <div role="tablist" className="mb-4 flex flex-wrap gap-1 border-b border-line">
         {TABS.map((t) => (
           <button
             key={t.id}

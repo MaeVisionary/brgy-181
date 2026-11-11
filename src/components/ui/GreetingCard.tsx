@@ -13,7 +13,7 @@ export function GreetingCard({ subtitle, profileTo, action }: { subtitle: string
   const [now] = useState(() => new Date())
   if (!user) return null
   return (
-    <section className="mb-5 flex flex-col gap-4 rounded-[var(--radius-card)] border border-line bg-gradient-to-r from-surface via-surface to-surface-muted px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <section className="mb-4 flex flex-col gap-4 rounded-[var(--radius-card)] border border-line bg-gradient-to-r from-surface via-surface to-surface-muted px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
       <div className="min-w-0">
         <p className="text-[12.5px] font-semibold tracking-[0.08em] text-navy-600 uppercase">
           {user.position} · As of {formatDateTime(now)}

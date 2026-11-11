@@ -94,7 +94,7 @@ export function ReportsPage() {
             <TemplateSlot key={c.id} id={c.id} title={c.name} subtitle={c.full} template={templates[c.id]} canManage={canManageTemplates} onUpload={upload} onDelete={remove} />
           ))}
         </div>
-        <p className="label-caps mt-5 mb-2">Recurring reports</p>
+        <p className="label-caps mt-4 mb-2">Recurring reports</p>
         <div className="grid gap-3 md:grid-cols-2">
           {RECURRING_REPORTS.map((r) => (
             <TemplateSlot
@@ -116,7 +116,7 @@ export function ReportsPage() {
       <ServiceReports />
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <Card className="h-fit overflow-hidden">
+        <Card className="h-fit overflow-hidden xl:sticky xl:top-0">
           <h2 className="bg-bar border-b border-sky-300 text-navy-900 px-4 py-3 font-display text-[16px] font-bold">Internal analytics reports</h2>
           <ul>
             {SENIOR_REPORTS.map((r) => (

@@ -1,3 +1,14 @@
+# BMIS Patch Notes: Spacing and alignment (12 November 2026)
+
+Design only; no change to colours, fonts or features.
+- One spacing scale: 16px between page sections (header, cards, grids), 12px inside cards.
+- Fixed list cards (dashboards, case documents, hearings, 21 places): rows were padded twice, so lists looked inset with uneven gaps. Rows now line up with the card title and fill the card edge to edge.
+- Side lists on Reports and Document Templates stay in view while scrolling the preview beside them.
+- Kagawad dashboard: both columns end at the same height.
+- Checked: even 16px section gaps on every page for all roles; no sideways scrolling at 375, 1024 and 1280 px.
+
+---
+
 # BMIS Patch Notes: Workflow improvements from the Chairman interview (12 November 2026)
 
 Full details, test results and checklist: `docs/REDESIGN_REPORT.md`.

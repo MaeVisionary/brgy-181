@@ -74,7 +74,7 @@ export function ResidentHome() {
       <GreetingCard subtitle="Your Barangay 181 services in one place." profileTo="/my/profile" />
 
       {/* Overview of everything the resident submitted (documents, complaints, borrowing). */}
-      <section aria-label="My requests overview" className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section aria-label="My requests overview" className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Total requests" value={tx ? tx.length : null} to="/my/transactions" />
         <StatCard label="Pending" value={tx ? tx.filter((t) => PENDING.includes(t.status)).length : null} attention={!!tx?.some((t) => t.status === 'Needs Additional Information')} to="/my/transactions" />
         <StatCard label="Approved" value={tx ? tx.filter((t) => APPROVED.includes(t.status)).length : null} to="/my/transactions" />
@@ -96,7 +96,7 @@ export function ResidentHome() {
         ))}
       </div>
 
-      <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <DarkHeadCard title="My Recent Activities" to="/my/transactions">
           {recent === null ? (
             <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-14 animate-pulse rounded bg-surface-muted" />)}</div>
@@ -177,7 +177,7 @@ function AnnouncementItem({ a, full }: { a: (typeof ANNOUNCEMENTS)[number]; full
 function NeedAssistance() {
   const C = BARANGAY_CONTACT
   return (
-    <section className="mt-6 border-t border-line pt-5">
+    <section className="mt-4 border-t border-line pt-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-[19px] font-bold text-navy-900">Need Assistance?</h2>
