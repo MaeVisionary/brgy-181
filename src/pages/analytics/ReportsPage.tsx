@@ -86,7 +86,7 @@ export function ReportsPage() {
     <>
       <PageHeader title="Barangay Reports" subtitle="Recurring reports for government offices and internal analytics reports." />
 
-      <Panel title="Official reports" subtitle="Each office's required format. Upload the file the office provides; reports follow it once it is here.">
+      <Panel keepSubtitle title="Official reports" subtitle="Each office's required format. Upload the file the office provides; reports follow it once it is here.">
         {templateMsg && <p role="status" className={cn('mb-3 rounded-md px-3 py-2 text-[12.5px]', templateMsg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{templateMsg.text}</p>}
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {REPORT_CATEGORIES.map((c) => (
@@ -114,7 +114,7 @@ export function ReportsPage() {
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
         <Card className="h-fit overflow-hidden">
-          <p className="label-caps border-b border-line-soft px-4 py-3">Internal analytics reports</p>
+          <h2 className="bg-navy-900 px-4 py-3 font-display text-[14px] font-bold text-white">Internal analytics reports</h2>
           <ul>
             {SENIOR_REPORTS.map((r) => (
               <li key={r.id} className="border-b border-line-soft last:border-0">
@@ -155,19 +155,25 @@ export function ReportsPage() {
                 <input type="checkbox" className="size-4 accent-[#002132]" checked={useFilters} onChange={(e) => setUseFilters(e.target.checked)} />
                 Apply the filters currently set in Analytics
               </label>
-              <dl className="grid gap-x-6 gap-y-1 text-[12.5px] sm:grid-cols-2">
+              {/* Report details */}
+              <dl className="grid gap-px overflow-hidden rounded-md border border-line bg-line-soft text-[12.5px] sm:grid-cols-2 lg:grid-cols-3">
                 {output.meta.map(([k, v]) => (
-                  <div key={k} className="flex gap-2"><dt className="w-32 shrink-0 text-ink-muted">{k}</dt><dd className="min-w-0 break-words text-navy-900">{v}</dd></div>
+                  <div key={k} className="bg-surface px-3 py-2">
+                    <dt className="text-[11px] font-semibold tracking-[0.05em] text-ink-muted uppercase">{k}</dt>
+                    <dd className="mt-0.5 break-words text-navy-900">{v}</dd>
+                  </div>
                 ))}
               </dl>
+              {/* Figures: an even grid across the full width */}
               {output.summary.length > 0 && (
-                <table className="mt-4 w-full max-w-lg text-[13px]">
-                  <tbody>
-                    {output.summary.map(([k, v]) => (
-                      <tr key={k} className="border-t border-line-soft"><td className="py-1.5 text-navy-900">{k}</td><td className="py-1.5 text-right font-semibold tabular-nums text-navy-900">{v}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
+                <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+                  {output.summary.map(([k, v]) => (
+                    <div key={k} className="rounded-md border border-line bg-surface px-3 py-2.5">
+                      <dt className="text-[12px] leading-snug text-ink-nav">{k}</dt>
+                      <dd className="mt-1 font-display text-[20px] leading-none font-extrabold tabular-nums text-navy-900">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
               )}
               {output.rows.length > 0 && (
                 <div className="mt-4 max-h-[420px] overflow-auto rounded-md border border-line-soft">

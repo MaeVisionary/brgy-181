@@ -163,7 +163,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
 
       {rows.length > 0 && done === null && (
         <>
-          <Panel title="1. Column mapping" subtitle="Matched automatically where the column names are recognized. Adjust if needed.">
+          <Panel keepSubtitle title="1. Column mapping" subtitle="Matched automatically where the column names are recognized. Adjust if needed.">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {TARGETS.map((t) => (
                 <label key={t.key} className="block">
@@ -185,7 +185,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
           </section>
 
           {dups.length > 0 && (
-            <Panel className="mt-4" title="2. Review possible duplicates" subtitle="Not merged automatically. Tick a row only if it is a different person." bodyClassName="px-0 py-0">
+            <Panel className="mt-4" keepSubtitle title="2. Review possible duplicates" subtitle="Not merged automatically. Tick a row only if it is a different person." bodyClassName="px-0 py-0">
               <ul className="divide-y divide-line-soft">
                 {dups.map((d) => (
                   <li key={d.line} className="flex items-center justify-between gap-3 px-5 py-2.5 text-[13px]">
@@ -204,7 +204,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
           )}
 
           {invalid.length > 0 && (
-            <Panel className="mt-4" title="Rows that need fixing" subtitle="Correct these in the file and upload again. They will not be imported." bodyClassName="px-0 py-0">
+            <Panel className="mt-4" keepSubtitle title="Rows that need fixing" subtitle="Correct these in the file and upload again. They will not be imported." bodyClassName="px-0 py-0">
               <ul className="max-h-[240px] divide-y divide-line-soft overflow-y-auto">
                 {invalid.map((c) => <li key={c.line} className="flex items-start gap-2 px-5 py-2 text-[12.5px] text-navy-900"><XCircle className="mt-px size-4 shrink-0 text-danger" /> Row {c.line}: {c.errors.join('; ')}</li>)}
               </ul>

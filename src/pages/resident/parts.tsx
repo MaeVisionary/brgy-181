@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BackLink as SmartBack } from '@/components/ui/BackLink'
 import { Card } from '@/components/ui/Panel'
+import { BARANGAY_CONTACT } from '@/config/barangay'
 import { StatusLabel } from '@/components/ui/StatusLabel'
 import { cn } from '@/lib/cn'
 import { formatDate, formatDateTime } from '@/lib/format'
@@ -76,12 +77,19 @@ export function Banner({ tone, icon, title, children }: { tone: keyof typeof BAN
 /** White card with a bold title. */
 export function Section({ title, subtitle, children, className }: { title: string; subtitle?: string; children: ReactNode; className?: string }) {
   return (
-    <Card className={cn('px-5 py-4', className)}>
-      <h2 className="font-display text-[16px] font-bold text-navy-900">{title}</h2>
-      {subtitle && <p className="text-[12.5px] text-ink-muted">{subtitle}</p>}
-      <div className="mt-3">{children}</div>
+    <Card className={cn('overflow-hidden', className)}>
+      <div className="bg-navy-900 px-5 py-3.5">
+        <h2 className="font-display text-[15.5px] font-bold text-white">{title}</h2>
+        {subtitle && <p className="text-[12px] text-white/75">{subtitle}</p>}
+      </div>
+      <div className="px-5 py-4">{children}</div>
     </Card>
   )
+}
+
+/** Navy title bar used by side cards (Progress, Need help, What these words mean). */
+export function TitleBar({ children }: { children: ReactNode }) {
+  return <h2 className="-mx-5 -mt-4 mb-3 flex items-center gap-2 bg-navy-900 px-5 py-3.5 font-display text-[15.5px] font-bold text-white">{children}</h2>
 }
 
 /** Label / value rows separated by lines. */
@@ -122,9 +130,9 @@ export interface ProgressStep {
 /** Vertical progress list in the side column. */
 export function Progress({ steps, ended }: { steps: ProgressStep[]; ended?: string }) {
   return (
-    <Card className="px-5 py-4">
-      <h2 className="font-display text-[16px] font-bold text-navy-900">Progress</h2>
-      <ol className="mt-3">
+    <Card className="overflow-hidden px-5 py-4">
+      <TitleBar>Progress</TitleBar>
+      <ol>
         {steps.map((s, i) => (
           <li key={s.label} className="relative flex gap-3 pb-4 last:pb-0">
             {i < steps.length - 1 && <span aria-hidden className={cn('absolute top-6 bottom-0 left-[11px] w-0.5', s.state === 'done' ? 'bg-success' : 'bg-line')} />}
@@ -163,12 +171,10 @@ export function stepsFrom(labels: string[], currentIndex: number, notes: Record<
 /** "Need help?" card. Contact details stay placeholders until the barangay provides them. */
 export function NeedHelp() {
   return (
-    <Card className="px-5 py-4">
-      <h2 className="flex items-center gap-2 font-display text-[16px] font-bold text-navy-900">
-        <LifeBuoy className="size-4" /> Need help?
-      </h2>
-      <p className="mt-2 text-[13px] text-navy-900">Visit the Barangay 181 Hall, Gagalangin, Tondo, Manila. Personnel can help you with your request.</p>
-      <p className="mt-2 text-[12px] text-warning">Contact number and office hours to be provided by the barangay.</p>
+    <Card className="overflow-hidden px-5 py-4">
+      <TitleBar><LifeBuoy className="size-4" /> Need help?</TitleBar>
+      <p className="text-[13px] text-navy-900">Visit the Barangay 181 Hall, Gagalangin, Tondo, Manila. Personnel can help you with your request.</p>
+      <p className="mt-2 text-[12.5px] text-navy-900">{BARANGAY_CONTACT.phone} · {BARANGAY_CONTACT.officeHours}</p>
       <Link to="/my/contact" className="mt-2 inline-flex min-h-9 items-center gap-1 text-[13px] font-semibold text-info hover:underline">
         View contact information <ChevronRight className="size-4" />
       </Link>
@@ -179,7 +185,7 @@ export function NeedHelp() {
 /** Updates list, newest first. */
 export function Updates({ items }: { items: { title: string; at: string; by?: string; note?: string }[] }) {
   return (
-    <Section title="Updates" subtitle="Newest first.">
+    <Section title="Updates">
       <ul className="divide-y divide-line-soft">
         {items.map((u, i) => (
           <li key={i} className="py-2.5">

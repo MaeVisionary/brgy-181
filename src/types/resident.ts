@@ -137,6 +137,8 @@ export interface ResidentChangeRequest {
   residentId: string
   /** Resident who asked, when it is not the record's owner. */
   requestedByResidentId?: string
+  /** Supporting document for corrections that need proof. */
+  proof?: { fileName?: string; url?: string; bringOnsite?: boolean }
   submittedAt: string
   field: string
   originalValue: string

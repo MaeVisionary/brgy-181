@@ -137,6 +137,18 @@ const FIELD_SETTERS: Record<string, (r: Resident, v: string) => void> = {
   'Relationship in the family': (r, v) => (r.relationship = v as Resident['relationship']),
 }
 
+/**
+ * Corrections that change the official record in a way that needs proof. The
+ * resident attaches the document or promises to bring the original to the Hall.
+ * Name, birthdate and contact number fixes are simple corrections (no proof).
+ */
+export const PROOF_REQUIRED: Record<string, string> = {
+  'Civil status': 'PSA marriage certificate, death certificate of the spouse, or court decree (annulment)',
+  'Educational attainment': 'Diploma, Transcript of Records or certificate from the school',
+  Employment: 'Certificate of employment, company ID or business permit',
+  'Relationship in the family': 'PSA birth certificate or marriage certificate showing the relationship',
+}
+
 /** Fields a resident may ask to correct, in the order shown. */
 export const CORRECTABLE_FIELDS = ['Full name', 'Birthdate', 'Civil status', 'Contact number', 'Employment', 'Educational attainment', 'Relationship in the family'] as const
 
@@ -168,13 +180,21 @@ export function decideChangeRequest(id: string, decision: 'approved' | 'rejected
 }
 
 /** Resident-submitted correction request: own record, or a member of the same family. */
-export function submitChangeRequest(residentId: string, field: string, requestedValue: string, reason: string, by: User): Promise<ResidentChangeRequest> {
+export function submitChangeRequest(
+  residentId: string,
+  field: string,
+  requestedValue: string,
+  reason: string,
+  by: User,
+  proof?: ResidentChangeRequest['proof'],
+): Promise<ResidentChangeRequest> {
   return mockRequest(() => {
     const me = mockResidents.find((r) => r.id === by.residentId)
     const res = mockResidents.find((r) => r.id === residentId)
     if (!res || !me) throw new ServiceError('not_found', 'Record not found.')
     if (res.id !== me.id && res.familyId !== me.familyId) throw new ServiceError('forbidden', 'You can only request changes for yourself or your family members.')
     if (!requestedValue.replace(/\|/g, '').trim()) throw new ServiceError('value', 'Enter the correct information.')
+    if (PROOF_REQUIRED[field] && !proof?.fileName && !proof?.bringOnsite) throw new ServiceError('proof', `Attach proof (${PROOF_REQUIRED[field]}) or choose to bring it to the Barangay Hall.`)
     const current: Record<string, string> = {
       'Full name': [res.firstName, res.middleName, res.lastName, res.suffix].filter(Boolean).join(' '),
       Birthdate: res.birthDate,
@@ -194,6 +214,7 @@ export function submitChangeRequest(residentId: string, field: string, requested
       reason,
       status: 'pending',
       requestedByResidentId: res.id !== me.id ? me.id : undefined,
+      proof: PROOF_REQUIRED[field] ? proof : undefined,
     }
     mockChangeRequests.unshift(cr)
     return cr

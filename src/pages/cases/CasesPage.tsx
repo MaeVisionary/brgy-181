@@ -160,15 +160,16 @@ export function HearingsPage() {
   )
 }
 
-function Total({ icon, label, value, hint, tone }: { icon: React.ReactNode; label: string; value: number | null; hint: string; tone: 'navy' | 'sky' }) {
+/** Total card: plain white, dark blue text (both cards look the same). */
+function Total({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: number | null; hint: string; tone?: 'navy' | 'sky' }) {
   return (
-    <Card className={tone === 'navy' ? 'bg-navy-900 px-6 py-5 text-white' : 'px-6 py-5'}>
+    <Card className="px-6 py-5">
       <div className="flex items-center gap-4">
-        <span className={`grid size-12 shrink-0 place-items-center rounded-2xl ${tone === 'navy' ? 'bg-white/10 text-white' : 'bg-sky-100 text-navy-900'}`}>{icon}</span>
+        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-sky-100 text-navy-900">{icon}</span>
         <div>
-          <p className={`text-[12px] font-semibold tracking-[0.06em] uppercase ${tone === 'navy' ? 'text-white/70' : 'text-ink-muted'}`}>{label}</p>
-          <p className={`font-display text-[34px] leading-none font-extrabold ${tone === 'navy' ? 'text-white' : 'text-navy-900'}`}>{value ?? '–'}</p>
-          <p className={`mt-1 text-[12.5px] ${tone === 'navy' ? 'text-white/75' : 'text-ink-muted'}`}>{hint}</p>
+          <p className="text-[12px] font-semibold tracking-[0.06em] text-navy-600 uppercase">{label}</p>
+          <p className="font-display text-[34px] leading-none font-extrabold text-navy-900">{value ?? '–'}</p>
+          <p className="mt-1 text-[12.5px] text-navy-600">{hint}</p>
         </div>
       </div>
     </Card>

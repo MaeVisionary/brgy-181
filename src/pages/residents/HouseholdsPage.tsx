@@ -156,7 +156,7 @@ export function HouseholdDetailPage() {
       <PageHeader eyebrow={`Household ${household.householdNo}`} title={household.address} subtitle={`${household.families.length} famil${household.families.length > 1 ? 'ies' : 'y'} · ${members.length} residents`} />
       <div className="grid gap-4 lg:grid-cols-2">
         {household.families.map((f) => (
-          <Panel key={f.id} title={f.name} subtitle={`Head: ${fullName(members.find((m) => m.id === f.headResidentId)!)}`} bodyClassName="px-0 py-0">
+          <Panel key={f.id} keepSubtitle title={f.name} subtitle={`Head: ${fullName(members.find((m) => m.id === f.headResidentId)!)}`} bodyClassName="px-0 py-0">
             <div className="overflow-x-auto">
             <table className="w-full min-w-[460px] text-[13px]">
               <thead>

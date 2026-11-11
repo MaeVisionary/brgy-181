@@ -119,7 +119,7 @@ export function NewRequestPage() {
 
         {type && (
           <>
-            <Panel title="Your details" subtitle="Filled in from your resident record. If something is wrong, request a correction from your profile instead of changing it here.">
+            <Panel keepSubtitle title="Your details" subtitle="Filled in from your resident record. If something is wrong, request a correction from your profile instead of changing it here.">
               <div className="space-y-5">
                 {groupFields(fields).map(([group, fs]) => (
                   <section key={group || 'main'}>
@@ -141,7 +141,7 @@ export function NewRequestPage() {
             </Panel>
 
             {type.requirements.length > 0 && (
-              <Panel title="Requirements" subtitle="Attach a clear photo or PDF of each requirement.">
+              <Panel keepSubtitle title="Requirements" subtitle="Attach a clear photo or PDF of each requirement.">
                 <ul className="grid gap-3 md:grid-cols-2">
                   {type.requirements.map((r) => (
                     <li key={r.label}>

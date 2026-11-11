@@ -143,7 +143,7 @@ export function RequestDetailPage() {
           </Panel>
 
           {type.requirements.length > 0 && (
-            <Panel title="Requirements" subtitle="Tick each one after checking the original.">
+            <Panel keepSubtitle title="Requirements" subtitle="Tick each one after checking the original.">
               <ul className="space-y-2">
                 {type.requirements.map((r) => {
                   const state = req.requirements[r.label]

@@ -1,3 +1,29 @@
+# BMIS Patch Notes: UI Finalization, round 2 (11 November 2026)
+
+Changes from "UI FINALIZATION (1).pdf". The same rules as below apply: items marked
+**Not in the paper** should be confirmed with the barangay.
+
+| # | Change | Backed by the paper? |
+|---|---|---|
+| 1 | Every container title bar uses the navy fill in all portals (Resident, Chairman, Secretary, Kagawad, Custodian, Authorized Personnel, Admin). Descriptive subtitles under titles were removed; only subtitles that tell the user what to do were kept. | Design only |
+| 2 | "Barangay Kagawad" is its own account type on the portal page (own login page), separate from Authorized Personnel, because its screens differ. | Yes: Kagawad is a user role |
+| 3 | Home page: "Explore Services" button removed. | Design only |
+| 4 | Home page: "What you can do through the portal" cards are wider. | Design only |
+| 5 | The seal on dark backgrounds uses an image on an even white circle instead of a CSS disc. | Design only |
+| 6 | Resident Home "Need Assistance": "View contact information" sits beside the heading; hall, phone, email and office hours are filled in. **The contact details are placeholders** in `src/config/barangay.ts` (`BARANGAY_CONTACT`); replace them with the confirmed values. | Contact details: **to be confirmed by the barangay** |
+| 7 | My Profile corrections: civil status, educational attainment, employment and relationship in the family need proof (attach a photo/PDF, or choose to bring the original to the Barangay Hall). Name, birthdate and contact number fixes need no file. The Secretary must approve every correction. | Yes: record updates go through the Secretary. Proof per field: **Not in the paper** |
+| 8 | Record Update Requests: "To review" and "Recently decided" tabs. Decided requests leave the screen after 7 days but stay in the resident's record history. The Secretary can open the attached proof before approving. | Review: yes. 7-day view: **Not in the paper** |
+| 9 | Hearings and Mediation: total cards are plain white with dark blue text. | Design only |
+| 10 | Analytics: tabs wrap instead of scrolling sideways. | Design only |
+| 11 | Reports preview: report details in a tidy grid; summary figures shown as even tiles across the full width. | Design only |
+| 12 | Registrations: check icons aligned in one column, top-aligned when the text wraps. | Design only |
+| 13 | Dashboard "Population by street" (Chairman, Kagawad, Secretary): navy title bar, then one toolbar row with the street filter on the left and exports on the right. | Design only |
+
+Prototype note: uploaded proof files stay in the browser only (no backend yet).
+The sample requests use images marked "SAMPLE" in `public/samples/`.
+
+---
+
 # BMIS Patch Notes: UI Finalization (10 November 2026)
 
 These notes cover the changes from the "UI Finalization" review. Each item says

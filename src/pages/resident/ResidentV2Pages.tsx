@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { GreetingCard } from '@/components/ui/GreetingCard'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Panel'
-import { BORROWING, KP } from '@/config/barangay'
+import { BARANGAY_CONTACT, BORROWING, KP } from '@/config/barangay'
 import { ROLES } from '@/config/permissions'
 import { getDocumentType } from '@/documents/catalog'
 import { isFilled } from '@/documents/fill'
@@ -29,7 +29,7 @@ import type { DocumentRequest, StatusEvent, Transition } from '@/types/document'
 import type { Borrowing } from '@/types/equipment'
 import { itemsText } from '@/pages/equipment/BorrowingPages'
 import { NotFound } from '@/pages/system/NotFound'
-import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, NumberedSteps, Progress, Pulse, Section, TransactionList, Updates, needsYou, stepsFrom } from './parts'
+import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, NumberedSteps, Progress, Pulse, Section, TitleBar, TransactionList, Updates, needsYou, stepsFrom } from './parts'
 
 /** Example announcements showing the format barangay posts will take. */
 const ANNOUNCEMENTS = [
@@ -85,7 +85,7 @@ export function ResidentHome() {
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <DarkHeadCard title="My Recent Activities" subtitle="Your latest requests, complaints and borrowing, newest first." to="/my/transactions">
+        <DarkHeadCard title="My Recent Activities" to="/my/transactions">
           {recent === null ? (
             <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-14 animate-pulse rounded bg-surface-muted" />)}</div>
           ) : recent.length === 0 ? (
@@ -100,7 +100,7 @@ export function ResidentHome() {
           )}
         </DarkHeadCard>
 
-        <DarkHeadCard title="Barangay Announcements" subtitle="Latest notices from the barangay." to="/my/announcements">
+        <DarkHeadCard title="Barangay Announcements" to="/my/announcements">
           <ul className="divide-y divide-line-soft">
             {ANNOUNCEMENTS.map((a) => <AnnouncementItem key={a.title} a={a} />)}
           </ul>
@@ -112,14 +112,11 @@ export function ResidentHome() {
   )
 }
 
-function DarkHeadCard({ title, subtitle, to, children }: { title: string; subtitle: string; to: string; children: React.ReactNode }) {
+function DarkHeadCard({ title, to, children }: { title: string; to: string; children: React.ReactNode }) {
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-start justify-between gap-3 bg-navy-900 px-5 py-3.5 text-white">
-        <div>
-          <h2 className="font-display text-[15.5px] font-bold">{title}</h2>
-          <p className="text-[12px] text-white/75">{subtitle}</p>
-        </div>
+      <div className="flex items-center justify-between gap-3 bg-navy-900 px-5 py-3.5 text-white">
+        <h2 className="font-display text-[15.5px] font-bold">{title}</h2>
         <Link to={to} className="inline-flex min-h-9 shrink-0 items-center gap-1 text-[12.5px] font-semibold text-white hover:underline">
           View all <ChevronRight className="size-4" />
         </Link>
@@ -165,38 +162,34 @@ function AnnouncementItem({ a, full }: { a: (typeof ANNOUNCEMENTS)[number]; full
   )
 }
 
-/** Placeholder chip: details the barangay has not provided yet (Figma orange outline). */
-function Placeholder({ children }: { children: React.ReactNode }) {
-  return <span className="inline-flex rounded-md border border-warning/60 bg-warning-tint px-2 py-0.5 text-[12px] font-semibold text-warning">{children}</span>
-}
-
 function NeedAssistance() {
+  const C = BARANGAY_CONTACT
   return (
     <section className="mt-6 border-t border-line pt-5">
-      <h2 className="font-display text-[17px] font-bold text-navy-900">Need Assistance?</h2>
-      <p className="text-[13px] text-ink-muted">Having trouble using the portal or accessing a barangay service? Our personnel are here to help.</p>
-      <div className="mt-3 grid gap-4 sm:grid-cols-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
+          <h2 className="font-display text-[17px] font-bold text-navy-900">Need Assistance?</h2>
+          <p className="text-[13px] text-ink-muted">Our personnel are here to help with the portal and barangay services.</p>
+        </div>
+        <Link to="/my/contact" className="inline-flex h-11 shrink-0 items-center justify-center gap-1 self-start rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[13px] font-semibold text-navy-900 hover:bg-surface-muted sm:self-center">
+          View contact information <ChevronRight className="size-4" />
+        </Link>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
           <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
-          <p className="mt-1 text-[13px] text-navy-900">Barangay 181 Hall, Gagalangin, Tondo, Manila</p>
-          <p className="text-[12.5px] text-ink-muted">Visit in person for help with requests and other barangay services.</p>
+          <p className="mt-1 text-[13px] text-navy-900">{C.hall}, {C.address}</p>
         </div>
-        <div>
+        <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
           <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
-          <div className="mt-1 flex flex-col items-start gap-1">
-            <Placeholder>Phone number: to be provided</Placeholder>
-            <Placeholder>Email address: to be provided</Placeholder>
-          </div>
+          <a href={`tel:${C.phone.replace(/[^\d+]/g, '')}`} className="mt-1 block text-[13px] text-info hover:underline">{C.phone}</a>
+          <a href={`mailto:${C.email}`} className="block text-[13px] break-all text-info hover:underline">{C.email}</a>
         </div>
-        <div>
+        <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
           <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
-          <div className="mt-1"><Placeholder>Office hours: to be confirmed by the barangay</Placeholder></div>
-          <p className="mt-1 text-[12.5px] text-ink-muted">Check announcements for holiday or schedule changes.</p>
+          <p className="mt-1 text-[13px] text-navy-900">{C.officeHours}</p>
         </div>
       </div>
-      <Link to="/my/contact" className="mt-4 inline-flex h-11 items-center rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[13px] font-semibold text-navy-900 hover:bg-surface-muted">
-        View contact information
-      </Link>
     </section>
   )
 }
@@ -362,15 +355,15 @@ export function DocumentDetailsPage() {
             {rs === 'Rejected' && <Banner tone="danger" icon={<XCircle />} title="Your request was not approved">See the update below for the reason. You may visit the Barangay Hall for help.</Banner>}
 
             {rs === 'Needs Additional Information' && needInfo?.remarks && (
-              <Card className="border-warning/50 bg-warning-tint/50 px-5 py-4">
-                <h2 className="flex items-center gap-2 font-display text-[16px] font-bold text-navy-900">
+              <Card className="overflow-hidden border-warning/50 bg-warning-tint/50 px-5 py-4">
+                <h2 className="-mx-5 -mt-4 mb-3 flex items-center gap-2 bg-navy-900 px-5 py-3.5 font-display text-[15.5px] font-bold text-white">
                   <span className="relative flex size-2.5">
                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-70" />
                     <span className="relative inline-flex size-2.5 rounded-full bg-warning" />
                   </span>
                   Message from the barangay
                 </h2>
-                <p className="mt-2 rounded-md bg-surface px-3 py-2 text-[13.5px] text-navy-900">“{needInfo.remarks}”</p>
+                <p className="rounded-md bg-surface px-3 py-2 text-[13.5px] text-navy-900">“{needInfo.remarks}”</p>
                 <p className="mt-1 text-[12px] text-ink-muted">From the {ROLES[needInfo.byRole].name} · {formatDateTime(needInfo.at)}</p>
               </Card>
             )}
@@ -495,9 +488,9 @@ export function ComplaintDetailsPage() {
         side={
           <>
             <Progress steps={stepsFrom(labels, idx, notes, rs === 'Completed')} />
-            <Card className="px-5 py-4">
-              <h2 className="font-display text-[16px] font-bold text-navy-900">What these words mean</h2>
-              <p className="mt-2 text-[13px] font-semibold text-navy-900">Mediation</p>
+            <Card className="overflow-hidden px-5 py-4">
+              <TitleBar>What these words mean</TitleBar>
+              <p className="text-[13px] font-semibold text-navy-900">Mediation</p>
               <p className="text-[12.5px] text-ink-nav">A meeting where the Barangay Chairman helps both sides agree on a solution.</p>
               <p className="mt-2 text-[13px] font-semibold text-navy-900">Lupon</p>
               <p className="text-[12.5px] text-ink-nav">If there is no agreement, the case may go to the Lupon Tagapamayapa, a barangay panel that continues the mediation.</p>
@@ -634,22 +627,22 @@ export function ContactPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="px-5 py-4">
           <p className="flex items-center gap-2 text-[14px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
-          <p className="mt-2 text-[13.5px] font-semibold text-navy-900">Barangay 181 Hall</p>
-          <p className="text-[13px] text-navy-900">Gagalangin, Tondo, Manila</p>
-          <div className="mt-2"><Placeholder>Street address: to be confirmed</Placeholder></div>
+          <p className="mt-2 text-[13.5px] font-semibold text-navy-900">{BARANGAY_CONTACT.hall}</p>
+          <p className="text-[13px] text-navy-900">{BARANGAY_CONTACT.address}</p>
           <p className="mt-2 text-[12.5px] text-ink-muted">You may visit in person for help with requests and other services.</p>
         </Card>
         <Card className="px-5 py-4">
           <p className="flex items-center gap-2 text-[14px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
           <p className="mt-2 text-[12px] text-ink-muted">Phone</p>
-          <Placeholder>Phone number: to be provided</Placeholder>
+          <a href={`tel:${BARANGAY_CONTACT.phone.replace(/[^\d+]/g, '')}`} className="block text-[13.5px] font-semibold text-info hover:underline">{BARANGAY_CONTACT.phone}</a>
+          <a href={`tel:${BARANGAY_CONTACT.mobile.replace(/[^\d+]/g, '')}`} className="block text-[13.5px] font-semibold text-info hover:underline">{BARANGAY_CONTACT.mobile}</a>
           <p className="mt-2 flex items-center gap-1 text-[12px] text-ink-muted"><Mail className="size-3.5" /> Email</p>
-          <Placeholder>Email address: to be provided</Placeholder>
-          <p className="mt-2 text-[12.5px] text-ink-muted">Once provided, tapping the number starts a call and tapping the email opens your email app.</p>
+          <a href={`mailto:${BARANGAY_CONTACT.email}`} className="block text-[13.5px] font-semibold break-all text-info hover:underline">{BARANGAY_CONTACT.email}</a>
         </Card>
         <Card className="px-5 py-4">
           <p className="flex items-center gap-2 text-[14px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
-          <div className="mt-2"><Placeholder>Office hours: to be confirmed by the barangay</Placeholder></div>
+          <p className="mt-2 text-[13.5px] font-semibold text-navy-900">{BARANGAY_CONTACT.officeHours}</p>
+          <p className="text-[13px] text-navy-900">{BARANGAY_CONTACT.saturdayHours}</p>
           <p className="mt-2 text-[12.5px] text-ink-muted">Schedule changes, such as holiday closures, are posted in Barangay Announcements.</p>
         </Card>
       </div>
@@ -663,7 +656,6 @@ export function ContactPage() {
           ))}
         </ul>
       </Card>
-      <p className="mt-3 text-[12px] text-ink-muted">Details in orange outline are placeholders until the barangay confirms them.</p>
     </>
   )
 }

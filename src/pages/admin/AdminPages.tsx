@@ -80,8 +80,8 @@ export function UsersPage() {
         </Card>
       )}
       {pending.length > 0 && (
-        <Card className="mb-4">
-          <p className="label-caps border-b border-line-soft px-5 py-3">Password reset requests</p>
+        <Card className="mb-4 overflow-hidden">
+          <h2 className="bg-navy-900 px-5 py-3 font-display text-[15px] font-bold text-white">Password reset requests</h2>
           <ul className="divide-y divide-line-soft">
             {pending.map((r) => {
               const u = matchFor(r)

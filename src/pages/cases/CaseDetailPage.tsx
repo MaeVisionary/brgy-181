@@ -174,7 +174,7 @@ export function CaseDetailPage() {
           </Panel>
 
           {can('cases.manage') && (
-            <Panel title="Internal notes" subtitle="Visible only to case personnel">
+            <Panel keepSubtitle title="Internal notes" subtitle="Visible only to case personnel">
               {c.internalNotes.length === 0 && <p className="text-[12.5px] text-ink-muted">No notes.</p>}
               <ul className="space-y-1.5">{c.internalNotes.map((n, i) => <li key={i} className="rounded-md bg-surface-muted px-3 py-2 text-[12.5px] text-navy-900">{n}</li>)}</ul>
               <div className="mt-3 flex gap-2"><TextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a note" /><Button size="md" variant="secondary" disabled={!note.trim()} onClick={async () => { refresh(await addInternalNote(c.id, note, actor)); setNote('') }}>Add</Button></div>

@@ -1,4 +1,4 @@
-import { Building2, Gavel, Package, ShieldCheck, UserRound, Users, type LucideIcon } from 'lucide-react'
+import { Building2, Gavel, Landmark, Package, ShieldCheck, UserRound, Users, type LucideIcon } from 'lucide-react'
 import type { RoleId } from '@/types/auth'
 
 /** Account types offered on the portal's selection screen. */
@@ -44,12 +44,21 @@ export const ACCOUNT_TYPES: AccountType[] = [
     recovery: 'Ask the System Administrator to reset your password.',
   },
   {
+    slug: 'barangay-kagawad',
+    title: 'Barangay Kagawad',
+    loginTitle: 'Barangay Kagawad Login',
+    description: 'View community summaries, barangay reports and any functions assigned to your account.',
+    icon: Landmark,
+    roles: ['kagawad'],
+    recovery: 'Ask the System Administrator to reset your password.',
+  },
+  {
     slug: 'authorized-personnel',
     title: 'Authorized Barangay Personnel',
     loginTitle: 'Authorized Personnel Login',
-    description: 'Access assigned barangay functions based on authorized permissions, including Barangay Kagawad accounts.',
+    description: 'Access the barangay functions assigned to your account by the System Administrator.',
     icon: Users,
-    roles: ['kagawad', 'staff'],
+    roles: ['staff'],
     recovery: 'Ask the System Administrator to reset your password.',
   },
   {

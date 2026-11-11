@@ -94,7 +94,7 @@ export function AccountPage() {
             ))}
           </dl>
         </Panel>
-        <Panel title="Change password" subtitle="At least 8 characters, with letters and numbers.">
+        <Panel keepSubtitle title="Change password" subtitle="At least 8 characters, with letters and numbers.">
           <form onSubmit={submit} className="space-y-3.5" noValidate>
             {existing && (
               <Req label={mustChangePassword ? 'Temporary password' : 'Current password'}>{pw(current, setCurrent, 'current-password')}</Req>

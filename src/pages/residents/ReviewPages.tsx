@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleHelp, XCircle } from 'lucide-react'
+import { CheckCircle2, CircleHelp, Paperclip, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -12,16 +12,16 @@ import { residentById } from '@/mocks/residents'
 import { userById } from '@/mocks/users'
 import { ServiceError } from '@/services/mockApi'
 import { decideRegistration, listRegistrations } from '@/services/registrationService'
-import { decideChangeRequest, displayRequestedValue, listChangeRequests } from '@/services/residentService'
+import { PROOF_REQUIRED, decideChangeRequest, displayRequestedValue, listChangeRequests } from '@/services/residentService'
 import type { ResidentChangeRequest, ResidentRegistration } from '@/types/resident'
 import { fullName } from './common'
 
 const CHECK_LABEL = { ocr: 'ID details read (OCR)', masterListMatch: 'Master list match', faceMatch: 'Face matches ID', liveness: 'Live person check' } as const
 
 function CheckIcon({ v }: { v: 'passed' | 'failed' | 'inconclusive' }) {
-  if (v === 'passed') return <CheckCircle2 className="size-4 text-success" />
-  if (v === 'failed') return <XCircle className="size-4 text-danger" />
-  return <CircleHelp className="size-4 text-warning" />
+  if (v === 'passed') return <CheckCircle2 className="mt-px size-4 shrink-0 text-success" />
+  if (v === 'failed') return <XCircle className="mt-px size-4 shrink-0 text-danger" />
+  return <CircleHelp className="mt-px size-4 shrink-0 text-warning" />
 }
 
 function Decide({ onDecide, disabled }: { onDecide: (d: 'approved' | 'rejected', note: string) => Promise<void>; disabled?: boolean }) {
@@ -98,15 +98,15 @@ export function RegistrationsPage() {
                     )}
                   </p>
                 </div>
-                <ul className="space-y-1.5">
+                <ul className="space-y-1">
                   {(Object.keys(CHECK_LABEL) as (keyof typeof CHECK_LABEL)[]).map((k) => (
-                    <li key={k} className={r.verification[k] === 'passed' ? 'flex items-center gap-2 text-[12.5px] text-navy-900' : 'flex items-center gap-2 rounded-md bg-danger-tint px-2 py-1 text-[12.5px] font-semibold text-danger-ink'}>
-                      <CheckIcon v={r.verification[k]} /> {CHECK_LABEL[k]}: {r.verification[k] === 'passed' ? 'passed' : r.verification[k] === 'failed' ? 'failed' : 'not certain'}
+                    <li key={k} className={r.verification[k] === 'passed' ? 'flex items-start gap-2 leading-snug rounded-md px-2 py-1 text-[12.5px] text-navy-900' : 'flex items-start gap-2 leading-snug rounded-md bg-danger-tint px-2 py-1 text-[12.5px] font-semibold text-danger-ink'}>
+                      <CheckIcon v={r.verification[k]} /><span>{CHECK_LABEL[k]}: {r.verification[k] === 'passed' ? 'passed' : r.verification[k] === 'failed' ? 'failed' : 'not certain'}</span>
                     </li>
                   ))}
-                  {ev?.faceSimilarity !== undefined && <li className="pl-6 text-[12px] text-ink-muted">Face similarity: {ev.faceSimilarity}%</li>}
+                  {ev?.faceSimilarity !== undefined && <li className="pl-8 text-[12px] text-ink-muted">Face similarity: {ev.faceSimilarity}%</li>}
                   {ev && (
-                    <li className="pl-6 text-[12px] text-ink-muted">
+                    <li className="pl-8 text-[12px] text-ink-muted">
                       On the ID: first name {ev.ocrFound.firstName ? '✓' : '✗'} · last name {ev.ocrFound.lastName ? '✓' : '✗'} · ID no. {ev.ocrFound.idNumber ? '✓' : '✗'}
                     </li>
                   )}
@@ -157,18 +157,47 @@ export function RegistrationsPage() {
 }
 
 /** FR11: resident correction requests; the official record changes only after approval. */
+/** Decided requests stay listed this many days, then drop off the screen (the record keeps them). */
+const DECIDED_VISIBLE_DAYS = 7
+
 export function ChangeRequestsPage() {
   const { user, can } = useAuth()
   const [items, setItems] = useState<ResidentChangeRequest[] | null>(null)
+  const [tab, setTab] = useState<'review' | 'decided'>('review')
   const load = () => listChangeRequests().then(setItems)
   useEffect(() => {
     load()
   }, [])
+  const since = Date.now() - DECIDED_VISIBLE_DAYS * 86_400_000
+  const toReview = (items ?? []).filter((c) => c.status === 'pending')
+  const decided = (items ?? []).filter((c) => c.status !== 'pending' && c.decidedAt && new Date(c.decidedAt).getTime() >= since)
+  const shown = tab === 'review' ? toReview : decided
   return (
     <>
-      <PageHeader title="Resident Update Requests" subtitle="Residents' requests to correct their information. The official record is updated only when you approve." />
+      <PageHeader title="Record Update Requests" subtitle="Residents' requests to correct their information. The official record changes only when you approve." />
+      <div role="tablist" aria-label="Requests" className="mb-3 flex flex-wrap gap-2">
+        {([
+          ['review', 'To review', toReview.length],
+          ['decided', 'Recently decided', decided.length],
+        ] as const).map(([k, label, n]) => (
+          <button
+            key={k}
+            role="tab"
+            type="button"
+            aria-selected={tab === k}
+            onClick={() => setTab(k)}
+            className={tab === k ? 'inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-control)] border border-navy-900 bg-navy-900 px-4 text-[13px] font-semibold text-white' : 'inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[13px] font-semibold text-navy-900 hover:bg-surface-muted'}
+          >
+            {label} <span className={tab === k ? 'text-white/75' : 'text-ink-muted'}>({n})</span>
+          </button>
+        ))}
+      </div>
+      {tab === 'decided' && <p className="mb-3 text-[12.5px] text-ink-muted">Approved and rejected requests stay here for {DECIDED_VISIBLE_DAYS} days. They remain in each resident's record history.</p>}
       <div className="space-y-3">
-        {(items ?? []).map((c) => {
+        {items && shown.length === 0 && (
+          <Card className="px-5 py-6 text-[13px] text-ink-muted">{tab === 'review' ? 'No requests waiting for review.' : `No requests decided in the last ${DECIDED_VISIBLE_DAYS} days.`}</Card>
+        )}
+        {shown.map((c) => {
           const r = residentById(c.residentId)
           return (
             <Card key={c.id} className="grid gap-4 px-5 py-4 lg:grid-cols-[1.4fr_1fr]">
@@ -181,6 +210,7 @@ export function ChangeRequestsPage() {
                   <div className="rounded-md bg-sky-100 px-3 py-2"><p className="text-[11px] text-ink-muted">Requested</p><p className="text-[13px] font-semibold text-navy-900">{displayRequestedValue(c.field, c.requestedValue)}</p></div>
                 </div>
                 <p className="mt-2 text-[12.5px] text-ink-muted">Reason: {c.reason}</p>
+                <ProofLine c={c} />
               </div>
               {c.status === 'pending' ? (
                 <Decide disabled={!can('residents.approve')} onDecide={async (d, note) => { await decideChangeRequest(c.id, d, note, user!); await load() }} />
@@ -197,4 +227,22 @@ export function ChangeRequestsPage() {
       </div>
     </>
   )
+}
+
+/** What the resident sent as proof (view it before approving). */
+function ProofLine({ c }: { c: ResidentChangeRequest }) {
+  const needed = PROOF_REQUIRED[c.field]
+  if (!needed && !c.proof) return null
+  if (c.proof?.fileName) {
+    return (
+      <p className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-line px-3 py-2 text-[12.5px] text-navy-900">
+        <Paperclip className="size-4 text-ink-muted" /> Proof attached: <strong>{c.proof.fileName}</strong>
+        {c.proof.url && <a href={c.proof.url} target="_blank" rel="noreferrer" className="font-semibold text-info hover:underline">View file</a>}
+      </p>
+    )
+  }
+  if (c.proof?.bringOnsite) {
+    return <p className="mt-2 rounded-md border border-warning/50 bg-warning-tint px-3 py-2 text-[12.5px] text-navy-900">The resident will bring the original document to the Barangay Hall. Check it before approving.</p>
+  }
+  return <p className="mt-2 rounded-md bg-danger-tint px-3 py-2 text-[12.5px] text-danger-ink">No proof attached ({needed}). Ask the resident to submit it before approving.</p>
 }

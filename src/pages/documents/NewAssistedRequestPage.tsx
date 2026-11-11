@@ -163,7 +163,7 @@ export function NewAssistedRequestPage() {
 
         {ready && (
           <>
-            <Panel title="3. Details printed on the document" subtitle="Prefilled from the resident record where available. Check them with the person.">
+            <Panel keepSubtitle title="3. Details printed on the document" subtitle="Prefilled from the resident record where available. Check them with the person.">
               <div className="space-y-5">
                 {groupFields(fields).map(([group, fs]) => (
                   <section key={group || 'main'}>

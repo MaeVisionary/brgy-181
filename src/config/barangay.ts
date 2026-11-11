@@ -19,6 +19,20 @@ export const BARANGAY = {
   motto: 'Glorify God by serving the People.',
 } as const
 
+/**
+ * Barangay Hall contact details shown to residents.
+ * PLACEHOLDER VALUES: replace them with the details the barangay confirms.
+ */
+export const BARANGAY_CONTACT = {
+  hall: 'Barangay 181 Hall',
+  address: 'Asa St., Gagalangin, Tondo, Manila',
+  phone: '(02) 8254-0181',
+  mobile: '0917 181 0181',
+  email: 'barangay181@example.com',
+  officeHours: 'Monday to Friday, 8:00 AM to 5:00 PM',
+  saturdayHours: 'Saturday, 8:00 AM to 12:00 NN (document pickup only)',
+} as const
+
 export type OfficialPosition = 'Barangay Chairman' | 'Barangay Secretary' | 'Barangay Treasurer' | 'Barangay Kagawad' | 'Lupon Member'
 
 export interface Official {

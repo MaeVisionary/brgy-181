@@ -275,6 +275,7 @@ export const mockChangeRequests: ResidentChangeRequest[] = [
   {
     id: 'chg-001', residentId: SAMPLE_IDS.johnPaulPanganiban, submittedAt: isoDaysAgo(0, 10), field: 'Civil status',
     originalValue: 'Single', requestedValue: 'Married', reason: 'Married last September; marriage certificate attached.', status: 'pending',
+    proof: { fileName: 'PSA-marriage-certificate-Panganiban.jpg', url: `${import.meta.env.BASE_URL}samples/proof-marriage-certificate.jpg` },
   },
   {
     id: 'chg-002', residentId: SAMPLE_IDS.danielGarcia, submittedAt: isoDaysAgo(1, 13), field: 'Contact number',
@@ -283,10 +284,13 @@ export const mockChangeRequests: ResidentChangeRequest[] = [
   {
     id: 'chg-003', residentId: SAMPLE_IDS.mariaValdez, submittedAt: isoDaysAgo(2, 16), field: 'Employment',
     originalValue: 'Sari-sari store owner', requestedValue: 'Sari-sari store owner and online seller', reason: 'Started selling online.', status: 'pending',
+    proof: { bringOnsite: true },
   },
   {
     id: 'chg-004', residentId: SAMPLE_IDS.andreaTan, submittedAt: isoDaysAgo(6, 9), field: 'Educational attainment',
     originalValue: 'College level', requestedValue: 'College graduate', reason: 'Graduated in June.', status: 'approved',
-    decidedBy: 'usr-sec', decidedAt: isoDaysAgo(5, 10),
+    proof: { fileName: 'Diploma-Andrea-Tan.jpg', url: `${import.meta.env.BASE_URL}samples/proof-diploma.jpg` },
+    // Decided two days before the real date so it shows under "Recently decided".
+    decidedBy: 'usr-sec', decidedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
   },
 ]

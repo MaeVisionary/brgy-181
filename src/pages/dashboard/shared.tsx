@@ -107,12 +107,12 @@ export function ListPanel<T>({
   empty: string
   to?: string
   toLabel?: string
-  /** Navy title bar: only for the containers to look at first. */
+  /** Navy title bar (default). */
   dark?: boolean
   className?: string
 }) {
   return (
-    <Panel title={title} subtitle={subtitle} dark={dark} className={className} bodyClassName="px-0 py-0" actions={to && <ViewAll to={to} label={toLabel} />}>
+    <Panel title={title} subtitle={subtitle} dark={dark ?? true} className={className} bodyClassName="px-0 py-0" actions={to && <ViewAll to={to} label={toLabel} />}>
       {items === null ? (
         <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-9 animate-pulse rounded bg-surface-muted" />)}</div>
       ) : items.length === 0 ? (
@@ -182,44 +182,35 @@ export function PopulationByStreet() {
 
   return (
     <div className="space-y-4">
-      {/* Header: title on the left; the street switch first, exports after it. */}
-      <Card className="px-5 py-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-navy-900 text-white">
-              <BarChart3 className="size-5" />
-            </span>
-            <div className="min-w-0">
-              <h2 className="flex items-center gap-2 font-display text-[17px] font-bold text-navy-900">
-                Population by street
-                <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11.5px] font-semibold text-ink-muted">{year}</span>
-              </h2>
-              <p className="text-[12.5px] text-ink-muted">Residents and households per area. Choose a street to filter the figures below.</p>
+      {/* Header: navy title bar, then one toolbar row (filter left, exports right). */}
+      <Card className="overflow-hidden">
+        <div className="flex items-center gap-3 bg-navy-900 px-5 py-3.5 text-white">
+          <BarChart3 className="size-5 shrink-0" />
+          <h2 className="font-display text-[15px] font-bold">Population by street</h2>
+          <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11.5px] font-semibold">{year}</span>
+        </div>
+        <div className="flex flex-col gap-3 px-5 py-3.5 md:flex-row md:items-center md:justify-between">
+          <label className="flex w-full items-center gap-2 text-[13px] font-semibold text-navy-900 md:w-auto">
+            <span className="shrink-0">Street</span>
+            <select
+              value={street}
+              onChange={(e) => setStreet(e.target.value)}
+              className="h-10 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[13px] font-semibold text-navy-900 focus:border-navy-600 focus:outline-none md:w-[240px]"
+            >
+              <option value="">All streets</option>
+              {AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </label>
+          {canExport && (
+            <div className="grid grid-cols-2 gap-2 md:flex">
+              <Button variant="secondary" icon={<FileDown className="size-4" />} onClick={() => exportPdf(report())} disabled={!summary || !areas}>
+                Export PDF
+              </Button>
+              <Button variant="secondary" icon={<Sheet className="size-4" />} onClick={() => void exportExcel(report())} disabled={!summary || !areas}>
+                Export Excel
+              </Button>
             </div>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <label className="flex items-center gap-2 text-[12.5px] font-semibold text-navy-900">
-              <span className="whitespace-nowrap">Street</span>
-              <select
-                value={street}
-                onChange={(e) => setStreet(e.target.value)}
-                className="h-10 min-w-[170px] flex-1 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[13px] font-semibold text-navy-900 focus:border-navy-600 focus:outline-none"
-              >
-                <option value="">All streets</option>
-                {AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
-              </select>
-            </label>
-            {canExport && (
-              <div className="flex gap-2 sm:border-l sm:border-line-soft sm:pl-3">
-                <Button variant="secondary" icon={<FileDown className="size-4" />} onClick={() => exportPdf(report())} disabled={!summary || !areas}>
-                  Export PDF
-                </Button>
-                <Button variant="secondary" icon={<Sheet className="size-4" />} onClick={() => void exportExcel(report())} disabled={!summary || !areas}>
-                  Export Excel
-                </Button>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </Card>
       <Panel title={street ? `Overview: ${street}` : 'Barangay overview'} subtitle="Counts from the resident records" >

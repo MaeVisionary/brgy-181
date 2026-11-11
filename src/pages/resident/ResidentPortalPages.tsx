@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Paperclip, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -18,7 +18,7 @@ import { listCases } from '@/services/caseService'
 import { listRequests } from '@/services/documentService'
 import { listBorrowings, returnState } from '@/services/equipmentService'
 import { ServiceError } from '@/services/mockApi'
-import { CHANGEABLE_FIELDS, displayRequestedValue, getHousehold, getResident, listChangeRequests, submitChangeRequest } from '@/services/residentService'
+import { CHANGEABLE_FIELDS, PROOF_REQUIRED, displayRequestedValue, getHousehold, getResident, listChangeRequests, submitChangeRequest } from '@/services/residentService'
 import { RETURN_BADGE } from '@/pages/equipment/badges'
 import { BorrowForm, itemsText } from '@/pages/equipment/BorrowingPages'
 import { CIVIL_LABEL, age, fullName } from '@/pages/residents/common'
@@ -37,18 +37,24 @@ export function MyProfilePage() {
   const [name, setName] = useState({ first: '', middle: '', last: '', suffix: '' })
   const [reason, setReason] = useState('')
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [proofFile, setProofFile] = useState<File | null>(null)
+  const [onsite, setOnsite] = useState(false)
   if (!me) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
   const who = family.find((m) => m.id === whoId) ?? me
   const requested = field === 'Full name' ? [name.first, name.middle, name.last, name.suffix].join('|') : value
   const filled = field === 'Full name' ? !!(name.first.trim() && name.last.trim()) : !!value.trim()
+  const needsProof = PROOF_REQUIRED[field]
+  const proofOk = !needsProof || !!proofFile || onsite
   const reset = () => {
     setValue('')
     setName({ first: '', middle: '', last: '', suffix: '' })
     setReason('')
+    setProofFile(null)
+    setOnsite(false)
   }
   const submit = async () => {
     try {
-      await submitChangeRequest(who.id, field, requested.trim(), reason.trim(), user!)
+      await submitChangeRequest(who.id, field, requested.trim(), reason.trim(), user!, needsProof ? { fileName: proofFile?.name, url: proofFile ? URL.createObjectURL(proofFile) : undefined, bringOnsite: onsite && !proofFile } : undefined)
       reset()
       setMsg({ ok: true, text: 'Sent to the Barangay Secretary for review. The record changes once it is approved.' })
       setTick((t) => t + 1)
@@ -65,7 +71,7 @@ export function MyProfilePage() {
       <PageHeader title="My Profile" subtitle="Your record in the Barangay 181 master list." />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="space-y-4">
-          <Panel title={fullName(me)} subtitle={`Resident no. ${me.residentNo}`}>
+          <Panel keepSubtitle title={fullName(me)} subtitle={`Resident no. ${me.residentNo}`}>
             <dl className="grid gap-3 sm:grid-cols-3">
               <F k="Birthdate" v={formatDate(me.birthDate)} />
               <F k="Age" v={age(me)} />
@@ -87,7 +93,7 @@ export function MyProfilePage() {
             </div>
           </Panel>
           {hh && (
-            <Panel title="My family" subtitle={`Household ${hh.household.householdNo} · ${hh.household.families.length} famil${hh.household.families.length > 1 ? 'ies' : 'y'} at this address`} bodyClassName="px-0 py-0">
+            <Panel keepSubtitle title="My family" subtitle={`Household ${hh.household.householdNo} · ${hh.household.families.length} famil${hh.household.families.length > 1 ? 'ies' : 'y'} at this address`} bodyClassName="px-0 py-0">
               <table className="w-full text-[13px]">
                 <thead><tr className="bg-surface-muted text-left">{['Name', 'Relationship', 'Age'].map((h) => <th key={h} className="label-caps px-5 py-2">{h}</th>)}</tr></thead>
                 <tbody>
@@ -105,7 +111,7 @@ export function MyProfilePage() {
           )}
         </div>
         <div className="space-y-4">
-          <Panel title="Request a correction" subtitle="The Barangay Secretary reviews it before the official record changes.">
+          <Panel keepSubtitle title="Request a correction" subtitle="The Barangay Secretary reviews it before the official record changes.">
             <div className="space-y-3">
               <FieldLabel label="Whose record">
                 <Select value={who.id} onChange={(e) => { setWhoId(e.target.value === me.id ? '' : e.target.value); setMsg(null) }}>
@@ -137,9 +143,24 @@ export function MyProfilePage() {
               ) : (
                 <FieldLabel label="Correct information" required><TextInput value={value} onChange={(e) => setValue(e.target.value)} /></FieldLabel>
               )}
+              {needsProof && (
+                <div className="rounded-[var(--radius-control)] border border-warning/50 bg-warning-tint/40 p-3">
+                  <p className="text-[12.5px] font-semibold text-navy-900">Proof needed <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></p>
+                  <p className="text-[12px] text-ink-nav">{needsProof}</p>
+                  <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line bg-surface px-3 py-2 text-[13px] text-navy-900 hover:border-navy-600 hover:bg-sky-50">
+                    <Paperclip className="size-4 shrink-0 text-ink-muted" />
+                    <span className="min-w-0 flex-1 truncate">{proofFile ? proofFile.name : 'Attach a photo or PDF'}</span>
+                    <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setProofFile(f); setOnsite(false) } }} />
+                  </label>
+                  <label className="mt-2 flex items-center gap-2 text-[12.5px] text-navy-900">
+                    <input type="checkbox" className="size-4 accent-[#002132]" checked={onsite} disabled={!!proofFile} onChange={(e) => setOnsite(e.target.checked)} />
+                    I will bring the original document to the Barangay Hall instead
+                  </label>
+                </div>
+              )}
               <FieldLabel label="Reason" required><TextArea className="min-h-[60px]" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="For example: My birthdate on record does not match my birth certificate." /></FieldLabel>
               {msg && <p className={`rounded-md px-3 py-2 text-[12.5px] ${msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink'}`}>{msg.text}</p>}
-              <Button disabled={!filled || !reason.trim()} onClick={submit}>Submit request</Button>
+              <Button disabled={!filled || !reason.trim() || !proofOk} onClick={submit}>Submit request</Button>
             </div>
           </Panel>
           <Panel title="My correction requests" bodyClassName={mine.length ? undefined : 'px-0 py-0'}>

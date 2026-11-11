@@ -42,13 +42,6 @@ export function HomePage() {
               <button type="button" onClick={() => go('/register')} className="bmis-press inline-flex h-12 items-center gap-2 rounded-full border border-navy-900 bg-surface px-6 text-[15px] font-semibold text-navy-900 hover:bg-sky-50">
                 <UserPlus className="size-4" /> Create an account
               </button>
-              <button
-                type="button"
-                onClick={() => document.querySelector('#services')?.scrollIntoView({ behavior: 'smooth' })}
-                className="bmis-press inline-flex h-12 items-center rounded-full px-4 text-[15px] font-semibold text-navy-900 hover:bg-surface-muted"
-              >
-                Explore Services
-              </button>
             </div>
             <p className="bmis-rise bmis-rise-4 mt-6 font-display text-[13px] font-bold text-navy-600 italic">“{BARANGAY.motto}”</p>
           </div>
@@ -122,13 +115,13 @@ export function HomePage() {
             If you have no gadget or need help using the portal, you can visit the Barangay 181 Hall and personnel will assist you.
           </p>
 
-          <div className="mx-auto mt-8 grid max-w-[900px] gap-3 md:grid-cols-3">
+          <div className="mx-auto mt-8 grid max-w-[1180px] gap-4 md:grid-cols-3">
             {[
               { icon: FileText, title: 'Certificates and clearances', body: 'Request online, then claim the signed and sealed document at the Barangay Hall.' },
               { icon: Gavel, title: 'Complaints and reports', body: 'Report incidents and request summons. Cases go through the Katarungang Pambarangay process.' },
               { icon: Package, title: 'Equipment borrowing', body: `Borrow barangay equipment for community or family use. Fixed 15-day borrowing period with a 3-day grace period.` },
             ].map(({ icon: Icon, title, body }) => (
-              <div key={title} className="rounded-[var(--radius-card)] border border-line bg-canvas p-5">
+              <div key={title} className="rounded-[var(--radius-card)] border border-line bg-canvas p-6">
                 <p className="flex items-center gap-2.5 font-display text-[15.5px] font-bold text-navy-900">
                   <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-sky-100 text-navy-900"><Icon className="size-[18px]" /></span>
                   {title}
