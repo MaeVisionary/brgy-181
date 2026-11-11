@@ -25,7 +25,7 @@ export function DataSource() {
 
   return (
     <Card className="mb-4 px-5 py-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-navy-900 text-white">
             <FileSpreadsheet className="size-5" />
@@ -34,13 +34,13 @@ export function DataSource() {
             <p className="label-caps">Data source</p>
             {dataset ? (
               <>
-                <p className="font-display text-[16px] font-bold text-navy-900" title={dataset.fileName}>{dataset.fileName}</p>
+                <p className="font-display text-[18px] font-bold text-navy-900" title={dataset.fileName}>{dataset.fileName}</p>
                 <dl className="mt-2 flex flex-wrap gap-2">
                   {[
                     ['Records', dataset.records.length.toLocaleString()],
                     ...(source === 'snapshot' ? [['Copy', 'Built-in, no names']] : [['Loaded', formatDateTime(dataset.loadedAt)]]),
                   ].map(([k, v]) => (
-                    <div key={k} className="rounded-md border border-line bg-surface-muted px-2.5 py-1 text-[12px]">
+                    <div key={k} className="rounded-md border border-line bg-surface-muted px-2.5 py-1 text-[14px]">
                       <dt className="inline text-ink-muted">{k}: </dt>
                       <dd className="inline font-semibold text-navy-900">{v}</dd>
                     </div>
@@ -49,22 +49,22 @@ export function DataSource() {
               </>
             ) : (
               <>
-                <p className="font-display text-[16px] font-bold text-navy-900">No masterlist loaded</p>
-                <p className="text-[12.5px] text-ink-muted">
+                <p className="font-display text-[18px] font-bold text-navy-900">No masterlist loaded</p>
+                <p className="text-[14.5px] text-ink-muted">
                   {canImport ? 'Load the senior citizen (OSCA) masterlist Excel file to see the analytics.' : 'Ask the Barangay Secretary to load the senior citizen masterlist.'}
                 </p>
               </>
             )}
           </div>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end lg:shrink-0">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end xl:shrink-0">
           <label className="block">
-            <span className="mb-1 block text-[12px] font-semibold text-navy-900">Ages computed as of</span>
+            <span className="mb-1 block text-[14px] font-semibold text-navy-900">Ages computed as of</span>
             <input
               type="date"
               value={iso(reportingDate)}
               onChange={(e) => e.target.value && setReportingDate(new Date(`${e.target.value}T00:00:00Z`))}
-              className="h-10 rounded-[var(--radius-control)] border border-line px-3 text-[13px] text-navy-900"
+              className="h-10 rounded-[var(--radius-control)] border border-line px-3 text-[15px] text-navy-900"
             />
           </label>
           {dataset?.fileDate && iso(dataset.fileDate) !== iso(reportingDate) && (
@@ -83,12 +83,12 @@ export function DataSource() {
         </div>
       </div>
       {error && (
-        <p className="mt-3 flex items-center gap-2 rounded-md bg-danger-tint px-3 py-2 text-[12.5px] text-danger-ink">
+        <p className="mt-3 flex items-center gap-2 rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">
           <XCircle className="size-4" /> {error}
         </p>
       )}
       {dataset && (
-        <details className="mt-3 rounded-md border border-line-soft bg-surface-muted/60 px-3 py-2 text-[12.5px]">
+        <details className="mt-3 rounded-md border border-line-soft bg-surface-muted/60 px-3 py-2 text-[14.5px]">
           <summary className="font-semibold text-navy-900">About this data</summary>
           <ul className="mt-2 space-y-1">
             {dataset.messages.map((m, i) => (

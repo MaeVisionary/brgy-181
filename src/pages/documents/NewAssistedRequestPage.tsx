@@ -94,7 +94,7 @@ export function NewAssistedRequestPage() {
 
   return (
     <>
-      <Link to="/documents" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-navy-900">
+      <Link to="/documents" className="mb-3 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-ink-muted hover:text-navy-900">
         <ArrowLeft className="size-4" /> Document Requests
       </Link>
       <PageHeader title="Encode walk-in request" subtitle="For residents who request at the Barangay Hall. They get the same tracking as online requests." />
@@ -122,8 +122,8 @@ export function NewAssistedRequestPage() {
               <span className="flex items-center gap-3">
                 <UserRound className="size-5 text-navy-900" />
                 <span>
-                  <span className="block text-[13.5px] font-semibold text-navy-900">{residentFullName(resident)}</span>
-                  <span className="block text-[12px] text-ink-muted">
+                  <span className="block text-[15.5px] font-semibold text-navy-900">{residentFullName(resident)}</span>
+                  <span className="block text-[14px] text-ink-muted">
                     {resident.residentNo} · {ageOn(resident.birthDate)} yrs · {resident.houseNo} {resident.street}
                   </span>
                 </span>
@@ -143,8 +143,8 @@ export function NewAssistedRequestPage() {
                   {results.map((r) => (
                     <li key={r.id} className="border-b border-line-soft last:border-0">
                       <button type="button" onClick={() => pickResident(r)} className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-sky-50">
-                        <span className="text-[13px] font-semibold text-navy-900">{residentFullName(r)}</span>
-                        <span className="text-[12px] text-ink-muted">
+                        <span className="text-[15px] font-semibold text-navy-900">{residentFullName(r)}</span>
+                        <span className="text-[14px] text-ink-muted">
                           {r.residentNo} · {ageOn(r.birthDate)} yrs · {r.street}
                         </span>
                       </button>
@@ -153,11 +153,11 @@ export function NewAssistedRequestPage() {
                 </ul>
               )}
               {q.trim().length >= 2 && results.length === 0 && (
-                <p className="mt-2 text-[12.5px] text-ink-muted">No resident found. They may need to be added to the master list first.</p>
+                <p className="mt-2 text-[14.5px] text-ink-muted">No resident found. They may need to be added to the master list first.</p>
               )}
             </div>
           ) : (
-            <p className="text-[12.5px] text-ink-muted">Your account cannot search residents. Ask for the residents.search permission.</p>
+            <p className="text-[14.5px] text-ink-muted">Your account cannot search residents. Ask for the residents.search permission.</p>
           )}
         </Panel>
 
@@ -181,7 +181,7 @@ export function NewAssistedRequestPage() {
             {type.requirements.length > 0 && (
               <Panel title="4. Requirements presented">
                 {type.requirements.map((r) => (
-                  <label key={r.label} className="flex items-center gap-2 py-1 text-[13px] text-navy-900">
+                  <label key={r.label} className="flex items-center gap-2 py-1 text-[15px] text-navy-900">
                     <input type="checkbox" className="size-4 accent-[#002132]" checked={!!presented[r.label]} onChange={(e) => setPresented((p) => ({ ...p, [r.label]: e.target.checked }))} />
                     {r.label}
                   </label>
@@ -189,7 +189,7 @@ export function NewAssistedRequestPage() {
               </Panel>
             )}
 
-            {error && <p className="rounded-md bg-danger-tint px-3 py-2 text-[12.5px] text-danger-ink">{error}</p>}
+            {error && <p className="rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">{error}</p>}
             <div className="flex gap-2">
               <Button onClick={submit} loading={busy}>
                 Create request

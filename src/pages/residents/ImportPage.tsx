@@ -143,20 +143,20 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
     <>
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-[17px] font-bold text-navy-900">Import Master List</h2>
-          <p className="text-[12.5px] text-ink-muted">Upload the census-based master list file. Possible duplicates are compared by full name, birthdate and address and wait for your review.</p>
+          <h2 className="font-display text-[19px] font-bold text-navy-900">Import Master List</h2>
+          <p className="text-[14.5px] text-ink-muted">Upload the census-based master list file. Possible duplicates are compared by full name, birthdate and address and wait for your review.</p>
         </div>
         <Button variant="ghost" onClick={onClose}>Close</Button>
       </div>
 
       <Card className="mb-4 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-        <span className="text-[13px] text-navy-900">{fileName ? <><strong>{fileName}</strong> · {body.length} data rows</> : 'Choose the master list file (Excel or CSV). The first row must contain the column names.'}</span>
+        <span className="text-[15px] text-navy-900">{fileName ? <><strong>{fileName}</strong> · {body.length} data rows</> : 'Choose the master list file (Excel or CSV). The first row must contain the column names.'}</span>
         <input ref={fileRef} type="file" accept=".xlsx,.csv,text/csv" className="sr-only" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = '' }} />
         <Button icon={<FileUp className="size-4" />} onClick={() => fileRef.current?.click()}>{fileName ? 'Choose another file' : 'Choose file'}</Button>
       </Card>
 
       {done !== null && (
-        <Card className="mb-4 flex items-center gap-3 border-success/40 bg-success-tint px-5 py-4 text-[13.5px] text-navy-900">
+        <Card className="mb-4 flex items-center gap-3 border-success/40 bg-success-tint px-5 py-4 text-[15.5px] text-navy-900">
           <CheckCircle2 className="size-5 text-success" /> {done} records added to the master list in this browser session. <Link to="/residents" className="font-semibold text-info hover:underline">Open the master list</Link>
         </Card>
       )}
@@ -167,7 +167,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {TARGETS.map((t) => (
                 <label key={t.key} className="block">
-                  <span className="mb-1 block text-[12.5px] font-semibold text-navy-900">{t.label}{'required' in t && t.required && <span className="text-danger-ink"> *</span>}</span>
+                  <span className="mb-1 block text-[14.5px] font-semibold text-navy-900">{t.label}{'required' in t && t.required && <span className="text-danger-ink"> *</span>}</span>
                   <Select value={map[t.key] ?? ''} onChange={(e) => setMap((m) => ({ ...m, [t.key]: e.target.value === '' ? undefined : Number(e.target.value) }))}>
                     <option value="">Not in file</option>
                     {header.map((h, i) => <option key={i} value={i}>{h || `Column ${i + 1}`}</option>)}
@@ -175,25 +175,25 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
                 </label>
               ))}
             </div>
-            {missingRequired.length > 0 && <p className="mt-3 text-[12.5px] text-danger-ink">Map the required fields: {missingRequired.map((t) => t.label).join(', ')}.</p>}
+            {missingRequired.length > 0 && <p className="mt-3 text-[14.5px] text-danger-ink">Map the required fields: {missingRequired.map((t) => t.label).join(', ')}.</p>}
           </Panel>
 
           <section className="mt-4 grid grid-cols-3 gap-3">
-            <Card className="px-5 py-4"><p className="label-caps">Ready to import</p><p className="font-display text-[26px] font-extrabold text-success">{valid.length}</p></Card>
-            <Card className="px-5 py-4"><p className="label-caps">Possible duplicates</p><p className="font-display text-[26px] font-extrabold text-warning">{dups.length}</p></Card>
-            <Card className="px-5 py-4"><p className="label-caps">Need fixing</p><p className="font-display text-[26px] font-extrabold text-danger-ink">{invalid.length}</p></Card>
+            <Card className="px-5 py-4"><p className="label-caps">Ready to import</p><p className="font-display text-[28px] font-extrabold text-success">{valid.length}</p></Card>
+            <Card className="px-5 py-4"><p className="label-caps">Possible duplicates</p><p className="font-display text-[28px] font-extrabold text-warning">{dups.length}</p></Card>
+            <Card className="px-5 py-4"><p className="label-caps">Need fixing</p><p className="font-display text-[28px] font-extrabold text-danger-ink">{invalid.length}</p></Card>
           </section>
 
           {dups.length > 0 && (
             <Panel className="mt-4" keepSubtitle title="2. Review possible duplicates" subtitle="Not merged automatically. Tick a row only if it is a different person." bodyClassName="px-0 py-0">
               <ul className="divide-y divide-line-soft">
                 {dups.map((d) => (
-                  <li key={d.line} className="flex items-center justify-between gap-3 px-5 py-2.5 text-[13px]">
+                  <li key={d.line} className="flex items-center justify-between gap-3 px-5 py-2.5 text-[15px]">
                     <span>
                       <span className="font-semibold text-navy-900">Row {d.line}: {d.record!.lastName}, {d.record!.firstName}</span>
-                      <span className="block text-[12px] text-ink-muted">{d.duplicateOf ? `Matches existing record: ${d.duplicateOf}` : `Same as row ${d.duplicateInFile} in this file`}</span>
+                      <span className="block text-[14px] text-ink-muted">{d.duplicateOf ? `Matches existing record: ${d.duplicateOf}` : `Same as row ${d.duplicateInFile} in this file`}</span>
                     </span>
-                    <label className="flex items-center gap-2 text-[12.5px] text-navy-900">
+                    <label className="flex items-center gap-2 text-[14.5px] text-navy-900">
                       <input type="checkbox" className="size-4 accent-[#002132]" checked={keepDup.has(d.line)} onChange={(e) => setKeepDup((s) => { const n = new Set(s); if (e.target.checked) n.add(d.line); else n.delete(d.line); return n })} />
                       Import as a different person
                     </label>
@@ -206,14 +206,14 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
           {invalid.length > 0 && (
             <Panel className="mt-4" keepSubtitle title="Rows that need fixing" subtitle="Correct these in the file and upload again. They will not be imported." bodyClassName="px-0 py-0">
               <ul className="max-h-[240px] divide-y divide-line-soft overflow-y-auto">
-                {invalid.map((c) => <li key={c.line} className="flex items-start gap-2 px-5 py-2 text-[12.5px] text-navy-900"><XCircle className="mt-px size-4 shrink-0 text-danger" /> Row {c.line}: {c.errors.join('; ')}</li>)}
+                {invalid.map((c) => <li key={c.line} className="flex items-start gap-2 px-5 py-2 text-[14.5px] text-navy-900"><XCircle className="mt-px size-4 shrink-0 text-danger" /> Row {c.line}: {c.errors.join('; ')}</li>)}
               </ul>
             </Panel>
           )}
 
           <Panel className="mt-4" title="Preview" subtitle="First 10 rows as read from the file" bodyClassName="px-0 py-0">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px] text-[12.5px]">
+              <table className="w-full min-w-[700px] text-[14.5px]">
                 <thead><tr className="bg-surface-muted text-left">{header.map((h, i) => <th key={i} className="label-caps px-3 py-2">{h}</th>)}<th className="label-caps px-3 py-2">Check</th></tr></thead>
                 <tbody>
                   {body.slice(0, 10).map((r, i) => {
@@ -232,7 +232,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
 
           <div className="mt-4 flex items-center gap-3">
             <Button onClick={confirm} loading={busy} disabled={toImport.length === 0 || missingRequired.length > 0}>Import {toImport.length} records</Button>
-            {dups.length > 0 && <span className="flex items-center gap-1.5 text-[12.5px] text-warning"><AlertTriangle className="size-4" /> {dups.length - keepDup.size} possible duplicates will be skipped</span>}
+            {dups.length > 0 && <span className="flex items-center gap-1.5 text-[14.5px] text-warning"><AlertTriangle className="size-4" /> {dups.length - keepDup.size} possible duplicates will be skipped</span>}
           </div>
         </>
       )}

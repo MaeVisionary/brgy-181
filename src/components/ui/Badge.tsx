@@ -23,7 +23,7 @@ const tones: Record<BadgeTone, { box: string; dot: string }> = {
 export function Badge({ tone = 'neutral', children, className, dot = true }: { tone?: BadgeTone; children: ReactNode; className?: string; dot?: boolean }) {
   const t = tones[tone]
   return (
-    <span className={cn('inline-flex h-6 items-center gap-1.5 rounded-[var(--radius-badge)] px-2 text-[11.5px] font-semibold whitespace-nowrap', t.box, className)}>
+    <span className={cn('inline-flex h-6 items-center gap-1.5 rounded-[var(--radius-badge)] px-2 text-[13.5px] font-semibold whitespace-nowrap', t.box, className)}>
       {dot && <span aria-hidden className={cn('size-1.5 shrink-0 rounded-full', t.dot)} />}
       {children}
     </span>

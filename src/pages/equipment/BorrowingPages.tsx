@@ -58,7 +58,7 @@ export function BorrowingPage() {
           </Select>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-[13px]">
+          <table className="w-full min-w-[820px] text-[15px]">
             <thead><tr className="bg-surface-muted text-left">{['Ref. no.', 'Borrower', 'Items', 'Date of use', 'Due / grace', 'Status'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}</tr></thead>
             <tbody>
               {rows.map((b) => {
@@ -66,10 +66,10 @@ export function BorrowingPage() {
                 return (
                   <tr key={b.id} onClick={() => navigate(`/borrowing/${b.id}`)} className="cursor-pointer border-t border-line-soft hover:bg-sky-50">
                     <td className="px-4 py-3 font-semibold whitespace-nowrap text-navy-900">{b.refNo}</td>
-                    <td className="px-4 py-3"><span className="block text-navy-900">{b.borrowerName}</span><span className="block text-[11.5px] text-ink-muted">{b.address}</span></td>
+                    <td className="px-4 py-3"><span className="block text-navy-900">{b.borrowerName}</span><span className="block text-[13.5px] text-ink-muted">{b.address}</span></td>
                     <td className="px-4 py-3">{itemsText(b)}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{formatDate(b.dateOfUse)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">{b.dueAt ? <>{formatDate(b.dueAt)}<span className="block text-[11.5px] text-ink-muted">grace to {formatDate(b.graceEndsAt!)}</span></> : <span className="text-ink-subtle">Set on release</span>}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{b.dueAt ? <>{formatDate(b.dueAt)}<span className="block text-[13.5px] text-ink-muted">grace to {formatDate(b.graceEndsAt!)}</span></> : <span className="text-ink-subtle">Set on release</span>}</td>
                     <td className="px-4 py-3">{b.status === 'released' ? <Badge tone={RETURN_BADGE[rs].tone}>{RETURN_BADGE[rs].label}</Badge> : <Badge tone={BORROW_STATUS[b.status].tone}>{BORROW_STATUS[b.status].label}</Badge>}</td>
                   </tr>
                 )
@@ -112,15 +112,15 @@ export function BorrowingDetailPage() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="space-y-4">
           <Panel title="Borrowing details">
-            <dl className="grid gap-3 text-[13px] sm:grid-cols-3">
-              <div><dt className="text-[11.5px] text-ink-muted">Date of use</dt><dd className="text-navy-900">{formatDate(b.dateOfUse)}</dd></div>
-              <div><dt className="text-[11.5px] text-ink-muted">Return date stated by borrower</dt><dd className="text-navy-900">{b.statedReturnDate ? formatDate(b.statedReturnDate) : '–'}</dd></div>
-              <div><dt className="text-[11.5px] text-ink-muted">Released</dt><dd className="text-navy-900">{b.releasedAt ? formatDateTime(b.releasedAt) : '–'}</dd></div>
-              <div><dt className="text-[11.5px] text-ink-muted">Due date ({BORROWING.periodDays} days)</dt><dd className="font-semibold text-navy-900">{b.dueAt ? formatDate(b.dueAt) : 'Set on release'}</dd></div>
-              <div><dt className="text-[11.5px] text-ink-muted">Grace period ends (+{BORROWING.graceDays} days)</dt><dd className="font-semibold text-navy-900">{b.graceEndsAt ? formatDate(b.graceEndsAt) : 'Set on release'}</dd></div>
-              <div><dt className="text-[11.5px] text-ink-muted">Returned</dt><dd className="text-navy-900">{b.returnedAt ? formatDateTime(b.returnedAt) : '–'}</dd></div>
+            <dl className="grid gap-3 text-[15px] sm:grid-cols-3">
+              <div><dt className="text-[13.5px] text-ink-muted">Date of use</dt><dd className="text-navy-900">{formatDate(b.dateOfUse)}</dd></div>
+              <div><dt className="text-[13.5px] text-ink-muted">Return date stated by borrower</dt><dd className="text-navy-900">{b.statedReturnDate ? formatDate(b.statedReturnDate) : '–'}</dd></div>
+              <div><dt className="text-[13.5px] text-ink-muted">Released</dt><dd className="text-navy-900">{b.releasedAt ? formatDateTime(b.releasedAt) : '–'}</dd></div>
+              <div><dt className="text-[13.5px] text-ink-muted">Due date ({BORROWING.periodDays} days)</dt><dd className="font-semibold text-navy-900">{b.dueAt ? formatDate(b.dueAt) : 'Set on release'}</dd></div>
+              <div><dt className="text-[13.5px] text-ink-muted">Grace period ends (+{BORROWING.graceDays} days)</dt><dd className="font-semibold text-navy-900">{b.graceEndsAt ? formatDate(b.graceEndsAt) : 'Set on release'}</dd></div>
+              <div><dt className="text-[13.5px] text-ink-muted">Returned</dt><dd className="text-navy-900">{b.returnedAt ? formatDateTime(b.returnedAt) : '–'}</dd></div>
             </dl>
-            <table className="mt-4 w-full text-[13px]">
+            <table className="mt-4 w-full text-[15px]">
               <thead><tr className="text-left">{['Equipment', 'Qty', 'Good', 'Damaged', 'Missing'].map((h) => <th key={h} className="label-caps py-2">{h}</th>)}</tr></thead>
               <tbody>
                 {b.items.map((i) => (
@@ -134,17 +134,17 @@ export function BorrowingDetailPage() {
                 ))}
               </tbody>
             </table>
-            {b.conditionOnRelease && <p className="mt-3 text-[12.5px] text-ink-muted">Condition on release: {b.conditionOnRelease}</p>}
-            {b.returnNotes && <p className="mt-1 text-[12.5px] text-navy-900">Return notes: {b.returnNotes}</p>}
-            <p className="mt-3 text-[12px] text-ink-muted">Damaged or missing items are handled according to Barangay policy. No fines are computed by the system.</p>
+            {b.conditionOnRelease && <p className="mt-3 text-[14.5px] text-ink-muted">Condition on release: {b.conditionOnRelease}</p>}
+            {b.returnNotes && <p className="mt-1 text-[14.5px] text-navy-900">Return notes: {b.returnNotes}</p>}
+            <p className="mt-3 text-[14px] text-ink-muted">Damaged or missing items are handled according to Barangay policy. No fines are computed by the system.</p>
           </Panel>
           <Panel title="History">
             <ol className="space-y-3">
               {[...b.history].reverse().map((h, i) => (
                 <li key={i} className="border-l-2 border-line-soft pl-3">
-                  <p className="text-[12.5px] font-semibold text-navy-900">{h.action}</p>
-                  <p className="text-[11.5px] text-ink-muted">{formatDateTime(h.at)} · {userById(h.byUserId)?.fullName ?? 'Resident'} ({ROLES[h.byRole].name})</p>
-                  {h.remarks && <p className="mt-1 text-[12.5px] text-navy-900">{h.remarks}</p>}
+                  <p className="text-[14.5px] font-semibold text-navy-900">{h.action}</p>
+                  <p className="text-[13.5px] text-ink-muted">{formatDateTime(h.at)} · {userById(h.byUserId)?.fullName ?? 'Resident'} ({ROLES[h.byRole].name})</p>
+                  {h.remarks && <p className="mt-1 text-[14.5px] text-navy-900">{h.remarks}</p>}
                 </li>
               ))}
             </ol>
@@ -153,7 +153,7 @@ export function BorrowingDetailPage() {
         <Panel title="Next step">
           {b.status === 'pending' && can('borrowing.approve') && (
             <div className="space-y-3">
-              <p className="text-[12.5px] text-ink-muted">Available now: {b.items.map((i) => `${eqName(i.equipmentId)} ${availableQty(mockEquipment.find((e) => e.id === i.equipmentId)!, b.id)}`).join(', ')}</p>
+              <p className="text-[14.5px] text-ink-muted">Available now: {b.items.map((i) => `${eqName(i.equipmentId)} ${availableQty(mockEquipment.find((e) => e.id === i.equipmentId)!, b.id)}`).join(', ')}</p>
               <TextArea className="min-h-[60px]" placeholder="Note (required when not approving)" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
               <div className="flex gap-2">
                 <Button onClick={() => act(() => actOnBorrowing(b.id, 'approve', actor, { remarks }))}>Approve</Button>
@@ -163,20 +163,20 @@ export function BorrowingDetailPage() {
           )}
           {b.status === 'approved' && can('borrowing.release') && (
             <div className="space-y-3">
-              <p className="text-[12.5px] text-ink-muted">Confirm the borrowing details with the resident at the Barangay Hall, then release. The due date is set to {BORROWING.periodDays} days from today.</p>
+              <p className="text-[14.5px] text-ink-muted">Confirm the borrowing details with the resident at the Barangay Hall, then release. The due date is set to {BORROWING.periodDays} days from today.</p>
               <FieldLabel label="Condition on release"><TextInput value={condition} onChange={(e) => setCondition(e.target.value)} /></FieldLabel>
               <Button onClick={() => act(() => actOnBorrowing(b.id, 'release', actor, { condition }))}>Record release</Button>
             </div>
           )}
           {b.status === 'released' && can('borrowing.release') && (
             <div className="space-y-3">
-              <p className="text-[12.5px] font-semibold text-navy-900">Return inspection</p>
+              <p className="text-[14.5px] font-semibold text-navy-900">Return inspection</p>
               {b.items.map((i) => (
                 <div key={i.equipmentId} className="rounded-md border border-line p-3">
-                  <p className="text-[12.5px] font-semibold text-navy-900">{eqName(i.equipmentId)} (borrowed {i.qty})</p>
+                  <p className="text-[14.5px] font-semibold text-navy-900">{eqName(i.equipmentId)} (borrowed {i.qty})</p>
                   <div className="mt-2 grid grid-cols-3 gap-2">
                     {(['good', 'damaged', 'missing'] as const).map((k) => (
-                      <label key={k} className="text-[11.5px] text-ink-muted capitalize">{k}
+                      <label key={k} className="text-[13.5px] text-ink-muted capitalize">{k}
                         <TextInput className="h-8" inputMode="numeric" value={ret[i.equipmentId]?.[k] ?? ''} onChange={(e) => setRet((s) => ({ ...s, [i.equipmentId]: { ...s[i.equipmentId], [k]: e.target.value.replace(/\D/g, '') } }))} />
                       </label>
                     ))}
@@ -188,8 +188,8 @@ export function BorrowingDetailPage() {
               {(rs === 'overdue' || rs === 'grace') && <Button variant="secondary" icon={<BellRing className="size-3.5" />} onClick={() => act(() => sendLateNotice(b.id, actor))}>Send late-return notice (simulated)</Button>}
             </div>
           )}
-          {['returned', 'rejected', 'cancelled'].includes(b.status) && <p className="text-[12.5px] text-ink-muted">This transaction is complete.</p>}
-          {err && <p className="mt-3 text-[12.5px] text-danger-ink">{err}</p>}
+          {['returned', 'rejected', 'cancelled'].includes(b.status) && <p className="text-[14.5px] text-ink-muted">This transaction is complete.</p>}
+          {err && <p className="mt-3 text-[14.5px] text-danger-ink">{err}</p>}
         </Panel>
       </div>
     </>
@@ -237,10 +237,10 @@ export function BorrowForm({ assisted, resident, onDone }: { assisted?: boolean;
       {assisted && !who && (
         <FieldLabel label="Borrower (resident)" required>
           <TextInput placeholder="Search name" value={q} onChange={(e) => setQ(e.target.value)} />
-          {results.length > 0 && <ul className="mt-1 rounded-md border border-line">{results.map((r) => <li key={r.id}><button type="button" onClick={() => setWho(r)} className="w-full px-3 py-1.5 text-left text-[13px] hover:bg-sky-50">{r.firstName} {r.lastName} · {r.houseNo} {r.street}</button></li>)}</ul>}
+          {results.length > 0 && <ul className="mt-1 rounded-md border border-line">{results.map((r) => <li key={r.id}><button type="button" onClick={() => setWho(r)} className="w-full px-3 py-1.5 text-left text-[15px] hover:bg-sky-50">{r.firstName} {r.lastName} · {r.houseNo} {r.street}</button></li>)}</ul>}
         </FieldLabel>
       )}
-      {who && <p className="text-[13px] text-navy-900"><strong>{who.firstName} {who.lastName}</strong> · {who.houseNo} {who.street}, Gagalangin, Tondo, Manila {assisted && <button type="button" className="ml-2 text-[12px] font-semibold text-info" onClick={() => setWho(null)}>Change</button>}</p>}
+      {who && <p className="text-[15px] text-navy-900"><strong>{who.firstName} {who.lastName}</strong> · {who.houseNo} {who.street}, Gagalangin, Tondo, Manila {assisted && <button type="button" className="ml-2 text-[14px] font-semibold text-info" onClick={() => setWho(null)}>Change</button>}</p>}
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {(equipment ?? []).map((e) => (
           <FieldLabel key={e.id} label={`${e.name} (${availableQty(e)} available)`}>
@@ -250,7 +250,7 @@ export function BorrowForm({ assisted, resident, onDone }: { assisted?: boolean;
         <FieldLabel label="Date of use" required><TextInput type="date" value={dateOfUse} onChange={(e) => setDateOfUse(e.target.value)} /></FieldLabel>
         <FieldLabel label="Expected return date" hint={`The official due date is ${BORROWING.periodDays} days after release.`}><TextInput type="date" value={stated} onChange={(e) => setStated(e.target.value)} /></FieldLabel>
       </div>
-      {err && <p className="mt-2 text-[12.5px] text-danger-ink">{err}</p>}
+      {err && <p className="mt-2 text-[14.5px] text-danger-ink">{err}</p>}
       <div className="mt-3 flex gap-2"><Button onClick={submit}>Submit request</Button><Button variant="ghost" onClick={() => onDone()}>Cancel</Button></div>
     </Panel>
   )

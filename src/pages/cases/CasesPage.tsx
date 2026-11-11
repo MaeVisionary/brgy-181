@@ -52,17 +52,17 @@ export function CasesPage() {
             <option value="">All stages</option>
             {(Object.keys(STAGE_LABEL) as CaseStage[]).map((s) => <option key={s} value={s}>{STAGE_LABEL[s]}</option>)}
           </Select>
-          <span className="text-[12.5px] text-ink-muted">{rows.length} cases</span>
+          <span className="text-[14.5px] text-ink-muted">{rows.length} cases</span>
           {canRemove && (
-            <label className="ml-auto flex items-center gap-2 text-[12.5px] text-navy-900">
+            <label className="ml-auto flex items-center gap-2 text-[14.5px] text-navy-900">
               <input type="checkbox" className="size-4 accent-[#002132]" checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} />
               Show removed cases ({removed.size})
             </label>
           )}
         </div>
-        {error && <p className="border-b border-line-soft bg-danger-tint px-4 py-2 text-[12.5px] text-danger-ink">{error}</p>}
+        {error && <p className="border-b border-line-soft bg-danger-tint px-4 py-2 text-[14.5px] text-danger-ink">{error}</p>}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-[13.5px]">
+          <table className="w-full min-w-[820px] text-[15.5px]">
             <thead>
               <tr className="bg-surface-muted text-left">{['Case no.', 'Parties', 'Nature', 'Filed', 'Stage', 'Next hearing', ...(canRemove ? [''] : [])].map((h, i) => <th key={i} className="label-caps px-4 py-2.5">{h}</th>)}</tr>
             </thead>
@@ -77,7 +77,7 @@ export function CasesPage() {
                     <td className="px-4 py-3">{c.nature}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-ink-muted">{formatDate(c.filedAt)}</td>
                     <td className="px-4 py-3">
-                      {md && <span className={`mb-1 block text-[12px] font-semibold ${md.overdue ? 'text-danger-ink' : 'text-navy-900'}`}>Day {md.day} of {md.total}</span>}
+                      {md && <span className={`mb-1 block text-[14px] font-semibold ${md.overdue ? 'text-danger-ink' : 'text-navy-900'}`}>Day {md.day} of {md.total}</span>}
                       <Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">{next ? formatDateTime(next.scheduledAt) : <span className="text-ink-subtle">–</span>}</td>
@@ -89,7 +89,7 @@ export function CasesPage() {
                           confirmId === c.id ? (
                             <span className="inline-flex items-center gap-2">
                               <Button size="sm" variant="danger" onClick={() => act(() => removeClosedCase(c.id, actor))}>Remove</Button>
-                              <button type="button" className="text-[12px] font-semibold text-ink-muted hover:text-navy-900" onClick={() => setConfirmId(null)}>Cancel</button>
+                              <button type="button" className="text-[14px] font-semibold text-ink-muted hover:text-navy-900" onClick={() => setConfirmId(null)}>Cancel</button>
                             </span>
                           ) : (
                             <Button size="sm" variant="secondary" icon={<Trash2 className="size-3.5" />} onClick={() => setConfirmId(c.id)} aria-label={`Remove ${c.caseNo} from the list`}>
@@ -107,7 +107,7 @@ export function CasesPage() {
         </div>
       </Card>
       {canRemove && (
-        <p className="mt-2 text-[12px] text-ink-muted">
+        <p className="mt-2 text-[14px] text-ink-muted">
           Closed cases can be removed from this list to keep it short. The case record is kept, as Katarungang Pambarangay records must be preserved, and can be restored anytime.
         </p>
       )}
@@ -126,12 +126,12 @@ export function HearingsPage() {
     <li className="border-b border-line-soft last:border-0">
       <button type="button" onClick={() => navigate(`/cases/${c.id}`)} className="flex w-full items-center gap-4 px-5 py-3 text-left hover:bg-sky-50">
         <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-sky-100 text-center leading-tight text-navy-900">
-          <span className="text-[10px] font-semibold uppercase">{new Date(h.scheduledAt).toLocaleDateString('en-US', { month: 'short' })}</span>
-          <span className="font-display text-[16px] font-extrabold">{new Date(h.scheduledAt).getDate()}</span>
+          <span className="text-[12px] font-semibold uppercase">{new Date(h.scheduledAt).toLocaleDateString('en-US', { month: 'short' })}</span>
+          <span className="font-display text-[18px] font-extrabold">{new Date(h.scheduledAt).getDate()}</span>
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[13.5px] font-semibold text-navy-900">{c.caseNo} · {c.title}</span>
-          <span className="block text-[12px] text-ink-muted">{formatDateTime(h.scheduledAt)} · {h.kind === 'lupon_mediation' ? 'Lupon mediation' : 'Mediation under the Barangay Chairman'} · {h.place}</span>
+          <span className="block text-[15.5px] font-semibold text-navy-900">{c.caseNo} · {c.title}</span>
+          <span className="block text-[14px] text-ink-muted">{formatDateTime(h.scheduledAt)} · {h.kind === 'lupon_mediation' ? 'Lupon mediation' : 'Mediation under the Barangay Chairman'} · {h.place}</span>
         </span>
         {h.status === 'held' ? (
           <Badge dot={false} tone="neutral">{h.attendance.filter((a) => a.present).length}/{h.attendance.length} attended</Badge>
@@ -150,10 +150,10 @@ export function HearingsPage() {
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         <Panel title="Upcoming" bodyClassName="px-0 py-0" icon={<CalendarClock className="size-[18px]" />}>
-          {upcoming.length === 0 ? <p className="px-5 py-6 text-[13px] text-ink-muted">No hearings scheduled.</p> : <ul>{upcoming.map((x) => <Item key={x.h.id} {...x} />)}</ul>}
+          {upcoming.length === 0 ? <p className="px-5 py-6 text-[15px] text-ink-muted">No hearings scheduled.</p> : <ul>{upcoming.map((x) => <Item key={x.h.id} {...x} />)}</ul>}
         </Panel>
         <Panel title="Held" bodyClassName="px-0 py-0" icon={<Gavel className="size-[18px]" />}>
-          {past.length === 0 ? <p className="px-5 py-6 text-[13px] text-ink-muted">No hearings held yet.</p> : <ul>{past.map((x) => <Item key={x.h.id} {...x} />)}</ul>}
+          {past.length === 0 ? <p className="px-5 py-6 text-[15px] text-ink-muted">No hearings held yet.</p> : <ul>{past.map((x) => <Item key={x.h.id} {...x} />)}</ul>}
         </Panel>
       </div>
     </>
@@ -167,9 +167,9 @@ function Total({ icon, label, value, hint }: { icon: React.ReactNode; label: str
       <div className="flex items-center gap-4">
         <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-sky-100 text-navy-900">{icon}</span>
         <div>
-          <p className="text-[12px] font-semibold tracking-[0.06em] text-navy-600 uppercase">{label}</p>
+          <p className="text-[14px] font-semibold tracking-[0.06em] text-navy-600 uppercase">{label}</p>
           <p className="font-display text-[34px] leading-none font-extrabold text-navy-900">{value ?? '–'}</p>
-          <p className="mt-1 text-[12.5px] text-navy-600">{hint}</p>
+          <p className="mt-1 text-[14.5px] text-navy-600">{hint}</p>
         </div>
       </div>
     </Card>

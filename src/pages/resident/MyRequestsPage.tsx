@@ -49,8 +49,8 @@ export function MyRequestsPage() {
               <li key={r.id} className="border-b border-line-soft last:border-0">
                 <Link to={`/my/documents/${r.id}`} className="flex flex-wrap items-center gap-3 px-4 py-4 hover:bg-sky-50 sm:flex-nowrap sm:px-5">
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[14px] font-semibold text-navy-900">{getDocumentType(r.typeId).name}</span>
-                    <span className="block text-[12px] text-ink-muted">
+                    <span className="block text-[16px] font-semibold text-navy-900">{getDocumentType(r.typeId).name}</span>
+                    <span className="block text-[14px] text-ink-muted">
                       {r.referenceNo} · updated {formatDateTime(r.updatedAt)}
                     </span>
                   </span>

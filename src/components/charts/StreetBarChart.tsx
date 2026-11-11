@@ -32,7 +32,7 @@ export function StreetBarChart({ street, items }: { street: string; items: [stri
     plugins: { legend: { display: false }, tooltip: { backgroundColor: NAVY } },
     scales: {
       x: { display: false, beginAtZero: true },
-      y: { grid: { display: false }, border: { color: '#d6d9de' }, ticks: { color: '#3e4650', font: { family: 'Inter', size: 12 } } },
+      y: { grid: { display: false }, border: { color: '#d6d9de' }, ticks: { color: '#3e4650', font: { family: 'Inter', size: 14 } } },
     },
     datasets: { bar: { borderRadius: 3, categoryPercentage: 0.7, barPercentage: 0.9 } },
   }

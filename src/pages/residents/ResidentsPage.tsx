@@ -96,7 +96,7 @@ export function ResidentsPage() {
           </Select>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-[13px]">
+          <table className="w-full min-w-[900px] text-[15px]">
             <thead>
               <tr className="bg-surface-muted text-left">
                 {['Resident', 'Age', 'Address', 'Household', 'Contact', 'Sectors', 'Voter', 'Record'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}
@@ -107,7 +107,7 @@ export function ResidentsPage() {
                 <tr key={r.id} onClick={() => navigate(`/residents/${r.id}`)} className="cursor-pointer border-t border-line-soft hover:bg-sky-50">
                   <td className="px-4 py-2.5">
                     <span className="block font-semibold text-navy-900">{r.lastName}, {r.firstName} {r.middleName}</span>
-                    <span className="block text-[11.5px] text-ink-muted">{r.residentNo}</span>
+                    <span className="block text-[13.5px] text-ink-muted">{r.residentNo}</span>
                   </td>
                   <td className="px-4 py-2.5 tabular-nums">{age(r)}</td>
                   <td className="px-4 py-2.5">{r.houseNo} {r.street}</td>
@@ -121,7 +121,7 @@ export function ResidentsPage() {
             </tbody>
           </table>
         </div>
-        <div className="flex items-center justify-between border-t border-line-soft px-4 py-3 text-[12.5px] text-ink-muted">
+        <div className="flex items-center justify-between border-t border-line-soft px-4 py-3 text-[14.5px] text-ink-muted">
           <span className="flex items-center gap-1.5"><ArrowDownUp className="size-3.5" />{rows.length ? page * PAGE + 1 : 0}–{Math.min(rows.length, page * PAGE + PAGE)} of {rows.length} residents</span>
           <span className="flex gap-2">
             <button type="button" disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded-md border border-line px-3 py-1 font-semibold text-navy-900 disabled:opacity-40">Previous</button>

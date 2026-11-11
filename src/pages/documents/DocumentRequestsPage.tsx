@@ -97,8 +97,8 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
                   tab === id ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-surface-muted',
                 )}
               >
-                <span className={cn('block text-[12px] sm:text-[12.5px]', tab === id ? 'text-white/80' : 'text-ink-nav')}>{label}</span>
-                <span className="font-display text-[20px] leading-tight font-extrabold">{counts[id]}</span>
+                <span className={cn('block text-[14px] sm:text-[14.5px]', tab === id ? 'text-white/80' : 'text-ink-nav')}>{label}</span>
+                <span className="font-display text-[22px] leading-tight font-extrabold">{counts[id]}</span>
               </button>
             ))}
           </div>
@@ -139,7 +139,7 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
             <EmptyState icon={<Inbox className="size-5" />} title="No requests here" body={tab === 'action' && !approvalsOnly ? 'Nothing is waiting on you right now.' : approvalsOnly ? 'Nothing is waiting for your decision.' : 'Try another filter.'} />
           ) : (
             <>
-              <table className="hidden w-full text-[13px] md:table">
+              <table className="hidden w-full text-[15px] xl:table">
                 <thead>
                   <tr className="bg-surface-muted text-left">
                     <th className="label-caps px-4 py-2.5">Reference</th>
@@ -164,7 +164,7 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
                       <td className="px-3 py-2.5 text-navy-900">{getDocumentType(r.typeId).name}</td>
                       <td className="px-3 py-2.5">
                         <span className="block text-navy-900">{r.requesterName}</span>
-                        {r.assisted && <span className="block text-[11.5px] text-ink-muted">Walk-in</span>}
+                        {r.assisted && <span className="block text-[13.5px] text-ink-muted">Walk-in</span>}
                       </td>
                       <td className="px-3 py-2.5">
                         <StatusBadge status={r.status} />
@@ -174,7 +174,7 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
                   ))}
                 </tbody>
               </table>
-              <ul className="divide-y divide-line-soft md:hidden">
+              <ul className="divide-y divide-line-soft xl:hidden">
                 {paged.slice.map((r) => (
                   <li key={r.id}>
                     <Link to={`/documents/${r.id}`} className="block px-4 py-3 active:bg-sky-50">
@@ -182,8 +182,8 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
                         <span className="font-semibold text-navy-900">{r.referenceNo}</span>
                         <StatusBadge status={r.status} />
                       </span>
-                      <span className="block text-[13px] text-navy-900">{getDocumentType(r.typeId).name}</span>
-                      <span className="block text-[12px] text-ink-muted">{r.requesterName}{r.assisted ? ' · Walk-in' : ''} · {formatDateTime(r.updatedAt)}</span>
+                      <span className="block text-[15px] text-navy-900">{getDocumentType(r.typeId).name}</span>
+                      <span className="block text-[14px] text-ink-muted">{r.requesterName}{r.assisted ? ' · Walk-in' : ''} · {formatDateTime(r.updatedAt)}</span>
                     </Link>
                   </li>
                 ))}

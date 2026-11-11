@@ -69,15 +69,15 @@ export function AppShell() {
         <div className="flex min-w-0 items-center gap-2.5">
           <BarangaySeal />
           <div className="min-w-0 leading-tight">
-            <p className="truncate font-display text-[14px] font-extrabold text-navy-900">{APP_CONFIG.barangayName}</p>
-            <p className="truncate text-[11px] text-ink-muted">{role?.portalLabel}</p>
+            <p className="truncate font-display text-[16px] font-extrabold text-navy-900">{APP_CONFIG.barangayName}</p>
+            <p className="truncate text-[13px] text-ink-muted">{role?.portalLabel}</p>
           </div>
         </div>
 
         <div className="ml-auto flex items-center gap-4">
           <div className="hidden text-right leading-tight sm:block">
-            <p className="text-[11px] text-ink-muted">{formatWeekday(today)}</p>
-            <p className="text-[13px] font-semibold text-navy-900">{formatDate(today)}</p>
+            <p className="text-[13px] text-ink-muted">{formatWeekday(today)}</p>
+            <p className="text-[15px] font-semibold text-navy-900">{formatDate(today)}</p>
           </div>
           <NotificationMenu />
         </div>
@@ -88,7 +88,7 @@ export function AppShell() {
         <aside
           className={cn(
             'hidden h-full shrink-0 border-r border-line transition-[width] lg:block',
-            collapsed ? 'w-[68px]' : 'w-[248px]',
+            collapsed ? 'w-[68px]' : 'w-[292px]',
           )}
         >
           <Sidebar collapsed={collapsed} />
@@ -98,15 +98,15 @@ export function AppShell() {
         {mobileOpen && (
           <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
             <button type="button" aria-label="Close menu" className="absolute inset-0 bg-navy-900/40" onClick={() => setMobileOpen(false)} />
-            <aside className="relative flex h-full w-[288px] max-w-[85vw] flex-col border-r border-line bg-surface shadow-xl">
+            <aside className="relative flex h-full w-[310px] max-w-[88vw] flex-col border-r border-line bg-surface shadow-xl">
               <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-line px-4">
                 <button type="button" onClick={() => setMobileOpen(false)} aria-label="Close menu" className="grid size-10 place-items-center rounded-[var(--radius-control)] text-navy-900 hover:bg-surface-muted">
                   <X className="size-5" />
                 </button>
                 <BarangaySeal />
                 <div className="min-w-0 leading-tight">
-                  <p className="truncate font-display text-[14px] font-extrabold text-navy-900">{APP_CONFIG.barangayName}</p>
-                  <p className="truncate text-[11px] text-ink-muted">{role?.portalLabel}</p>
+                  <p className="truncate font-display text-[16px] font-extrabold text-navy-900">{APP_CONFIG.barangayName}</p>
+                  <p className="truncate text-[13px] text-ink-muted">{role?.portalLabel}</p>
                 </div>
               </div>
               <div className="min-h-0 flex-1">

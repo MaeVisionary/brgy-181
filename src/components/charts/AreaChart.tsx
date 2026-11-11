@@ -35,7 +35,7 @@ export function AreaChart({ data }: { data: AreaBreakdown[] }) {
       tooltip: { backgroundColor: NAVY, titleFont: { family: 'Inter' }, bodyFont: { family: 'Inter' } },
     },
     scales: {
-      x: { grid: { display: false }, border: { color: '#d6d9de' }, ticks: { color: '#687280', font: { family: 'Inter', size: 11 } } },
+      x: { grid: { display: false }, border: { color: '#d6d9de' }, ticks: { color: '#687280', font: { family: 'Inter', size: 13 } } },
       y: { display: false, beginAtZero: true },
     },
     datasets: { bar: { borderRadius: { topLeft: 2, topRight: 2 }, categoryPercentage: 0.62, barPercentage: 0.9 } },
@@ -56,7 +56,7 @@ export function AreaChart({ data }: { data: AreaBreakdown[] }) {
           }}
         />
       </div>
-      <div className="mt-3 flex gap-5 text-[12px] text-ink-muted">
+      <div className="mt-3 flex gap-5 text-[14px] text-ink-muted">
         <span className="inline-flex items-center gap-1.5">
           <span className="size-2.5 rounded-[2px] bg-navy-900" /> Residents
         </span>

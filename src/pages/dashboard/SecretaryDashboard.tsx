@@ -91,8 +91,8 @@ export function SecretaryDashboard() {
           {RECURRING_REPORTS.map((r) => (
             <li key={r.id} className={`flex items-center justify-between gap-3 rounded-[var(--radius-control)] border px-3 py-2.5 ${r.id === 'senior-masterlist' ? 'border-line' : 'border-warning/40 bg-warning-tint/40'}`}>
               <span>
-                <span className="block text-[13px] font-semibold text-navy-900">{r.name}</span>
-                <span className="block text-[11.5px] text-ink-muted">{r.schedule.replace(/\s*\(format pending\)/i, '')}</span>
+                <span className="block text-[15px] font-semibold text-navy-900">{r.name}</span>
+                <span className="block text-[13.5px] text-ink-muted">{r.schedule.replace(/\s*\(format pending\)/i, '')}</span>
               </span>
               <Badge tone={r.id === 'senior-masterlist' ? 'success' : 'warning'}>{r.id === 'senior-masterlist' ? 'Analytics ready' : 'Format pending'}</Badge>
             </li>

@@ -16,8 +16,8 @@ export function DevPreviewPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <p className="label-caps">Development only</p>
-      <h1 className="mt-1 font-display text-[22px] font-extrabold text-navy-900">Prototype preview</h1>
-      <p className="mt-2 text-[13.5px] text-ink-muted">
+      <h1 className="mt-1 font-display text-[24px] font-extrabold text-navy-900">Prototype preview</h1>
+      <p className="mt-2 text-[15.5px] text-ink-muted">
         For reviewing role screens with sample data during development. This page does not exist in production builds and is not a sign-in.
       </p>
       <ul className="mt-6 divide-y divide-line-soft rounded-xl border border-line bg-surface">
@@ -31,8 +31,8 @@ export function DevPreviewPage() {
               }}
               className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-sky-50"
             >
-              <span className="text-[13.5px] font-semibold text-navy-900">{u.fullName}</span>
-              <span className="text-[12px] text-ink-muted">{ROLES[u.roleId].name}</span>
+              <span className="text-[15.5px] font-semibold text-navy-900">{u.fullName}</span>
+              <span className="text-[14px] text-ink-muted">{ROLES[u.roleId].name}</span>
             </button>
           </li>
         ))}

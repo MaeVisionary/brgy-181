@@ -65,7 +65,7 @@ export function CustodianDashboard() {
 
       <Panel className="mt-4" title="Equipment records" actions={<ViewAll to="/inventory" />} bodyClassName="px-0 py-0">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-[13px]">
+          <table className="w-full min-w-[560px] text-[15px]">
             <thead>
               <tr className="bg-surface-muted text-left">
                 {['Equipment', 'Total', 'Available', 'Borrowed', 'Damaged', 'Missing'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}

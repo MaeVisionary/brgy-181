@@ -93,7 +93,7 @@ export function ChairmanDashboard() {
           ) : (
             <ul className="space-y-2.5">
               {resolved.map((c) => (
-                <li key={c.id} className="text-[13px]">
+                <li key={c.id} className="text-[15px]">
                   <span className="font-semibold text-navy-900">{c.caseNo} · {c.title}</span>
                   <span className="block text-ink-muted">{c.outcome!.summary}</span>
                 </li>

@@ -28,8 +28,8 @@ export function SimpleBar({
     indexAxis: horizontal ? 'y' : 'x',
     plugins: { legend: { display: false }, tooltip: { backgroundColor: '#002132' } },
     scales: {
-      x: { grid: { display: !!horizontal, color: '#e8eaed' }, ticks: { color: '#687280', font: { family: 'Inter', size: 11 } }, beginAtZero: true },
-      y: { grid: { display: !horizontal, color: '#e8eaed' }, ticks: { color: '#4a4f57', font: { family: 'Inter', size: 11 }, precision: 0 }, beginAtZero: true },
+      x: { grid: { display: !!horizontal, color: '#e8eaed' }, ticks: { color: '#687280', font: { family: 'Inter', size: 13 } }, beginAtZero: true },
+      y: { grid: { display: !horizontal, color: '#e8eaed' }, ticks: { color: '#4a4f57', font: { family: 'Inter', size: 13 }, precision: 0 }, beginAtZero: true },
     },
     onClick: (_e, els) => {
       if (onSelect && els[0]) onSelect(labels[els[0].index])

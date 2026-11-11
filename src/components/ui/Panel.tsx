@@ -48,12 +48,12 @@ export function Panel({
 }) {
   return (
     <Card className={cn('flex flex-col overflow-hidden', className)}>
-      <div className={cn('flex items-center justify-between gap-3 px-5 py-3.5', dark ? 'bg-navy-900 text-white [&_a]:text-white [&_a]:decoration-white/60' : 'border-b border-line-soft')}>
+      <div className={cn('flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3.5', dark ? 'bg-bar border-b border-sky-300 text-navy-900' : 'border-b border-line-soft')}>
         <div className="flex min-w-0 items-start gap-3">
-          {icon && <span className={cn('mt-0.5', dark ? 'text-white' : 'text-navy-900')}>{icon}</span>}
+          {icon && <span className={cn('mt-0.5', 'text-navy-900')}>{icon}</span>}
           <div className="min-w-0">
-            <h2 className={cn('font-display text-[15px] font-bold', dark ? 'text-white' : 'text-navy-900')}>{title}</h2>
-            {subtitle && keepSubtitle && <p className={cn('mt-0.5 text-[12px]', dark ? 'text-white/75' : 'text-ink-muted')}>{subtitle}</p>}
+            <h2 className={cn('font-display text-[17px] font-bold', 'text-navy-900')}>{title}</h2>
+            {subtitle && keepSubtitle && <p className={cn('mt-0.5 text-[14px]', dark ? 'text-ink-nav' : 'text-ink-muted')}>{subtitle}</p>}
           </div>
         </div>
         {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

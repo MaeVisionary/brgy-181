@@ -22,7 +22,7 @@ import { PublicLayout } from './PublicLayout'
  */
 
 const field =
-  'h-12 w-full rounded-xl border border-line bg-surface px-4 text-[15px] text-navy-900 placeholder:text-ink-subtle transition-[border-color,box-shadow] duration-200 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none aria-[invalid=true]:border-danger'
+  'h-12 w-full rounded-xl border border-line bg-surface px-4 text-[17px] text-navy-900 placeholder:text-ink-subtle transition-[border-color,box-shadow] duration-200 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none aria-[invalid=true]:border-danger'
 
 /** Government-issued IDs commonly accepted for barangay transactions. */
 const ID_TYPES = [
@@ -241,7 +241,7 @@ export function RegisterPage() {
           <button
             type="button"
             onClick={() => (step === 0 ? go('/login/resident', 'back') : setStep((s) => s - 1))}
-            className="bmis-press -ml-1 inline-flex items-center gap-1.5 rounded-full px-1 text-[13px] font-semibold text-ink-muted hover:text-navy-900"
+            className="bmis-press -ml-1 inline-flex items-center gap-1.5 rounded-full px-1 text-[15px] font-semibold text-ink-muted hover:text-navy-900"
           >
             <ArrowLeft className="size-4" /> {step === 0 ? 'Back to sign in' : 'Back'}
           </button>
@@ -250,8 +250,8 @@ export function RegisterPage() {
         <div className="mt-4 flex items-center gap-3">
           <BarangaySeal className="size-11" />
           <div>
-            <h1 className="font-display text-[24px] leading-tight font-extrabold tracking-tight text-navy-900 sm:text-[26px]">Create a Resident Account</h1>
-            <p className="text-[13.5px] text-ink-muted">{BARANGAY.name}, Zone {BARANGAY.zone}, District {BARANGAY.district}, Manila</p>
+            <h1 className="font-display text-[26px] leading-tight font-extrabold tracking-tight text-navy-900 sm:text-[28px]">Create a Resident Account</h1>
+            <p className="text-[15.5px] text-ink-muted">{BARANGAY.name}, Zone {BARANGAY.zone}, District {BARANGAY.district}, Manila</p>
           </div>
         </div>
 
@@ -261,12 +261,12 @@ export function RegisterPage() {
           {step === 0 && (
             <>
               <StepTitle icon={<ShieldCheck />} title="Before you start" sub="It takes about 5 minutes." />
-              <ul className="mt-5 space-y-2.5 text-[14px] text-navy-900">
+              <ul className="mt-5 space-y-2.5 text-[16px] text-navy-900">
                 <Li>One valid government-issued ID (we'll ask for a clear photo of the front).</Li>
                 <Li>A phone or computer with a camera for a short live selfie check.</Li>
                 <Li>You must be a resident of Barangay 181 and at least {MIN_AGE} years old.</Li>
               </ul>
-              <div className="mt-6 rounded-2xl bg-surface-muted p-5 text-[13px] leading-relaxed text-navy-900">
+              <div className="mt-6 rounded-2xl bg-surface-muted p-5 text-[15px] leading-relaxed text-navy-900">
                 <p className="font-semibold">Privacy notice (Data Privacy Act of 2012, RA 10173)</p>
                 <p className="mt-2 text-ink-muted">
                   Barangay 181 collects your personal details, a photo of your ID and a selfie only to confirm that you are a resident and that the ID is yours.
@@ -275,7 +275,7 @@ export function RegisterPage() {
                   outside the barangay except as required by law. You may ask to see, correct or delete your information at the Barangay Hall.
                 </p>
               </div>
-              <label className="mt-5 flex items-start gap-3 text-[14px] text-navy-900">
+              <label className="mt-5 flex items-start gap-3 text-[16px] text-navy-900">
                 <input type="checkbox" className="mt-0.5 size-4 accent-[#002132]" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
                 I have read the privacy notice and I agree to the collection and use of my information for resident verification.
               </label>
@@ -326,8 +326,8 @@ export function RegisterPage() {
                 )}
               </div>
               <fieldset className="mt-5">
-                <legend className="mb-2 text-[13px] font-semibold text-navy-900">Do any of these apply to you? <span className="font-normal text-ink-muted">(optional)</span></legend>
-                <div className="flex flex-wrap gap-x-6 gap-y-2 text-[14px] text-navy-900">
+                <legend className="mb-2 text-[15px] font-semibold text-navy-900">Do any of these apply to you? <span className="font-normal text-ink-muted">(optional)</span></legend>
+                <div className="flex flex-wrap gap-x-6 gap-y-2 text-[16px] text-navy-900">
                   <Check label="Person with disability (PWD)" checked={d.pwd} onChange={(v) => set('pwd', v)} />
                   <Check label="Solo parent" checked={d.soloParent} onChange={(v) => set('soloParent', v)} />
                   <Check label="4Ps member" checked={d.fourPs} onChange={(v) => set('fourPs', v)} />
@@ -359,8 +359,8 @@ export function RegisterPage() {
                 ) : (
                   <div className="grid place-items-center rounded-2xl border-2 border-dashed border-line bg-surface-muted px-6 py-10 text-center">
                     <IdCard className="size-10 text-ink-subtle" />
-                    <p className="mt-2 text-[14px] font-semibold text-navy-900">Photo of the front of your ID</p>
-                    <p className="text-[12.5px] text-ink-muted">Place it on a plain surface, in good light, with no glare.</p>
+                    <p className="mt-2 text-[16px] font-semibold text-navy-900">Photo of the front of your ID</p>
+                    <p className="text-[14.5px] text-ink-muted">Place it on a plain surface, in good light, with no glare.</p>
                   </div>
                 )}
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -410,7 +410,7 @@ export function RegisterPage() {
                 <F label="Confirm password"><input className={field} type={showPw ? 'text' : 'password'} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" /></F>
                 {touched && accountError && <ErrorText>{accountError}</ErrorText>}
               </div>
-              <div className="mt-6 rounded-2xl bg-surface-muted p-4 text-[13px] text-navy-900">
+              <div className="mt-6 rounded-2xl bg-surface-muted p-4 text-[15px] text-navy-900">
                 <p className="font-semibold">Review</p>
                 <p className="mt-1 text-ink-muted">
                   {[d.firstName, d.middleName, d.lastName, d.suffix].filter(Boolean).join(' ')} · born {d.birthDate} · {d.houseNo} {street} · {idType}
@@ -445,31 +445,31 @@ export function RegisterPage() {
               {result.status === 'auto_approved' ? (
                 <>
                   <span className="mx-auto grid size-16 place-items-center rounded-full bg-success-tint text-success"><CheckCircle2 className="size-9" /></span>
-                  <h2 className="mt-4 font-display text-[22px] font-extrabold text-navy-900">You're verified!</h2>
-                  <p className="mx-auto mt-2 max-w-md text-[14px] text-ink-muted">Your identity and residency were confirmed. Your account is ready.</p>
+                  <h2 className="mt-4 font-display text-[24px] font-extrabold text-navy-900">You're verified!</h2>
+                  <p className="mx-auto mt-2 max-w-md text-[16px] text-ink-muted">Your identity and residency were confirmed. Your account is ready.</p>
                 </>
               ) : (
                 <>
                   <span className="mx-auto grid size-16 place-items-center rounded-full bg-sky-100 text-info"><ShieldCheck className="size-9" /></span>
-                  <h2 className="mt-4 font-display text-[22px] font-extrabold text-navy-900">Registration submitted</h2>
-                  <p className="mx-auto mt-2 max-w-md text-[14px] text-ink-muted">
+                  <h2 className="mt-4 font-display text-[24px] font-extrabold text-navy-900">Registration submitted</h2>
+                  <p className="mx-auto mt-2 max-w-md text-[16px] text-ink-muted">
                     Some details need to be checked by the Barangay Secretary. This usually takes 1–3 working days. You can sign in once your registration is
                     approved. If needed, you may also visit the Barangay Hall with your valid ID.
                   </p>
                 </>
               )}
-              <p className="mt-5 inline-block rounded-xl bg-surface-muted px-4 py-2 text-[13px] text-navy-900">
+              <p className="mt-5 inline-block rounded-xl bg-surface-muted px-4 py-2 text-[15px] text-navy-900">
                 Reference no. <span className="font-semibold">{result.referenceNo}</span>
               </p>
               <div className="mt-6">
-                <Button className="h-12 rounded-xl px-6 text-[15px]" onClick={() => go('/login/resident', 'forward')}>Go to sign in</Button>
+                <Button className="h-12 rounded-xl px-6 text-[17px]" onClick={() => go('/login/resident', 'forward')}>Go to sign in</Button>
               </div>
             </div>
           )}
 
           {step < 5 && (
             <div className="mt-8 flex justify-end">
-              <Button className="h-12 rounded-xl px-7 text-[15px]" onClick={next} disabled={step === 2 && idFace === 'checking'}>
+              <Button className="h-12 rounded-xl px-7 text-[17px]" onClick={next} disabled={step === 2 && idFace === 'checking'}>
                 {step === 4 ? 'Submit registration' : 'Continue'}
               </Button>
             </div>
@@ -603,7 +603,7 @@ function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: 
         <Status tone={value.live ? 'success' : 'warning'} icon={value.live ? <CheckCircle2 className="size-4" /> : <CircleHelp className="size-4" />}>
           {value.live ? 'Live check complete.' : 'Photo uploaded. Without the live check, the Barangay Secretary will review your registration.'}
         </Status>
-        <button type="button" onClick={() => { onReset(); setRun((r) => r + 1) }} className="mt-3 text-[13px] font-semibold text-info hover:underline">
+        <button type="button" onClick={() => { onReset(); setRun((r) => r + 1) }} className="mt-3 text-[15px] font-semibold text-info hover:underline">
           Retake
         </button>
       </div>
@@ -628,7 +628,7 @@ function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: 
         </div>
         {(phase === 'loading' || phase === 'capturing') && (
           <div className="absolute inset-0 grid place-items-center text-white">
-            <span className="flex items-center gap-2 rounded-full bg-black/50 px-4 py-2 text-[13px]">
+            <span className="flex items-center gap-2 rounded-full bg-black/50 px-4 py-2 text-[15px]">
               <Loader2 className="size-4 animate-spin" /> {phase === 'loading' ? 'Starting the camera…' : 'Checking…'}
             </span>
           </div>
@@ -637,10 +637,10 @@ function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: 
 
       {phase !== 'error' && (
         <>
-          <p aria-live="polite" className="mt-4 text-center text-[15px] font-semibold text-navy-900">{phase === 'loading' ? 'Allow camera access when asked.' : hint}</p>
+          <p aria-live="polite" className="mt-4 text-center text-[17px] font-semibold text-navy-900">{phase === 'loading' ? 'Allow camera access when asked.' : hint}</p>
           <ol className="mt-3 flex justify-center gap-2">
             {steps.map((s, i) => (
-              <li key={s.k} className={cn('rounded-full px-3 py-1 text-[12px] font-semibold', i < idx ? 'bg-success-tint text-success' : i === idx ? 'bg-navy-900 text-white' : 'bg-surface-muted text-ink-muted')}>
+              <li key={s.k} className={cn('rounded-full px-3 py-1 text-[14px] font-semibold', i < idx ? 'bg-success-tint text-success' : i === idx ? 'bg-navy-900 text-white' : 'bg-surface-muted text-ink-muted')}>
                 {s.label}
               </li>
             ))}
@@ -656,9 +656,9 @@ function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: 
         </>
       )}
       {showUpload && (
-        <div className="mt-4 text-center text-[13px] text-ink-muted">
+        <div className="mt-4 text-center text-[15px] text-ink-muted">
           Having trouble? <FilePick inline label="Upload a selfie photo instead" capture="user" onFile={upload} />
-          <span className="block text-[12px]">(Your registration will then be reviewed by the Barangay Secretary.)</span>
+          <span className="block text-[14px]">(Your registration will then be reviewed by the Barangay Secretary.)</span>
         </div>
       )}
     </div>
@@ -673,7 +673,7 @@ function Stepper({ step }: { step: number }) {
       {STEPS.map((s, i) => (
         <li key={s} aria-current={i === step ? 'step' : undefined}>
           <span className={cn('block h-1.5 rounded-full transition-colors duration-300', i <= step ? 'bg-navy-900' : 'bg-line')} />
-          <span className={cn('mt-1.5 hidden text-[11.5px] font-semibold sm:block', i === step ? 'text-navy-900' : 'text-ink-subtle')}>{s}</span>
+          <span className={cn('mt-1.5 hidden text-[13.5px] font-semibold sm:block', i === step ? 'text-navy-900' : 'text-ink-subtle')}>{s}</span>
         </li>
       ))}
     </ol>
@@ -685,8 +685,8 @@ function StepTitle({ icon, title, sub }: { icon: ReactNode; title: string; sub: 
     <div className="flex items-start gap-3">
       <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-sky-100 text-navy-900 [&>svg]:size-5">{icon}</span>
       <div>
-        <h2 className="font-display text-[19px] font-extrabold text-navy-900">{title}</h2>
-        <p className="text-[13.5px] text-ink-muted">{sub}</p>
+        <h2 className="font-display text-[21px] font-extrabold text-navy-900">{title}</h2>
+        <p className="text-[15.5px] text-ink-muted">{sub}</p>
       </div>
     </div>
   )
@@ -695,11 +695,11 @@ function StepTitle({ icon, title, sub }: { icon: ReactNode; title: string; sub: 
 function F({ label, error, hint, optional, children }: { label: string; error?: string; hint?: string; optional?: boolean; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[13px] font-semibold text-navy-900">
+      <span className="mb-1.5 block text-[15px] font-semibold text-navy-900">
         {label} {optional && <span className="font-normal text-ink-muted">(optional)</span>}
       </span>
       {children}
-      {error ? <span className="mt-1 block text-[12.5px] text-danger-ink">{error}</span> : hint ? <span className="mt-1 block text-[12px] text-ink-muted">{hint}</span> : null}
+      {error ? <span className="mt-1 block text-[14.5px] text-danger-ink">{error}</span> : hint ? <span className="mt-1 block text-[14px] text-ink-muted">{hint}</span> : null}
     </label>
   )
 }
@@ -723,12 +723,12 @@ function Li({ children }: { children: ReactNode }) {
 }
 
 function ErrorText({ children }: { children: ReactNode }) {
-  return <p className="mt-2 text-[12.5px] text-danger-ink">{children}</p>
+  return <p className="mt-2 text-[14.5px] text-danger-ink">{children}</p>
 }
 
 function Status({ tone, icon, children }: { tone: 'info' | 'success' | 'warning' | 'danger'; icon: ReactNode; children: ReactNode }) {
   const cls = { info: 'bg-sky-100 text-navy-900', success: 'bg-success-tint text-navy-900', warning: 'bg-warning-tint text-navy-900', danger: 'bg-danger-tint text-navy-900' }[tone]
-  return <p role="status" className={cn('mt-3 flex items-start gap-2 rounded-xl px-4 py-3 text-left text-[13px]', cls)}><span className="mt-px shrink-0">{icon}</span>{children}</p>
+  return <p role="status" className={cn('mt-3 flex items-start gap-2 rounded-xl px-4 py-3 text-left text-[15px]', cls)}><span className="mt-px shrink-0">{icon}</span>{children}</p>
 }
 
 function FilePick({ label, icon, capture, inline, onFile }: { label: string; icon?: ReactNode; capture?: boolean | 'user'; inline?: boolean; onFile: (f: File | undefined) => void }) {
@@ -757,10 +757,10 @@ function FilePick({ label, icon, capture, inline, onFile }: { label: string; ico
 
 function Progress({ label, v, active = true }: { label: string; v?: CheckResult; active?: boolean }) {
   return (
-    <li className={cn('flex items-center gap-3 rounded-xl border border-line px-4 py-3 text-[14px] transition-opacity', active ? 'opacity-100' : 'opacity-50')}>
+    <li className={cn('flex items-center gap-3 rounded-xl border border-line px-4 py-3 text-[16px] transition-opacity', active ? 'opacity-100' : 'opacity-50')}>
       {v ? <CheckCircle2 className="size-5 text-success" /> : active ? <Loader2 className="size-5 animate-spin text-navy-600" /> : <span className="size-5 rounded-full border-2 border-line" />}
       <span className="text-navy-900">{label}</span>
-      {v && <span className="ml-auto text-[12px] text-ink-muted">Done</span>}
+      {v && <span className="ml-auto text-[14px] text-ink-muted">Done</span>}
     </li>
   )
 }

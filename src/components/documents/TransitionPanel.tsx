@@ -63,19 +63,19 @@ export function TransitionPanel({
   return (
     <Panel title={ownerView ? 'What you can do' : 'Next step'} subtitle={`Current status: ${STATUS_META[req.status].label}`}>
       {options.length === 0 ? (
-        <p className="text-[12.5px] text-ink-muted">
+        <p className="text-[14.5px] text-ink-muted">
           {ownerView ? 'Nothing is needed from you right now.' : 'No step is available to your role at this stage.'}
         </p>
       ) : picked ? (
         <div className="space-y-3">
-          <p className="text-[13px] font-semibold text-navy-900">{picked.label}</p>
-          {picked.hint && <p className="text-[12px] text-ink-muted">{picked.hint}</p>}
+          <p className="text-[15px] font-semibold text-navy-900">{picked.label}</p>
+          {picked.hint && <p className="text-[14px] text-ink-muted">{picked.hint}</p>}
           {picked.to === 'needs_info' && !ownerView && (
             <fieldset>
-              <legend className="mb-1.5 text-[12px] font-semibold text-navy-900">What should the requester send? <span className="text-danger-ink">*</span></legend>
+              <legend className="mb-1.5 text-[14px] font-semibold text-navy-900">What should the requester send? <span className="text-danger-ink">*</span></legend>
               <div className="grid gap-1.5">
                 {askable.map((item) => (
-                  <label key={item} className="flex cursor-pointer items-center gap-2 text-[12.5px] text-navy-900">
+                  <label key={item} className="flex cursor-pointer items-center gap-2 text-[14.5px] text-navy-900">
                     <input type="checkbox" className="size-4 accent-[#002132]" checked={asked.includes(item)} onChange={(e) => setAsked((a) => (e.target.checked ? [...a, item] : a.filter((x) => x !== item)))} />
                     {item}
                   </label>
@@ -85,14 +85,14 @@ export function TransitionPanel({
           )}
           {picked.remarks && (
             <label className="block">
-              <span className="mb-1 block text-[12px] font-semibold text-navy-900">
+              <span className="mb-1 block text-[14px] font-semibold text-navy-900">
                 {ownerView ? 'Your message' : 'Note'} {picked.remarks === 'required' ? <span className="text-danger-ink">*</span> : <span className="font-normal text-ink-muted">(optional)</span>}
               </span>
               <TextArea value={remarks} onChange={(e) => setRemarks(e.target.value)} autoFocus />
             </label>
           )}
           {error && (
-            <p role="alert" className="flex items-start gap-2 rounded-md bg-danger-tint px-3 py-2 text-[12.5px] text-danger-ink">
+            <p role="alert" className="flex items-start gap-2 rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">
               <AlertCircle className="mt-px size-4 shrink-0" />
               {error}
             </p>
@@ -108,7 +108,7 @@ export function TransitionPanel({
         </div>
       ) : (
         <div className="space-y-2">
-          {dirty && <p className="rounded-md bg-warning-tint px-3 py-2 text-[12px] text-warning">Save your changes to the details first.</p>}
+          {dirty && <p className="rounded-md bg-warning-tint px-3 py-2 text-[14px] text-warning">Save your changes to the details first.</p>}
           {options.map((t, i) => {
             const blocked = (t.requiresComplete && (missingCount ?? 0) > 0) || dirty
             return (
@@ -122,7 +122,7 @@ export function TransitionPanel({
                   {t.label}
                 </Button>
                 {t.requiresComplete && (missingCount ?? 0) > 0 && (
-                  <p className="mt-1 text-[11.5px] text-danger-ink">Complete the missing details first.</p>
+                  <p className="mt-1 text-[13.5px] text-danger-ink">Complete the missing details first.</p>
                 )}
               </div>
             )

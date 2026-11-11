@@ -12,7 +12,7 @@ import { ServiceError } from '@/services/mockApi'
 import { PublicLayout } from './PublicLayout'
 
 const field =
-  'h-12 w-full rounded-xl border bg-surface px-4 text-[15px] text-navy-900 placeholder:text-ink-subtle transition-[border-color,box-shadow] duration-200 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none'
+  'h-12 w-full rounded-xl border bg-surface px-4 text-[17px] text-navy-900 placeholder:text-ink-subtle transition-[border-color,box-shadow] duration-200 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none'
 
 /** Step 3: the sign-in form for the selected account type. */
 export function RoleLoginPage() {
@@ -53,7 +53,7 @@ export function RoleLoginPage() {
   return (
     <PublicLayout minimal>
       <div className="mx-auto max-w-[1000px] px-4 py-8 sm:px-6 sm:py-12">
-        <button type="button" onClick={() => go('/portal', 'back')} className="bmis-press -ml-1 mb-4 inline-flex min-h-9 items-center gap-1.5 rounded-full px-1 text-[13px] font-semibold text-ink-muted hover:text-navy-900">
+        <button type="button" onClick={() => go('/portal', 'back')} className="bmis-press -ml-1 mb-4 inline-flex min-h-9 items-center gap-1.5 rounded-full px-1 text-[15px] font-semibold text-ink-muted hover:text-navy-900">
           <ArrowLeft className="size-4" /> Back to account selection
         </button>
         <div className="grid gap-5 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
@@ -63,25 +63,25 @@ export function RoleLoginPage() {
           <div className="relative flex items-center gap-3">
             <BarangaySeal onDark className="size-11" />
             <span className="leading-tight">
-              <span className="block font-display text-[15px] font-extrabold">{BARANGAY.name}</span>
-              <span className="block text-[12px] text-white/70">Zone {BARANGAY.zone}, District {BARANGAY.district}, Manila</span>
+              <span className="block font-display text-[17px] font-extrabold">{BARANGAY.name}</span>
+              <span className="block text-[14px] text-white/70">Zone {BARANGAY.zone}, District {BARANGAY.district}, Manila</span>
             </span>
           </div>
           <div className="relative my-auto pt-8">
             <span className="grid size-11 place-items-center rounded-xl bg-white/10"><Icon className="size-5" /></span>
-            <p className="mt-4 text-[13.5px] text-white/80">{type.slug === 'resident' ? 'Welcome!' : 'Welcome back!'}</p>
+            <p className="mt-4 text-[15.5px] text-white/80">{type.slug === 'resident' ? 'Welcome!' : 'Welcome back!'}</p>
             <p className="font-display text-[32px] leading-[1.08] font-extrabold tracking-tight sm:text-[38px]">{type.title}</p>
-            <p className="mt-2 text-[13.5px] text-white/80">{type.slug === 'resident' ? 'Sign in to request documents and follow your transactions.' : 'Sign in to access your Barangay 181 account.'}</p>
+            <p className="mt-2 text-[15.5px] text-white/80">{type.slug === 'resident' ? 'Sign in to request documents and follow your transactions.' : 'Sign in to access your Barangay 181 account.'}</p>
           </div>
         </aside>
 
         {/* Form */}
         <section className="bmis-rise bmis-rise-2 rounded-[24px] border border-line bg-surface p-7 md:p-9">
-          <h1 className="font-display text-[24px] leading-tight font-extrabold tracking-tight text-navy-900 sm:text-[26px]">Login as {type.title}</h1>
+          <h1 className="font-display text-[26px] leading-tight font-extrabold tracking-tight text-navy-900 sm:text-[28px]">Login as {type.title}</h1>
 
           <form onSubmit={submit} noValidate className="mt-7 space-y-4">
             <label className="block">
-              <span className="mb-1.5 block text-[13px] font-semibold text-navy-900">Username or Email</span>
+              <span className="mb-1.5 block text-[15px] font-semibold text-navy-900">Username or Email</span>
               <input
                 className={cn(field, idError ? 'border-danger' : 'border-line')}
                 autoComplete="username"
@@ -90,10 +90,10 @@ export function RoleLoginPage() {
                 aria-invalid={!!idError}
                 aria-describedby={idError ? 'id-err' : undefined}
               />
-              {idError && <span id="id-err" className="mt-1 block text-[12.5px] text-danger-ink">{idError}</span>}
+              {idError && <span id="id-err" className="mt-1 block text-[14.5px] text-danger-ink">{idError}</span>}
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[13px] font-semibold text-navy-900">Password</span>
+              <span className="mb-1.5 block text-[15px] font-semibold text-navy-900">Password</span>
               <span className="relative block">
                 <input
                   className={cn(field, 'pr-12', pwError ? 'border-danger' : 'border-line')}
@@ -113,39 +113,39 @@ export function RoleLoginPage() {
                   {show ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
                 </button>
               </span>
-              {pwError && <span id="pw-err" className="mt-1 block text-[12.5px] text-danger-ink">{pwError}</span>}
+              {pwError && <span id="pw-err" className="mt-1 block text-[14.5px] text-danger-ink">{pwError}</span>}
             </label>
 
             <div className="flex items-center justify-between gap-3">
-              <label className="flex items-center gap-2 text-[13px] text-navy-900">
+              <label className="flex items-center gap-2 text-[15px] text-navy-900">
                 <input type="checkbox" className="size-4 accent-[#002132]" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                 Remember me
               </label>
-              <button type="button" onClick={() => go(`/forgot-password/${type.slug}`, 'forward')} className="text-[13px] font-semibold text-info hover:underline">
+              <button type="button" onClick={() => go(`/forgot-password/${type.slug}`, 'forward')} className="text-[15px] font-semibold text-info hover:underline">
                 Forgot password?
               </button>
             </div>
 
             {notice && (
-              <p role="alert" className="bmis-rise flex items-start gap-2.5 rounded-xl border border-danger/25 bg-danger-tint px-4 py-3 text-[13px] text-navy-900">
+              <p role="alert" className="bmis-rise flex items-start gap-2.5 rounded-xl border border-danger/25 bg-danger-tint px-4 py-3 text-[15px] text-navy-900">
                 <AlertCircle className="mt-px size-4 shrink-0 text-danger" />
                 {notice}
               </p>
             )}
 
-            <Button type="submit" loading={busy} className="bmis-press h-12 w-full rounded-xl text-[15px]">
+            <Button type="submit" loading={busy} className="bmis-press h-12 w-full rounded-xl text-[17px]">
               Sign In
             </Button>
           </form>
           {type.slug === 'resident' && (
-            <p className="mt-5 rounded-xl bg-surface-muted px-4 py-3 text-center text-[13.5px] text-navy-900">
+            <p className="mt-5 rounded-xl bg-surface-muted px-4 py-3 text-center text-[15.5px] text-navy-900">
               New resident?{' '}
               <button type="button" onClick={() => go('/register', 'forward')} className="font-semibold text-info hover:underline">
                 Create an account
               </button>
             </p>
           )}
-          <p className="mt-5 text-[12px] leading-relaxed text-ink-subtle">
+          <p className="mt-5 text-[14px] leading-relaxed text-ink-subtle">
             Your account and role are verified by the barangay's system before you can continue. Personal information is handled under the Data Privacy Act of
             2012 (RA 10173).
           </p>

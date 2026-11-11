@@ -71,7 +71,7 @@ export function BackLink({ fallbackTo, fallbackLabel }: { fallbackTo: string; fa
   const current = trail[trail.length - 1]
   const prev = current?.path === pathname ? trail[trail.length - 2] : trail[trail.length - 1]
   const prevLabel = prev && prev.path !== pathname ? labelFor(prev.path) : null
-  const cls = 'mb-3 inline-flex min-h-9 items-center gap-1.5 text-[13px] font-semibold text-info hover:underline'
+  const cls = 'mb-3 inline-flex min-h-9 items-center gap-1.5 text-[15px] font-semibold text-info hover:underline'
 
   if (prev && prevLabel) {
     return (

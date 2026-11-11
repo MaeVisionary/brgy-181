@@ -32,21 +32,21 @@ export function ProgressTracker({ req }: { req: DocumentRequest }) {
             {i < wf.path.length - 1 && <span className={cn('absolute top-5 left-[9px] h-[calc(100%-12px)] w-px', i < currentIdx ? 'bg-navy-900' : 'bg-line')} />}
             <span
               className={cn(
-                'relative z-10 grid size-[19px] shrink-0 place-items-center rounded-full border text-[10px]',
+                'relative z-10 grid size-[19px] shrink-0 place-items-center rounded-full border text-[12px]',
                 done ? 'border-navy-900 bg-navy-900 text-white' : current ? (side ? 'border-warning bg-warning-tint' : 'border-navy-900 bg-sky-100') : 'border-line bg-surface',
               )}
             >
               {done && <Check className="size-3" strokeWidth={3} />}
             </span>
-            <span className={cn('pt-px text-[12.5px]', current ? 'font-semibold text-navy-900' : done ? 'text-navy-900' : 'text-ink-muted')}>
+            <span className={cn('pt-px text-[14.5px]', current ? 'font-semibold text-navy-900' : done ? 'text-navy-900' : 'text-ink-muted')}>
               {STATUS_META[s].label}
-              {current && side && !ended && <span className="block text-[11.5px] font-medium text-warning">Now: {STATUS_META[req.status].label}</span>}
+              {current && side && !ended && <span className="block text-[13.5px] font-medium text-warning">Now: {STATUS_META[req.status].label}</span>}
             </span>
           </li>
         )
       })}
       {ended && (
-        <li className="mt-2 text-[12.5px] font-semibold text-danger-ink">{STATUS_META[req.status].label}</li>
+        <li className="mt-2 text-[14.5px] font-semibold text-danger-ink">{STATUS_META[req.status].label}</li>
       )}
     </ol>
   )
@@ -61,11 +61,11 @@ export function HistoryList({ events, showRemarks = true }: { events: StatusEven
         const remarksVisible = typeof showRemarks === 'function' ? showRemarks(e) : showRemarks
         return (
           <li key={i} className="border-l-2 border-line-soft pl-3">
-            <p className="text-[12.5px] font-semibold text-navy-900">{e.action}</p>
-            <p className="text-[11.5px] text-ink-muted">
+            <p className="text-[14.5px] font-semibold text-navy-900">{e.action}</p>
+            <p className="text-[13.5px] text-ink-muted">
               {formatDateTime(e.at)} · {userName(e.byUserId)} ({ROLES[e.byRole].name})
             </p>
-            {e.remarks && remarksVisible && <p className="mt-1 rounded-md bg-surface-muted px-2.5 py-1.5 text-[12.5px] text-navy-900">{e.remarks}</p>}
+            {e.remarks && remarksVisible && <p className="mt-1 rounded-md bg-surface-muted px-2.5 py-1.5 text-[14.5px] text-navy-900">{e.remarks}</p>}
           </li>
         )
       })}
@@ -104,13 +104,13 @@ export function FieldInput({
     const arr = Array.isArray(value) ? value : []
     return (
       <fieldset className="sm:col-span-2">
-        <legend className="mb-1.5 text-[12.5px] font-semibold text-navy-900">
+        <legend className="mb-1.5 text-[14.5px] font-semibold text-navy-900">
           {label}
           {field.required && <span className="text-danger-ink"> *</span>}
         </legend>
         <div className={cn('grid gap-1.5 rounded-[var(--radius-control)] border p-3 sm:grid-cols-2', invalid ? 'border-danger' : 'border-line')}>
           {field.options!.map((o) => (
-            <label key={o} className="flex items-center gap-2 text-[13px] text-navy-900">
+            <label key={o} className="flex items-center gap-2 text-[15px] text-navy-900">
               <input
                 type="checkbox"
                 className="size-4 accent-[#002132]"
@@ -122,13 +122,13 @@ export function FieldInput({
             </label>
           ))}
         </div>
-        {field.help && <span className="mt-1 block text-[11.5px] text-ink-muted">{field.help}</span>}
+        {field.help && <span className="mt-1 block text-[13.5px] text-ink-muted">{field.help}</span>}
       </fieldset>
     )
   }
   if (field.kind === 'check') {
     return (
-      <label className="flex items-center gap-2 text-[13px] font-medium text-navy-900 sm:col-span-2">
+      <label className="flex items-center gap-2 text-[15px] font-medium text-navy-900 sm:col-span-2">
         <input type="checkbox" className="size-4 accent-[#002132]" checked={value === true} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
         {label}
       </label>

@@ -99,8 +99,8 @@ export function TemplatesPage() {
                 >
                   <FileText className="mt-0.5 size-4 shrink-0 text-navy-900" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-semibold text-navy-900">{d.name}</span>
-                    <span className="block text-[11.5px] text-ink-muted">
+                    <span className="block text-[15px] font-semibold text-navy-900">{d.name}</span>
+                    <span className="block text-[13.5px] text-ink-muted">
                       {d.template.pageSize.name} · {d.template.pages.length} page{d.template.pages.length > 1 ? 's' : ''}
                       {removed.some((r) => r.id === d.id) && ' · Removed'}
                     </span>
@@ -139,7 +139,7 @@ export function TemplatesPage() {
                     Upload new version
                   </Button>
                   {confirmRemove ? (
-                    <span className="inline-flex flex-wrap items-center gap-2 rounded-full bg-danger-tint px-3 py-1 text-[12.5px] text-navy-900">
+                    <span className="inline-flex flex-wrap items-center gap-2 rounded-full bg-danger-tint px-3 py-1 text-[14.5px] text-navy-900">
                       Remove this template? Residents will no longer be able to request it.
                       <Button
                         size="sm"
@@ -178,16 +178,16 @@ export function TemplatesPage() {
               )}
             </div>
             {removedInfo && (
-              <p className="mb-4 rounded-[var(--radius-control)] bg-danger-tint px-4 py-2.5 text-[12.5px] text-navy-900">
+              <p className="mb-4 rounded-[var(--radius-control)] bg-danger-tint px-4 py-2.5 text-[14.5px] text-navy-900">
                 Removed by {removedInfo.by} on {formatDateTime(removedInfo.at)}. It is hidden from request forms. Existing requests keep their documents.
               </p>
             )}
             {notice && (
-              <p role="status" className={cn('mb-4 rounded-[var(--radius-control)] px-4 py-2.5 text-[12.5px] text-navy-900', notice.tone === 'ok' ? 'bg-success-tint' : 'bg-danger-tint')}>
+              <p role="status" className={cn('mb-4 rounded-[var(--radius-control)] px-4 py-2.5 text-[14.5px] text-navy-900', notice.tone === 'ok' ? 'bg-success-tint' : 'bg-danger-tint')}>
                 {notice.text}
               </p>
             )}
-            <dl className="grid gap-x-6 gap-y-3 text-[13px] sm:grid-cols-2">
+            <dl className="grid gap-x-6 gap-y-3 text-[15px] sm:grid-cols-2">
               <div>
                 <dt className="label-caps">Source file</dt>
                 <dd className="mt-0.5 text-navy-900">{selected.template.source}</dd>
@@ -218,7 +218,7 @@ export function TemplatesPage() {
             {selected.process && (
               <div className="mt-4 rounded-[var(--radius-control)] bg-surface-muted px-4 py-3">
                 <p className="label-caps mb-1.5">How it is processed</p>
-                <ol className="list-decimal space-y-1 pl-5 text-[12.5px] text-navy-900">
+                <ol className="list-decimal space-y-1 pl-5 text-[14.5px] text-navy-900">
                   {selected.process.map((step) => <li key={step}>{step}</li>)}
                 </ol>
               </div>
@@ -228,7 +228,7 @@ export function TemplatesPage() {
                 <p className="label-caps mb-2">Uploaded versions (waiting for layout setup)</p>
                 <ul className="divide-y divide-line-soft">
                   {uploads.map((u) => (
-                    <li key={u.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[12.5px]">
+                    <li key={u.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[14.5px]">
                       <span className="min-w-0">
                         <span className="block truncate font-semibold text-navy-900">{u.fileName}</span>
                         <span className="text-ink-muted">

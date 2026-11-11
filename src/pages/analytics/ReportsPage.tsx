@@ -87,7 +87,7 @@ export function ReportsPage() {
       <PageHeader title="Barangay Reports" subtitle="Recurring reports for government offices and internal analytics reports." />
 
       <Panel keepSubtitle title="Official reports" subtitle="Each office's required format. Upload the file the office provides; reports follow it once it is here.">
-        {templateMsg && <p role="status" className={cn('mb-3 rounded-md px-3 py-2 text-[12.5px]', templateMsg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{templateMsg.text}</p>}
+        {templateMsg && <p role="status" className={cn('mb-3 rounded-md px-3 py-2 text-[14.5px]', templateMsg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{templateMsg.text}</p>}
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {REPORT_CATEGORIES.map((c) => (
             <TemplateSlot key={c.id} id={c.id} title={c.name} subtitle={c.full} template={templates[c.id]} canManage={canManageTemplates} onUpload={upload} onDelete={remove} />
@@ -114,14 +114,14 @@ export function ReportsPage() {
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
         <Card className="h-fit overflow-hidden">
-          <h2 className="bg-navy-900 px-4 py-3 font-display text-[14px] font-bold text-white">Internal analytics reports</h2>
+          <h2 className="bg-bar border-b border-sky-300 text-navy-900 px-4 py-3 font-display text-[16px] font-bold">Internal analytics reports</h2>
           <ul>
             {SENIOR_REPORTS.map((r) => (
               <li key={r.id} className="border-b border-line-soft last:border-0">
                 <button type="button" onClick={() => setReportId(r.id)} className={cn('flex w-full items-start gap-2.5 px-4 py-3 text-left', r.id === reportId ? 'bg-sky-100' : 'hover:bg-sky-50')}>
                   <FileText className="mt-0.5 size-4 shrink-0 text-navy-900" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-semibold text-navy-900">{r.name}</span>
+                    <span className="block text-[15px] font-semibold text-navy-900">{r.name}</span>
                   </span>
                   {r.pii && <Lock className="mt-0.5 size-3.5 shrink-0 text-ink-subtle" aria-label="Contains identifiable information" />}
                 </button>
@@ -143,23 +143,23 @@ export function ReportsPage() {
           }
         >
           {!dataset ? (
-            <p className="text-[13px] text-ink-muted">
+            <p className="text-[15px] text-ink-muted">
               No senior citizen masterlist is loaded in this browser. <Link to="/analytics" className="font-semibold text-info hover:underline">Load it in Analytics</Link>.
             </p>
           ) : locked ? (
-            <p className="flex items-center gap-2 text-[13px] text-ink-muted"><Lock className="size-4" /> This report lists individual residents and needs access to resident records.</p>
+            <p className="flex items-center gap-2 text-[15px] text-ink-muted"><Lock className="size-4" /> This report lists individual residents and needs access to resident records.</p>
           ) : output ? (
             <>
-              <p className="mb-3 rounded-md bg-danger-tint px-3 py-2 text-[12px] font-semibold text-danger-ink">Internal analytics report: not an official government submission.</p>
-              <label className="mb-3 flex items-center gap-2 text-[12.5px] text-navy-900">
+              <p className="mb-3 rounded-md bg-danger-tint px-3 py-2 text-[14px] font-semibold text-danger-ink">Internal analytics report: not an official government submission.</p>
+              <label className="mb-3 flex items-center gap-2 text-[14.5px] text-navy-900">
                 <input type="checkbox" className="size-4 accent-[#002132]" checked={useFilters} onChange={(e) => setUseFilters(e.target.checked)} />
                 Apply the filters currently set in Analytics
               </label>
               {/* Report details */}
-              <dl className="grid gap-px overflow-hidden rounded-md border border-line bg-line-soft text-[12.5px] sm:grid-cols-2 lg:grid-cols-3">
+              <dl className="grid gap-px overflow-hidden rounded-md border border-line bg-line-soft text-[14.5px] sm:grid-cols-2 lg:grid-cols-3">
                 {output.meta.map(([k, v]) => (
                   <div key={k} className="bg-surface px-3 py-2">
-                    <dt className="text-[11px] font-semibold tracking-[0.05em] text-ink-muted uppercase">{k}</dt>
+                    <dt className="text-[13px] font-semibold tracking-[0.05em] text-ink-muted uppercase">{k}</dt>
                     <dd className="mt-0.5 break-words text-navy-900">{v}</dd>
                   </div>
                 ))}
@@ -169,15 +169,15 @@ export function ReportsPage() {
                 <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
                   {output.summary.map(([k, v]) => (
                     <div key={k} className="rounded-md border border-line bg-surface px-3 py-2.5">
-                      <dt className="text-[12px] leading-snug text-ink-nav">{k}</dt>
-                      <dd className="mt-1 font-display text-[20px] leading-none font-extrabold tabular-nums text-navy-900">{v}</dd>
+                      <dt className="text-[14px] leading-snug text-ink-nav">{k}</dt>
+                      <dd className="mt-1 font-display text-[22px] leading-none font-extrabold tabular-nums text-navy-900">{v}</dd>
                     </div>
                   ))}
                 </dl>
               )}
               {output.rows.length > 0 && (
                 <div className="mt-4 max-h-[420px] overflow-auto rounded-md border border-line-soft">
-                  <table className="w-full text-[12.5px]">
+                  <table className="w-full text-[14.5px]">
                     <thead className="sticky top-0 bg-surface-muted">
                       <tr className="text-left">{output.columns.map((c) => <th key={c} className="label-caps px-3 py-2">{c}</th>)}</tr>
                     </thead>
@@ -187,10 +187,10 @@ export function ReportsPage() {
                       ))}
                     </tbody>
                   </table>
-                  {output.rows.length > 200 && <p className="px-3 py-2 text-[12px] text-ink-muted">Preview shows 200 of {output.rows.length} rows. Exports include all rows.</p>}
+                  {output.rows.length > 200 && <p className="px-3 py-2 text-[14px] text-ink-muted">Preview shows 200 of {output.rows.length} rows. Exports include all rows.</p>}
                 </div>
               )}
-              {!canExport && <p className="mt-3 text-[12px] text-ink-muted">Your account can view but not export reports.</p>}
+              {!canExport && <p className="mt-3 text-[14px] text-ink-muted">Your account can view but not export reports.</p>}
             </>
           ) : null}
         </Panel>
@@ -227,17 +227,17 @@ function TemplateSlot({
     <div className={cn('flex flex-col rounded-[var(--radius-control)] border px-4 py-3', template ? 'border-line' : 'border-warning/50 border-l-4 border-l-warning bg-warning-tint/30')}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 font-display text-[14.5px] font-extrabold text-navy-900">{icon}{title}</p>
-          <p className="text-[12px] text-ink-muted">{subtitle}</p>
+          <p className="flex items-center gap-1.5 font-display text-[16.5px] font-extrabold text-navy-900">{icon}{title}</p>
+          <p className="text-[14px] text-ink-muted">{subtitle}</p>
         </div>
         <Badge tone={template ? 'success' : 'warning'}>{template ? 'Template uploaded' : 'Template pending'}</Badge>
       </div>
       {template ? (
-        <p className="mt-2 truncate text-[12px] text-ink-nav" title={template.fileName}>
+        <p className="mt-2 truncate text-[14px] text-ink-nav" title={template.fileName}>
           {template.fileName} · {template.uploadedBy} · {new Date(template.uploadedAt).toLocaleDateString('en-PH', { day: '2-digit', month: 'short', year: 'numeric' })}
         </p>
       ) : (
-        <p className="mt-2 text-[12px] text-warning">{note ?? 'No template yet. Upload the official file to use this report.'}</p>
+        <p className="mt-2 text-[14px] text-warning">{note ?? 'No template yet. Upload the official file to use this report.'}</p>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
         {template && (

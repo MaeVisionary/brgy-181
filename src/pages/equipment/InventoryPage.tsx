@@ -34,7 +34,7 @@ export function InventoryPage() {
       {adding && <AddForm categories={categories} onDone={() => { setAdding(false); setTick((t) => t + 1) }} actor={actor} />}
       <Card>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-[13px]">
+          <table className="w-full min-w-[900px] text-[15px]">
             <thead>
               <tr className="bg-surface-muted text-left">{['Ref. no.', 'Equipment', 'Category', 'Total', 'Available', 'Borrowed', 'Damaged', 'Missing', ''].map((h, i) => <th key={i} className="label-caps px-4 py-2.5">{h}</th>)}</tr>
             </thead>
@@ -45,7 +45,7 @@ export function InventoryPage() {
                 ) : (
                   <tr key={e.id} className="border-t border-line-soft">
                     <td className="px-4 py-3 font-semibold whitespace-nowrap text-navy-900">{e.refNo}</td>
-                    <td className="px-4 py-3"><span className="block font-semibold text-navy-900">{e.name}</span><span className="block text-[12px] text-ink-muted">{e.description}</span></td>
+                    <td className="px-4 py-3"><span className="block font-semibold text-navy-900">{e.name}</span><span className="block text-[14px] text-ink-muted">{e.description}</span></td>
                     <td className="px-4 py-3">{e.category}</td>
                     <td className="px-4 py-3 tabular-nums">{e.totalQty}</td>
                     <td className="px-4 py-3 font-semibold tabular-nums text-navy-900">{availableQty(e)}</td>
@@ -61,7 +61,7 @@ export function InventoryPage() {
         </div>
       </Card>
       <Panel className="mt-4" title="Inventory history">
-        <ul className="space-y-1.5 text-[12.5px]">
+        <ul className="space-y-1.5 text-[14.5px]">
           {(items ?? []).flatMap((e) => e.history.map((h) => ({ e, h }))).sort((a, b) => b.h.at.localeCompare(a.h.at)).slice(0, 12).map(({ e, h }, i) => (
             <li key={i} className="text-navy-900">{formatDateTime(h.at)} · <strong>{e.name}</strong>: {h.action}{h.detail ? ` (${h.detail})` : ''}</li>
           ))}
@@ -89,7 +89,7 @@ function AddForm({ onDone, actor, categories }: { onDone: () => void; actor: Non
         <FieldLabel label="Quantity" required><TextInput inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))} /></FieldLabel>
       </div>
       <CategoryList categories={categories} />
-      {err && <p className="mt-2 text-[12.5px] text-danger-ink">{err}</p>}
+      {err && <p className="mt-2 text-[14.5px] text-danger-ink">{err}</p>}
       <div className="mt-3 flex gap-2">
         <Button onClick={async () => { try { if (!category.trim()) throw new ServiceError('category', 'Enter a category.'); await addEquipment({ name, category: category.trim(), description, totalQty: Number(qty) }, actor); onDone() } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Failed.') } }}>Save</Button>
         <Button variant="secondary" onClick={onDone}>Cancel</Button>
@@ -146,7 +146,7 @@ function EditRow({ e, actor, onDone, categories }: { e: Equipment; actor: NonNul
       </tr>
       {err && (
         <tr className="bg-sky-50">
-          <td colSpan={9} className="px-4 pb-2.5 text-[12.5px] text-danger-ink">{err}</td>
+          <td colSpan={9} className="px-4 pb-2.5 text-[14.5px] text-danger-ink">{err}</td>
         </tr>
       )}
     </>

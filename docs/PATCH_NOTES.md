@@ -1,3 +1,19 @@
+# BMIS Patch Notes: Readability for older users (11 November 2026)
+
+- **Title bars are light blue with dark navy text** (was dark navy with white text).
+  Dark text on a light background is easier to read. One colour token: `--color-bar` in `src/index.css`.
+- **Bigger text everywhere** (about +2px): body text 13px to 15px, small labels at least 13px,
+  uppercase labels 10.5px to 12.5px, chart labels 11px to 13px. Printed official documents keep their exact sizes.
+- Wider side menu (292px); long menu items wrap instead of being cut off with "...".
+- Wide tables (transactions, document requests, households, user accounts, activity log) switch to
+  the card list below 1280px wide, so nothing scrolls sideways on laptops or tablets.
+- Checked with no sideways scrolling at 375px (phone), 1024px (tablet) and 1280px (laptop) for
+  Chairman, Secretary, System Administrator and Resident.
+
+Design only; not a paper requirement (supports the paper's usability goal for elderly residents).
+
+---
+
 # BMIS Patch Notes: UI Finalization, round 2 (11 November 2026)
 
 Changes from "UI FINALIZATION (1).pdf". The same rules as below apply: items marked

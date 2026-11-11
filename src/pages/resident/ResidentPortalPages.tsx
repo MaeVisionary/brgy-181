@@ -63,13 +63,13 @@ export function MyProfilePage() {
     }
   }
   const F = ({ k, v }: { k: string; v?: string | number }) => (
-    <div><dt className="text-[11.5px] text-ink-muted">{k}</dt><dd className="text-[13.5px] text-navy-900">{v || '–'}</dd></div>
+    <div><dt className="text-[13.5px] text-ink-muted">{k}</dt><dd className="text-[15.5px] text-navy-900">{v || '–'}</dd></div>
   )
   const sectors = [me.sectors.seniorCitizen && 'Senior citizen', me.sectors.pwd && 'PWD', me.sectors.soloParent && 'Solo parent', me.sectors.fourPs && '4Ps member', me.sectors.programBeneficiary && 'Program beneficiary'].filter(Boolean) as string[]
   return (
     <>
       <PageHeader title="My Profile" subtitle="Your record in the Barangay 181 master list." />
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="space-y-4">
           <Panel keepSubtitle title={fullName(me)} subtitle={`Resident no. ${me.residentNo}`}>
             <dl className="grid gap-3 sm:grid-cols-3">
@@ -84,17 +84,17 @@ export function MyProfilePage() {
               <F k="Registered voter" v={me.voter ? 'Yes' : 'No'} />
             </dl>
             <div className="mt-4 border-t border-line-soft pt-3">
-              <p className="text-[11.5px] text-ink-muted">Sectors</p>
+              <p className="text-[13.5px] text-ink-muted">Sectors</p>
               {sectors.length ? (
                 <p className="mt-1 flex flex-wrap gap-1.5">{sectors.map((x) => <Badge key={x} dot={false} tone="info">{x}</Badge>)}</p>
               ) : (
-                <p className="mt-1 text-[13px] text-ink-muted">No sector recorded (senior citizen, PWD, solo parent, 4Ps or program beneficiary).</p>
+                <p className="mt-1 text-[15px] text-ink-muted">No sector recorded (senior citizen, PWD, solo parent, 4Ps or program beneficiary).</p>
               )}
             </div>
           </Panel>
           {hh && (
             <Panel keepSubtitle title="My family" subtitle={`Household ${hh.household.householdNo} · ${hh.household.families.length} famil${hh.household.families.length > 1 ? 'ies' : 'y'} at this address`} bodyClassName="px-0 py-0">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[15px]">
                 <thead><tr className="bg-surface-muted text-left">{['Name', 'Relationship', 'Age'].map((h) => <th key={h} className="label-caps px-5 py-2">{h}</th>)}</tr></thead>
                 <tbody>
                   {family.map((m) => (
@@ -106,7 +106,7 @@ export function MyProfilePage() {
                   ))}
                 </tbody>
               </table>
-              <p className="border-t border-line-soft px-5 py-2.5 text-[12px] text-ink-muted">To correct a family member\u2019s name, birthdate or relationship, choose them under Request a correction.</p>
+              <p className="border-t border-line-soft px-5 py-2.5 text-[14px] text-ink-muted">To correct a family member\u2019s name, birthdate or relationship, choose them under Request a correction.</p>
             </Panel>
           )}
         </div>
@@ -145,31 +145,31 @@ export function MyProfilePage() {
               )}
               {needsProof && (
                 <div className="rounded-[var(--radius-control)] border border-warning/50 bg-warning-tint/40 p-3">
-                  <p className="text-[12.5px] font-semibold text-navy-900">Proof needed <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></p>
-                  <p className="text-[12px] text-ink-nav">{needsProof}</p>
-                  <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line bg-surface px-3 py-2 text-[13px] text-navy-900 hover:border-navy-600 hover:bg-sky-50">
+                  <p className="text-[14.5px] font-semibold text-navy-900">Proof needed <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></p>
+                  <p className="text-[14px] text-ink-nav">{needsProof}</p>
+                  <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line bg-surface px-3 py-2 text-[15px] text-navy-900 hover:border-navy-600 hover:bg-sky-50">
                     <Paperclip className="size-4 shrink-0 text-ink-muted" />
                     <span className="min-w-0 flex-1 truncate">{proofFile ? proofFile.name : 'Attach a photo or PDF'}</span>
                     <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setProofFile(f); setOnsite(false) } }} />
                   </label>
-                  <label className="mt-2 flex items-center gap-2 text-[12.5px] text-navy-900">
+                  <label className="mt-2 flex items-center gap-2 text-[14.5px] text-navy-900">
                     <input type="checkbox" className="size-4 accent-[#002132]" checked={onsite} disabled={!!proofFile} onChange={(e) => setOnsite(e.target.checked)} />
                     I will bring the original document to the Barangay Hall instead
                   </label>
                 </div>
               )}
               <FieldLabel label="Reason" required><TextArea className="min-h-[60px]" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="For example: My birthdate on record does not match my birth certificate." /></FieldLabel>
-              {msg && <p className={`rounded-md px-3 py-2 text-[12.5px] ${msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink'}`}>{msg.text}</p>}
+              {msg && <p className={`rounded-md px-3 py-2 text-[14.5px] ${msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink'}`}>{msg.text}</p>}
               <Button disabled={!filled || !reason.trim() || !proofOk} onClick={submit}>Submit request</Button>
             </div>
           </Panel>
           <Panel title="My correction requests" bodyClassName={mine.length ? undefined : 'px-0 py-0'}>
             {mine.length === 0 ? (
-              <p className="px-5 py-5 text-[13px] text-ink-muted">You have not requested any corrections.</p>
+              <p className="px-5 py-5 text-[15px] text-ink-muted">You have not requested any corrections.</p>
             ) : (
               <ul className="space-y-2">
                 {mine.map((c) => (
-                  <li key={c.id} className="flex items-center justify-between gap-2 text-[13px]">
+                  <li key={c.id} className="flex items-center justify-between gap-2 text-[15px]">
                     <span className="text-navy-900">{c.field}: {displayRequestedValue(c.field, c.requestedValue)}</span>
                     <Badge tone={c.status === 'pending' ? 'warning' : c.status === 'approved' ? 'success' : 'danger'}>{c.status === 'pending' ? 'Under review' : c.status === 'approved' ? 'Approved' : 'Not approved'}</Badge>
                   </li>
@@ -193,13 +193,13 @@ export function MyComplaintsPage() {
       <PageHeader title="My Complaints and Reports" subtitle="Summons requests, incident reports, blotter reports and Katarungang Pambarangay cases you filed." actions={<ButtonLink to="/my/documents/new" icon={<Plus className="size-4" />}>File a report</ButtonLink>} />
       <div className="grid gap-4 xl:grid-cols-2">
         <Panel title="Submitted reports" bodyClassName="px-0 py-0">
-          {docs.length === 0 ? <p className="px-5 py-6 text-[13px] text-ink-muted">No reports submitted.</p> : (
-            <ul>{docs.map((d) => <li key={d.id} className="border-b border-line-soft last:border-0"><Link to={`/my/documents/${d.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-sky-50"><span><span className="block text-[13px] font-semibold text-navy-900">{getDocumentType(d.typeId).name}</span><span className="block text-[12px] text-ink-muted">{d.referenceNo}</span></span><StatusLabel status={documentStatusForResident(d.status)} /></Link></li>)}</ul>
+          {docs.length === 0 ? <p className="px-5 py-6 text-[15px] text-ink-muted">No reports submitted.</p> : (
+            <ul>{docs.map((d) => <li key={d.id} className="border-b border-line-soft last:border-0"><Link to={`/my/documents/${d.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-sky-50"><span><span className="block text-[15px] font-semibold text-navy-900">{getDocumentType(d.typeId).name}</span><span className="block text-[14px] text-ink-muted">{d.referenceNo}</span></span><StatusLabel status={documentStatusForResident(d.status)} /></Link></li>)}</ul>
           )}
         </Panel>
         <Panel title="My cases" subtitle="Cases where you are the complainant" bodyClassName="px-0 py-0">
-          {cases.length === 0 ? <p className="px-5 py-6 text-[13px] text-ink-muted">No cases.</p> : (
-            <ul>{cases.map((c) => <li key={c.id} className="border-b border-line-soft last:border-0"><Link to={`/my/complaints/${c.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-sky-50"><span><span className="block text-[13px] font-semibold text-navy-900">{c.caseNo} · {c.title}</span><span className="block text-[12px] text-ink-muted">{c.nature}</span></span><StatusLabel status={caseStageForResident(c.stage)} /></Link></li>)}</ul>
+          {cases.length === 0 ? <p className="px-5 py-6 text-[15px] text-ink-muted">No cases.</p> : (
+            <ul>{cases.map((c) => <li key={c.id} className="border-b border-line-soft last:border-0"><Link to={`/my/complaints/${c.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-sky-50"><span><span className="block text-[15px] font-semibold text-navy-900">{c.caseNo} · {c.title}</span><span className="block text-[14px] text-ink-muted">{c.nature}</span></span><StatusLabel status={caseStageForResident(c.stage)} /></Link></li>)}</ul>
           )}
         </Panel>
       </div>
@@ -221,14 +221,14 @@ export function MyBorrowingPage() {
       <PageHeader title="Equipment Borrowing" subtitle={`Chairs, tables, ladders and nebulizers. Claim approved equipment at the Barangay 181 Hall; return it within ${BORROWING.periodDays} days (plus a ${BORROWING.graceDays}-day grace period).`} actions={!form && <Button icon={<Plus className="size-4" />} onClick={() => setForm(true)}>New request</Button>} />
       {form && me && <BorrowForm resident={me} onDone={() => { setForm(false); setTick((t) => t + 1) }} />}
       <Card className="divide-y divide-line-soft">
-        {list.length === 0 && <p className="px-5 py-6 text-[13px] text-ink-muted">No borrowing requests yet.</p>}
+        {list.length === 0 && <p className="px-5 py-6 text-[15px] text-ink-muted">No borrowing requests yet.</p>}
         {list.map((b) => {
           const rs = returnState(b)
           return (
             <Link key={b.id} to={`/my/borrowing/${b.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 hover:bg-sky-50 sm:px-5">
               <span>
-                <span className="block text-[13.5px] font-semibold text-navy-900">{b.refNo} · {itemsText(b)}</span>
-                <span className="block text-[12px] text-ink-muted">Date of use {formatDate(b.dateOfUse)}{b.dueAt && ` · return by ${formatDate(b.dueAt)} (grace until ${formatDate(b.graceEndsAt!)})`}</span>
+                <span className="block text-[15.5px] font-semibold text-navy-900">{b.refNo} · {itemsText(b)}</span>
+                <span className="block text-[14px] text-ink-muted">Date of use {formatDate(b.dateOfUse)}{b.dueAt && ` · return by ${formatDate(b.dueAt)} (grace until ${formatDate(b.graceEndsAt!)})`}</span>
               </span>
               <span className="flex items-center gap-2">
                 {b.status === 'released' && rs !== 'overdue' && <Badge tone={RETURN_BADGE[rs].tone}>{RETURN_BADGE[rs].label}</Badge>}

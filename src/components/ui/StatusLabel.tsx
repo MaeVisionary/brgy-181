@@ -14,7 +14,7 @@ const tones: Record<BadgeTone, { box: string; dot: string }> = {
 export function StatusLabel({ status, tone, className }: { status: ResidentStatus | string; tone?: BadgeTone; className?: string }) {
   const t = tones[tone ?? RESIDENT_STATUS_TONE[status as ResidentStatus] ?? 'neutral']
   return (
-    <span className={cn('inline-flex h-6 items-center gap-1.5 rounded-[var(--radius-badge)] px-2 text-[11.5px] font-semibold whitespace-nowrap', t.box, className)}>
+    <span className={cn('inline-flex h-6 items-center gap-1.5 rounded-[var(--radius-badge)] px-2 text-[13.5px] font-semibold whitespace-nowrap', t.box, className)}>
       <span aria-hidden className={cn('size-1.5 shrink-0 rounded-full', t.dot)} />
       {status}
     </span>

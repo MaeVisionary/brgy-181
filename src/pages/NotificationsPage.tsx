@@ -36,10 +36,10 @@ export function NotificationsPage() {
                 <>
                   <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', n.read ? 'bg-line' : 'bg-info')} />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13.5px] font-semibold text-navy-900">{n.title}</span>
-                    <span className="block text-[13px] text-ink-muted">{n.body}</span>
+                    <span className="block text-[15.5px] font-semibold text-navy-900">{n.title}</span>
+                    <span className="block text-[15px] text-ink-muted">{n.body}</span>
                   </span>
-                  <span className="shrink-0 text-[12px] text-ink-subtle">{formatDateTime(n.createdAt)}</span>
+                  <span className="shrink-0 text-[14px] text-ink-subtle">{formatDateTime(n.createdAt)}</span>
                 </>
               )
               const cls = cn('flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-start sm:gap-3', !n.read && 'bg-sky-50/60')

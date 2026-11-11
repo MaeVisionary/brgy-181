@@ -48,7 +48,7 @@ export function CommunityTab() {
               onClick={() => pick(a.area)}
               aria-pressed={selected.includes(a.area)}
               className={cn(
-                'bmis-press rounded-full border px-3.5 py-1.5 text-[13px] font-semibold',
+                'bmis-press rounded-full border px-3.5 py-1.5 text-[15px] font-semibold',
                 selected.includes(a.area) ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-sky-50',
               )}
             >
@@ -56,7 +56,7 @@ export function CommunityTab() {
             </button>
           ))}
           {selected.length > 0 && (
-            <button type="button" onClick={() => setSelected([])} className="px-2 text-[12.5px] font-semibold text-info hover:underline">
+            <button type="button" onClick={() => setSelected([])} className="px-2 text-[14.5px] font-semibold text-info hover:underline">
               Clear
             </button>
           )}
@@ -82,7 +82,7 @@ export function CommunityTab() {
           {areas ? <AreaChart data={areas} /> : <div className="h-[244px] animate-pulse rounded bg-surface-muted" />}
         </Panel>
         <Panel title="Vulnerable residents per area" bodyClassName="px-0 py-0">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[15px]">
             <thead>
               <tr className="bg-surface-muted text-left">
                 {['Area', 'Senior', 'PWD', 'Solo P.', '4Ps'].map((h) => <th key={h} className="label-caps px-3 py-2.5 first:pl-5">{h}</th>)}

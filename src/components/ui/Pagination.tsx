@@ -20,19 +20,19 @@ export function Pagination({ page, pages, total, size, onPage, noun = 'records' 
   const from = page * size + 1
   const to = Math.min(total, from + size - 1)
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-4 py-3 text-[12.5px] text-ink-muted sm:px-5">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-4 py-3 text-[14.5px] text-ink-muted sm:px-5">
       <span>
         Showing {from}–{to} of {total} {noun}
       </span>
       {pages > 1 && (
         <nav aria-label="Pages" className="flex items-center gap-2">
-          <button type="button" disabled={page === 0} onClick={() => onPage(page - 1)} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[12.5px] font-semibold text-navy-900 hover:bg-surface-muted disabled:opacity-40">
+          <button type="button" disabled={page === 0} onClick={() => onPage(page - 1)} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[14.5px] font-semibold text-navy-900 hover:bg-surface-muted disabled:opacity-40">
             <ChevronLeft className="size-4" /> Previous
           </button>
-          <span className="px-1 text-[12.5px] font-semibold whitespace-nowrap text-navy-900" aria-live="polite">
+          <span className="px-1 text-[14.5px] font-semibold whitespace-nowrap text-navy-900" aria-live="polite">
             Page {page + 1} of {pages}
           </span>
-          <button type="button" disabled={page >= pages - 1} onClick={() => onPage(page + 1)} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[12.5px] font-semibold text-navy-900 hover:bg-surface-muted disabled:opacity-40">
+          <button type="button" disabled={page >= pages - 1} onClick={() => onPage(page + 1)} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[14.5px] font-semibold text-navy-900 hover:bg-surface-muted disabled:opacity-40">
             Next <ChevronRight className="size-4" />
           </button>
         </nav>

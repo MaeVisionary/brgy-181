@@ -26,7 +26,7 @@ export function StatCard({
 }) {
   const body = (
     <Card className={cn('flex h-full flex-col justify-between px-4 py-3.5 sm:px-5', to && 'transition-colors hover:bg-sky-50')}>
-      <p className="flex items-center gap-1.5 text-[12.5px] text-ink-nav">
+      <p className="flex items-center gap-1.5 text-[14.5px] text-ink-nav">
         {attention && <span aria-label="Needs attention" className="size-1.5 shrink-0 rounded-full bg-danger" />}
         {label}
       </p>
@@ -34,9 +34,9 @@ export function StatCard({
         {loading || value === null ? (
           <span className="h-[26px] w-16 animate-pulse rounded bg-surface-muted" />
         ) : (
-          <span className="font-display text-[24px] leading-none font-extrabold text-navy-900">{formatNumber(value)}</span>
+          <span className="font-display text-[26px] leading-none font-extrabold text-navy-900">{formatNumber(value)}</span>
         )}
-        {hint && <span className="text-[12px] text-ink-muted">{hint}</span>}
+        {hint && <span className="text-[14px] text-ink-muted">{hint}</span>}
       </div>
     </Card>
   )
@@ -75,8 +75,8 @@ export function TaskTile({
           {icon}
         </span>
         <span className="min-w-0">
-          <span className="block text-[12px] leading-tight font-semibold text-navy-900">{label}</span>
-          <span className="font-display text-[18px] leading-tight font-extrabold text-navy-900">
+          <span className="block text-[14px] leading-tight font-semibold text-navy-900">{label}</span>
+          <span className="font-display text-[20px] leading-tight font-extrabold text-navy-900">
             {count === null ? '–' : formatNumber(count)}
           </span>
         </span>

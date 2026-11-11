@@ -122,11 +122,11 @@ export function SeniorTab() {
           <FilterSelect label="Voter" value={filters.voter} options={['Yes', 'No', 'Missing']} onChange={(v) => set({ voter: v as Filters['voter'] })} />
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-line-soft pt-3">
-          <span className="text-[12.5px] text-ink-muted">
+          <span className="text-[14.5px] text-ink-muted">
             Showing <strong className="text-navy-900">{rows.length}</strong> of {all.length} records
           </span>
           {active.map(([k, v]) => (
-            <button key={k} type="button" onClick={() => set({ [k]: v } as Filters)} className="rounded-full bg-sky-100 px-2.5 py-1 text-[12px] font-semibold text-navy-900 hover:bg-sky-300/40">
+            <button key={k} type="button" onClick={() => set({ [k]: v } as Filters)} className="rounded-full bg-sky-100 px-2.5 py-1 text-[14px] font-semibold text-navy-900 hover:bg-sky-300/40">
               {FILTER_LABELS[k]}: {k === 'issue' ? ISSUE_LABELS[v as keyof typeof ISSUE_LABELS] : v} ×
             </button>
           ))}
@@ -163,7 +163,7 @@ export function SeniorTab() {
       <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Panel title="Age distribution" subtitle={`Computed from birthdates as of ${reportingDate.toISOString().slice(0, 10)} · click a bar to filter`}>
           <SimpleBar labels={ages.map((a) => a.key)} values={ages.map((a) => a.count)} selected={filters.ageGroup} onSelect={(l) => set({ ageGroup: l as Filters['ageGroup'] })} />
-          <dl className="mt-3 grid grid-cols-3 gap-3 text-[12.5px]">
+          <dl className="mt-3 grid grid-cols-3 gap-3 text-[14.5px]">
             <Fact label="Valid birthdates" value={`${s.validAges} of ${s.total}`} />
             <Fact label="Average age" value={s.averageAge === null ? '–' : s.averageAge.toFixed(1)} />
             <Fact label="Oldest recorded age" value={s.oldestAge ?? '–'} />
@@ -180,7 +180,7 @@ export function SeniorTab() {
       <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Panel title="Top 10 areas" subtitle="Records per street · click a bar to filter. An address is not treated as a household.">
           <SimpleBar labels={streets.slice(0, 10).map((c) => c.key)} values={streets.slice(0, 10).map((c) => c.count)} selected={filters.street} onSelect={(l) => set({ street: l })} horizontal height={Math.max(180, Math.min(10, streets.length) * 30)} />
-          <details className="mt-3 text-[12px] text-ink-muted">
+          <details className="mt-3 text-[14px] text-ink-muted">
             <summary className="cursor-pointer font-semibold text-navy-900">How addresses were grouped into areas</summary>
             <p className="mt-1">The street is read from the text after the house number ("665-D -GEN.LUKBAN , TONDO II" → GEN.LUKBAN). "ST." is dropped. These spelling variants were merged:</p>
             <ul className="mt-1 list-disc pl-5">{Object.entries(STREET_ALIASES).map(([a, b]) => <li key={a}>{a} → {b}</li>)}</ul>
@@ -192,7 +192,7 @@ export function SeniorTab() {
             <TextInput placeholder="Search address" value={addrQuery} onChange={(e) => setAddrQuery(e.target.value)} aria-label="Search address breakdown" />
           </div>
           <div className="max-h-[320px] overflow-y-auto">
-            <table className="w-full text-[12.5px]">
+            <table className="w-full text-[14.5px]">
               <thead className="sticky top-0 bg-surface-muted">
                 <tr className="text-left"><th className="label-caps px-4 py-2">Address</th><th className="label-caps px-2 py-2 text-right">Records</th><th className="label-caps px-4 py-2 text-right">%</th></tr>
               </thead>
@@ -217,7 +217,7 @@ export function SeniorTab() {
         </Panel>
         <Panel title="Record status">
           <CountTable rows={status.map((c) => [c.key, c.count, `${c.pct.toFixed(1)}%`])} onRow={(k) => set({ status: k as Filters['status'] })} />
-          <details className="mt-3 text-[12px] text-ink-muted">
+          <details className="mt-3 text-[14px] text-ink-muted">
             <summary className="cursor-pointer font-semibold text-navy-900">Original labels and grouping</summary>
             <ul className="mt-1 space-y-0.5">{statusGrouping(rows).map((g) => <li key={g.raw}>"{g.raw}" → {g.group} ({g.count})</li>)}</ul>
           </details>
@@ -241,14 +241,14 @@ export function SeniorTab() {
           />
         </Panel>
         <Panel title="OSCA registrations by year issued" subtitle="Only dates that could be read reliably">
-          {osca.length ? <SimpleBar labels={osca.map((o) => o.key)} values={osca.map((o) => o.count)} height={200} label="Registrations" /> : <p className="text-[13px] text-ink-muted">No readable issue dates in the current selection.</p>}
+          {osca.length ? <SimpleBar labels={osca.map((o) => o.key)} values={osca.map((o) => o.count)} height={200} label="Registrations" /> : <p className="text-[15px] text-ink-muted">No readable issue dates in the current selection.</p>}
         </Panel>
       </section>
 
       {/* Community planning insights */}
       <Panel className="mt-4" title="Community planning insights" subtitle="Where registered senior citizens are, for assistance and outreach planning. No conclusions about poverty, health or eligibility are drawn." bodyClassName="px-0 py-0">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[620px] text-[13px]">
+          <table className="w-full min-w-[620px] text-[15px]">
             <thead>
               <tr className="bg-surface-muted text-left">
                 {['Area', 'Senior records', 'Bedridden', 'Records needing updates', 'Without OSCA ID'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}
@@ -272,25 +272,25 @@ export function SeniorTab() {
       {/* Data quality */}
       <Panel className="mt-4" title="Data quality" subtitle="Flagged for review by authorized personnel. Nothing is deleted or merged automatically.">
         {issues.length === 0 ? (
-          <p className="text-[13px] text-ink-muted">No issues found in the current selection.</p>
+          <p className="text-[15px] text-ink-muted">No issues found in the current selection.</p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {issues.map((i) => (
               <li key={i.code}>
                 <button type="button" onClick={() => set({ issue: i.code })} className="flex w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line px-3 py-2 text-left hover:bg-sky-50">
-                  <span className="text-[13px] text-navy-900">{ISSUE_LABELS[i.code]}</span>
+                  <span className="text-[15px] text-navy-900">{ISSUE_LABELS[i.code]}</span>
                   <Badge dot={false} tone={i.code === 'age_column_mismatch' ? 'neutral' : 'warning'}>{i.count}</Badge>
                 </button>
               </li>
             ))}
           </ul>
         )}
-        <p className="mt-3 text-[12px] text-ink-muted">
+        <p className="mt-3 text-[14px] text-ink-muted">
           "AGE column differs from birthdate" is informational: ages in this module always come from the birthdate. {dataset.normalizations.length} values were normalized
           for analysis (letter O typed as zero, spacing, status spelling); originals are kept{showPii ? ' and listed below' : ''}.
         </p>
         {showPii && dataset.normalizations.length > 0 && (
-          <details className="mt-2 text-[12px]">
+          <details className="mt-2 text-[14px]">
             <summary className="cursor-pointer font-semibold text-navy-900">Normalization log ({dataset.normalizations.length})</summary>
             <div className="mt-2 max-h-[240px] overflow-y-auto rounded-md border border-line-soft">
               <table className="w-full">
@@ -312,13 +312,13 @@ export function SeniorTab() {
       {/* Drill-down */}
       <Panel className="mt-4" title="Records in this selection" subtitle={showPii ? 'Identifiable details are limited to what the analysis needs. Contact numbers and full birthdates are not shown.' : undefined} bodyClassName="px-0 py-0">
         {!showPii ? (
-          <p className="flex items-center gap-2 px-5 py-5 text-[13px] text-ink-muted">
+          <p className="flex items-center gap-2 px-5 py-5 text-[15px] text-ink-muted">
             <Lock className="size-4" /> Individual records are only visible to personnel with access to resident records. You can still use all aggregate figures above.
           </p>
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-[12.5px]">
+              <table className="w-full min-w-[760px] text-[14.5px]">
                 <thead>
                   <tr className="bg-surface-muted text-left">
                     {['Row', 'Name', 'Age', 'Area', 'Gender', 'Status', 'OSCA ID', 'Needs'].map((h) => <th key={h} className="label-caps px-3 py-2">{h}</th>)}
@@ -340,7 +340,7 @@ export function SeniorTab() {
                 </tbody>
               </table>
             </div>
-            <div className="flex items-center justify-between border-t border-line-soft px-4 py-2.5 text-[12.5px] text-ink-muted">
+            <div className="flex items-center justify-between border-t border-line-soft px-4 py-2.5 text-[14.5px] text-ink-muted">
               <span>
                 {rows.length ? page * PAGE + 1 : 0}–{Math.min(rows.length, page * PAGE + PAGE)} of {rows.length}
               </span>
@@ -367,21 +367,21 @@ function Kpi(props: { label: string; value: number; hint?: string; attention?: b
 function Fact({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-md bg-surface-muted px-3 py-2">
-      <dt className="text-[11px] text-ink-muted">{label}</dt>
-      <dd className="font-display text-[16px] font-extrabold text-navy-900">{value}</dd>
+      <dt className="text-[13px] text-ink-muted">{label}</dt>
+      <dd className="font-display text-[18px] font-extrabold text-navy-900">{value}</dd>
     </div>
   )
 }
 
 function CountTable({ rows, onRow }: { rows: (string | number)[][]; onRow?: (key: string) => void }) {
   return (
-    <table className="mt-3 w-full text-[13px]">
+    <table className="mt-3 w-full text-[15px]">
       <tbody>
         {rows.map((r) => (
           <tr key={String(r[0])} onClick={onRow ? () => onRow(String(r[0])) : undefined} className={`border-t border-line-soft ${onRow ? 'cursor-pointer hover:bg-sky-50' : ''}`}>
             <td className="py-1.5 pr-2 text-navy-900">{r[0]}</td>
             <td className="py-1.5 text-right font-semibold tabular-nums text-navy-900">{r[1]}</td>
-            <td className="py-1.5 pl-3 text-right text-[12px] text-ink-muted">{r[2]}</td>
+            <td className="py-1.5 pl-3 text-right text-[14px] text-ink-muted">{r[2]}</td>
           </tr>
         ))}
       </tbody>

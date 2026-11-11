@@ -13,7 +13,7 @@ export function DevPreviewBar() {
   const { user, previewAs, logout } = useAuth()
   const navigate = useNavigate()
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-navy-900 px-4 py-1.5 text-[12px] text-white/85">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-navy-900 px-4 py-1.5 text-[14px] text-white/85">
       <span className="inline-flex items-center gap-1.5 font-semibold text-white">
         <Code2 className="size-3.5" />
         Development preview
@@ -27,7 +27,7 @@ export function DevPreviewBar() {
             previewAs(e.target.value)
             navigate('/dashboard')
           }}
-          className="h-7 rounded-md border border-white/20 bg-navy-800 px-2 text-[12px] text-white"
+          className="h-7 rounded-md border border-white/20 bg-navy-800 px-2 text-[14px] text-white"
         >
           {listPreviewAccounts().map((u) => (
             <option key={u.id} value={u.id}>

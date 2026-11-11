@@ -69,15 +69,15 @@ export function ResidentHome() {
     <>
       <GreetingCard subtitle="Your Barangay 181 services in one place." profileTo="/my/profile" />
 
-      <h2 className="font-display text-[17px] font-bold text-navy-900">How can we help you today?</h2>
-      <p className="text-[13px] text-ink-muted">Choose a service to get started.</p>
+      <h2 className="font-display text-[19px] font-bold text-navy-900">How can we help you today?</h2>
+      <p className="text-[15px] text-ink-muted">Choose a service to get started.</p>
       <div className="mt-3 grid gap-3 md:grid-cols-3">
         {actions.map(({ to, icon: Icon, title, body }) => (
           <Link key={title} to={to} className="bmis-press flex min-h-[72px] items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3.5 transition-colors hover:border-navy-600/40 hover:bg-sky-50">
             <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-sky-100 text-navy-900"><Icon className="size-[18px]" /></span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[14px] font-semibold text-navy-900">{title}</span>
-              <span className="block text-[12.5px] text-ink-muted">{body}</span>
+              <span className="block text-[16px] font-semibold text-navy-900">{title}</span>
+              <span className="block text-[14.5px] text-ink-muted">{body}</span>
             </span>
             <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
           </Link>
@@ -95,7 +95,7 @@ export function ResidentHome() {
               <ul className="divide-y divide-line-soft">
                 {recent.map((t) => <ActivityRow key={`${t.kind}-${t.id}`} t={t} />)}
               </ul>
-              <p className="border-t border-line-soft px-5 py-3 text-[12px] text-ink-muted">Showing your most recent transactions. Select one to see its details.</p>
+              <p className="border-t border-line-soft px-5 py-3 text-[14px] text-ink-muted">Showing your most recent transactions. Select one to see its details.</p>
             </>
           )}
         </DarkHeadCard>
@@ -115,9 +115,9 @@ export function ResidentHome() {
 function DarkHeadCard({ title, to, children }: { title: string; to: string; children: React.ReactNode }) {
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between gap-3 bg-navy-900 px-5 py-3.5 text-white">
-        <h2 className="font-display text-[15.5px] font-bold">{title}</h2>
-        <Link to={to} className="inline-flex min-h-9 shrink-0 items-center gap-1 text-[12.5px] font-semibold text-white hover:underline">
+      <div className="flex items-center justify-between gap-3 bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5">
+        <h2 className="font-display text-[17.5px] font-bold">{title}</h2>
+        <Link to={to} className="inline-flex min-h-9 shrink-0 items-center gap-1 text-[14.5px] font-semibold text-navy-900 hover:underline">
           View all <ChevronRight className="size-4" />
         </Link>
       </div>
@@ -131,10 +131,10 @@ function ActivityRow({ t }: { t: Transaction }) {
     <li>
       <Link to={t.to} className={cn('flex items-center gap-3 px-5 py-3.5', needsYou(t) ? 'border-l-4 border-l-warning bg-warning-tint/60 hover:bg-warning-tint' : 'hover:bg-sky-50')}>
         <span className="min-w-0 flex-1">
-          {needsYou(t) && <span className="mb-1 flex items-center gap-2 text-[12px] font-semibold text-warning"><Pulse /> Action needed: reply to the barangay</span>}
-          <span className="block text-[10.5px] font-semibold tracking-[0.06em] text-ink-muted uppercase">{t.kindLabel}</span>
-          <span className="block truncate text-[14px] font-semibold text-navy-900">{t.title}</span>
-          <span className="block text-[12px] text-ink-muted">Ref. no. {t.referenceNo} · Submitted {formatDate(t.submittedAt)}</span>
+          {needsYou(t) && <span className="mb-1 flex items-center gap-2 text-[14px] font-semibold text-warning"><Pulse /> Action needed: reply to the barangay</span>}
+          <span className="block text-[12.5px] font-semibold tracking-[0.06em] text-ink-muted uppercase">{t.kindLabel}</span>
+          <span className="block truncate text-[16px] font-semibold text-navy-900">{t.title}</span>
+          <span className="block text-[14px] text-ink-muted">Ref. no. {t.referenceNo} · Submitted {formatDate(t.submittedAt)}</span>
         </span>
         <span className="hidden sm:block"><StatusDot status={t.status} /></span>
         <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
@@ -153,11 +153,11 @@ import { StatusLabel as StatusLabelInline } from '@/components/ui/StatusLabel'
 function AnnouncementItem({ a, full }: { a: (typeof ANNOUNCEMENTS)[number]; full?: boolean }) {
   return (
     <li className={cn('px-5 py-4', full && 'sm:px-6')}>
-      <p className="text-[11px] font-semibold tracking-[0.06em] text-navy-600 uppercase">
+      <p className="text-[13px] font-semibold tracking-[0.06em] text-navy-600 uppercase">
         {a.kind} <span className="font-normal tracking-normal text-ink-muted normal-case">· Published {formatDate(a.date)}</span>
       </p>
-      <p className="mt-1 font-display text-[15px] font-bold text-navy-900">{a.title}</p>
-      <p className="text-[13px] text-ink-nav">{a.body}</p>
+      <p className="mt-1 font-display text-[17px] font-bold text-navy-900">{a.title}</p>
+      <p className="text-[15px] text-ink-nav">{a.body}</p>
     </li>
   )
 }
@@ -168,26 +168,26 @@ function NeedAssistance() {
     <section className="mt-6 border-t border-line pt-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-display text-[17px] font-bold text-navy-900">Need Assistance?</h2>
-          <p className="text-[13px] text-ink-muted">Our personnel are here to help with the portal and barangay services.</p>
+          <h2 className="font-display text-[19px] font-bold text-navy-900">Need Assistance?</h2>
+          <p className="text-[15px] text-ink-muted">Our personnel are here to help with the portal and barangay services.</p>
         </div>
-        <Link to="/my/contact" className="inline-flex h-11 shrink-0 items-center justify-center gap-1 self-start rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[13px] font-semibold text-navy-900 hover:bg-surface-muted sm:self-center">
+        <Link to="/my/contact" className="inline-flex h-11 shrink-0 items-center justify-center gap-1 self-start rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[15px] font-semibold text-navy-900 hover:bg-surface-muted sm:self-center">
           View contact information <ChevronRight className="size-4" />
         </Link>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
-          <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
-          <p className="mt-1 text-[13px] text-navy-900">{C.hall}, {C.address}</p>
+          <p className="flex items-center gap-1.5 text-[15.5px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
+          <p className="mt-1 text-[15px] text-navy-900">{C.hall}, {C.address}</p>
         </div>
         <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
-          <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
-          <a href={`tel:${C.phone.replace(/[^\d+]/g, '')}`} className="mt-1 block text-[13px] text-info hover:underline">{C.phone}</a>
-          <a href={`mailto:${C.email}`} className="block text-[13px] break-all text-info hover:underline">{C.email}</a>
+          <p className="flex items-center gap-1.5 text-[15.5px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
+          <a href={`tel:${C.phone.replace(/[^\d+]/g, '')}`} className="mt-1 block text-[15px] text-info hover:underline">{C.phone}</a>
+          <a href={`mailto:${C.email}`} className="block text-[15px] break-all text-info hover:underline">{C.email}</a>
         </div>
         <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
-          <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
-          <p className="mt-1 text-[13px] text-navy-900">{C.officeHours}</p>
+          <p className="flex items-center gap-1.5 text-[15.5px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
+          <p className="mt-1 text-[15px] text-navy-900">{C.officeHours}</p>
         </div>
       </div>
     </section>
@@ -236,7 +236,7 @@ export function MyTransactionsPage() {
             aria-selected={kind === f.key}
             onClick={() => set({ type: f.key })}
             className={cn(
-              'inline-flex h-11 items-center justify-between gap-2 rounded-[var(--radius-control)] border px-4 text-[13.5px] font-semibold transition-colors sm:justify-start',
+              'inline-flex h-11 items-center justify-between gap-2 rounded-[var(--radius-control)] border px-4 text-[15.5px] font-semibold transition-colors sm:justify-start',
               kind === f.key ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-surface-muted',
             )}
           >
@@ -244,12 +244,12 @@ export function MyTransactionsPage() {
           </button>
         ))}
       </div>
-      <label className="mt-4 flex items-center gap-3 text-[13px] font-semibold text-navy-900">
+      <label className="mt-4 flex items-center gap-3 text-[15px] font-semibold text-navy-900">
         Status
         <select
           value={status}
           onChange={(e) => set({ status: e.target.value })}
-          className="h-11 min-w-[180px] rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[13.5px] font-normal text-navy-900 focus:border-navy-600 focus:outline-none"
+          className="h-11 min-w-[180px] rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15.5px] font-normal text-navy-900 focus:border-navy-600 focus:outline-none"
         >
           <option value="">All statuses</option>
           {ALL_RESIDENT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -262,16 +262,16 @@ export function MyTransactionsPage() {
         ) : shown.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-12 text-center">
             <Inbox className="size-9 text-ink-subtle" strokeWidth={1.5} />
-            <p className="mt-3 font-display text-[17px] font-bold text-navy-900">{status ? 'No transactions with this status.' : EMPTY[kind].title}</p>
-            <p className="mt-1 max-w-md text-[13.5px] text-ink-muted">{status ? 'Try another status, or choose "All statuses".' : EMPTY[kind].body}</p>
+            <p className="mt-3 font-display text-[19px] font-bold text-navy-900">{status ? 'No transactions with this status.' : EMPTY[kind].title}</p>
+            <p className="mt-1 max-w-md text-[15.5px] text-ink-muted">{status ? 'Try another status, or choose "All statuses".' : EMPTY[kind].body}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               {!status && (
-                <Link to={EMPTY[kind].to} className="inline-flex h-11 items-center rounded-[var(--radius-control)] bg-navy-900 px-5 text-[13.5px] font-semibold text-white hover:bg-navy-800">
+                <Link to={EMPTY[kind].to} className="inline-flex h-11 items-center rounded-[var(--radius-control)] bg-navy-900 px-5 text-[15.5px] font-semibold text-white hover:bg-navy-800">
                   {EMPTY[kind].action}
                 </Link>
               )}
               {(status || kind !== 'all') && (
-                <button type="button" onClick={() => set({ type: 'all', status: '' })} className="inline-flex h-11 items-center rounded-[var(--radius-control)] border border-line bg-surface px-5 text-[13.5px] font-semibold text-navy-900 hover:bg-surface-muted">
+                <button type="button" onClick={() => set({ type: 'all', status: '' })} className="inline-flex h-11 items-center rounded-[var(--radius-control)] border border-line bg-surface px-5 text-[15.5px] font-semibold text-navy-900 hover:bg-surface-muted">
                   Show all transactions
                 </button>
               )}
@@ -280,7 +280,7 @@ export function MyTransactionsPage() {
         ) : (
           <>
             <TransactionList items={shown} showType={kind === 'all'} />
-            <p className="border-t border-line-soft px-5 py-3 text-[12px] text-ink-muted">Showing {shown.length} transaction{shown.length === 1 ? '' : 's'}, newest first. Select a row to see its details.</p>
+            <p className="border-t border-line-soft px-5 py-3 text-[14px] text-ink-muted">Showing {shown.length} transaction{shown.length === 1 ? '' : 's'}, newest first. Select a row to see its details.</p>
           </>
         )}
       </Card>
@@ -356,15 +356,15 @@ export function DocumentDetailsPage() {
 
             {rs === 'Needs Additional Information' && needInfo?.remarks && (
               <Card className="overflow-hidden border-warning/50 bg-warning-tint/50 px-5 py-4">
-                <h2 className="-mx-5 -mt-4 mb-3 flex items-center gap-2 bg-navy-900 px-5 py-3.5 font-display text-[15.5px] font-bold text-white">
+                <h2 className="-mx-5 -mt-4 mb-3 flex items-center gap-2 bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5 font-display text-[17.5px] font-bold">
                   <span className="relative flex size-2.5">
                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-70" />
                     <span className="relative inline-flex size-2.5 rounded-full bg-warning" />
                   </span>
                   Message from the barangay
                 </h2>
-                <p className="rounded-md bg-surface px-3 py-2 text-[13.5px] text-navy-900">“{needInfo.remarks}”</p>
-                <p className="mt-1 text-[12px] text-ink-muted">From the {ROLES[needInfo.byRole].name} · {formatDateTime(needInfo.at)}</p>
+                <p className="rounded-md bg-surface px-3 py-2 text-[15.5px] text-navy-900">“{needInfo.remarks}”</p>
+                <p className="mt-1 text-[14px] text-ink-muted">From the {ROLES[needInfo.byRole].name} · {formatDateTime(needInfo.at)}</p>
               </Card>
             )}
             {replyStep && <ReplyForm req={req} step={replyStep} actor={actor} onDone={(r) => setReq({ ...r })} />}
@@ -462,7 +462,7 @@ export function ComplaintDetailsPage() {
                     ['Type of meeting', next.kind === 'lupon_mediation' ? 'Mediation with the Lupon' : 'Mediation with the Barangay Chairman'],
                   ]}
                 />
-                <p className="mt-2 text-[12.5px] text-ink-muted">
+                <p className="mt-2 text-[14.5px] text-ink-muted">
                   Please attend in person. You will receive a reminder {KP.reminderDaysBefore} day before the hearing. If you have questions, visit or contact the Barangay Hall.
                 </p>
               </Section>
@@ -479,7 +479,7 @@ export function ComplaintDetailsPage() {
             </Section>
             {c.details && (
               <Section title="Your complaint">
-                <p className="text-[13.5px] whitespace-pre-wrap text-navy-900">{c.details}</p>
+                <p className="text-[15.5px] whitespace-pre-wrap text-navy-900">{c.details}</p>
               </Section>
             )}
             <Updates items={[...c.history].reverse().map((h) => ({ title: h.action, at: h.at, by: h.byRole === 'resident' ? 'You' : ROLES[h.byRole]?.name }))} />
@@ -490,10 +490,10 @@ export function ComplaintDetailsPage() {
             <Progress steps={stepsFrom(labels, idx, notes, rs === 'Completed')} />
             <Card className="overflow-hidden px-5 py-4">
               <TitleBar>What these words mean</TitleBar>
-              <p className="text-[13px] font-semibold text-navy-900">Mediation</p>
-              <p className="text-[12.5px] text-ink-nav">A meeting where the Barangay Chairman helps both sides agree on a solution.</p>
-              <p className="mt-2 text-[13px] font-semibold text-navy-900">Lupon</p>
-              <p className="text-[12.5px] text-ink-nav">If there is no agreement, the case may go to the Lupon Tagapamayapa, a barangay panel that continues the mediation.</p>
+              <p className="text-[15px] font-semibold text-navy-900">Mediation</p>
+              <p className="text-[14.5px] text-ink-nav">A meeting where the Barangay Chairman helps both sides agree on a solution.</p>
+              <p className="mt-2 text-[15px] font-semibold text-navy-900">Lupon</p>
+              <p className="text-[14.5px] text-ink-nav">If there is no agreement, the case may go to the Lupon Tagapamayapa, a barangay panel that continues the mediation.</p>
             </Card>
             <NeedHelp />
           </>
@@ -573,14 +573,14 @@ export function BorrowingDetailsPage() {
               <div className="flex flex-wrap items-center gap-2">
                 {confirm ? (
                   <>
-                    <span className="text-[13px] text-navy-900">Cancel this request?</span>
+                    <span className="text-[15px] text-navy-900">Cancel this request?</span>
                     <Button size="sm" variant="danger" onClick={cancel}>Yes, cancel request</Button>
                     <Button size="sm" variant="ghost" onClick={() => setConfirm(false)}>Keep it</Button>
                   </>
                 ) : (
                   <Button size="sm" variant="danger" onClick={() => setConfirm(true)}>Cancel request</Button>
                 )}
-                {err && <span className="text-[12.5px] text-danger-ink">{err}</span>}
+                {err && <span className="text-[14.5px] text-danger-ink">{err}</span>}
               </div>
             )}
 
@@ -626,31 +626,31 @@ export function ContactPage() {
       <PageHeader title="Contact and Assistance" subtitle="Having trouble using the portal or accessing a barangay service? Our personnel are here to help." />
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="px-5 py-4">
-          <p className="flex items-center gap-2 text-[14px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
-          <p className="mt-2 text-[13.5px] font-semibold text-navy-900">{BARANGAY_CONTACT.hall}</p>
-          <p className="text-[13px] text-navy-900">{BARANGAY_CONTACT.address}</p>
-          <p className="mt-2 text-[12.5px] text-ink-muted">You may visit in person for help with requests and other services.</p>
+          <p className="flex items-center gap-2 text-[16px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
+          <p className="mt-2 text-[15.5px] font-semibold text-navy-900">{BARANGAY_CONTACT.hall}</p>
+          <p className="text-[15px] text-navy-900">{BARANGAY_CONTACT.address}</p>
+          <p className="mt-2 text-[14.5px] text-ink-muted">You may visit in person for help with requests and other services.</p>
         </Card>
         <Card className="px-5 py-4">
-          <p className="flex items-center gap-2 text-[14px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
-          <p className="mt-2 text-[12px] text-ink-muted">Phone</p>
-          <a href={`tel:${BARANGAY_CONTACT.phone.replace(/[^\d+]/g, '')}`} className="block text-[13.5px] font-semibold text-info hover:underline">{BARANGAY_CONTACT.phone}</a>
-          <a href={`tel:${BARANGAY_CONTACT.mobile.replace(/[^\d+]/g, '')}`} className="block text-[13.5px] font-semibold text-info hover:underline">{BARANGAY_CONTACT.mobile}</a>
-          <p className="mt-2 flex items-center gap-1 text-[12px] text-ink-muted"><Mail className="size-3.5" /> Email</p>
-          <a href={`mailto:${BARANGAY_CONTACT.email}`} className="block text-[13.5px] font-semibold break-all text-info hover:underline">{BARANGAY_CONTACT.email}</a>
+          <p className="flex items-center gap-2 text-[16px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
+          <p className="mt-2 text-[14px] text-ink-muted">Phone</p>
+          <a href={`tel:${BARANGAY_CONTACT.phone.replace(/[^\d+]/g, '')}`} className="block text-[15.5px] font-semibold text-info hover:underline">{BARANGAY_CONTACT.phone}</a>
+          <a href={`tel:${BARANGAY_CONTACT.mobile.replace(/[^\d+]/g, '')}`} className="block text-[15.5px] font-semibold text-info hover:underline">{BARANGAY_CONTACT.mobile}</a>
+          <p className="mt-2 flex items-center gap-1 text-[14px] text-ink-muted"><Mail className="size-3.5" /> Email</p>
+          <a href={`mailto:${BARANGAY_CONTACT.email}`} className="block text-[15.5px] font-semibold break-all text-info hover:underline">{BARANGAY_CONTACT.email}</a>
         </Card>
         <Card className="px-5 py-4">
-          <p className="flex items-center gap-2 text-[14px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
-          <p className="mt-2 text-[13.5px] font-semibold text-navy-900">{BARANGAY_CONTACT.officeHours}</p>
-          <p className="text-[13px] text-navy-900">{BARANGAY_CONTACT.saturdayHours}</p>
-          <p className="mt-2 text-[12.5px] text-ink-muted">Schedule changes, such as holiday closures, are posted in Barangay Announcements.</p>
+          <p className="flex items-center gap-2 text-[16px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
+          <p className="mt-2 text-[15.5px] font-semibold text-navy-900">{BARANGAY_CONTACT.officeHours}</p>
+          <p className="text-[15px] text-navy-900">{BARANGAY_CONTACT.saturdayHours}</p>
+          <p className="mt-2 text-[14.5px] text-ink-muted">Schedule changes, such as holiday closures, are posted in Barangay Announcements.</p>
         </Card>
       </div>
       <Card className="mt-4 max-w-3xl px-5 py-4">
-        <h2 className="font-display text-[16px] font-bold text-navy-900">What personnel can help you with</h2>
+        <h2 className="font-display text-[18px] font-bold text-navy-900">What personnel can help you with</h2>
         <ul className="mt-2 divide-y divide-line-soft">
           {help.map((h) => (
-            <li key={h} className="flex items-start gap-2.5 py-2.5 text-[13.5px] text-navy-900">
+            <li key={h} className="flex items-start gap-2.5 py-2.5 text-[15.5px] text-navy-900">
               <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" /> {h}
             </li>
           ))}
@@ -670,7 +670,7 @@ export function AnnouncementsPage() {
           {ANNOUNCEMENTS.map((a) => <AnnouncementItem key={a.title} a={a} full />)}
         </ul>
       </Card>
-      <p className="mt-3 max-w-3xl text-[12px] text-ink-muted">
+      <p className="mt-3 max-w-3xl text-[14px] text-ink-muted">
         Barangay personnel cannot post announcements in the system yet, so the items above are sample content showing how announcements will appear.
       </p>
     </>
@@ -704,11 +704,11 @@ function ReplyForm({ req, step, actor, onDone }: { req: DocumentRequest; step: T
       <div className="space-y-3">
         {items.map((item) => (
           <div key={item}>
-            <p className="mb-1 text-[12.5px] font-semibold text-navy-900">{item} <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></p>
-            <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line px-3 py-2 text-[13px] text-navy-900 hover:border-navy-600 hover:bg-sky-50">
+            <p className="mb-1 text-[14.5px] font-semibold text-navy-900">{item} <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></p>
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line px-3 py-2 text-[15px] text-navy-900 hover:border-navy-600 hover:bg-sky-50">
               <Paperclip className="size-4 shrink-0 text-ink-muted" />
               <span className="min-w-0 flex-1 truncate">{files[item] ?? 'Choose a photo or PDF'}</span>
-              {files[item] && <span className="text-[12px] font-semibold text-info">Change</span>}
+              {files[item] && <span className="text-[14px] font-semibold text-info">Change</span>}
               <input
                 type="file"
                 accept="image/*,application/pdf"
@@ -722,15 +722,15 @@ function ReplyForm({ req, step, actor, onDone }: { req: DocumentRequest; step: T
           </div>
         ))}
         <label className="block">
-          <span className="mb-1 block text-[12.5px] font-semibold text-navy-900">Your message <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></span>
+          <span className="mb-1 block text-[14.5px] font-semibold text-navy-900">Your message <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></span>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="For example: Here is a clearer photo of my ID."
-            className="min-h-[80px] w-full rounded-[var(--radius-control)] border border-line px-3 py-2 text-[13.5px] text-navy-900 focus:border-navy-600 focus:outline-none"
+            className="min-h-[80px] w-full rounded-[var(--radius-control)] border border-line px-3 py-2 text-[15.5px] text-navy-900 focus:border-navy-600 focus:outline-none"
           />
         </label>
-        {error && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[12.5px] text-danger-ink">{error}</p>}
+        {error && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">{error}</p>}
         <Button className="h-11 w-full sm:w-auto" loading={busy} disabled={!ready} onClick={send}>Send reply</Button>
       </div>
     </Section>

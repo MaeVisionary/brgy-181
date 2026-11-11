@@ -77,7 +77,7 @@ export function NewRequestPage() {
 
   return (
     <>
-      <Link to="/my/documents" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-navy-900">
+      <Link to="/my/documents" className="mb-3 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-ink-muted hover:text-navy-900">
         <ArrowLeft className="size-4" /> Document Requests
       </Link>
       <PageHeader title="New request" subtitle="Choose what you need. Documents are claimed at the Barangay Hall once ready." />
@@ -103,9 +103,9 @@ export function NewRequestPage() {
                           !d.online && 'cursor-not-allowed bg-surface-muted hover:bg-surface-muted',
                         )}
                       >
-                        <span className="block text-[13px] font-semibold text-navy-900">{d.name}</span>
+                        <span className="block text-[15px] font-semibold text-navy-900">{d.name}</span>
                         {!d.online && (
-                          <span className="mt-0.5 flex items-center gap-1 text-[11.5px] text-ink-muted">
+                          <span className="mt-0.5 flex items-center gap-1 text-[13.5px] text-ink-muted">
                             <Building2 className="size-3.5" /> At the Barangay Hall only
                           </span>
                         )}
@@ -146,8 +146,8 @@ export function NewRequestPage() {
                   {type.requirements.map((r) => (
                     <li key={r.label}>
                       <label className="block cursor-pointer">
-                        <span className="mb-1 block text-[12.5px] font-semibold text-navy-900">{r.label}</span>
-                        <span className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line px-3 py-2.5 text-[12.5px] text-ink-muted transition-colors hover:border-navy-600 hover:bg-sky-50 hover:text-navy-900">
+                        <span className="mb-1 block text-[14.5px] font-semibold text-navy-900">{r.label}</span>
+                        <span className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line px-3 py-2.5 text-[14.5px] text-ink-muted transition-colors hover:border-navy-600 hover:bg-sky-50 hover:text-navy-900">
                           <Paperclip className="size-4" />
                           {files[r.label] ?? 'Choose a photo or PDF'}
                           <input
@@ -167,14 +167,14 @@ export function NewRequestPage() {
               </Panel>
             )}
 
-            <Card className="px-5 py-4 text-[12.5px] text-ink-muted">
+            <Card className="px-5 py-4 text-[14.5px] text-ink-muted">
               Your information is used only to process this request, in line with the Data Privacy Act of 2012 (RA 10173).
             </Card>
 
             {touched && missing.length > 0 && (
-              <p className="rounded-md bg-danger-tint px-3 py-2 text-[12.5px] text-danger-ink">Please fill in: {missing.map((f) => f.label).join(', ')}.</p>
+              <p className="rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">Please fill in: {missing.map((f) => f.label).join(', ')}.</p>
             )}
-            {error && <p className="rounded-md bg-danger-tint px-3 py-2 text-[12.5px] text-danger-ink">{error}</p>}
+            {error && <p className="rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">{error}</p>}
             <div className="flex gap-2">
               <Button onClick={submit} loading={busy}>
                 Submit request
