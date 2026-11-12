@@ -33,7 +33,7 @@ export const BARANGAY_CONTACT = {
   saturdayHours: 'Saturday, 8:00 AM to 12:00 NN (document pickup only)',
 } as const
 
-export type OfficialPosition = 'Barangay Chairman' | 'Barangay Secretary' | 'Barangay Treasurer' | 'Barangay Kagawad' | 'Lupon Member'
+export type OfficialPosition = 'Barangay Chairman' | 'Barangay Secretary' | 'Barangay Kagawad' | 'Lupon Member'
 
 export interface Official {
   id: string
@@ -50,7 +50,7 @@ export interface Official {
 
 /**
  * Barangay officials. Study §1.1 lists the Chairman, Secretary, seven Kagawad;
- * the official templates add the Barangay Treasurer; a supplied Notice of Hearing names two Lupon members.
+ * a supplied Notice of Hearing names two Lupon members.
  * Kagawad committee assignments are not documented, so none are shown.
  */
 export const OFFICIALS: Official[] = [
@@ -63,7 +63,6 @@ export const OFFICIALS: Official[] = [
   { id: 'off-k5', name: 'Cecilia Espinosa', nameOnDocuments: 'CECILIA B. ESPINOSA', position: 'Barangay Kagawad', userId: 'usr-kag-5', source: 'Study §1.1' },
   { id: 'off-k6', name: 'Alver Joseph Domingo', nameOnDocuments: 'ALVER JOSEPH F. DOMINGO', position: 'Barangay Kagawad', userId: 'usr-kag-6', source: 'Study §1.1' },
   { id: 'off-k7', name: 'Rogelio Cristobal', nameOnDocuments: 'ROGELIO V. CRISTOBAL', position: 'Barangay Kagawad', userId: 'usr-kag-7', source: 'Study §1.1' },
-  { id: 'off-treas', userId: 'usr-treas', name: 'Mary Grace T. Dela Cruz', nameOnDocuments: 'MARY GRACE T. DELA CRUZ', position: 'Barangay Treasurer', source: 'Official document templates' },
   { id: 'off-lupon-1', name: 'Soledad De Dios', position: 'Lupon Member', source: 'Notice of Hearing example' },
   { id: 'off-lupon-2', name: 'Norbenita Mendoza', position: 'Lupon Member', source: 'Notice of Hearing example' },
 ]
@@ -105,5 +104,5 @@ export const RECURRING_REPORTS = [
   { id: 'cleanup', name: 'Clean-up activities report', schedule: 'Weekly / monthly' },
   { id: 'senior-masterlist', name: 'Monthly senior citizen masterlist (OSCA)', schedule: 'Monthly' },
   { id: 'kp', name: 'Katarungang Pambarangay report', schedule: 'As required' },
-  { id: 'personnel', name: 'Barangay personnel report', schedule: 'As required' },
+  { id: 'personnel', name: 'Barangay Personnel report', schedule: 'As required' },
 ] as const

@@ -294,7 +294,7 @@ export function nextAvailable(fromDate: string, minutes: number, staffIds: strin
 /** Re-checks right before saving; throws if the time is gone. */
 export function assertFree(date: string, time: string, staffId: string, minutes: number, ignoreId?: string, service?: string) {
   const why = unavailableReason(staffId, date)
-  if (why) throw new ServiceError('staff_unavailable', `The chosen staff member cannot take this visit: ${why}`)
+  if (why) throw new ServiceError('staff_unavailable', `The chosen member of the Barangay Personnel cannot take this visit: ${why}`)
   if (!freeSlots(date, staffId, minutes, ignoreId, service).some((s) => s.time === time)) throw new ServiceError('slot', 'That time is no longer available. Choose another.')
 }
 

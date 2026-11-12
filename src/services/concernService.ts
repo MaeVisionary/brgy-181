@@ -122,7 +122,7 @@ function view(s: Store, i: ConcernIssue): IssueView {
     firstReportedAt: subs[0]?.submittedAt ?? i.createdAt,
     latestReportAt: subs[subs.length - 1]?.submittedAt ?? i.createdAt,
     priority: o ? o.priority : auto.priority,
-    priorityReason: o ? `Set to ${o.priority} by staff: ${o.reason} (Suggested: ${auto.reason})` : auto.reason,
+    priorityReason: o ? `Set to ${o.priority} by Barangay Personnel: ${o.reason} (Suggested: ${auto.reason})` : auto.reason,
     trend: auto.trend,
     hazard,
   }
@@ -306,7 +306,7 @@ export function setIssueStatus(id: string, status: IssueStatus, by: User, resolu
 export function assignIssue(id: string, userId: string, expectedBy: string | undefined, by: User): Promise<IssueView> {
   return mutateIssue(id, by, (i) => {
     const u = mockUsers.find((x) => x.id === userId && x.status === 'active' && x.roleId !== 'resident')
-    if (!u) throw new ServiceError('assignee', 'Choose barangay personnel.')
+    if (!u) throw new ServiceError('assignee', 'Choose a member of the Barangay Personnel.')
     i.assignedTo = u.id
     i.expectedBy = expectedBy || undefined
     if (i.status === 'open' || i.status === 'under_review') i.status = 'assigned'
@@ -353,7 +353,7 @@ export function moveSubmission(subId: string, target: string | 'new', by: User):
     sub.issueId = to.id
     sub.suggestedIssueId = undefined
     sub.needsReview = undefined
-    sub.match = { confidence: 'high', score: 1, reason: 'Confirmed by staff', by: by.id, at: now }
+    sub.match = { confidence: 'high', score: 1, reason: 'Confirmed by Barangay Personnel', by: by.id, at: now }
     from?.history.push({ at: now, byUserId: by.id, action: `Report ${sub.ref} moved to ${to.ref}` })
     to.history.push({ at: now, byUserId: by.id, action: `Report ${sub.ref} added${from ? ` from ${from.ref}` : ''}` })
     save(s)

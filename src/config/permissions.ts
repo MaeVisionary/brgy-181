@@ -45,13 +45,6 @@ export const ROLES: Record<RoleId, Role> = {
     portalLabel: 'Personnel Portal',
     description: 'Equipment inventory, borrowing, releases and returns.',
   },
-  treasurer: {
-    id: 'treasurer',
-    name: 'Barangay Treasurer',
-    portal: 'personnel',
-    portalLabel: 'Personnel Portal',
-    description: 'Records fees paid for documents (official receipt) and views collection reports.',
-  },
   resident: {
     id: 'resident',
     name: 'Resident',
@@ -98,6 +91,8 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
     'documents.process',
     'documents.release',
     'documents.inspect',
+    // Records the official receipt for fee-bearing documents (e.g. Business Clearance).
+    'documents.payment',
     'complaints.view',
     'complaints.create',
     'complaints.update',
@@ -120,15 +115,13 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
     'residents.lookup_borrower',
   ],
 
-  // Fees for documents such as the Business Clearance are paid to the Treasurer.
-  treasurer: ['documents.view', 'documents.payment', 'reports.view'],
 
 
   resident: ['self.profile', 'self.documents', 'self.complaints', 'self.borrowing', 'self.change_requests'],
 }
 
 /** Roles whose permissions the System Administrator can change in Roles and Permissions. */
-export const EDITABLE_ROLES: RoleId[] = ['chairman', 'secretary', 'kagawad', 'property_custodian', 'treasurer']
+export const EDITABLE_ROLES: RoleId[] = ['chairman', 'secretary', 'kagawad', 'property_custodian']
 
 /** Permission groups shown in the role manager (system and self-service permissions are not role-editable). */
 export const PERMISSION_GROUPS: { id: string; name: string; permissions: Permission[] }[] = [
@@ -150,7 +143,7 @@ const ROLE_OVERRIDES_KEY = 'bmis.rolePermissions'
  * permissions introduced after that format always follow the defaults.
  */
 const DEFAULT_ROLE_PERMISSIONS: Record<RoleId, Permission[]> = Object.fromEntries(Object.entries(ROLE_PERMISSIONS).map(([k, v]) => [k, [...v]])) as Record<RoleId, Permission[]>
-const ADDED_AFTER_LIST_FORMAT: Permission[] = ['cases.assigned', 'concerns.manage', 'concerns.view', 'security.approve', 'announcements.manage', 'announcements.approve']
+const ADDED_AFTER_LIST_FORMAT: Permission[] = ['cases.assigned', 'concerns.manage', 'concerns.view', 'security.approve', 'announcements.manage', 'announcements.approve', 'documents.payment']
 type RoleDiff = { on: Permission[]; off: Permission[] }
 
 function applyDiff(role: RoleId, d: RoleDiff) {
@@ -214,7 +207,7 @@ export const GRANTABLE_STAFF_PERMISSIONS: readonly Permission[] = [
 ]
 
 /** Every barangay official account can receive these per account (residents and the administrator cannot). */
-export const GRANTABLE_ROLES: readonly string[] = ['chairman', 'secretary', 'kagawad', 'property_custodian', 'treasurer']
+export const GRANTABLE_ROLES: readonly string[] = ['chairman', 'secretary', 'kagawad', 'property_custodian']
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   'residents.view': 'View resident records',

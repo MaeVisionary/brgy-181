@@ -69,7 +69,7 @@ const needReason = (reason: string) => {
 }
 
 /** Personnel positions the administrator may assign (elected officials keep their role). */
-export const ASSIGNABLE_ROLES: RoleId[] = ['property_custodian', 'treasurer']
+export const ASSIGNABLE_ROLES: RoleId[] = ['property_custodian']
 
 // ── Two-person approval for access changes ───────────────────────────
 //

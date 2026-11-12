@@ -91,7 +91,7 @@ export function RequestDetailPage() {
         <div className="min-w-0 space-y-4">
           {req.assisted && (
             <p className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-2.5 text-[length:calc(14.5px*var(--fs))] text-navy-900">
-              <strong>Walk-in (assisted service).</strong> Encoded by {encodedBy?.fullName ?? 'staff'} on {formatDateTime(req.assisted.at)}.
+              <strong>Walk-in (assisted service).</strong> Encoded by {encodedBy?.fullName ?? 'Barangay Personnel'} on {formatDateTime(req.assisted.at)}.
             </p>
           )}
 

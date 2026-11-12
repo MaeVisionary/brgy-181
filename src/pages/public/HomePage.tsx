@@ -10,7 +10,6 @@ import { PublicLayout } from './PublicLayout'
 export function HomePage() {
   const go = useSmoothNavigate()
   const kagawads = officialByPosition('Barangay Kagawad')
-  const treasurer = officialByPosition('Barangay Treasurer')[0]
   const lupon = officialByPosition('Lupon Member')
 
   return (
@@ -45,7 +44,7 @@ export function HomePage() {
               </button>
             </div>
             <button type="button" onClick={() => go('/portal')} className="bmis-rise bmis-rise-4 mt-3 inline-flex min-h-11 items-center gap-1.5 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-600 hover:text-navy-900 hover:underline">
-              Barangay personnel: access the portal <ArrowRight className="size-4" />
+              Barangay Personnel: access the portal <ArrowRight className="size-4" />
             </button>
             <p className="bmis-rise bmis-rise-4 mt-6 font-display text-[length:calc(15px*var(--fs))] font-bold text-navy-600 italic">“{BARANGAY.motto}”</p>
           </div>
@@ -84,7 +83,6 @@ export function HomePage() {
                 <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Person name={CHAIRMAN.name} position="Barangay Chairman" lead />
                   <Person name={SECRETARY.name} position="Barangay Secretary" lead />
-                  {treasurer && <Person name={treasurer.name} position="Barangay Treasurer" />}
                 </div>
               </div>
               {lupon.length > 0 && (

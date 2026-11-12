@@ -36,7 +36,7 @@ export const TEST_ACCOUNTS: TestAccountDef[] = [
 /** First test account (kept for older references). */
 export const TEST_ACCOUNT: TestAccountDef = TEST_ACCOUNTS[0] ?? define('', '', '', 'Ruffa Mae Silorio')
 
-export const TEST_LEVELS: RoleId[] = ['system_admin', 'chairman', 'secretary', 'kagawad', 'property_custodian', 'treasurer', 'resident']
+export const TEST_LEVELS: RoleId[] = ['system_admin', 'chairman', 'secretary', 'kagawad', 'property_custodian', 'resident']
 
 export const testAccountOf = (id: string | undefined): TestAccountDef | undefined =>
   id ? TEST_ACCOUNTS.find((a) => id.startsWith(a.idPrefix)) : undefined

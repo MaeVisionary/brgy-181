@@ -78,7 +78,7 @@ export function VerificationPanel({ req, actor, onChange }: { req: DocumentReque
   )
 }
 
-/** Fee paid to the Barangay Treasurer (official receipt). */
+/** Fee paid at the Barangay Hall (official receipt). */
 export function PaymentPanel({ req, actor, onChange }: { req: DocumentRequest; actor: DocActor; onChange: (r: DocumentRequest) => void }) {
   const [orNo, setOrNo] = useState('')
   const [amount, setAmount] = useState('')

@@ -9,7 +9,7 @@ import { ServiceError, mockRequest } from './mockApi'
  * Requirements per document are set by the barangay, not by the system
  * (Chairman interview, 10 Nov 2026: the official list is still to be confirmed).
  * Prototype: saved in this browser. Backend: a requirements table edited by
- * authorized personnel, with the change logged.
+ * Barangay Personnel with permission, with the change logged.
  */
 const allowed = (u: User) =>
   ['documents.process', 'system.settings'].some((p) => ROLE_PERMISSIONS[u.roleId].includes(p as never) || u.extraPermissions?.includes(p as never))

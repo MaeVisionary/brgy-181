@@ -1,7 +1,7 @@
 import { useAuth } from '@/auth/useAuth'
 import { ChairmanDashboard } from './ChairmanDashboard'
 import { CustodianDashboard } from './CustodianDashboard'
-import { AdminDashboard, KagawadDashboard, TreasurerDashboard } from './OtherDashboards'
+import { AdminDashboard, KagawadDashboard } from './OtherDashboards'
 import { ResidentHome } from '@/pages/resident/ResidentV2Pages'
 import { SecretaryDashboard } from './SecretaryDashboard'
 
@@ -18,8 +18,6 @@ export function DashboardPage() {
       return <CustodianDashboard />
     case 'kagawad':
       return <KagawadDashboard />
-    case 'treasurer':
-      return <TreasurerDashboard />
     case 'system_admin':
       return <AdminDashboard />
     case 'resident':

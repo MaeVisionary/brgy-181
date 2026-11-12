@@ -27,7 +27,7 @@ const REPORTS: { id: ReportId; name: string; description: string }[] = [
   { id: 'borrowing', name: 'Equipment borrowing', description: 'Borrowing requests, releases, returns and overdue items.' },
   { id: 'equipment', name: 'Equipment availability', description: 'Units available, reserved, borrowed and under maintenance.' },
   { id: 'personnel', name: 'Personnel processing activity', description: 'Workflow steps recorded by each official.' },
-  { id: 'fees', name: 'Fees collected', description: 'Payments recorded by the Treasurer.' },
+  { id: 'fees', name: 'Fees collected', description: 'Payments recorded at the Barangay Hall.' },
 ]
 
 const inRange = (iso: string | undefined, from: string, to: string) => !!iso && (!from || iso.slice(0, 10) >= from) && (!to || iso.slice(0, 10) <= to)

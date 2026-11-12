@@ -25,7 +25,7 @@ export interface DocActor {
 
 const isOwner = (req: DocumentRequest, actor: DocActor) => !!req.residentId && req.residentId === actor.user.residentId
 
-/** Collections-only accounts (Treasurer): fee-bearing documents only, nothing else. */
+/** An account that can only record fees sees fee-bearing documents only. */
 const feeOnly = (actor: DocActor) =>
   actor.permissions.has('documents.payment') && !actor.permissions.has('documents.process') && !actor.permissions.has('documents.approve') && !actor.permissions.has('documents.create')
 
@@ -103,7 +103,7 @@ export function createRequest(input: NewRequestInput, actor: DocActor): Promise<
       if (!actor.permissions.has('documents.create')) throw new ServiceError('forbidden', 'You cannot encode requests.')
     } else {
       if (!actor.permissions.has('self.documents')) throw new ServiceError('forbidden', 'Not allowed.')
-      if (!RESIDENT_SERVICES.has(type.id)) throw new ServiceError('forbidden', `${type.name} is prepared by barangay personnel and cannot be requested here.`)
+      if (!RESIDENT_SERVICES.has(type.id)) throw new ServiceError('forbidden', `${type.name} is prepared by Barangay Personnel and cannot be requested here.`)
       if (!type.online) throw new ServiceError('not_online', `${type.name} is not requested online. Please visit the Barangay Hall.`)
       if (input.residentId !== actor.user.residentId) throw new ServiceError('forbidden', 'You can only request documents for yourself.')
     }
@@ -262,12 +262,12 @@ export function recordVerification(
   })
 }
 
-/** Record the fee paid to the Treasurer (documents.payment). */
+/** Record the fee paid at the Barangay Hall, with its official receipt (documents.payment). */
 export function recordPayment(id: string, input: { orNo: string; amount: number }, actor: DocActor): Promise<DocumentRequest> {
   return mockRequest(() => {
     const req = find(id, actor)
     if (!getDocumentType(req.typeId).fee) throw new ServiceError('not_applicable', 'No fee is recorded for this document.')
-    if (!actor.permissions.has('documents.payment')) throw new ServiceError('forbidden', 'Only the Treasurer records payments.')
+    if (!actor.permissions.has('documents.payment')) throw new ServiceError('forbidden', 'You are not allowed to record payments.')
     if (req.payment) throw new ServiceError('paid', 'Payment was already recorded.')
     if (!input.orNo.trim()) throw new ServiceError('or', 'Enter the official receipt number.')
     if (!(input.amount > 0)) throw new ServiceError('amount', 'Enter the amount paid.')

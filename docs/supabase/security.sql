@@ -14,7 +14,7 @@
 --  * The service-role key is used only by server-side jobs (never shipped to
 --    the browser, never in VITE_ variables, never committed).
 
-create type public.role_id as enum ('system_admin', 'chairman', 'secretary', 'kagawad', 'treasurer', 'property_custodian', 'resident');
+create type public.role_id as enum ('system_admin', 'chairman', 'secretary', 'kagawad', 'property_custodian', 'resident');
 
 create table public.profiles (
   id uuid primary key references auth.users (id) on delete restrict,

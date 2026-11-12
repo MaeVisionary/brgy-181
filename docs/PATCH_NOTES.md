@@ -413,3 +413,9 @@ Plain tags (sector tags such as PWD or 4Ps, "2 families", attendance counts) hav
 - The three earlier sample announcements are kept as published samples.
 - Complaint consultations are now always held by, and on the calendar of, the Punong Barangay. The Secretary can book one for the Chairman (the Chairman is notified) but cannot record its outcome. A consultation can only be set up after the case has been forwarded to the Chairman.
 - docs/supabase/announcements.sql: tables, no-self-approval check, a published-only view for residents, RLS. Not applied.
+
+## Treasurer removed; "Barangay Personnel" wording (2026-11-12)
+- The Treasurer role is removed completely: role list, permissions, sign-in account type, development test levels, the Treasurer dashboard, the officials list (landing page and council panel), the sample account, sample notifications, and the database role type (docs/supabase/security.sql). Fee-bearing documents (Business Clearance) still need an official receipt; recording it is now a Secretary permission (documents.payment). Fee text now says "paid at the Barangay Hall". Older saved role settings cannot switch this permission off.
+- "Authorized Personnel" no longer exists as a role (removed earlier). The phrase's last uses in code comments were reworded.
+- Audit: a scan of src/, index.html and public/ finds no "Treasurer", "Authorized Personnel" or "Authorized Supporting Personnel". These words remain only in historical documents (earlier patch notes, the redesign report, the system audit, and the requirements inventory quoting the original briefs).
+- Every visible "staff" in labels, headings, messages and history notes now reads "Barangay Personnel" (Calendar filters, the scheduling settings sections, reassignment and confirmation messages, "Barangay Personnel only" history notes, concern and appointment notes). Internal code values that are never shown keep their names.

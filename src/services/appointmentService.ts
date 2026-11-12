@@ -308,7 +308,7 @@ function lengthFor(kind: AppointmentKind, documents: string[], override?: { minu
 
 function checkStaff(kind: AppointmentKind, staffId: string) {
   const staff = mockUsers.find((u) => u.id === staffId && u.status === 'active' && staffFor(kind).includes(u.id))
-  if (!staff) throw new ServiceError('staff', 'Choose a staff member who handles this service.')
+  if (!staff) throw new ServiceError('staff', 'Choose a member of the Barangay Personnel who handles this service.')
 }
 
 /** Secretary requires an in-person visit for a correction request. */
@@ -433,7 +433,7 @@ export const bookAppointment = (id: string, date: string, time: string, by: User
   a.bookedAt = new Date().toISOString(); a.staffConfirmed = !waits
   later(a, waits ? 'Your request was sent' : from ? 'Your appointment was moved' : 'Your appointment is confirmed', waits ? 'requested' : from ? 'moved' : 'confirmed', from ? `It was on ${from}.` : undefined)
   notify([a.assignedTo], from ? 'Appointment moved' : 'New appointment', `${a.ref} · ${APPOINTMENT_TYPES[a.kind].label} · ${a.date} ${formatTime(a.time)}`, `/appointments/${a.id}`)
-  const who = staffAssist ? ' (by staff for the resident)' : ' by the resident'
+  const who = staffAssist ? ' (by Barangay Personnel for the resident)' : ' by the resident'
   return from ? `Moved from ${from} to ${date} ${formatTime(time)}${who}` : `Booked for ${date} ${formatTime(time)}${who}`
 })
 
@@ -650,7 +650,7 @@ export const staffConfirm = (id: string, by: User) => mutate(id, by, (a) => {
   a.status = 'confirmed'
   a.staffConfirmed = true
   later(a, 'Your appointment is confirmed', 'confirmed')
-  return 'Confirmed by staff'
+  return 'Confirmed by Barangay Personnel'
 })
 
 /** Move an appointment to another qualified person at the same time (audited; both are told). */
@@ -665,7 +665,7 @@ export const reassign = (id: string, staffId: string, reason: string, by: User) 
   a.assignedTo = staffId
   notify([staffId], 'Appointment assigned to you', `${a.ref} · ${a.date} ${formatTime(a.time)}`, `/appointments/${a.id}`)
   notify([from], 'Appointment moved to a colleague', `${a.ref}: ${reason.trim()}`, `/appointments/${a.id}`)
-  return `Reassigned from ${mockUsers.find((u) => u.id === from)?.fullName ?? 'staff'} to ${mockUsers.find((u) => u.id === staffId)?.fullName}: ${reason.trim()}`
+  return `Reassigned from ${mockUsers.find((u) => u.id === from)?.fullName ?? 'Barangay Personnel'} to ${mockUsers.find((u) => u.id === staffId)?.fullName}: ${reason.trim()}`
 })
 
 /** Resident cancels a self-booked or claim visit before the service's cutoff. */

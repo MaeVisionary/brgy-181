@@ -10,7 +10,6 @@ export type RoleId =
   | 'secretary'
   | 'kagawad'
   | 'property_custodian'
-  | 'treasurer'
   | 'resident'
 
 /** Which portal (shell + navigation set) a role uses. */

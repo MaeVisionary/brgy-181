@@ -137,11 +137,11 @@ export interface DocumentRequest {
   messages: RequestMessage[]
   /** Set by the Secretary with "Request more information": what the resident must send. */
   requestedItems?: string[]
-  /** Verification or ocular inspection recorded by authorized personnel. */
+  /** Verification or ocular inspection recorded by Barangay Personnel. */
   verification?: VerificationRecord
   /** RA 11032 one-time extension of the processing time, with written notice to the resident. */
   extension?: { reason: string; newDate: string; at: string; byUserId: string }
-  /** Fee paid, recorded by the Treasurer (official receipt). */
+  /** Fee paid, recorded with its official receipt. */
   payment?: { orNo: string; amount: number; at: string; byUserId: string }
   /** Summons / notices: handed to the party (not the same as being received). */
   delivery?: { deliveredTo: string; method: string; on: string; byUserId: string; at: string }

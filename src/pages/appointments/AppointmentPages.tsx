@@ -172,7 +172,7 @@ export function StaffSlotPicker({ kind, minutes, ignoreId, value, onChange }: { 
     <div className="space-y-2">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <FieldLabel label="Date"><TextInput type="date" min={manilaToday()} value={date} onChange={(e) => onChange({ ...value, date: e.target.value, time: '' })} /></FieldLabel>
-        <FieldLabel label="Staff">
+        <FieldLabel label="Barangay Personnel">
           <Select value={staff} onChange={(e) => onChange({ ...value, staff: e.target.value, time: '' })}>
             {staffIds.map((id) => <option key={id} value={id}>{staffName(id)}{date && unavailableReason(id, date) ? ' (not available)' : ''}</option>)}
           </Select>
@@ -275,7 +275,7 @@ function Details({ a, staff }: { a: Appointment; staff?: boolean }) {
       <dt className="text-ink-muted">Why</dt><dd className="text-navy-900">{a.reason}</dd>
       <dt className="text-ink-muted">Bring</dt><dd className="text-navy-900"><ul className="list-disc pl-5">{a.documents.map((d) => <li key={d}>{d}</li>)}</ul></dd>
       {a.instructions && <><dt className="text-ink-muted">Note</dt><dd className="text-navy-900">{a.instructions}</dd></>}
-      {staff && a.assignedTo && <><dt className="text-ink-muted">Staff</dt><dd className="text-navy-900">{staffName(a.assignedTo)}</dd></>}
+      {staff && a.assignedTo && <><dt className="text-ink-muted">Barangay Personnel</dt><dd className="text-navy-900">{staffName(a.assignedTo)}</dd></>}
       <dt className="text-ink-muted">Reference</dt><dd className="text-navy-900">{a.ref}{a.subjectRef ? ` · ${a.subjectRef}` : ''}</dd>
     </dl>
   )
@@ -491,7 +491,7 @@ export function AppointmentsPage() {
           {hearings.length > 0 && <option value="hearing">Hearings</option>}
         </Select>
         {scope === 'team' && (
-          <Select aria-label="Staff" className="w-full sm:w-auto sm:min-w-[200px]" value={staff} onChange={(e) => setStaff(e.target.value)}>
+          <Select aria-label="Barangay Personnel" className="w-full sm:w-auto sm:min-w-[200px]" value={staff} onChange={(e) => setStaff(e.target.value)}>
             <option value="">Everyone</option>
             {staffIds.map((s) => <option key={s} value={s}>{staffName(s)}</option>)}
           </Select>
@@ -564,7 +564,7 @@ function FreeTimes({ staffIds }: { staffIds: string[] }) {
     <Panel className="mt-2" title="Free and booked times">
       <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <FieldLabel label="Date"><TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} /></FieldLabel>
-        <FieldLabel label="Staff"><Select value={staff} onChange={(e) => setStaff(e.target.value)}>{staffIds.map((s) => <option key={s} value={s}>{staffName(s)}</option>)}</Select></FieldLabel>
+        <FieldLabel label="Barangay Personnel"><Select value={staff} onChange={(e) => setStaff(e.target.value)}>{staffIds.map((s) => <option key={s} value={s}>{staffName(s)}</option>)}</Select></FieldLabel>
       </div>
       {why ? <p className={`text-[length:calc(15.5px*var(--fs))] text-navy-900`}>{why}</p> : (
         <div className={`space-y-2 text-[length:calc(15.5px*var(--fs))] text-navy-900`}>
@@ -661,7 +661,7 @@ export function AppointmentDetailPage() {
                 </Select>
                 <TextInput aria-label="Reason" placeholder="Reason" value={text} onChange={(e) => setText(e.target.value)} />
               </div>
-              <div className="flex gap-2"><Button disabled={!to} onClick={() => run(() => reassign(a.id, to, text, user), 'Reassigned. Both staff members were told.')}>Reassign</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></div>
+              <div className="flex gap-2"><Button disabled={!to} onClick={() => run(() => reassign(a.id, to, text, user), 'Reassigned. Both members of the Barangay Personnel were told.')}>Reassign</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></div>
             </div>
           ) : mode === 'cancel' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">

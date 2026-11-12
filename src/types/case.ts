@@ -73,7 +73,7 @@ export interface KPCase {
   nature: string
   complainants: Party[]
   respondents: Party[]
-  /** Confidential: complaint details (visible to authorized personnel and the complainant). */
+  /** Confidential: complaint details (visible to Barangay Personnel with permission and the complainant). */
   details: string
   filedAt: string
   filedVia: 'online' | 'walk_in'

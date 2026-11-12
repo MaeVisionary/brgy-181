@@ -29,7 +29,7 @@ export interface DocumentTypeDef {
    * records who did it, when, and what they found.
    */
   verification?: { title: string; help: string }
-  /** A fee is paid to the Barangay Treasurer before release. */
+  /** A fee is paid at the Barangay Hall before release. */
   fee?: boolean
 }
 
@@ -38,7 +38,7 @@ const WORKFLOW_DOC = 'SE Group 4 workflows docx'
 /**
  * Services residents may request themselves. Everything else (non-residency
  * certification, summons, incident and blotter records, notices of hearing) is
- * prepared by barangay personnel; residents report concerns through the
+ * prepared by Barangay Personnel; residents report concerns through the
  * separate complaint workflow instead.
  */
 export const RESIDENT_SERVICES: ReadonlySet<DocumentTypeId> = new Set<DocumentTypeId>([
@@ -169,7 +169,7 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
     category: 'certificate',
     workflow: 'standard',
     online: false,
-    onlineNote: 'Requested for 4Ps (DSWD) records of a former resident, so it is encoded by barangay staff at the Barangay Hall.',
+    onlineNote: 'Requested for 4Ps (DSWD) records of a former resident, so it is encoded by Barangay Personnel at the Barangay Hall.',
     requirements: [
       { label: 'Request or referral from the 4Ps / DSWD (or authorization letter if requested on behalf of the former resident)', source: 'Certificate wording: issued upon the request of 4Ps under DSWD' },
       { label: 'Valid ID of the person requesting', source: 'Standard practice' },
@@ -575,7 +575,7 @@ export const DOCUMENT_TYPES: DocumentTypeDef[] = [
     process: [
       'The owner applies online (or at the Barangay Hall) and uploads the requirements.',
       'The Barangay Secretary checks the documents and that the business is located within Barangay 181.',
-      'The clearance fee set by the barangay’s revenue ordinance is paid to the Barangay Treasurer, who issues an official receipt.',
+      'The clearance fee set by the barangay’s revenue ordinance is paid at the Barangay Hall, which issues an official receipt.',
       'The Barangay Chairman approves and signs; the clearance is sealed and ready for pickup. It is valid for one (1) year from the date of issue.',
       'Simple transactions are processed within 3 working days (RA 11032).',
     ],
@@ -747,7 +747,7 @@ export const DOCUMENT_TYPE_MAP = Object.fromEntries(DOCUMENT_TYPES.map((d) => [d
 
 const REQ_KEY = 'bmis.requirements'
 
-/** Requirements set by authorized personnel (prototype: saved in this browser). */
+/** Requirements set by Barangay Personnel with permission (prototype: saved in this browser). */
 export function requirementOverrides(): Partial<Record<DocumentTypeId, DocumentRequirement[]>> {
   try {
     return JSON.parse(localStorage.getItem(REQ_KEY) ?? '{}')

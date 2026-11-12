@@ -15,13 +15,11 @@ const roleOf: Record<string, RoleId> = {
   'Barangay Chairman': 'chairman',
   'Barangay Secretary': 'secretary',
   'Barangay Kagawad': 'kagawad',
-  'Barangay Treasurer': 'treasurer',
 }
 
 const usernames: Record<string, string> = {
   'usr-chair': 'robert.atad',
   'usr-sec': 'ana.salvador',
-  'usr-treas': 'marygrace.delacruz',
   'usr-kag-1': 'angelito.delacruz',
   'usr-kag-2': 'renz.cunanan',
   'usr-kag-3': 'manuel.cadiapa',

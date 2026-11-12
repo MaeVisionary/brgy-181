@@ -41,7 +41,7 @@ export const DEMO_NOTIFICATIONS: DemoNotification[] = [
   { id: 'demo-08', subject: 'Rogelio Navarro', permission: 'documents.approve', category: 'approval', title: 'Forwarded for your approval', body: 'IND-2026-0310 · Certificate of Indigency for Rogelio Navarro.', createdAt: isoDaysAgo(0, 10), documentRef: 'IND-2026-0310' },
   { id: 'demo-09', subject: 'Daniel Garcia', permission: 'documents.approve', category: 'approval', title: 'Forwarded for your approval', body: 'CRT-2026-0312 · Barangay Certificate for Daniel Garcia.', createdAt: isoDaysAgo(1, 9), documentRef: 'CRT-2026-0312' },
   { id: 'demo-10', subject: 'Flores vs. Lim', permission: 'cases.decide', category: 'complaint', title: 'Complaint for assessment', body: 'KP-2026-034 · Flores vs. Lim (unpaid loan).', createdAt: isoDaysAgo(1, 16), link: '/cases/case-034' },
-  // Barangay Treasurer
+  // Fee recording (Secretary)
   { id: 'demo-11', subject: 'Maria Valdez', permission: 'documents.payment', category: 'payment', title: 'Fee to collect', body: 'BUS-2026-0320 · Barangay Business Clearance for Maria Valdez.', createdAt: isoDaysAgo(0, 11), documentRef: 'BUS-2026-0320' },
   // Property Custodian
   { id: 'demo-12', subject: 'Maria Clara Dizon', permission: 'borrowing.approve', category: 'borrowing', title: 'Borrowing request submitted', body: 'BRW-2026-041 · 20 monobloc chairs, 2 folding tables.', createdAt: isoDaysAgo(0, 9), link: '/borrowing/brw-041' },

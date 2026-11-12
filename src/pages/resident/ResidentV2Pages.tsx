@@ -375,7 +375,7 @@ export function DocumentDetailsPage() {
                   rows={[
                     ['Where', `${C.hall}, ${C.address}`],
                     ['When', `${C.officeHours}. ${C.saturdayHours}.`],
-                    ['Bring', `A valid ID and your reference number ${req.referenceNo}${type.fee ? '. The fee is paid to the Barangay Treasurer before release' : ''}.`],
+                    ['Bring', `A valid ID and your reference number ${req.referenceNo}${type.fee ? '. The fee is paid at the Barangay Hall before release' : ''}.`],
                     ['Someone claiming for you', 'They bring an authorization letter signed by you, a copy of your valid ID, and their own valid ID.'],
                   ]}
                 />

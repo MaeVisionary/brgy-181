@@ -58,8 +58,8 @@ export interface NavGroup {
 }
 
 /**
- * Barangay personnel (Chairman, Secretary, Kagawad, Property Custodian, other
- * authorized personnel). Same flat format as the other portals; each item only
+ * Barangay Personnel (Chairman, Secretary, Kagawad, Property Custodian, other
+ * Barangay Personnel). Same flat format as the other portals; each item only
  * appears when the account has its permission. The Secretary, who sees the most
  * items, can fold sections (see Sidebar).
  */

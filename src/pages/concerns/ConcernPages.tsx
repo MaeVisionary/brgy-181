@@ -237,7 +237,7 @@ export function ConcernIssuePage() {
             <ul className="divide-y divide-line-soft">
               {d.submissions.map((s) => (
                 <li key={s.id} className="px-5 py-3.5">
-                  <p className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">{s.ref} · {formatDateTime(s.submittedAt)}{s.residentName ? ` · ${s.residentName}` : ''}{s.match ? ` · ${s.match.by === 'system' ? `matched (${s.match.confidence})` : 'confirmed by staff'}` : ''}</p>
+                  <p className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">{s.ref} · {formatDateTime(s.submittedAt)}{s.residentName ? ` · ${s.residentName}` : ''}{s.match ? ` · ${s.match.by === 'system' ? `matched (${s.match.confidence})` : 'confirmed by Barangay Personnel'}` : ''}</p>
                   <p className="font-semibold text-navy-900">{s.title}</p>
                   <p className="text-[length:calc(15.5px*var(--fs))] text-navy-900">{s.details}</p>
                   <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">{[s.street, s.landmark, s.frequency].filter(Boolean).join(' · ')}</p>

@@ -136,7 +136,7 @@ export function SchedulingRulesPanel() {
           </ul>
         </Section>
 
-        <Section title="Staff Leave">
+        <Section title="Barangay Personnel Leave">
           {r.leave.length > 0 && (
             <ul className="mb-4 divide-y divide-line-soft">
               {r.leave.map((l) => (
@@ -148,7 +148,7 @@ export function SchedulingRulesPanel() {
             </ul>
           )}
           <div className={grid}>
-            <Field label="Staff"><select className={control} value={leave.staffId} onChange={(e) => setLeave({ ...leave, staffId: e.target.value })}><option value="">Choose…</option>{staff.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}</select></Field>
+            <Field label="Barangay Personnel"><select className={control} value={leave.staffId} onChange={(e) => setLeave({ ...leave, staffId: e.target.value })}><option value="">Choose…</option>{staff.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}</select></Field>
             <Field label="Reason"><input className={control} value={leave.reason} onChange={(e) => setLeave({ ...leave, reason: e.target.value })} /></Field>
             <Field label="From"><input type="date" className={control} value={leave.from} onChange={(e) => setLeave({ ...leave, from: e.target.value, to: leave.to || e.target.value })} /></Field>
             <Field label="To"><input type="date" className={control} value={leave.to} onChange={(e) => setLeave({ ...leave, to: e.target.value })} /></Field>
@@ -196,7 +196,7 @@ export function SchedulingRulesPanel() {
               </ul>
             </div>
             <div>
-              <h4 className="mb-3 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">Staff Working Hours</h4>
+              <h4 className="mb-3 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">Barangay Personnel Working Hours</h4>
               <ul className="divide-y divide-line-soft">
                 {staff.map((u) => {
                   const s = r.staff[u.id]

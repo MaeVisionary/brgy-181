@@ -152,7 +152,7 @@ export function BorrowingDetailPage() {
           </Panel>
           <Panel title="History">
             <Timeline items={b.history.map((h) => ({
-              at: h.at, title: h.action + (h.internal ? ' (staff only)' : ''), by: h.byUserId === 'system' ? 'System' : userById(h.byUserId)?.fullName ?? 'Resident',
+              at: h.at, title: h.action + (h.internal ? ' (Barangay Personnel only)' : ''), by: h.byUserId === 'system' ? 'System' : userById(h.byUserId)?.fullName ?? 'Resident',
               tone: /(reject|not approved|overdue|cancel|no-show|not verified|damage|referred|settled|closed|approved|decided)/i.test(h.action) ? 'important' as const : undefined,
               details: h.remarks ? <p>{h.remarks}</p> : undefined,
             }))} />
