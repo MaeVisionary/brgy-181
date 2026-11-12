@@ -104,7 +104,7 @@ export function PickupSection({ req, onChange }: { req: DocumentRequest; onChang
             ['Time', formatTime(slot.time)],
             ['Status', ready ? 'Ready for pickup' : 'Still being prepared. We will notify you when it is ready.'],
           ]} />
-          <ActionStack>
+          <ActionStack row>
             <Button loading={busy} onClick={book}>{booked ? 'Change pickup time' : 'Book pickup time'}</Button>
             <Button variant="secondary" onClick={() => steps.back()}>Choose another time</Button>
           </ActionStack>

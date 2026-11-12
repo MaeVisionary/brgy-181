@@ -170,7 +170,7 @@ export function RequestFormPage() {
             </dl>
           </Panel>
           {error && <p role="alert" className="rounded-md bg-danger-tint px-4 py-3 text-[length:calc(16px*var(--fs))] text-danger-ink">{error}</p>}
-          <ActionStack>
+          <ActionStack row>
             <Button onClick={submit} loading={busy}>Submit Request</Button>
             <Button variant="secondary" onClick={() => rsteps.back()}>Change something</Button>
           </ActionStack>
@@ -234,7 +234,7 @@ export function RequestFormPage() {
           )}
 
           <DraftIndicator status={draft.status} />
-          <ActionStack>
+          <ActionStack row>
             <Button onClick={review}>Review Request</Button>
             <Button variant="ghost" onClick={cancel}>Cancel</Button>
           </ActionStack>

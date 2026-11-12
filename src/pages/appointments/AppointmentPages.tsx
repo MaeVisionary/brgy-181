@@ -122,7 +122,7 @@ export function TimePicker({ a, onPicked, onBack }: { a: Appointment; onPicked: 
         <dt className="text-ink-muted">Place</dt><dd className="text-navy-900">{BARANGAY_CONTACT.hall}</dd>
         <dt className="text-ink-muted">Bring</dt><dd className="text-navy-900"><ul className="list-disc pl-5">{a.documents.map((d) => <li key={d}>{d}</li>)}</ul></dd>
       </dl>
-      <ActionStack>
+      <ActionStack row>
         <Button onClick={book} loading={busy}>Confirm Appointment</Button>
         <Button variant="secondary" onClick={() => setConfirming(false)}>Choose another time</Button>
       </ActionStack>
@@ -172,7 +172,7 @@ export function TimePicker({ a, onPicked, onBack }: { a: Appointment; onPicked: 
           {!date ? 'Please choose a day first, then a time.' : times.length ? 'Please choose a time for your visit.' : 'There are no free times on this day. Please choose another day.'}
         </p>
       )}
-      <ActionStack>
+      <ActionStack row>
         <Button onClick={() => { if (!time) { setNudge(true); focusFirstInvalid(); return } setConfirming(true) }}>Next</Button>
         {onBack && <Button variant="ghost" onClick={onBack}>Back</Button>}
       </ActionStack>
@@ -417,10 +417,10 @@ export function MyAppointmentPage() {
             {mode === 'ask' ? (
               <div className="space-y-2">
                 <TextArea aria-label="Why, or a better day and time" placeholder="Why, or a better day and time" className="min-h-[72px]" value={reason} onChange={(e) => setReason(e.target.value)} />
-                <ActionStack><Button onClick={() => run(() => requestReschedule(a.id, reason, user), 'Sent. We will notify you of the new time.')}>Send request</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
+                <ActionStack row><Button onClick={() => run(() => requestReschedule(a.id, reason, user), 'Sent. We will notify you of the new time.')}>Send request</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
               </div>
             ) : ['pending_confirmation', 'rescheduled', 'confirmed'].includes(a.status) && !a.checkedInAt && (
-              <ActionStack>
+              <ActionStack row>
                 {a.status !== 'confirmed' && <Button onClick={() => run(() => confirmAppointment(a.id, user), 'Your appointment is confirmed!')}>Confirm Appointment</Button>}
                 <Button variant="secondary" onClick={() => setMode(mayMove ? 'pick' : 'ask')}>{mayMove ? 'Choose another time' : 'Request Another Schedule'}</Button>
                 {CONSULT_KINDS.includes(a.kind) && !!a.purpose && <Button variant="ghost" onClick={() => run(() => cancelByResident(a.id, '', user), 'Your appointment was cancelled.')}>Cancel appointment</Button>}
@@ -654,7 +654,7 @@ export function AppointmentDetailPage() {
               {check('documentChecked', 'Supporting document checked')}
               {check('idExpired', 'The ID is expired')}
               <TextArea aria-label="Notes" placeholder="Notes (required if not verified: what did not match and what to do next)" className="min-h-[72px]" value={v.notes} onChange={(e) => setV({ ...v, notes: e.target.value })} />
-              <ActionStack className="pt-2">
+              <ActionStack row className="pt-2">
                 <Button onClick={() => run(() => recordVerification(a.id, 'verified', v, user), 'Marked as verified. You can now decide on the request.')}>Verified</Button>
                 <Button variant="secondary" onClick={() => run(() => recordVerification(a.id, 'not_verified', v, user), 'Marked as not verified. The resident was told.')}>Not verified</Button>
                 <Button variant="ghost" onClick={() => setMode(null)}>Back</Button>
@@ -915,7 +915,7 @@ export function BookVisitPage() {
             </FieldLabel>
           </div>
           <DraftIndicator status={visitDraft.status} />
-          <ActionStack>
+          <ActionStack row>
             <Button onClick={toTime}>Next: choose a time</Button>
             <Button variant="ghost" onClick={steps.back}>Back</Button>
           </ActionStack>
@@ -942,7 +942,7 @@ export function BookVisitPage() {
           </dl>
           {serviceRuleFor(kind!)?.staffConfirms && <p className="rounded-[var(--radius-control)] bg-sky-50 px-4 py-3 text-[length:calc(15.5px*var(--fs))] text-navy-900">The {purpose.who} confirms this time. We will notify you once it is confirmed.</p>}
           {err && <Note ok={false}>{err}</Note>}
-          <ActionStack>
+          <ActionStack row>
             <Button loading={busy} onClick={submit}>Book appointment</Button>
             <Button variant="secondary" onClick={steps.back}>Choose another time</Button>
           </ActionStack>
@@ -1000,7 +1000,7 @@ export function SlotChooser({ kind, minutes, value, onChange, onNext, onBack, da
           {!value.date ? 'Please choose a day first, then a time.' : times.length ? 'Please choose a time.' : 'There are no free times on this day. Please choose another day.'}
         </p>
       )}
-      <ActionStack>
+      <ActionStack row>
         <Button onClick={() => { if (!value.time) { setNudge(true); focusFirstInvalid(); return } onNext() }}>{nextLabel}</Button>
         {onBack && <Button variant="ghost" onClick={onBack}>Back</Button>}
       </ActionStack>
