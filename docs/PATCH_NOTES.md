@@ -1,5 +1,22 @@
 # BMIS Patch Notes: Report formats, notifications, analytics and cleanup (12 November 2026)
 
+## 2026-11-12: Simplification, resident profile reuse, complaints workflow
+
+- Reports: Official Forms / Regular Reports as name, agency, download. Analytics and service reports use short names, compact figures, collapsible report details, and a selector on phones.
+- Registrations: one row per applicant with one result (Passed / Needs review / Failed); details grouped as Identity and Resident record; reason required only when rejecting. ID updates queue for replacement IDs.
+- Notifications: one-line tappable cards with coloured icons; tap opens the record, x dismisses.
+- Equipment: total and available list; detail sheet with all counts and a warning when counts do not reconcile.
+- Colour icon tiles per function in the sidebar.
+- Resident ID on file: taken from the registration or a verified replacement; expiry rules per ID type (no expiry assumed for IDs without one); expired IDs refused; ID image visible only to staff who verify residents; ID number masked.
+- Document requests reuse saved details and the verified ID; an ID upload is asked only when missing, expired or rejected.
+- Corrections: own record; minor dependent with guardianship proof; another adult only with an authorization staff verify; household updates by the family head only. Checked in the service, audited, notified.
+- Resident statuses: Submitted, Processing, Action Needed, Ready, Borrowed (borrowing only), Completed, Unsuccessful; filter shows only statuses that occur for the chosen type. Workflow statuses on records are unchanged.
+- Processing time: RA 11032 classification per service (simple = up to 3 working days) until the Citizen's Charter time is entered in System Settings; weekends, holidays and after-hours receipt handled; one-time extension with reason, notified to the resident.
+- Resident portal offers only resident services. Non-residency certification, summons, incident and blotter forms, and notices of hearing are refused for residents in the service layer.
+- Complaints: dedicated File a report page (complaint against a person, incident report, community concern) saved as a case with its own KP number; staff notified; complainant notified when the visible status changes.
+
+Needs the backend (not possible in this frontend prototype): server-side enforcement of all checks above, encrypted ID storage, database-level access rules, and tamper-proof audit logs.
+
 - **Report formats** (Reports page): official files from the barangay's shared drive — DILG BOIS form,
   OSCA social pension transmittal, BADAC (MADAO) transmittal, DILG weekly clean-up report (Annex A);
   prepared formats for the Barangay Bureau monthly report, Katarungang Pambarangay monthly report and the

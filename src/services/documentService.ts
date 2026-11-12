@@ -1,3 +1,5 @@
+import { RESIDENT_SERVICES } from '@/documents/catalog'
+import { addWorkingDays, estimateFor } from './serviceStandardService'
 import { ROLE_PERMISSIONS } from '@/config/permissions'
 import { getDocumentType } from '@/documents/catalog'
 import { missingFields, systemValues } from '@/documents/fill'
@@ -93,7 +95,8 @@ export function createRequest(input: NewRequestInput, actor: DocActor): Promise<
     if (input.assisted) {
       if (!actor.permissions.has('documents.create')) throw new ServiceError('forbidden', 'You cannot encode requests.')
     } else {
-      if (!actor.permissions.has('self.documents') && !actor.permissions.has('self.complaints')) throw new ServiceError('forbidden', 'Not allowed.')
+      if (!actor.permissions.has('self.documents')) throw new ServiceError('forbidden', 'Not allowed.')
+      if (!RESIDENT_SERVICES.has(type.id)) throw new ServiceError('forbidden', `${type.name} is prepared by barangay personnel and cannot be requested here.`)
       if (!type.online) throw new ServiceError('not_online', `${type.name} is not requested online. Please visit the Barangay Hall.`)
       if (input.residentId !== actor.user.residentId) throw new ServiceError('forbidden', 'You can only request documents for yourself.')
     }
@@ -363,5 +366,30 @@ export function prepareHearingDocuments(
       respondentAddress: c.respondents[0]?.address ?? '',
     })
     return [summon, notice]
+  })
+}
+
+/**
+ * RA 11032: the processing time may be extended ONCE, for the same number of
+ * working days, with written notice to the applicant stating the reason.
+ */
+export function extendProcessing(id: string, reason: string, actor: DocActor): Promise<DocumentRequest> {
+  return mockRequest(() => {
+    if (!actor.permissions.has('documents.process')) throw new ServiceError('forbidden', 'You cannot extend processing time.')
+    const req = mockDocumentRequests.find((r) => r.id === id)
+    if (!req) throw new ServiceError('not_found', 'Request not found.')
+    if (req.extension) throw new ServiceError('extended', 'The processing time was already extended once.')
+    if (['released', 'rejected', 'cancelled', 'ready_for_pickup'].includes(req.status)) throw new ServiceError('closed', 'This request is no longer being processed.')
+    if (reason.trim().length < 10) throw new ServiceError('reason', 'Give the reason the resident will read.')
+    const est = estimateFor(req)
+    if (!est) throw new ServiceError('no_standard', 'This service has no processing time to extend.')
+    const newDate = addWorkingDays(new Date(est.expectedBy + 'T18:00:00+08:00'), est.days)
+    const now = new Date().toISOString()
+    req.extension = { reason: reason.trim(), newDate, at: now, byUserId: actor.user.id }
+    req.history.push({ status: req.status, at: now, byUserId: actor.user.id, byRole: actor.user.roleId, action: `Processing time extended to ${newDate}`, remarks: reason.trim() })
+    req.updatedAt = now
+    const owner = mockUsers.find((u) => u.residentId && u.residentId === req.residentId)
+    if (owner) notify([owner.id], 'document', 'Processing time extended', `${req.referenceNo} · new expected date ${newDate}.`, `/my/documents/${req.id}`)
+    return req
   })
 }

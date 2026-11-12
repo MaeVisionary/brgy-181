@@ -13,14 +13,14 @@ import { BARANGAY_CONTACT, BORROWING, KP } from '@/config/barangay'
 import { ROLES } from '@/config/permissions'
 import { getDocumentType } from '@/documents/catalog'
 import { isFilled } from '@/documents/fill'
-import { WORKFLOWS } from '@/documents/workflows'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 import { cn } from '@/lib/cn'
 import { formatDate, formatDateTime } from '@/lib/format'
-import { ALL_RESIDENT_STATUSES, borrowingStatusForResident, caseStageForResident, documentStatusForResident, type ResidentStatus } from '@/lib/residentStatus'
+import { ALL_RESIDENT_STATUSES, STATUSES_BY_KIND, borrowingStatusForResident, caseStageForResident, documentStatusForResident, type ResidentStatus } from '@/lib/residentStatus'
 import { mockUsers } from '@/mocks/users'
 import { getCase } from '@/services/caseService'
+import { estimateFor, standardFor } from '@/services/serviceStandardService'
 import { applyTransition, availableTransitions, getRequest } from '@/services/documentService'
 import { actOnBorrowing, getBorrowing } from '@/services/equipmentService'
 import { ServiceError } from '@/services/mockApi'
@@ -30,7 +30,7 @@ import type { DocumentRequest, StatusEvent, Transition } from '@/types/document'
 import type { Borrowing } from '@/types/equipment'
 import { itemsText } from '@/pages/equipment/BorrowingPages'
 import { NotFound } from '@/pages/system/NotFound'
-import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, NumberedSteps, Progress, Pulse, Section, TitleBar, TransactionList, Updates, needsYou, stepsFrom } from './parts'
+import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, Progress, Pulse, Section, TitleBar, TransactionList, Updates, needsYou, stepsFrom } from './parts'
 
 /** Example announcements showing the format barangay posts will take. */
 const ANNOUNCEMENTS = [
@@ -56,8 +56,8 @@ const ANNOUNCEMENTS = [
 
 // ── Home ─────────────────────────────────────────────────────────────
 
-const PENDING: ResidentStatus[] = ['Submitted', 'Under Review', 'Needs Additional Information']
-const APPROVED: ResidentStatus[] = ['Approved', 'Ready for Pickup', 'Scheduled', 'Borrowed', 'Overdue']
+const IN_PROGRESS: ResidentStatus[] = ['Submitted', 'Processing', 'Action Needed']
+const READY: ResidentStatus[] = ['Ready', 'Borrowed']
 
 /** Resident Home (Figma "Resident v2 / Home (simplified)"). */
 export function ResidentHome() {
@@ -66,7 +66,7 @@ export function ResidentHome() {
   const recent = tx?.slice(0, 4) ?? null
   const actions = [
     { to: '/my/documents/new', icon: FileText, title: 'Request a document', body: 'Apply for barangay certificates and clearances' },
-    { to: '/my/documents/new?category=case', icon: MessageSquareWarning, title: 'Report or complain', body: 'Report an incident or submit a complaint' },
+    { to: '/my/complaints/new', icon: MessageSquareWarning, title: 'Report or complain', body: 'Report an incident or submit a complaint' },
     { to: '/my/borrowing?new=1', icon: Package, title: 'Borrow equipment', body: 'Request chairs, tables, ladders and other equipment.' },
   ]
   return (
@@ -76,8 +76,8 @@ export function ResidentHome() {
       {/* Overview of everything the resident submitted (documents, complaints, borrowing). */}
       <section aria-label="My requests overview" className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Total requests" value={tx ? tx.length : null} to="/my/transactions" />
-        <StatCard label="Pending" value={tx ? tx.filter((t) => PENDING.includes(t.status)).length : null} attention={!!tx?.some((t) => t.status === 'Needs Additional Information')} to="/my/transactions" />
-        <StatCard label="Approved" value={tx ? tx.filter((t) => APPROVED.includes(t.status)).length : null} to="/my/transactions" />
+        <StatCard label="In progress" value={tx ? tx.filter((t) => IN_PROGRESS.includes(t.status)).length : null} attention={!!tx?.some((t) => t.status === 'Action Needed')} to="/my/transactions" />
+        <StatCard label="Ready" value={tx ? tx.filter((t) => READY.includes(t.status)).length : null} to="/my/transactions" />
         <StatCard label="Completed" value={tx ? tx.filter((t) => t.status === 'Completed').length : null} to="/my/transactions" />
       </section>
 
@@ -208,7 +208,7 @@ function NeedAssistance() {
 const EMPTY: Record<'all' | TransactionKind, { title: string; body: string; action: string; to: string }> = {
   all: { title: 'You have no transactions yet.', body: 'Document requests, complaints and equipment borrowing you submit will appear here.', action: 'Request a document', to: '/my/documents/new' },
   document: { title: 'You have no document requests yet.', body: 'You can request certificates and clearances online, then claim them at the Barangay Hall.', action: 'Request a document', to: '/my/documents/new' },
-  complaint: { title: 'You have no complaints or reports yet.', body: 'If you need to report an incident or ask for a summons, you can do it online or at the Barangay Hall.', action: 'Report or complain', to: '/my/documents/new?category=case' },
+  complaint: { title: 'You have no complaints or reports yet.', body: 'Report an incident, a complaint or a community concern.', action: 'File a report', to: '/my/complaints/new' },
   borrowing: { title: 'You have not borrowed any equipment yet.', body: 'You can borrow chairs, tables, ladders and other barangay equipment.', action: 'Borrow equipment', to: '/my/borrowing?new=1' },
 }
 
@@ -226,7 +226,11 @@ export function MyTransactionsPage() {
   const status = params.get('status') ?? ''
   const all = useAsync(() => listMyTransactions(actor), [actor]).data
   const count = (k: 'all' | TransactionKind) => (all ?? []).filter((t) => k === 'all' || t.kind === k).length
-  const shown = (all ?? []).filter((t) => (kind === 'all' || t.kind === kind) && (!status || t.status === status))
+  const inKind = (all ?? []).filter((t) => kind === 'all' || t.kind === kind)
+  const shown = inKind.filter((t) => !status || t.status === status)
+  // Only statuses that belong to this type and actually occur, with counts.
+  const order: readonly ResidentStatus[] = kind === 'all' ? ALL_RESIDENT_STATUSES : STATUSES_BY_KIND[kind]
+  const statusOptions = order.map((s) => [s, inKind.filter((t) => t.status === s).length] as const).filter(([, n]) => n > 0)
   const set = (patch: Record<string, string>) => {
     const next = new URLSearchParams(params)
     for (const [k, v] of Object.entries(patch)) if (v && v !== 'all') next.set(k, v); else next.delete(k)
@@ -235,7 +239,7 @@ export function MyTransactionsPage() {
 
   return (
     <>
-      <PageHeader title="My Transactions" subtitle="View and track all your requests and transactions with Barangay 181." />
+      <PageHeader title="My Transactions" />
       <div role="tablist" aria-label="Transaction type" className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {FILTERS.map((f) => (
           <button
@@ -243,7 +247,7 @@ export function MyTransactionsPage() {
             role="tab"
             type="button"
             aria-selected={kind === f.key}
-            onClick={() => set({ type: f.key })}
+            onClick={() => set({ type: f.key, status: '' })}
             className={cn(
               'inline-flex h-11 items-center justify-between gap-2 rounded-[var(--radius-control)] border px-4 text-[15.5px] font-semibold transition-colors sm:justify-start',
               kind === f.key ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-surface-muted',
@@ -261,7 +265,7 @@ export function MyTransactionsPage() {
           className="h-11 min-w-[180px] rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15.5px] font-normal text-navy-900 focus:border-navy-600 focus:outline-none"
         >
           <option value="">All statuses</option>
-          {ALL_RESIDENT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          {statusOptions.map(([s, n]) => <option key={s} value={s}>{s} ({n})</option>)}
         </select>
       </label>
 
@@ -289,7 +293,6 @@ export function MyTransactionsPage() {
         ) : (
           <>
             <TransactionList items={shown} showType={kind === 'all'} />
-            <p className="border-t border-line-soft px-5 py-3 text-[14px] text-ink-muted">Showing {shown.length} transaction{shown.length === 1 ? '' : 's'}, newest first. Select a row to see its details.</p>
           </>
         )}
       </Card>
@@ -322,76 +325,102 @@ export function DocumentDetailsPage() {
   const rs = documentStatusForResident(req.status)
   const shown = type.fields.filter((f) => f.by !== 'system' && !f.staffOnly && isFilled(req.values[f.key]))
   const needInfo = [...req.history].reverse().find((h) => h.status === 'needs_info')
-  const usesApproval = WORKFLOWS[type.workflow].path.includes('approved')
   const replyStep = availableTransitions(req, actor).find((t) => t.by === 'owner' && t.from.includes('needs_info') && t.to === 'under_review')
+  const std = standardFor(req.typeId)
+  const pickup = std.release === 'pickup'
+  const est = estimateFor(req)
+  const ended = rs === 'Unsuccessful'
+  const done = rs === 'Completed'
 
   // Progress follows the request's own workflow, in resident words.
-  const labels: ResidentStatus[] = usesApproval ? ['Submitted', 'Under Review', 'Approved', 'Ready for Pickup', 'Completed'] : ['Submitted', 'Under Review', 'Completed']
-  const order = (s: ResidentStatus) => labels.indexOf(s === 'Needs Additional Information' ? 'Under Review' : s)
+  const labels: ResidentStatus[] = pickup ? ['Submitted', 'Processing', 'Ready', 'Completed'] : ['Submitted', 'Processing', 'Completed']
+  const order = (s: ResidentStatus) => labels.indexOf(s === 'Action Needed' ? 'Processing' : s)
   const reached = (label: ResidentStatus) => req.history.find((h) => order(documentStatusForResident(h.status)) >= order(label))
   const idx = order(rs)
-  const ended = rs === 'Rejected' || rs === 'Cancelled'
   const notes: Record<number, string | undefined> = {}
   labels.forEach((l, i) => {
     const ev = reached(l)
     if (ev && (i < idx || (i === idx && !ended))) notes[i] = formatDate(ev.at)
   })
-  if (rs === 'Ready for Pickup') notes[labels.length - 1] = 'After you claim the document'
-  const steps = stepsFrom(labels, ended ? labels.length : Math.max(0, idx), notes, rs === 'Completed')
+  const steps = stepsFrom(labels, ended ? labels.length : Math.max(0, idx), notes, done)
+
+  const step = req.status === 'submitted' ? 'Review' : req.status === 'needs_info' ? 'Waiting for your reply' : ['approved', 'for_signature', 'pending_approval'].includes(req.status) ? 'Approval and signing' : rs === 'Ready' ? 'Release' : rs === 'Processing' ? 'Review' : undefined
+  const next: Record<ResidentStatus, string> = {
+    Submitted: 'Your request has been received. The Barangay Secretary will review it.',
+    Processing: req.status === 'approved' || req.status === 'for_signature' ? 'Your document has been approved. We will notify you when it is ready.' : 'Your request is being processed. No action is needed from you.',
+    'Action Needed': 'Please send the information requested below so processing can continue.',
+    Ready: pickup ? 'Your document is ready. You may now claim it at the Barangay Hall.' : 'Your document is ready.',
+    Borrowed: '',
+    Completed: 'Your request has been completed.',
+    Unsuccessful: req.status === 'cancelled' ? 'This request was cancelled.' : 'Your request was not approved. See the reason below.',
+  }
+  const C = BARANGAY_CONTACT
+  const expected = est ? formatDate((est.extended?.newDate ?? est.expectedBy) + 'T12:00:00+08:00') : null
 
   return (
     <>
-      <BackLink to="/my/transactions">Back to My Transactions</BackLink>
+      <BackLink to={report ? '/my/complaints' : '/my/documents'}>{report ? 'My Complaints and Reports' : 'Document Requests'}</BackLink>
       <DetailHeader kind={report ? 'Report' : 'Document request'} title={type.name} referenceNo={req.referenceNo} status={rs} date={req.submittedAt} />
       <DetailBody
         main={
           <>
-            {rs === 'Ready for Pickup' && (
-              <Banner tone="success" icon={<CheckCircle2 />} title="Your document is ready for pickup">
-                Your {type.name} has been signed and sealed. You can claim it at the Barangay 181 Hall.
-              </Banner>
-            )}
-            {rs === 'Needs Additional Information' && (
-              <Banner tone="warning" icon={<CircleAlert />} title="We need more information from you">
-                Your request is on hold until you send what the barangay asked for below.
-              </Banner>
-            )}
-            {rs === 'Submitted' && (
-              <Banner tone="info" icon={<Info />} title="Your request has been received">
-                The Barangay Secretary will check your information. We will notify you when there is an update.
-              </Banner>
-            )}
-            {rs === 'Rejected' && <Banner tone="danger" icon={<XCircle />} title="Your request was not approved">See the update below for the reason. You may visit the Barangay Hall for help.</Banner>}
+            <Section title="What happens next">
+              <p className="text-[16px] text-navy-900">{next[rs]}</p>
+              {!ended && !done && (
+                <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 text-[15px]">
+                  <dt className="text-ink-muted">Submitted</dt><dd className="text-navy-900">{formatDateTime(req.submittedAt)}</dd>
+                  {!report && (
+                    <>
+                      <dt className="text-ink-muted">Expected by</dt>
+                      <dd className="text-navy-900">
+                        {expected ? <><span className="font-semibold">{expected}</span><span className="block text-[14px] text-ink-muted">{est!.extended ? 'Extended' : `Within ${est!.days} working day${est!.days === 1 ? '' : 's'}${est!.fromCharter ? '' : ' (maximum under RA 11032)'}`}</span></> : rs === 'Action Needed' ? 'After you send the requested information' : 'Processing time will be confirmed.'}
+                      </dd>
+                    </>
+                  )}
+                  {step && <><dt className="text-ink-muted">Current step</dt><dd className="text-navy-900">{step}</dd></>}
+                  {!report && <><dt className="text-ink-muted">Release</dt><dd className="text-navy-900">{pickup ? 'In person at the Barangay Hall' : std.release === 'online' ? 'Download here' : 'No document to claim'}</dd></>}
+                </dl>
+              )}
+            </Section>
 
-            {rs === 'Needs Additional Information' && needInfo?.remarks && (
-              <Card className="overflow-hidden border-warning/50 bg-warning-tint/50 px-5 py-4">
-                <h2 className="-mx-5 -mt-4 mb-3 flex items-center gap-2 bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5 font-display text-[17.5px] font-bold">
-                  Message from the barangay
-                </h2>
-                <p className="rounded-md bg-surface px-3 py-2 text-[15.5px] text-navy-900">“{needInfo.remarks}”</p>
-                <p className="mt-1 text-[14px] text-ink-muted">From the {ROLES[needInfo.byRole].name} · {formatDateTime(needInfo.at)}</p>
-              </Card>
+            {est?.extended && !ended && !done && (
+              <Banner tone="warning" icon={<Clock />} title="Processing time extended">
+                {est.extended.reason} New expected date: {formatDate(est.extended.newDate + 'T12:00:00+08:00')}. No action is needed from you.
+              </Banner>
+            )}
+
+            {rs === 'Action Needed' && needInfo?.remarks && (
+              <Section title="Message from the barangay">
+                <p className="text-[15.5px] text-navy-900">“{needInfo.remarks}”</p>
+                <p className="mt-1 text-[14px] text-ink-muted">{ROLES[needInfo.byRole].name} · {formatDateTime(needInfo.at)}</p>
+              </Section>
             )}
             {replyStep && <ReplyForm req={req} step={replyStep} actor={actor} onDone={(r) => setReq({ ...r })} />}
             {availableTransitions(req, actor).some((t) => t.by === 'owner' && t !== replyStep) && (
               <TransitionPanel req={req} actor={actor} ownerView exclude={(t) => t.label === replyStep?.label} onChange={(r) => setReq({ ...r })} />
             )}
 
-            {rs === 'Ready for Pickup' && (
-              <Section title="How to claim your document">
-                <NumberedSteps steps={['Go to the Barangay 181 Hall during office hours.', 'Bring a valid ID.', `Give your reference number: ${req.referenceNo}.`]} />
+            {pickup && !report && (rs === 'Ready' ? (
+              <Section title="Claiming your document">
+                <InfoRows
+                  rows={[
+                    ['Where', `${C.hall}, ${C.address}`],
+                    ['When', `${C.officeHours}. ${C.saturdayHours}.`],
+                    ['Bring', `A valid ID and your reference number ${req.referenceNo}${type.fee ? '. The fee is paid to the Barangay Treasurer before release' : ''}.`],
+                    ['Someone claiming for you', 'They bring an authorization letter signed by you, a copy of your valid ID, and their own valid ID.'],
+                  ]}
+                />
               </Section>
-            )}
+            ) : !ended && !done ? (
+              <p className="flex items-center gap-2 text-[15px] text-ink-nav"><MapPin className="size-4 shrink-0" /> No visit needed until your document is ready. We will notify you.</p>
+            ) : null)}
 
             <Section title={report ? 'Report details' : 'Request details'}>
               <InfoRows
-                rows={[
-                  ['Document', type.name],
-                  ...shown.map((f): [string, React.ReactNode] => [
-                    `${f.group ? `${f.group}: ` : ''}${f.label}`,
-                    Array.isArray(req.values[f.key]) ? (req.values[f.key] as string[]).join(', ') : req.values[f.key] === true ? 'Yes' : String(req.values[f.key]),
-                  ]),
-                ]}
+                rows={shown.map((f): [string, React.ReactNode] => [
+                  `${f.group ? `${f.group}: ` : ''}${f.label}`,
+                  Array.isArray(req.values[f.key]) ? (req.values[f.key] as string[]).join(', ') : req.values[f.key] === true ? 'Yes' : String(req.values[f.key]),
+                ])}
               />
             </Section>
 
@@ -408,7 +437,7 @@ export function DocumentDetailsPage() {
         }
         side={
           <>
-            <Progress steps={steps} ended={ended ? `${rs} on ${formatDate(req.updatedAt)}` : undefined} />
+            <Progress steps={steps} ended={ended ? `${req.status === 'cancelled' ? 'Cancelled' : 'Not approved'} on ${formatDate(req.updatedAt)}` : undefined} />
             <NeedHelp />
           </>
         }
@@ -433,21 +462,20 @@ export function ComplaintDetailsPage() {
 
   const rs = caseStageForResident(c.stage)
   const next = c.hearings.filter((h) => h.status === 'scheduled').sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))[0]
-  const labels: ResidentStatus[] = ['Submitted', 'Under Review', 'Scheduled', 'Completed']
+  const labels: ResidentStatus[] = ['Submitted', 'Processing', 'Completed']
   const idx = labels.indexOf(rs)
   const firstAt = (pred: (s: ResidentStatus) => boolean) => c.history.find((h) => pred(caseStageForResident(h.stage)))?.at
   const notes: Record<number, string | undefined> = {
     0: formatDate(c.filedAt),
     1: firstAt((s) => s !== 'Submitted') ? formatDate(firstAt((s) => s !== 'Submitted')!) : undefined,
-    2: next ? `Hearing on ${formatDateTime(next.scheduledAt)}` : undefined,
-    3: rs === 'Completed' ? undefined : 'When the complaint is settled or closed',
+    2: rs === 'Completed' ? undefined : next ? `Hearing on ${formatDateTime(next.scheduledAt)}` : 'When the complaint is settled or closed',
   }
   const respondent = c.respondents?.map((r) => r.name).join(', ')
 
   return (
     <>
-      <BackLink to="/my/transactions">Back to My Transactions</BackLink>
-      <DetailHeader kind="Complaint · Katarungang Pambarangay" title={`Complaint: ${c.nature}`} referenceNo={c.caseNo} status={rs} date={c.filedAt} />
+      <BackLink to="/my/complaints">My Complaints and Reports</BackLink>
+      <DetailHeader kind="Complaint · Katarungang Pambarangay" title={c.nature} referenceNo={c.caseNo} status={rs} date={c.filedAt} />
       <DetailBody
         main={
           <>
@@ -475,16 +503,16 @@ export function ComplaintDetailsPage() {
             <Section title="Complaint details">
               <InfoRows
                 rows={[
-                  ['Type of complaint', c.nature],
+                  ['Subject', c.nature],
                   ...(respondent ? ([['Filed against', respondent]] as [string, string][]) : []),
-                  ['Date submitted', formatDateTime(c.filedAt)],
-                  ['Incident date', (c as { incidentDate?: string }).incidentDate ? formatDate((c as { incidentDate?: string }).incidentDate!) : 'Not provided'],
+                  ...(c.incidentDate ? ([['Date', formatDate(c.incidentDate)]] as [string, string][]) : []),
+                  ...(c.incidentPlace ? ([['Place', c.incidentPlace]] as [string, string][]) : []),
                 ]}
               />
             </Section>
             {c.details && (
-              <Section title="Your complaint">
-                <p className="text-[15.5px] whitespace-pre-wrap text-navy-900">{c.details}</p>
+              <Section title="What happened">
+                <p className="text-[15.5px] whitespace-pre-wrap text-navy-900">{c.details.replace(/^\[[^\]]+\]\s*/, '')}</p>
               </Section>
             )}
             <Updates items={[...c.history].reverse().map((h) => ({ title: h.action, at: h.at, by: h.byRole === 'resident' ? 'You' : ROLES[h.byRole]?.name }))} />
@@ -493,13 +521,13 @@ export function ComplaintDetailsPage() {
         side={
           <>
             <Progress steps={stepsFrom(labels, idx, notes, rs === 'Completed')} />
-            <Card className="overflow-hidden px-5 py-4">
+            {c.hearings.length > 0 && <Card className="overflow-hidden px-5 py-4">
               <TitleBar>What these words mean</TitleBar>
               <p className="text-[15px] font-semibold text-navy-900">Mediation</p>
               <p className="text-[14.5px] text-ink-nav">A meeting where the Barangay Chairman helps both sides agree on a solution.</p>
               <p className="mt-2 text-[15px] font-semibold text-navy-900">Lupon</p>
               <p className="text-[14.5px] text-ink-nav">If there is no agreement, the case may go to the Lupon Tagapamayapa, a barangay panel that continues the mediation.</p>
-            </Card>
+            </Card>}
             <NeedHelp />
           </>
         }
@@ -525,9 +553,10 @@ export function BorrowingDetailsPage() {
   if (missing) return <NotFound />
   if (!b || !rs) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
 
-  const labels: ResidentStatus[] = ['Submitted', 'Approved', 'Borrowed', 'Completed']
-  const idx = rs === 'Overdue' ? 2 : labels.indexOf(rs)
-  const ended = rs === 'Rejected' || rs === 'Cancelled'
+  const labels: ResidentStatus[] = ['Submitted', 'Ready', 'Borrowed', 'Completed']
+  const overdue = b.status === 'released' && rs === 'Action Needed'
+  const idx = overdue ? 2 : labels.indexOf(rs)
+  const ended = rs === 'Unsuccessful'
   const at = (needle: string) => b.history.find((h) => h.action.toLowerCase().includes(needle))?.at
   const notes: Record<number, string | undefined> = {
     0: formatDate(b.requestedAt),
@@ -547,7 +576,7 @@ export function BorrowingDetailsPage() {
 
   return (
     <>
-      <BackLink to="/my/transactions">Back to My Transactions</BackLink>
+      <BackLink to="/my/borrowing">Equipment Borrowing</BackLink>
       <DetailHeader kind="Equipment borrowing" title={`Borrow ${itemsText(b).replace(/ × /g, ' ')}`} referenceNo={b.refNo} status={rs} date={b.requestedAt} />
       <DetailBody
         main={
@@ -557,7 +586,7 @@ export function BorrowingDetailsPage() {
                 The Property Custodian will check if the equipment is available. We will notify you when your request is approved.
               </Banner>
             )}
-            {rs === 'Approved' && (
+            {rs === 'Ready' && (
               <Banner tone="success" icon={<CheckCircle2 />} title="Approved: ready to claim">
                 Claim the equipment at the Barangay 181 Hall. The {BORROWING.periodDays}-day borrowing period starts on the day it is released to you.
               </Banner>
@@ -567,12 +596,12 @@ export function BorrowingDetailsPage() {
                 A {BORROWING.graceDays}-day grace period applies until {formatDate(b.graceEndsAt!)}.
               </Banner>
             )}
-            {rs === 'Overdue' && (
+            {overdue && (
               <Banner tone="danger" icon={<CircleAlert />} title="This equipment is overdue">
                 The grace period ended on {formatDate(b.graceEndsAt!)}. Please return the equipment to the Barangay 181 Hall as soon as possible.
               </Banner>
             )}
-            {rs === 'Rejected' && <Banner tone="danger" icon={<XCircle />} title="Your request was not approved">See the update below for the reason.</Banner>}
+            {b.status === 'rejected' && <Banner tone="danger" icon={<XCircle />} title="Your request was not approved">See the update below for the reason.</Banner>}
 
             {rs === 'Submitted' && b.residentId && b.residentId === user?.residentId && (
               <div className="flex flex-wrap items-center gap-2">
@@ -605,7 +634,7 @@ export function BorrowingDetailsPage() {
         }
         side={
           <>
-            <Progress steps={stepsFrom(labels, ended ? labels.length : idx, notes, rs === 'Completed')} ended={ended ? `${rs}` : undefined} />
+            <Progress steps={stepsFrom(labels, ended ? labels.length : idx, notes, rs === 'Completed')} ended={ended ? (b.status === 'rejected' ? 'Not approved' : 'Cancelled') : undefined} />
             <NeedHelp />
           </>
         }
@@ -620,7 +649,7 @@ export function ContactPage() {
   const help = [
     'Creating your account, or registering in person with a valid ID',
     'Requesting certificates and clearances',
-    'Filing a complaint, incident report or blotter report',
+    'Filing a complaint or incident report',
     'Borrowing barangay equipment',
     'Correcting your information in the barangay records',
     'If you do not have a phone or computer, personnel can encode your request for you at the Barangay Hall',

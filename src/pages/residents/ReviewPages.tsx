@@ -229,7 +229,7 @@ function IdUpdates() {
                   <div>
                     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[14.5px]">
                       <dt className="text-ink-muted">ID number</dt><dd className="text-navy-900">{d.idNumber}</dd>
-                      <dt className="text-ink-muted">Expiry</dt><dd className="text-navy-900">{d.expiresAt ? formatShortDate(d.expiresAt + 'T12:00:00') : 'No expiry on this ID'}</dd>
+                      <dt className="text-ink-muted">Expiry</dt><dd className="text-navy-900">{d.expiresAt ? formatShortDate(d.expiresAt + 'T12:00:00+08:00') : 'No expiry on this ID'}</dd>
                     </dl>
                     <ul className="mt-2">
                       <CheckRow label="Name read on ID" v={d.ocr?.name ? 'passed' : 'inconclusive'} />

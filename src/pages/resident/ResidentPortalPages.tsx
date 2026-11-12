@@ -129,19 +129,18 @@ export function MyComplaintsPage() {
   const cases = useAsync(() => listCases(actor), [actor]).data ?? []
   return (
     <>
-      <PageHeader title="My Complaints and Reports" subtitle="Summons requests, incident reports, blotter reports and Katarungang Pambarangay cases you filed." actions={<ButtonLink to="/my/documents/new" icon={<Plus className="size-4" />}>File a report</ButtonLink>} />
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Panel title="Submitted reports" bodyClassName="px-0 py-0">
-          {docs.length === 0 ? <p className="px-5 py-6 text-[15px] text-ink-muted">No reports submitted.</p> : (
-            <ul>{docs.map((d) => <li key={d.id} className="border-b border-line-soft last:border-0"><Link to={`/my/documents/${d.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-sky-50"><span><span className="block text-[15px] font-semibold text-navy-900">{getDocumentType(d.typeId).name}</span><span className="block text-[14px] text-ink-muted">{d.referenceNo}</span></span><StatusLabel status={documentStatusForResident(d.status)} /></Link></li>)}</ul>
-          )}
+      <PageHeader title="My Complaints and Reports" actions={<ButtonLink to="/my/complaints/new" icon={<Plus className="size-4" />}>File a report</ButtonLink>} />
+      <Panel title="My complaints" bodyClassName="px-0 py-0">
+        {cases.length === 0 ? <p className="px-5 py-6 text-[15px] text-ink-muted">No complaints yet.</p> : (
+          <ul>{cases.map((c) => <li key={c.id} className="border-b border-line-soft last:border-0"><Link to={`/my/complaints/${c.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-sky-50"><span className="min-w-0"><span className="block truncate text-[15px] font-semibold text-navy-900">{c.nature}</span><span className="block text-[14px] text-ink-muted">{c.caseNo} · {formatDate(c.filedAt)}</span></span><StatusLabel status={caseStageForResident(c.stage)} /></Link></li>)}</ul>
+        )}
+      </Panel>
+      {/* Reports filed through the earlier online forms stay viewable. */}
+      {docs.length > 0 && (
+        <Panel className="mt-4" title="Earlier reports" bodyClassName="px-0 py-0">
+          <ul>{docs.map((d) => <li key={d.id} className="border-b border-line-soft last:border-0"><Link to={`/my/documents/${d.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-sky-50"><span className="min-w-0"><span className="block truncate text-[15px] font-semibold text-navy-900">{getDocumentType(d.typeId).name}</span><span className="block text-[14px] text-ink-muted">{d.referenceNo}</span></span><StatusLabel status={documentStatusForResident(d.status)} /></Link></li>)}</ul>
         </Panel>
-        <Panel title="My cases" subtitle="Cases where you are the complainant" bodyClassName="px-0 py-0">
-          {cases.length === 0 ? <p className="px-5 py-6 text-[15px] text-ink-muted">No cases.</p> : (
-            <ul>{cases.map((c) => <li key={c.id} className="border-b border-line-soft last:border-0"><Link to={`/my/complaints/${c.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-sky-50"><span><span className="block text-[15px] font-semibold text-navy-900">{c.caseNo} · {c.title}</span><span className="block text-[14px] text-ink-muted">{c.nature}</span></span><StatusLabel status={caseStageForResident(c.stage)} /></Link></li>)}</ul>
-          )}
-        </Panel>
-      </div>
+      )}
     </>
   )
 }

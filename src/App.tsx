@@ -35,6 +35,7 @@ import { NotificationsPage } from '@/pages/NotificationsPage'
 import { AnnouncementsPage, BorrowingDetailsPage, ComplaintDetailsPage, ContactPage, DocumentDetailsPage, MyTransactionsPage } from '@/pages/resident/ResidentV2Pages'
 import { MyRequestsPage } from '@/pages/resident/MyRequestsPage'
 import { NewRequestPage } from '@/pages/resident/NewRequestPage'
+import { NewComplaintPage } from '@/pages/resident/NewComplaintPage'
 import { ModulePending } from '@/pages/system/ModulePending'
 import { NotFound } from '@/pages/system/NotFound'
 
@@ -107,6 +108,7 @@ export default function App() {
 
           {/* Resident portal */}
           <Route path="/my/complaints" element={guard(['self.complaints'], 'resident', <MyComplaintsPage />)} />
+          <Route path="/my/complaints/new" element={guard(['self.complaints'], 'resident', <NewComplaintPage />)} />
           <Route path="/my/complaints/:id" element={guard(['self.complaints'], 'resident', <ComplaintDetailsPage />)} />
           <Route path="/my/borrowing" element={guard(['self.borrowing'], 'resident', <MyBorrowingPage />)} />
           <Route path="/my/borrowing/:id" element={guard(['self.borrowing'], 'resident', <BorrowingDetailsPage />)} />

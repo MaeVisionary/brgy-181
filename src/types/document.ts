@@ -139,6 +139,8 @@ export interface DocumentRequest {
   requestedItems?: string[]
   /** Verification or ocular inspection recorded by authorized personnel. */
   verification?: VerificationRecord
+  /** RA 11032 one-time extension of the processing time, with written notice to the resident. */
+  extension?: { reason: string; newDate: string; at: string; byUserId: string }
   /** Fee paid, recorded by the Treasurer (official receipt). */
   payment?: { orNo: string; amount: number; at: string; byUserId: string }
   /** Summons / notices: handed to the party (not the same as being received). */

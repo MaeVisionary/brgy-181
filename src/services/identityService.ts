@@ -110,7 +110,7 @@ export function stateOf(doc: IdDocument | undefined, now = new Date()): IdState 
   if (!doc) return 'missing'
   if (doc.review === 'rejected') return 'rejected'
   if (doc.expiresAt && idHasExpiry(doc.idType)) {
-    const exp = new Date(doc.expiresAt + 'T23:59:59')
+    const exp = new Date(doc.expiresAt + 'T23:59:59+08:00')
     if (exp.getTime() < now.getTime()) return 'expired'
     if (doc.review === 'verified' && exp.getTime() - now.getTime() < EXPIRING_SOON_DAYS * 86_400_000) return 'expiring'
   }
@@ -150,7 +150,7 @@ export function idUploadProblem(u: Omit<IdUpload, 'image'> & { image?: string },
   if (u.idNumber.trim().length < 4) return 'Enter the ID number shown on the card.'
   if (idHasExpiry(u.idType)) {
     if (!u.expiresAt) return 'Enter the expiry date printed on the ID.'
-    if (new Date(u.expiresAt + 'T23:59:59').getTime() < today.getTime()) return 'This ID has expired. Please use a valid ID.'
+    if (new Date(u.expiresAt + 'T23:59:59+08:00').getTime() < today.getTime()) return 'This ID has expired. Please use a valid ID.'
   }
   if (!ID_FILE_TYPES.includes(u.fileType)) return 'Upload a JPG, PNG or WebP photo of the ID.'
   if (u.fileSize > ID_FILE_MAX_BYTES) return 'The photo is too large (8 MB maximum).'

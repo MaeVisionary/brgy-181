@@ -160,10 +160,10 @@ export function getCase(id: string, a: CaseActor): Promise<KPCase> {
   })
 }
 
-function notify(userIds: string[], title: string, body: string, link: string) {
+function notify(userIds: string[], title: string, body: string, link: string, category: 'hearing' | 'complaint' = 'hearing') {
   const now = new Date().toISOString()
   for (const userId of new Set(userIds)) {
-    mockNotifications.push({ id: `ntf-${Math.random().toString(36).slice(2, 9)}`, userId, category: 'hearing', title, body, createdAt: now, read: false, link })
+    mockNotifications.push({ id: `ntf-${Math.random().toString(36).slice(2, 9)}`, userId, category, title, body, createdAt: now, read: false, link })
   }
   window.dispatchEvent(new Event('bmis:notifications-changed'))
 }
@@ -181,6 +181,7 @@ export function applyStep(id: string, step: CaseStep, remarks: string, hearingAt
     if (allowed.remarks === 'required' && !remarks.trim()) throw new ServiceError('remarks', 'Please add a note.')
     if (allowed.schedule && !hearingAt) throw new ServiceError('schedule', 'Choose the hearing date and time.')
     const now = new Date().toISOString()
+    const prevStage = c.stage
     c.stage = allowed.to
     if (allowed.to === 'mediation_scheduled') c.mediationStartedAt = now
     if (allowed.to === 'lupon_mediation') c.luponStartedAt = now
@@ -191,6 +192,11 @@ export function applyStep(id: string, step: CaseStep, remarks: string, hearingAt
     }
     c.history.push({ at: now, byUserId: a.user.id, byRole: a.user.roleId, action: allowed.label, stage: allowed.to, remarks: remarks.trim() || undefined })
     if (allowed.to === 'for_assessment') notify(usersWith('cases.decide'), `Case for assessment: ${c.caseNo}`, `${c.title} (${c.nature}).`, `/cases/${c.id}`)
+    // Tell the complainant only when what they see changes (not every internal step).
+    const complainantIds = mockUsers.filter((u) => u.residentId && c.complainants.some((p) => p.residentId === u.residentId)).map((u) => u.id)
+    const label = (st: CaseStage) => (st === 'filed' ? 0 : st === 'settled' || st === 'closed' ? 2 : 1)
+    if (!allowed.schedule && label(prevStage) !== label(allowed.to))
+      notify(complainantIds, allowed.to === 'settled' || allowed.to === 'closed' ? 'Complaint completed' : 'Complaint being processed', `${c.caseNo} · ${c.nature}`, `/my/complaints/${c.id}`, 'complaint')
     return c
   })
 }
@@ -356,6 +362,67 @@ export function setAvailability(id: string, hearingId: string, who: Availability
     if (!c || !h) throw new ServiceError('not_found', 'Hearing not found.')
     if (!a.permissions.has('hearings.manage')) throw new ServiceError('forbidden', 'Not allowed.')
     h.availability = { ...(h.availability ?? { complainant: 'unconfirmed', respondent: 'unconfirmed', chairman: 'unconfirmed' }), [who]: value }
+    return c
+  })
+}
+
+/** What a resident can file online (its own workflow, separate from document requests). */
+export const COMPLAINT_CATEGORIES = ['Complaint against a person', 'Incident report', 'Community concern'] as const
+export type ComplaintCategory = (typeof COMPLAINT_CATEGORIES)[number]
+
+export interface ResidentComplaintInput {
+  category: ComplaintCategory
+  /** Short subject, e.g. "Unpaid loan", "Noise at night". */
+  nature: string
+  details: string
+  incidentDate?: string
+  incidentPlace?: string
+  /** Required only for a complaint against a person. */
+  respondents: Party[]
+}
+
+/**
+ * Resident files a complaint, incident or community concern. Saved as a case
+ * (KP reference), never as a document request. The complainant is the signed-in
+ * resident, taken from their record. Staff with case rights are notified.
+ */
+export function submitComplaint(input: ResidentComplaintInput, a: CaseActor, me: { residentId: string; name: string; address: string; contactNo?: string }): Promise<KPCase> {
+  return mockRequest(() => {
+    if (!a.permissions.has('self.complaints')) throw new ServiceError('forbidden', 'You cannot file complaints.')
+    if (!a.user.residentId || a.user.residentId !== me.residentId) throw new ServiceError('forbidden', 'You can only file complaints as yourself.')
+    if (!COMPLAINT_CATEGORIES.includes(input.category)) throw new ServiceError('category', 'Choose what you are reporting.')
+    if (!input.nature.trim()) throw new ServiceError('nature', 'Enter a short subject.')
+    if (input.details.trim().length < 10) throw new ServiceError('details', 'Describe what happened.')
+    const respondents = input.respondents.filter((p) => p.name.trim()).map((p) => ({ name: p.name.trim(), address: p.address.trim() }))
+    if (input.category === 'Complaint against a person' && !respondents.length) throw new ServiceError('respondent', 'Enter the name of the person you are complaining about.')
+    if (input.incidentDate && input.incidentDate > new Date().toISOString().slice(0, 10)) throw new ServiceError('date', 'The date cannot be in the future.')
+    const year = new Date().getFullYear()
+    const seq = Math.max(0, ...mockCases.map((c) => Number(c.caseNo.split('-')[2]) || 0)) + 1
+    const now = new Date().toISOString()
+    const complainant: Party = { residentId: me.residentId, name: me.name, address: me.address, contactNo: me.contactNo }
+    const c: KPCase = {
+      id: `case-${Date.now().toString(36)}`,
+      caseNo: `KP-${year}-${pad(seq, 3)}`,
+      blotterNo: `BE-${year}-${pad(seq, 4)}`,
+      title: respondents.length ? `${me.name.split(' ').pop()} vs. ${respondents.map((p) => p.name.split(' ').pop()).join(', ')}` : `${input.category}: ${input.nature.trim()}`,
+      nature: input.nature.trim(),
+      complainants: [complainant],
+      respondents,
+      details: `[${input.category}] ${input.details.trim()}`,
+      incidentDate: input.incidentDate || undefined,
+      incidentPlace: input.incidentPlace?.trim() || undefined,
+      filedAt: now,
+      filedVia: 'online',
+      stage: 'filed',
+      hearings: [],
+      history: [{ at: now, byUserId: a.user.id, byRole: a.user.roleId, action: `${input.category} submitted online`, stage: 'filed' }],
+      documentIds: [],
+      internalNotes: [],
+    }
+    mockCases.unshift(c)
+    const staff = mockUsers.filter((u) => u.status === 'active' && (ROLE_PERMISSIONS[u.roleId]?.includes('cases.manage') || u.extraPermissions?.includes('cases.manage'))).map((u) => u.id)
+    notify(staff, 'New complaint filed', `${c.caseNo} · ${input.category}`, `/cases/${c.id}`, 'complaint')
+    notify([a.user.id], 'Complaint received', `${c.caseNo} · the barangay will review it.`, `/my/complaints/${c.id}`, 'complaint')
     return c
   })
 }

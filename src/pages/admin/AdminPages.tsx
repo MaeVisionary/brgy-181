@@ -1,3 +1,4 @@
+import { ServiceStandardsPanel } from './ServiceStandardsPanel'
 import { BarChart3, Boxes, Check, CheckCircle2, ChevronRight, Copy, FileText, Gavel, Info, KeyRound, Search, Users } from '@/icons'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
@@ -408,7 +409,7 @@ export function SettingsPage() {
   ]
   return (
     <>
-      <PageHeader title="System Settings" subtitle="Rules the system follows for sign-in, borrowing and Katarungang Pambarangay deadlines." />
+      <PageHeader title="System Settings" />
       <Card className="divide-y divide-line-soft">
         {rows.map(([k, v]) => (
           <div key={k} className="flex flex-col gap-0.5 px-5 py-3 text-[15px] sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -417,6 +418,7 @@ export function SettingsPage() {
           </div>
         ))}
       </Card>
+      <ServiceStandardsPanel />
     </>
   )
 }

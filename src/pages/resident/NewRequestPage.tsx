@@ -3,13 +3,13 @@ import { IdStatusLine, IdUploadForm } from '@/components/identity/IdOnFile'
 import { maskIdNumber } from '@/config/idTypes'
 import { getIdOnFile, needsUpload, stateOf, submitReplacementId, type IdDocument } from '@/services/identityService'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { FieldInput, groupFields } from '@/components/documents/DocParts'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Panel } from '@/components/ui/Panel'
-import { getDocumentType } from '@/documents/catalog'
+import { RESIDENT_SERVICES, getDocumentType } from '@/documents/catalog'
 import { activeDocumentTypes } from '@/services/templateService'
 import { ageOn, isFilled, prefillFromResident, residentFullName } from '@/documents/fill'
 import { useDocActor } from '@/hooks/useDocActor'
@@ -23,13 +23,12 @@ import type { Resident } from '@/types/resident'
 /** Requirements satisfied by the requester's own ID on file. */
 const isOwnIdRequirement = (label: string) => /^valid id( of the (person requesting|applicant|owner))?$/i.test(label.trim())
 
-const CATEGORY_LABEL = { certificate: 'Certificates', clearance: 'Clearances', case: 'Reports and complaints' } as const
+const CATEGORY_LABEL = { certificate: 'Certificates', clearance: 'Clearances' } as const
 
 export function NewRequestPage() {
   const actor = useDocActor()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
   const [resident, setResident] = useState<Resident | null>(null)
   const [typeId, setTypeId] = useState<DocumentTypeId | null>(null)
   const [values, setValues] = useState<Record<string, FieldValue>>({})
@@ -91,8 +90,7 @@ export function NewRequestPage() {
     }
   }
 
-  const order = params.get('category') === 'case' ? (['case', 'certificate', 'clearance'] as const) : (['certificate', 'clearance', 'case'] as const)
-  const groups = order.map((cat) => [cat, activeDocumentTypes().filter((d) => d.category === cat)] as const)
+  const groups = (['certificate', 'clearance'] as const).map((cat) => [cat, activeDocumentTypes().filter((d) => d.category === cat && RESIDENT_SERVICES.has(d.id))] as const)
 
   return (
     <>
@@ -109,7 +107,6 @@ export function NewRequestPage() {
                 <p className="label-caps mb-2">{CATEGORY_LABEL[cat]}</p>
                 <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {docs
-                    .filter((d) => d.id !== 'notice-of-hearing')
                     .map((d) => (
                       <button
                         key={d.id}

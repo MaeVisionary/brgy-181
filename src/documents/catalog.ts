@@ -35,6 +35,23 @@ export interface DocumentTypeDef {
 
 const WORKFLOW_DOC = 'SE Group 4 workflows docx'
 
+/**
+ * Services residents may request themselves. Everything else (non-residency
+ * certification, summons, incident and blotter records, notices of hearing) is
+ * prepared by barangay personnel; residents report concerns through the
+ * separate complaint workflow instead.
+ */
+export const RESIDENT_SERVICES: ReadonlySet<DocumentTypeId> = new Set<DocumentTypeId>([
+  'clearance-person',
+  'business-clearance',
+  'residency',
+  'indigency',
+  'first-time-job-seeker',
+  'no-partner',
+  'cohabitation',
+  'barangay-certificate',
+])
+
 const VALID_ID: DocumentRequirement = { label: 'Valid ID', source: WORKFLOW_DOC }
 
 const A4 = { widthMm: 210.3, heightMm: 297, name: 'A4' } as const

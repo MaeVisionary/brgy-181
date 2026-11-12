@@ -258,7 +258,7 @@ export function TransactionList({ items, showType = true }: { items: Transaction
 }
 
 /** The barangay is waiting for the resident (Needs Additional Information). */
-export const needsYou = (t: Transaction) => t.status === 'Needs Additional Information'
+export const needsYou = (t: Transaction) => t.status === 'Action Needed'
 
 /** Pulsing dot: stops once the resident replies (the status changes). */
 export function Pulse() {

@@ -13,7 +13,10 @@ import { effectiveValues, missingFields } from '@/documents/fill'
 import { useDocActor } from '@/hooks/useDocActor'
 import { formatDateTime } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
-import { canEditValues, getRequest, saveValues, setRequirement } from '@/services/documentService'
+import { canEditValues, extendProcessing, getRequest, saveValues, setRequirement } from '@/services/documentService'
+import { estimateFor } from '@/services/serviceStandardService'
+import { formatDate } from '@/lib/format'
+import { TextArea } from '@/components/ui/Field'
 import { ServiceError } from '@/services/mockApi'
 import type { DocumentRequest, FieldValue } from '@/types/document'
 import { NotFound } from '@/pages/system/NotFound'
@@ -189,6 +192,7 @@ export function RequestDetailPage() {
 
         <div className="space-y-4">
           <TransitionPanel req={req} actor={actor} dirty={dirty} missingCount={missing.length} onChange={(r) => { setReq({ ...r }); setDraft(r.values) }} />
+          <ProcessingTimePanel req={req} actor={actor} onChange={(r) => setReq({ ...r })} />
           {req.messages.length > 0 && (
             <Panel title="Messages from the requester">
               <ul className="space-y-2">
@@ -213,5 +217,33 @@ export function RequestDetailPage() {
         </div>
       </div>
     </>
+  )
+}
+
+/** Expected date for staff, and the one-time RA 11032 extension with the reason the resident reads. */
+function ProcessingTimePanel({ req, actor, onChange }: { req: DocumentRequest; actor: NonNullable<ReturnType<typeof useDocActor>>; onChange: (r: DocumentRequest) => void }) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const [err, setErr] = useState<string | null>(null)
+  const est = estimateFor(req)
+  if (!est || ['released', 'rejected', 'cancelled'].includes(req.status)) return null
+  const date = req.extension?.newDate ?? est.expectedBy
+  const canExtend = !req.extension && actor.permissions.has('documents.process') && req.status !== 'ready_for_pickup'
+  return (
+    <Panel title="Processing time">
+      <p className="text-[15px] text-navy-900">Expected by <strong>{formatDate(date + 'T12:00:00+08:00')}</strong></p>
+      <p className="text-[14px] text-ink-muted">{req.extension ? `Extended: ${req.extension.reason}` : `${est.days} working days${est.fromCharter ? '' : ' (RA 11032 maximum)'}`}</p>
+      {canExtend && !open && <Button className="mt-3" size="sm" variant="secondary" onClick={() => setOpen(true)}>Extend once</Button>}
+      {open && (
+        <div className="mt-3 space-y-2">
+          <TextArea className="min-h-[64px]" aria-label="Reason for the extension" placeholder="Reason the resident will read" value={reason} onChange={(e) => setReason(e.target.value)} />
+          {err && <p className="text-[14px] text-danger-ink">{err}</p>}
+          <div className="flex gap-2">
+            <Button size="sm" onClick={async () => { try { onChange(await extendProcessing(req.id, reason, actor)); setOpen(false) } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Failed.') } }}>Extend and notify</Button>
+            <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+          </div>
+        </div>
+      )}
+    </Panel>
   )
 }
