@@ -6,6 +6,7 @@ import { clearFailures, hashPassword, resolveResetRequests, setCredential, tempo
 import { ServiceError, mockRequest } from './mockApi'
 import { consumeChallenge } from './stepUp'
 import { mockNotifications } from '@/mocks/notifications'
+import { personnelNumber } from '@/lib/ids'
 
 /** Account administration (FR3). Simulated in memory; the backend must enforce it. */
 
@@ -66,6 +67,50 @@ function notifyAccounts(userIds: string[], title: string, body: string, link = '
 
 const needReason = (reason: string) => {
   if (reason.trim().length < 5) throw new ServiceError('reason', 'Give the reason for this change.')
+}
+
+/** Roles a new Barangay Personnel account can be created for. Residents get accounts by registering. */
+export const CREATABLE_ROLES: RoleId[] = ['kagawad', 'property_custodian']
+
+export interface NewPersonnelAccount { fullName: string; username: string; email: string; contactNo?: string; roleId: RoleId; officialId?: string }
+
+/** Field-by-field problems (empty object when the input is valid). Same rules on screen and here. */
+export function newAccountErrors(i: NewPersonnelAccount): Partial<Record<keyof NewPersonnelAccount, string>> {
+  const e: Partial<Record<keyof NewPersonnelAccount, string>> = {}
+  const taken = (v: string) => mockUsers.some((u) => u.username.toLowerCase() === v || u.email.toLowerCase() === v)
+  if (!i.fullName.trim()) e.fullName = 'Please enter the full name.'
+  const un = i.username.trim().toLowerCase()
+  if (!un) e.username = 'Please enter a username.'
+  else if (!/^[a-z0-9._-]{4,30}$/.test(un)) e.username = 'Use 4 to 30 letters, numbers, dots, dashes or underscores, with no spaces.'
+  else if (taken(un)) e.username = 'This username is already used by another account.'
+  const em = i.email.trim().toLowerCase()
+  if (!em) e.email = 'Please enter an email address.'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) e.email = 'Please enter a valid email address, for example name@example.com.'
+  else if (taken(em)) e.email = 'This email address is already used by another account.'
+  if (i.contactNo && !/^09\d{9}$/.test(i.contactNo.replace(/[\s-]/g, ''))) e.contactNo = 'Please enter an 11-digit mobile number starting with 09, or leave it empty.'
+  if (!CREATABLE_ROLES.includes(i.roleId)) e.roleId = 'Choose a position.'
+  return e
+}
+
+/** Creates a Barangay Personnel account with a one-time temporary password (changed at first sign-in). */
+export async function createPersonnelAccount(i: NewPersonnelAccount, by: User): Promise<{ user: User; password: string }> {
+  requireAdmin(by)
+  const errs = newAccountErrors(i)
+  if (Object.keys(errs).length) throw new ServiceError('invalid', Object.values(errs)[0]!)
+  const id = `usr-${Date.now().toString(36)}`
+  const temp = temporaryPassword()
+  const hash = await hashPassword(id, temp)
+  return mockRequest(() => {
+    const seq = mockUsers.map((u) => Number(u.accountNo?.match(/^EMP-181-(\d+)$/)?.[1] ?? 0)).reduce((a, b) => Math.max(a, b), 0) + 1
+    const user: User = {
+      id, username: i.username.trim().toLowerCase(), fullName: i.fullName.trim(), position: ROLES[i.roleId].name, roleId: i.roleId, email: i.email.trim().toLowerCase(),
+      status: 'active', accountNo: personnelNumber(seq), createdAt: new Date().toISOString(), contactNo: i.contactNo?.replace(/[\s-]/g, '') || undefined,
+    }
+    mockUsers.push(user)
+    setCredential(id, { hash, mustChange: true, updatedAt: user.createdAt! })
+    audit(by, 'Created account', 'User accounts', `${user.username} · ${ROLES[user.roleId].name}`)
+    return { user, password: temp }
+  })
 }
 
 /** Personnel positions the administrator may assign (elected officials keep their role). */

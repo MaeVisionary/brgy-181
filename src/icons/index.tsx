@@ -91,6 +91,8 @@ import {
   Tray,
   UploadSimple,
   UserCheck as PhUserCheck,
+  UserMinus as PhUserMinus,
+  DotsThree as PhDotsThree,
   UserCircle,
   UserGear,
   UserPlus as PhUserPlus,
@@ -157,6 +159,8 @@ export const UserRound = mark(UserCircle)
 export const UserRoundPen = mark(UserGear)
 export const UserPlus = mark(PhUserPlus)
 export const UserCheck = mark(PhUserCheck)
+export const UserX = mark(PhUserMinus)
+export const MoreHorizontal = ui(PhDotsThree)
 export const BadgeCheck = mark(SealCheck)
 export const IdCard = mark(IdentificationCard)
 export const FileText = mark(PhFileText)

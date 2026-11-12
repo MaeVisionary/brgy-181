@@ -3,7 +3,7 @@ import { ServiceStandardsPanel } from './ServiceStandardsPanel'
 import { StoragePanel } from './StoragePanel'
 import { SchedulingRulesPanel } from './SchedulingRulesPanel'
 import { BorrowingPolicyPanel } from './BorrowingPolicyPanel'
-import { BarChart3, Boxes, Check, CheckCircle2, ChevronRight, Copy, FileText, Gavel, Info, KeyRound, Search, Users } from '@/icons'
+import { BarChart3, Boxes, Check, FileText, Gavel, Info, KeyRound, Users } from '@/icons'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/Button'
@@ -15,156 +15,17 @@ import { StatusLabel } from '@/components/ui/StatusLabel'
 import { APP_CONFIG } from '@/config/app'
 import { BORROWING, KP, OFFICIALS } from '@/config/barangay'
 import { EDITABLE_ROLES, GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS, PERMISSION_GROUPS, PERMISSION_LABELS, ROLES, ROLE_PERMISSIONS } from '@/config/permissions'
-import { formatDateTime, initials } from '@/lib/format'
+import { formatDateTime } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { listAudit } from '@/services/auditService'
-import { ServiceError } from '@/services/mockApi'
-import { ASSIGNABLE_ROLES, listUsers, resetPassword, setDisplayName, setExtraPermissions, setRole, setRolePermissions, type RoleChange, setStatus } from '@/services/userService'
+import { ASSIGNABLE_ROLES, setDisplayName, setExtraPermissions, setRole, setRolePermissions, type RoleChange, setStatus } from '@/services/userService'
 import { Toggle } from '@/components/ui/Toggle'
-import { getCredential, listResetRequests, type ResetRequest } from '@/services/credentialStore'
-import { TEST_ACCOUNTS, testAccountByKey, testUserFor } from '@/config/testAccount'
-import { accountTypeBySlug } from '@/config/accountTypes'
 import type { Permission, RoleId, User } from '@/types/auth'
 import { cn } from '@/lib/cn'
-import { useStickyState } from '@/hooks/useStickyState'
 import { ActionStack } from '@/components/ui/ActionStack'
 
-/** FR3: create, deactivate and assign roles to user accounts. */
-export function UsersPage() {
-  const { user: me } = useAuth()
-  const [users, setUsers] = useState<User[]>([])
-  const [open, setOpen] = useState<string | null>(null)
-  const [err, setErr] = useState<string | null>(null)
-  const load = () => listUsers().then((u) => setUsers([...u]))
-  useEffect(() => {
-    load()
-  }, [])
-  const [requests, setRequests] = useState<ResetRequest[]>(listResetRequests)
-  const [issued, setIssued] = useState<{ label: string; password: string } | null>(null)
-  const run = async (fn: () => Promise<unknown>) => {
-    setErr(null)
-    try { await fn(); await load() } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Failed.') }
-  }
-  const reset = async (u: User) => {
-    const isTest = !!testAccountByKey(u.id)
-    const password = await resetPassword(
-      { credentialKey: u.id, identifiers: [u.username, u.email], label: isTest ? `Test account (${u.email})` : u.username },
-      me!,
-    )
-    setIssued({ label: u.fullName, password })
-    setRequests(listResetRequests())
-  }
-  const accounts = [...TEST_ACCOUNTS.map((a) => ({ ...testUserFor('system_admin', a), id: a.credentialKey, position: 'Test account (all levels)' })), ...users]
-  const [group, setGroup] = useState<'all' | 'personnel' | 'residents'>('all')
-  const [query, setQuery] = useStickyState('query', '')
-  const [toast, setToast] = useState<string | null>(null)
-  useEffect(() => {
-    if (!toast) return
-    const t = window.setTimeout(() => setToast(null), 3500)
-    return () => window.clearTimeout(t)
-  }, [toast])
-  const q = query.trim().toLowerCase()
-  const inGroup = (u: User) => group === 'all' || (group === 'residents' ? u.roleId === 'resident' : u.roleId !== 'resident')
-  const shownAccounts = accounts.filter((u) => inGroup(u) && (!q || [u.fullName, u.username, u.email, u.position, ROLES[u.roleId].name, u.accountNo ?? ''].some((x) => x.toLowerCase().includes(q))))
-  const count = (g: typeof group) => accounts.filter((u) => g === 'all' || (g === 'residents' ? u.roleId === 'resident' : u.roleId !== 'resident')).length
-  const pending = requests.filter((r) => r.status === 'pending')
-  const matchFor = (r: ResetRequest) => accounts.find((u) => u.username.toLowerCase() === r.identifier || u.email.toLowerCase() === r.identifier)
-  return (
-    <>
-      <PageHeader title="User Accounts" subtitle="Accounts for Barangay 181 officials, personnel and residents: status, names, permissions and password resets." />
-      {err && <p className="mb-3 rounded-md bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
-      {issued && (
-        <Card className="mb-4 border-success/40 bg-success-tint px-5 py-4">
-          <p className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">Temporary password for {issued.label}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <code className="rounded-md bg-surface px-3 py-1.5 font-mono text-[length:calc(17px*var(--fs))] font-semibold tracking-wider text-navy-900">{issued.password}</code>
-            <Button size="sm" variant="secondary" icon={<Copy className="size-3.5" />} onClick={() => navigator.clipboard?.writeText(issued.password)}>Copy</Button>
-            <Button size="sm" variant="ghost" onClick={() => setIssued(null)}>Done</Button>
-          </div>
-          <p className="mt-2 text-[length:calc(14px*var(--fs))] text-ink-muted">Shown only once.</p>
-        </Card>
-      )}
-      {pending.length > 0 && (
-        <Card className="mb-4 overflow-hidden">
-          <h2 className="bg-bar border-b border-sky-300 text-navy-900 px-5 py-3 font-display text-[length:calc(17px*var(--fs))] font-bold">Password reset requests</h2>
-          <ul className="divide-y divide-line-soft">
-            {pending.map((r) => {
-              const u = matchFor(r)
-              return (
-                <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-[length:calc(15px*var(--fs))]">
-                  <span>
-                    <span className="block font-semibold text-navy-900">{r.identifier}</span>
-                    <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{accountTypeBySlug(r.accountType)?.title ?? r.accountType} · {formatDateTime(r.requestedAt)} · {u ? `matches ${u.fullName}` : 'no matching account'}</span>
-                  </span>
-                  {u && <Button size="sm" icon={<KeyRound className="size-3.5" />} onClick={() => reset(u)}>Reset password</Button>}
-                </li>
-              )
-            })}
-          </ul>
-        </Card>
-      )}
-      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div role="tablist" aria-label="Account group" className="flex flex-wrap gap-2">
-          {([
-            ['all', 'All'],
-            ['personnel', 'Barangay Personnel'],
-            ['residents', 'Residents'],
-          ] as const).map(([k, label]) => (
-            <button
-              key={k}
-              role="tab"
-              type="button"
-              aria-selected={group === k}
-              onClick={() => setGroup(k)}
-              className={cn('inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-control)] border px-3.5 text-[length:calc(15px*var(--fs))] font-semibold', group === k ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-surface-muted')}
-            >
-              {label} <span className={group === k ? 'text-white/75' : 'text-ink-muted'}>({count(k)})</span>
-            </button>
-          ))}
-        </div>
-        <label className="relative block flex-1">
-          <span className="sr-only">Search accounts</span>
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" />
-          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, username, email, role or number" className="h-10 w-full rounded-[var(--radius-control)] border border-line bg-surface pr-3 pl-9 text-[length:calc(15.5px*var(--fs))] text-navy-900 placeholder:text-ink-subtle focus:border-navy-600 focus:outline-none" />
-        </label>
-      </div>
-      <Card className="divide-y divide-line-soft">
-        {shownAccounts.length === 0 && <p className="px-5 py-6 text-[length:calc(15px*var(--fs))] text-ink-muted">No accounts match your search.</p>}
-        {shownAccounts.map((u) => (
-          <div key={u.id} className="px-5 py-3">
-            <div className="flex flex-wrap items-start gap-3 sm:flex-nowrap sm:items-center">
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sky-100 text-[length:calc(13px*var(--fs))] font-semibold text-navy-900">{initials(u.fullName)}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{u.fullName}</span>
-                <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{u.position} · {u.username} · {ROLES[u.roleId].name}{u.accountNo ? ` · ${u.accountNo}` : ''}</span>
-                <span className="block text-[length:calc(13.5px*var(--fs))] text-ink-muted">{getCredential(u.id)?.mustChange ? 'Temporary password issued' : testAccountByKey(u.id) || getCredential(u.id) ? 'Password set' : 'No password yet'}</span>
-              </span>
-              <span className="flex w-full items-center gap-3 pl-12 sm:w-auto sm:pl-0">
-                <StatusLabel status={u.status === 'active' ? 'Active' : u.status === 'locked' ? 'Locked' : 'Inactive'} tone={u.status === 'active' ? 'success' : u.status === 'locked' ? 'danger' : 'danger'} />
-                <button type="button" aria-expanded={open === u.id} onClick={() => setOpen(open === u.id ? null : u.id)} className="inline-flex min-h-11 items-center gap-0.5 rounded-md px-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-info hover:underline">
-                  {open === u.id ? 'Close' : <>Manage Account <ChevronRight className="size-4" /></>}
-                </button>
-              </span>
-            </div>
-            {open === u.id && (testAccountByKey(u.id) ? (
-              <div className="mt-3 flex flex-wrap items-center gap-3 rounded-[var(--radius-control)] bg-surface-muted p-4 text-[length:calc(14.5px*var(--fs))] text-navy-900">
-                Test account for the project team. It can switch between every level after signing in.
-                <Button size="sm" icon={<KeyRound className="size-3.5" />} onClick={() => reset(u)}>Reset password</Button>
-              </div>
-            ) : <ManageUser u={u} me={me!} run={run} onReset={() => reset(u)} onSaved={(m) => setToast(m)} />)}
-          </div>
-        ))}
-      </Card>
-      {toast && (
-        <div role="status" className="fixed right-4 bottom-4 z-50 flex max-w-sm items-start gap-2 rounded-lg border border-success/40 bg-surface px-4 py-3 text-[length:calc(15px*var(--fs))] text-navy-900 shadow-[0_8px_24px_rgba(0,33,50,0.15)]">
-          <CheckCircle2 className="icon-line w-4 text-success" /> {toast}
-        </div>
-      )}
-    </>
-  )
-}
-
-function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: (fn: () => Promise<unknown>) => Promise<void>; onReset: () => void; onSaved: (message: string) => void }) {
+/** Edit panel for one account (name, role request, extra permissions). Status and password reset can also live in the row's menu. */
+export function ManageUser({ u, me, run, onReset, onSaved, hideQuickActions }: { u: User; me: User; run: (fn: () => Promise<unknown>) => Promise<void>; onReset: () => void; onSaved: (message: string) => void; hideQuickActions?: boolean }) {
   const [name, setName] = useState(u.fullName)
   const [role, setRoleValue] = useState<RoleId>(u.roleId)
   const [perms, setPerms] = useState<Set<Permission>>(new Set(u.extraPermissions ?? []))
@@ -177,10 +38,10 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
   return (
     <div className="mt-3 space-y-4 rounded-[var(--radius-control)] bg-surface-muted p-4">
       <div className="space-y-3">
-        <ActionStack>
+        {!hideQuickActions && <ActionStack>
           <Button size="sm" variant={u.status === 'active' ? 'danger' : 'primary'} disabled={u.id === me.id} onClick={() => run(() => setStatus(u.id, u.status === 'active' ? 'inactive' : 'active', me))}>{u.status === 'active' ? 'Deactivate' : 'Activate'}</Button>
           <Button size="sm" variant="secondary" icon={<KeyRound className="size-3.5" />} onClick={onReset}>Reset password</Button>
-        </ActionStack>
+        </ActionStack>}
         {renamable ? (
           <label className="block max-w-md">
             <span className="mb-1 block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">Display name</span>

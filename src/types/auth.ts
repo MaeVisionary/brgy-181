@@ -105,6 +105,10 @@ export interface User {
    */
   extraPermissions?: Permission[]
   lastLoginAt?: string
+  /** When the account was created (set for accounts created in the system). */
+  createdAt?: string
+  /** Personnel contact number, when given at account creation. Residents' numbers stay on their resident record. */
+  contactNo?: string
 }
 
 export interface Session {
