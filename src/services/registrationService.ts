@@ -1,7 +1,7 @@
 import type { SeniorRecord } from '@/analytics/seniorTypes'
 import { mockRegistrations, mockResidents } from '@/mocks/residents'
 import { mockUsers } from '@/mocks/users'
-import type { User } from '@/types/auth'
+import type { Permission, User } from '@/types/auth'
 import type { CheckResult, RegistrationEvidence, Resident, ResidentRegistration } from '@/types/resident'
 import { audit } from './auditService'
 import { hashPassword, passwordProblem, setCredential } from './credentialStore'
@@ -260,6 +260,12 @@ export async function submitRegistration(input: RegistrationInput): Promise<Resi
     user.accountNo = accountNumber(nextNumber('ACC', mockUsers.map((u) => u.accountNo ?? '')))
     mockUsers.push(user)
     mockRegistrations.push(reg)
+    reg.history = [
+      { at: reg.submittedAt, by: userId, action: 'Registration submitted online' },
+      ...(input.evidence ? [{ at: reg.submittedAt, by: userId, action: 'ID photo and selfie uploaded' }] : []),
+      { at: reg.submittedAt, by: 'system', action: 'Automated checks completed', note: checksNote({ ocr, faceMatch, liveness, masterListMatch: record.result }) },
+      auto ? { at: reg.submittedAt, by: 'system', action: 'Approved automatically: every check passed' } : { at: reg.submittedAt, by: 'system', action: 'Sent for manual verification', note: reasons.join('; ') || undefined },
+    ]
     if (auto) linkResident(reg)
     try {
       persist()
@@ -271,6 +277,120 @@ export async function submitRegistration(input: RegistrationInput): Promise<Resi
     setCredential(userId, { hash, mustChange: false, updatedAt: new Date().toISOString() })
     audit(user, auto ? 'Registration auto-approved' : 'Registration submitted for manual verification', 'Residents', reg.referenceNo)
     remember(onceKey, reg.id)
+    return reg
+  })
+}
+
+// ── Secretary's queue ────────────────────────────────────────────────
+
+const word = (v: CheckResult) => (v === 'passed' ? 'Verified' : 'Needs checking')
+/** Plain summary of the four checks for the activity history. */
+const checksNote = (v: { ocr: CheckResult; faceMatch: CheckResult; liveness: CheckResult; masterListMatch: CheckResult }) =>
+  `Barangay Record: ${word(v.masterListMatch)} · ID Information: ${word(v.ocr)} · Photo Verification: ${word(v.faceMatch)} · Live Photo Check: ${word(v.liveness)}`
+const log = (reg: ResidentRegistration, by: string, action: string, note?: string) => {
+  reg.history = [...(reg.history ?? []), { at: new Date().toISOString(), by, action, note: note?.trim() || undefined }]
+}
+const hasPerm = (u: User, p: Permission) => !!(ROLE_PERMISSIONS[u.roleId]?.includes(p) || u.extraPermissions?.includes(p))
+/** Punong Barangay: acts on reports about approved registrations. */
+export const canOverrideRegistration = (u: User) => hasPerm(u, 'residents.override')
+const canOpenRegistration = (u: User) => canVerify(u) || canOverrideRegistration(u)
+
+/** One registration for the details page (Barangay Personnel who review registrations, or the Punong Barangay). Opening it is logged. */
+export function getRegistration(id: string, by: User): Promise<ResidentRegistration> {
+  return mockRequest(() => {
+    if (!canOpenRegistration(by)) throw new ServiceError('forbidden', 'You cannot view registrations.')
+    const reg = mockRegistrations.find((r) => r.id === id)
+    if (!reg) throw new ServiceError('not_found', 'Registration not found.')
+    audit(by, 'Opened registration record', 'Residents', reg.referenceNo)
+    return reg
+  })
+}
+
+/**
+ * Timeline for a registration: the recorded history, or (for older records
+ * without one) what can be read from the record itself.
+ */
+export function registrationTimeline(r: ResidentRegistration): { at: string; by: string; action: string; note?: string }[] {
+  // Records made before history was kept: rebuild the early steps from the record, then add what was logged since.
+  const logged = r.history ?? []
+  if (logged.some((h) => h.action.startsWith('Registration submitted'))) return [...logged].sort((a, b) => a.at.localeCompare(b.at))
+  const out: { at: string; by: string; action: string; note?: string }[] = [{ at: r.submittedAt, by: r.accountUserId ?? '', action: 'Registration submitted' }]
+  if (r.evidence) out.push({ at: r.submittedAt, by: r.accountUserId ?? '', action: 'ID photo and selfie uploaded' })
+  const v = r.verification
+  out.push({ at: r.submittedAt, by: 'system', action: 'Automated checks completed', note: [checksNote(v), ...(r.evidence?.reasons ?? [])].join(' · ') })
+  if (r.status === 'auto_approved') out.push({ at: r.decidedAt ?? r.submittedAt, by: 'system', action: 'Approved automatically: every check passed' })
+  if (r.inPerson) out.push({ at: r.inPerson.requestedAt, by: r.inPerson.requestedBy, action: 'In-person visit requested', note: r.inPerson.reason })
+  if (r.inPerson?.completedAt) out.push({ at: r.inPerson.completedAt, by: r.inPerson.completedBy ?? '', action: 'In-person visit recorded', note: r.inPerson.inspected })
+  if (r.decidedAt && r.status !== 'auto_approved' && !logged.some((h) => h.at === r.decidedAt)) out.push({ at: r.decidedAt, by: r.decidedBy ?? '', action: r.status === 'rejected' ? 'Rejected' : 'Approved after manual verification', note: r.decisionNote })
+  // A step that was also logged is shown once (the logged version, with its exact time).
+  const loggedActions = new Set(logged.map((h) => h.action))
+  return [...out.filter((h) => !loggedActions.has(h.action)), ...logged].sort((a, b) => a.at.localeCompare(b.at))
+}
+
+const overriders = () => mockUsers.filter((u) => u.status === 'active' && canOverrideRegistration(u)).map((u) => u.id)
+const notifyUsers = (ids: string[], title: string, body: string, link?: string) => {
+  const now = new Date().toISOString()
+  for (const userId of new Set(ids)) mockNotifications.push({ id: `ntf-${Math.random().toString(36).slice(2, 9)}`, userId, category: 'registration', title, body, createdAt: now, read: false, link })
+}
+
+/**
+ * The Secretary (or anyone who reviews registrations) reports a problem with an
+ * approved registration, e.g. an auto-approval that should not have passed. The
+ * approval stays as it is; the Punong Barangay is asked to decide.
+ */
+export function reportRegistration(id: string, reason: string, by: User): Promise<ResidentRegistration> {
+  return mockRequest(() => {
+    if (!canVerify(by)) throw new ServiceError('forbidden', 'You cannot report registrations.')
+    const reg = mockRegistrations.find((r) => r.id === id)
+    if (!reg) throw new ServiceError('not_found', 'Registration not found.')
+    if (!isApproved(reg)) throw new ServiceError('state', 'Only approved registrations can be reported. Pending ones are decided in the review.')
+    if (reg.report && (reg.report.status === 'open' || reg.report.status === 'suspended')) throw new ServiceError('open', 'A report on this registration is already waiting for the Punong Barangay.')
+    if (reason.trim().length < 10) throw new ServiceError('reason', 'Describe what is wrong (at least 10 characters), e.g. "The ID photo does not match the selfie".')
+    const now = new Date().toISOString()
+    reg.report = { status: 'open', reason: reason.trim(), reportedBy: by.id, reportedAt: now }
+    log(reg, by.id, 'Problem reported to the Punong Barangay', reason)
+    persist()
+    audit(by, 'Reported a problem with an approved registration', 'Residents', reg.referenceNo)
+    notifyUsers(overriders(), 'Registration reported for review', `${reg.referenceNo}: ${reason.trim()}`, `/residents/registrations/${reg.id}`)
+    return reg
+  })
+}
+
+/**
+ * The Punong Barangay acts on a report: keep the approval (no change), suspend
+ * the account while it is checked, or reinstate a suspended account. A reason is
+ * required, the registration's status is never rewritten, and every step is logged.
+ */
+export function decideRegistrationReport(id: string, action: 'no_change' | 'suspend' | 'reinstate', note: string, by: User): Promise<ResidentRegistration> {
+  return mockRequest(() => {
+    if (!canOverrideRegistration(by)) throw new ServiceError('forbidden', 'Only the Punong Barangay can act on reports about approved registrations.')
+    const reg = mockRegistrations.find((r) => r.id === id)
+    if (!reg?.report) throw new ServiceError('not_found', 'There is no report on this registration.')
+    if (note.trim().length < 10) throw new ServiceError('note', 'Give the reason for this decision (at least 10 characters).')
+    const r = reg.report
+    const account = mockUsers.find((u) => u.id === reg.accountUserId)
+    const now = new Date().toISOString()
+    if (action === 'no_change') {
+      if (r.status !== 'open') throw new ServiceError('state', 'This report was already decided.')
+      r.status = 'no_change'
+      log(reg, by.id, 'Report closed: approval kept', note)
+    } else if (action === 'suspend') {
+      if (r.status !== 'open') throw new ServiceError('state', 'Only an open report can lead to a suspension.')
+      r.status = 'suspended'
+      if (account) account.status = 'inactive'
+      log(reg, by.id, 'Account suspended while the registration is checked', note)
+      if (account) notifyUsers([account.id], 'Your account is on hold', `${reg.referenceNo}: please visit the Barangay Hall with a valid ID. ${note.trim()}`)
+    } else {
+      if (r.status !== 'suspended') throw new ServiceError('state', 'Only a suspended account can be reinstated.')
+      r.status = 'reinstated'
+      if (account) account.status = 'active'
+      log(reg, by.id, 'Account reinstated', note)
+      if (account) notifyUsers([account.id], 'Your account is active again', `${reg.referenceNo}: ${note.trim()}`)
+    }
+    r.decision = note.trim(); r.decidedBy = by.id; r.decidedAt = now
+    persist()
+    audit(by, action === 'no_change' ? 'Registration report closed (no change)' : action === 'suspend' ? 'Account suspended after a registration report' : 'Account reinstated after review', 'Residents', reg.referenceNo)
+    notifyUsers([r.reportedBy], 'Decision on your registration report', `${reg.referenceNo}: ${action === 'no_change' ? 'approval kept' : action === 'suspend' ? 'account suspended' : 'account reinstated'}. ${note.trim()}`, `/residents/registrations/${reg.id}`)
     return reg
   })
 }
@@ -292,6 +412,7 @@ export function decideRegistration(id: string, decision: 'approved' | 'rejected'
     reg.decidedBy = by.id
     reg.decidedAt = new Date().toISOString()
     reg.decisionNote = note.trim() || undefined
+    log(reg, by.id, decision === 'approved' ? 'Approved after manual verification' : 'Rejected', note)
     if (decision === 'approved') linkResident(reg)
     persist()
     audit(by, decision === 'approved' ? 'Registration approved' : 'Registration rejected', 'Residents', reg.referenceNo)
@@ -368,6 +489,7 @@ export async function requestInPerson(id: string, v: { reason: string; bring: st
   const to = reg.applicant.email
   const email = to ? await sendEmail({ to, subject: mail.subject, body: v.body?.trim() || mail.body, ref: reg.referenceNo }) : null
   const now = new Date().toISOString()
+  log(reg, by.id, 'In-person visit requested', `${v.reason.trim()} · bring ${v.bring.trim()}`)
   reg.inPerson = { reason: v.reason.trim(), bring: v.bring.trim(), date: v.date || undefined, time: v.time || undefined, notes: v.notes?.trim() || undefined, requestedBy: by.id, requestedAt: now, emailIds: email ? [email.id] : [] }
   if (reg.accountUserId) {
     mockNotifications.push({ id: `ntf-${Math.random().toString(36).slice(2, 9)}`, userId: reg.accountUserId, category: 'registration', title: 'Please visit Barangay 181', body: `${reg.referenceNo} · bring ${v.bring.trim()}`, createdAt: now, read: false })
@@ -403,6 +525,7 @@ export function completeInPerson(id: string, v: { inspected: string; notes: stri
     reg.inPerson.completedBy = by.id
     reg.inPerson.inspected = v.inspected.trim()
     reg.inPerson.outcomeNotes = v.notes.trim() || undefined
+    log(reg, by.id, 'In-person visit recorded', `Checked: ${v.inspected.trim()}`)
     persist()
     audit(by, 'In-person verification completed', 'Residents', reg.referenceNo)
     return reg

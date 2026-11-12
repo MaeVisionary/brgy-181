@@ -59,6 +59,8 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
 
   chairman: [
     'security.approve',
+    // Acts on reports about registrations that were already approved (suspend or reinstate the account).
+    'residents.override',
     'announcements.approve',
     'concerns.manage',
     'analytics.view',
@@ -126,7 +128,7 @@ export const EDITABLE_ROLES: RoleId[] = ['chairman', 'secretary', 'kagawad', 'pr
 
 /** Permission groups shown in the role manager (system and self-service permissions are not role-editable). */
 export const PERMISSION_GROUPS: { id: string; name: string; permissions: Permission[] }[] = [
-  { id: 'residents', name: 'Resident records', permissions: ['residents.view', 'residents.search', 'residents.import', 'residents.create', 'residents.update', 'residents.verify', 'residents.approve', 'residents.reject', 'residents.lookup_borrower'] },
+  { id: 'residents', name: 'Resident records', permissions: ['residents.view', 'residents.search', 'residents.import', 'residents.create', 'residents.update', 'residents.verify', 'residents.approve', 'residents.reject', 'residents.override', 'residents.lookup_borrower'] },
   { id: 'documents', name: 'Document requests', permissions: ['documents.view', 'documents.create', 'documents.process', 'documents.inspect', 'documents.approve', 'documents.reject', 'documents.release', 'documents.payment'] },
   { id: 'cases', name: 'Complaints, cases and hearings', permissions: ['complaints.view', 'complaints.create', 'complaints.update', 'cases.view', 'cases.manage', 'cases.decide', 'cases.assigned', 'hearings.view', 'hearings.manage', 'concerns.manage', 'concerns.view'] },
   { id: 'equipment', name: 'Property and equipment', permissions: ['inventory.view', 'inventory.manage', 'borrowing.approve', 'borrowing.release'] },
@@ -144,7 +146,7 @@ const ROLE_OVERRIDES_KEY = 'bmis.rolePermissions'
  * permissions introduced after that format always follow the defaults.
  */
 const DEFAULT_ROLE_PERMISSIONS: Record<RoleId, Permission[]> = Object.fromEntries(Object.entries(ROLE_PERMISSIONS).map(([k, v]) => [k, [...v]])) as Record<RoleId, Permission[]>
-const ADDED_AFTER_LIST_FORMAT: Permission[] = ['cases.assigned', 'concerns.manage', 'concerns.view', 'security.approve', 'announcements.manage', 'announcements.approve', 'documents.payment', 'calendar.manage']
+const ADDED_AFTER_LIST_FORMAT: Permission[] = ['residents.override', 'cases.assigned', 'concerns.manage', 'concerns.view', 'security.approve', 'announcements.manage', 'announcements.approve', 'documents.payment', 'calendar.manage']
 type RoleDiff = { on: Permission[]; off: Permission[] }
 
 function applyDiff(role: RoleId, d: RoleDiff) {
@@ -219,6 +221,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'residents.verify': 'Review registrations (manual verification)',
   'residents.approve': 'Approve registrations and change requests',
   'residents.reject': 'Reject registrations and change requests',
+  'residents.override': 'Act on reports about approved registrations (suspend or reinstate the account)',
   'residents.lookup_borrower': 'Look up borrower name and address only',
   'documents.view': 'View document requests',
   'documents.create': 'Encode requests for residents (assisted service)',

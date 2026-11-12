@@ -18,6 +18,7 @@ export type Portal = 'admin' | 'personnel' | 'resident'
 export type Permission =
   // Residents (Module 2)
   | 'residents.view'
+  | 'residents.override'
   | 'residents.search'
   | 'residents.import'
   | 'residents.create'

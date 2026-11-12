@@ -122,6 +122,22 @@ export interface ResidentRegistration {
   accountUserId?: string
   /** Secretary asked the applicant to come to the Barangay Hall. */
   inPerson?: InPersonVerification
+  /** Everything that happened to the registration after it was submitted (who, when, what). */
+  history?: { at: string; by: string; action: string; note?: string }[]
+  /**
+   * A problem reported on an already approved registration. The approval is never
+   * changed silently: the Secretary reports, the Punong Barangay decides (no change,
+   * suspend the account, or reinstate it), each with a reason, and every step is logged.
+   */
+  report?: {
+    status: 'open' | 'no_change' | 'suspended' | 'reinstated'
+    reason: string
+    reportedBy: string
+    reportedAt: string
+    decision?: string
+    decidedBy?: string
+    decidedAt?: string
+  }
 }
 
 export interface InPersonVerification {

@@ -33,7 +33,7 @@ import { InventoryPage } from '@/pages/equipment/InventoryPage'
 import { HouseholdDetailPage, HouseholdsPage } from '@/pages/residents/HouseholdsPage'
 import { ResidentProfilePage } from '@/pages/residents/ResidentProfilePage'
 import { ResidentsPage } from '@/pages/residents/ResidentsPage'
-import { ChangeRequestsPage, RegistrationsPage } from '@/pages/residents/ReviewPages'
+import { ChangeRequestsPage, RegistrationDetailPage, RegistrationsPage } from '@/pages/residents/ReviewPages'
 import { MyBorrowingPage, NewBorrowingPage, MyComplaintsPage, MyProfilePage } from '@/pages/resident/ResidentPortalPages'
 import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage'
 import { ReportsPage } from '@/pages/analytics/ReportsPage'
@@ -88,7 +88,8 @@ export default function App() {
           <Route path="/residents" element={guard(['residents.view', 'residents.search'], 'personnel', <ResidentsPage />)} />
           <Route path="/residents/households" element={guard(['residents.view'], 'personnel', <HouseholdsPage />)} />
           <Route path="/residents/households/:id" element={guard(['residents.view'], 'personnel', <HouseholdDetailPage />)} />
-          <Route path="/residents/registrations" element={guard(['residents.verify'], 'personnel', <RegistrationsPage />)} />
+          <Route path="/residents/registrations" element={guard(['residents.verify', 'residents.override'], 'personnel', <RegistrationsPage />)} />
+          <Route path="/residents/registrations/:id" element={guard(['residents.verify', 'residents.override'], 'personnel', <RegistrationDetailPage />)} />
           <Route path="/residents/change-requests" element={guard(['residents.approve'], 'personnel', <ChangeRequestsPage />)} />
           <Route path="/residents/import" element={<Navigate to="/residents" replace />} />
           <Route path="/residents/:id" element={guard(['residents.view'], 'personnel', <ResidentProfilePage />)} />
