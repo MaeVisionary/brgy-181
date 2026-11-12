@@ -9,6 +9,7 @@ import { useDocActor } from '@/hooks/useDocActor'
 import { formatDateTime } from '@/lib/format'
 import { STAGE_LABEL, STAGE_TONE, listCases, mediationDay, upcomingHearings } from '@/services/caseService'
 import { listRequests } from '@/services/documentService'
+import { TodayAppointmentsPanel } from '@/pages/appointments/AppointmentPages'
 import { DashHeader, EmptyNote, ListPanel, PopulationByStreet, Row, Stat } from './shared'
 
 /** Robert Atad: executive oversight, approvals, assessment of complaints, KP mediation. */
@@ -44,6 +45,8 @@ export function ChairmanDashboard() {
         <Stat label="Active KP cases" value={active?.length ?? null} to="/cases" />
         <Stat label="Upcoming hearings" value={hearings?.length ?? null} to="/hearings" />
       </section>
+
+      <TodayAppointmentsPanel />
 
       <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <ListPanel

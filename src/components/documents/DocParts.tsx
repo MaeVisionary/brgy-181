@@ -4,10 +4,10 @@ import { FieldLabel, Select, TextArea, TextInput } from '@/components/ui/Field'
 import { STATUS_META, TERMINAL, WORKFLOWS, statusLabel } from '@/documents/workflows'
 import { getDocumentType } from '@/documents/catalog'
 import { cn } from '@/lib/cn'
-import { formatDateTime } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { ROLES } from '@/config/permissions'
 import type { DocumentRequest, DocumentStatus, DocumentTypeId, FieldDef, FieldValue, StatusEvent, WorkflowId } from '@/types/document'
+import { Timeline } from '@/components/ui/Timeline'
 
 export function StatusBadge({ status, typeId }: { status: DocumentStatus; typeId?: DocumentTypeId }) {
   const m = STATUS_META[status]
@@ -56,20 +56,14 @@ const userName = (id: string) => mockUsers.find((u) => u.id === id)?.fullName ??
 
 export function HistoryList({ events, showRemarks = true }: { events: StatusEvent[]; showRemarks?: boolean | ((e: StatusEvent) => boolean) }) {
   return (
-    <ol className="space-y-3">
-      {[...events].reverse().map((e, i) => {
-        const remarksVisible = typeof showRemarks === 'function' ? showRemarks(e) : showRemarks
-        return (
-          <li key={i} className="border-l-2 border-line-soft pl-3">
-            <p className="text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">{e.action}</p>
-            <p className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">
-              {formatDateTime(e.at)} · {userName(e.byUserId)} ({ROLES[e.byRole].name})
-            </p>
-            {e.remarks && remarksVisible && <p className="mt-1 rounded-md bg-surface-muted px-2.5 py-1.5 text-[length:calc(14.5px*var(--fs))] text-navy-900">{e.remarks}</p>}
-          </li>
-        )
-      })}
-    </ol>
+    <Timeline items={events.map((e) => {
+      const remarksVisible = typeof showRemarks === 'function' ? showRemarks(e) : showRemarks
+      return {
+        at: e.at, title: e.action, by: userName(e.byUserId),
+        tone: /(reject|not approved|overdue|cancel|no-show|not verified|damage|referred|settled|closed|approved|decided)/i.test(e.action) ? 'important' as const : undefined,
+        details: <><p>{userName(e.byUserId)} · {ROLES[e.byRole].name}</p><p>Status: {e.status.replace(/_/g, ' ')}</p>{e.remarks && remarksVisible && <p className="mt-1">{e.remarks}</p>}</>,
+      }
+    })} />
   )
 }
 

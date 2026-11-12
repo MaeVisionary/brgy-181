@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/Button'
 import { FieldLabel, Select, TextArea, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
-import { ROLES } from '@/config/permissions'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 import { formatDate, formatDateTime } from '@/lib/format'
@@ -25,6 +24,7 @@ import { NotFound } from '@/pages/system/NotFound'
 import { SampleBadge } from '@/pages/dashboard/shared'
 import { BORROW_STATUS, RETURN_BADGE } from './badges'
 import { useStickyState } from '@/hooks/useStickyState'
+import { Timeline } from '@/components/ui/Timeline'
 
 const eqName = (id: string) => mockEquipment.find((e) => e.id === id)?.name ?? id
 export const itemsText = (b: Borrowing) => b.items.map((i) => `${qtyOf(i)} × ${eqName(i.equipmentId)}`).join(', ')
@@ -151,15 +151,11 @@ export function BorrowingDetailPage() {
             {b.returnNotes && <p className="mt-1 text-[length:calc(16px*var(--fs))] text-navy-900">Return notes: {b.returnNotes}</p>}
           </Panel>
           <Panel title="History">
-            <ol className="space-y-3">
-              {[...b.history].reverse().map((h, i) => (
-                <li key={i} className="border-l-2 border-line-soft pl-3">
-                  <p className="text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{h.action}{h.internal ? ' (staff only)' : ''}</p>
-                  <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">{formatDateTime(h.at)} · {h.byUserId === 'system' ? 'System' : `${userById(h.byUserId)?.fullName ?? 'Resident'} (${ROLES[h.byRole].name})`}</p>
-                  {h.remarks && <p className="mt-1 text-[length:calc(15.5px*var(--fs))] text-navy-900">{h.remarks}</p>}
-                </li>
-              ))}
-            </ol>
+            <Timeline items={b.history.map((h) => ({
+              at: h.at, title: h.action + (h.internal ? ' (staff only)' : ''), by: h.byUserId === 'system' ? 'System' : userById(h.byUserId)?.fullName ?? 'Resident',
+              tone: /(reject|not approved|overdue|cancel|no-show|not verified|damage|referred|settled|closed|approved|decided)/i.test(h.action) ? 'important' as const : undefined,
+              details: h.remarks ? <p>{h.remarks}</p> : undefined,
+            }))} />
           </Panel>
         </div>
 

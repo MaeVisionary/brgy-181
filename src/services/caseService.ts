@@ -232,13 +232,16 @@ export function scheduleHearing(id: string, kind: HearingKind, at: string, a: Ca
 }
 
 /** Records attendance; the first held Chairman hearing moves the case to Ongoing Mediation. */
-export function recordHearing(id: string, hearingId: string, attendance: (boolean | null)[], notes: string, a: CaseActor): Promise<KPCase> {
+/** Attendance per person: true present, false absent, 'excused' absent with a valid reason. */
+export function recordHearing(id: string, hearingId: string, attendance: (boolean | null | 'excused')[], notes: string, a: CaseActor): Promise<KPCase> {
   return mockRequest(() => {
     const c = mockCases.find((x) => x.id === id)
     const h = c?.hearings.find((x) => x.id === hearingId)
     if (!c || !h) throw new ServiceError('not_found', 'Hearing not found.')
     if (!a.permissions.has('hearings.manage')) throw new ServiceError('forbidden', 'Not allowed.')
-    h.attendance = h.attendance.map((x, i) => ({ ...x, present: attendance[i] ?? null }))
+    if (h.status !== 'scheduled') throw new ServiceError('state', 'Attendance for this hearing is already final.')
+    if (attendance.some((x) => x === null || x === undefined)) throw new ServiceError('attendance', 'Mark everyone as present, absent or excused.')
+    h.attendance = h.attendance.map((x, i) => ({ ...x, present: attendance[i] === true, excused: attendance[i] === 'excused' || undefined }))
     h.status = 'held'
     h.notes = notes.trim() || undefined
     const now = new Date().toISOString()

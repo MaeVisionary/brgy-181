@@ -36,7 +36,8 @@ export function useTrail() {
     // Only a real "Back" (browser or app) drops the page we left. Opening the
     // same page again from somewhere else is a new step forward.
     const prev = trail[trail.length - 2]
-    const next = navType === 'POP' && prev && prev.path === pathname ? trail.slice(0, -1) : [...trail, { path: pathname, search }]
+    // A replaced page (e.g. a finished form that becomes the new record) takes the old one's place.
+    const next = navType === 'POP' && prev && prev.path === pathname ? trail.slice(0, -1) : navType === 'REPLACE' && last ? [...trail.slice(0, -1), { path: pathname, search }] : [...trail, { path: pathname, search }]
     try {
       sessionStorage.setItem(TRAIL_KEY, JSON.stringify(next.slice(-30)))
     } catch {

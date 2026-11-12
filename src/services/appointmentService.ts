@@ -8,8 +8,8 @@ import { audit } from './auditService'
 import { sendEmail, type EmailRecord } from './emailService'
 import { ServiceError, mockRequest } from './mockApi'
 import {
-  addMinutes, assertFree, can, dayState, eligibleStaff, estimateDuration, formatTime, manilaToday, nextDate,
-  openTimes, registerBookings, schedulingRules, startsAt as at,
+  REMINDER_LABEL, addMinutes, assertFree, can, dayState, estimateDuration, formatTime, manilaToday, nextDate,
+  openTimes, registerBookings, schedulingRules, serviceRule, staffForService, startsAt as at, type ReminderKey,
 } from './schedulingService'
 export { formatTime } from './schedulingService'
 
@@ -35,7 +35,7 @@ export { formatTime } from './schedulingService'
  * docs/supabase/scheduling.sql).
  */
 
-export type AppointmentKind = 'correction_verification' | 'document_claim' | 'complaint_consult' | 'equipment_pickup' | 'equipment_return'
+export type AppointmentKind = 'correction_verification' | 'document_claim' | 'complaint_consult' | 'equipment_pickup' | 'equipment_return' | 'chairman_consult' | 'general_assist'
 export type AppointmentStatus = 'awaiting_schedule' | 'pending_confirmation' | 'confirmed' | 'reschedule_requested' | 'rescheduled' | 'completed' | 'cancelled' | 'no_show'
 
 export const APPOINTMENT_STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -55,8 +55,10 @@ export const isOpen = (a: { status: AppointmentStatus }) => OPEN.includes(a.stat
 
 export interface AppointmentType {
   label: string
-  /** Staff who may see and handle it. */
-  permission: Permission
+  /** Staff who may see and handle it (besides the roles in its service rule). */
+  permission?: Permission
+  /** Messages and calendars show a neutral title, not the subject. */
+  sensitive?: boolean
   /** Length comes from the documents to check, or a fixed service length. */
   lengthFrom: 'documents' | 'service'
   /** Resident may move it without staff review. */
@@ -68,9 +70,11 @@ export interface AppointmentType {
 export const APPOINTMENT_TYPES: Record<AppointmentKind, AppointmentType> = {
   correction_verification: { label: 'In-person verification', permission: 'residents.approve', lengthFrom: 'documents', residentMayMove: true, staffLink: () => '/residents/change-requests', residentLink: () => '/my/profile' },
   document_claim: { label: 'Document claiming', permission: 'documents.release', lengthFrom: 'service', residentMayMove: true, staffLink: (id) => `/documents/${id}`, residentLink: (id) => `/my/documents/${id}` },
-  complaint_consult: { label: 'Complaint consultation', permission: 'cases.manage', lengthFrom: 'service', residentMayMove: false, staffLink: (id) => `/cases/${id}`, residentLink: (id) => `/my/complaints/${id}` },
+  complaint_consult: { label: 'Complaint interview', permission: 'cases.manage', sensitive: true, lengthFrom: 'service', residentMayMove: false, staffLink: (id) => `/cases/${id}`, residentLink: (id) => `/my/complaints/${id}` },
   equipment_pickup: { label: 'Equipment pickup', permission: 'borrowing.release', lengthFrom: 'service', residentMayMove: true, staffLink: (id) => `/borrowing/${id}`, residentLink: (id) => `/my/borrowing/${id}` },
   equipment_return: { label: 'Equipment return', permission: 'borrowing.release', lengthFrom: 'service', residentMayMove: true, staffLink: (id) => `/borrowing/${id}`, residentLink: (id) => `/my/borrowing/${id}` },
+  chairman_consult: { label: 'Consultation with the Punong Barangay', lengthFrom: 'service', residentMayMove: true, sensitive: true, staffLink: () => '/appointments', residentLink: () => '/my/appointments' },
+  general_assist: { label: 'General assistance', lengthFrom: 'service', residentMayMove: true, staffLink: () => '/appointments', residentLink: () => '/my/appointments' },
 }
 
 export const VISIT_REASONS = ['Check the original ID', 'Check the supporting document', 'Confirm identity', 'Check employment or personal information'] as const
@@ -101,6 +105,11 @@ export interface Appointment {
   status: AppointmentStatus
   rescheduleReason?: string
   checkedInAt?: string
+  /** When the time was chosen; reminders only go out for points after this. */
+  bookedAt?: string
+  completedAt?: string
+  /** Waiting for the assigned official to accept (services that need it). */
+  staffConfirmed?: boolean
   /** Verification visits only. */
   verification?: { result: 'verified' | 'not_verified'; idPresented: boolean; nameMatches: boolean; documentChecked: boolean; idExpired: boolean; notes: string; byUserId: string; at: string }
   outcome?: { notes: string; byUserId: string; at: string }
@@ -120,7 +129,7 @@ function migrate(a: Appointment & { arrivedAt?: string }): Appointment {
   const s = a.status as string
   const status: AppointmentStatus =
     s === 'scheduled' ? 'pending_confirmation' : s === 'arrived' || s === 'in_verification' ? 'confirmed' : s === 'verified' || s === 'not_verified' ? 'completed' : (s as AppointmentStatus)
-  return { ...a, kind, status, title: a.title ?? APPOINTMENT_TYPES[kind].label, checkedInAt: a.checkedInAt ?? a.arrivedAt, remindersSent: (a.remindersSent ?? []).map((r) => (r === 'day' ? '24h' : r === 'hour' ? '2h' : r)) }
+  return { ...a, kind, status, title: a.title ?? APPOINTMENT_TYPES[kind].label, checkedInAt: a.checkedInAt ?? a.arrivedAt, remindersSent: a.remindersSent ?? [] }
 }
 const load = (): Appointment[] => { try { return (JSON.parse(localStorage.getItem(KEY) ?? '[]') as Appointment[]).map(migrate) } catch { return [] } }
 const save = (l: Appointment[]) => localStorage.setItem(KEY, JSON.stringify(l))
@@ -130,22 +139,25 @@ const manilaParts = (iso: string) => {
   return { date: d.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }), time: d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' }) }
 }
 
-registerBookings(() => load().filter((a) => BOOKED.includes(a.status) && a.date && a.assignedTo).map((a) => ({ id: a.id, staffId: a.assignedTo, date: a.date, time: a.time, minutes: a.durationMin, label: a.ref })))
-// Mediation hearings with the Punong Barangay take the Chairman's time too.
-registerBookings(() => {
-  const chairmen = mockUsers.filter((u) => u.roleId === 'chairman' && u.status === 'active').map((u) => u.id)
-  return mockCases.flatMap((c) => c.hearings.filter((h) => h.kind === 'chairman_mediation' && h.status === 'scheduled').flatMap((h) =>
-    chairmen.map((staffId) => ({ id: h.id, staffId, ...manilaParts(h.scheduledAt), minutes: schedulingRules().typeMinutes.hearing ?? 60, label: c.caseNo }))))
-})
+registerBookings(() => load().filter((a) => BOOKED.includes(a.status) && a.date && a.assignedTo).map((a) => ({ id: a.id, staffId: a.assignedTo, date: a.date, time: a.time, minutes: a.durationMin, label: a.ref, buffer: serviceRule(a.kind)?.buffer, service: a.kind })))
+/** Who attends a hearing: the Punong Barangay for mediation, plus any personnel assigned to the case. One record, many calendars. */
+export function hearingParticipants(c: (typeof mockCases)[number], h: (typeof mockCases)[number]['hearings'][number]): string[] {
+  const chairmen = h.kind === 'chairman_mediation' ? mockUsers.filter((u) => u.roleId === 'chairman' && u.status === 'active').map((u) => u.id) : []
+  return [...new Set([...chairmen, ...(c.assignedTo ?? [])])]
+}
+const hearingRule = (h: { kind: string }) => serviceRule(h.kind === 'chairman_mediation' ? 'mediation' : 'conciliation')
+// Hearings live in the case module; they take the participants' time here too.
+registerBookings(() => mockCases.flatMap((c) => c.hearings.filter((h) => h.status === 'scheduled').flatMap((h) =>
+  hearingParticipants(c, h).map((staffId) => ({ id: h.id, staffId, ...manilaParts(h.scheduledAt), minutes: hearingRule(h)?.minutes ?? 60, buffer: hearingRule(h)?.buffer, service: h.kind === 'chairman_mediation' ? 'mediation' : 'conciliation', label: c.caseNo })))))
 
-/** Staff who may see or handle this kind of appointment. */
-const mayHandle = (u: User, kind: AppointmentKind) => can(u, APPOINTMENT_TYPES[kind].permission)
+/** Staff who may see or handle this kind of appointment: the service's roles (configurable) or the permission. */
+const mayHandle = (u: User, kind: AppointmentKind) => !!serviceRule(kind)?.roles.includes(u.roleId) || (!!APPOINTMENT_TYPES[kind].permission && can(u, APPOINTMENT_TYPES[kind].permission!))
 const requireHandler = (u: User, a: { kind: AppointmentKind }) => { if (!mayHandle(u, a.kind)) throw new ServiceError('forbidden', 'You cannot manage this appointment.') }
 const isOwner = (a: Appointment, by: User) => (!!a.userId && a.userId === by.id) || (!!by.residentId && by.residentId === a.residentId)
-export const staffFor = (kind: AppointmentKind) => eligibleStaff(APPOINTMENT_TYPES[kind].permission).map((u) => u.id)
+export const staffFor = (kind: AppointmentKind) => staffForService(kind, APPOINTMENT_TYPES[kind].permission).map((u) => u.id)
 
 export function lengthOf(kind: AppointmentKind, documents: string[]) {
-  return APPOINTMENT_TYPES[kind].lengthFrom === 'documents' ? estimateDuration(documents).minutes : (schedulingRules().typeMinutes[kind] ?? 15)
+  return APPOINTMENT_TYPES[kind].lengthFrom === 'documents' ? estimateDuration(documents).minutes : (serviceRule(kind)?.minutes ?? 15)
 }
 export const endTime = (a: { time: string; durationMin: number }) => addMinutes(a.time, a.durationMin)
 const startsAt = (a: { date: string; time: string }) => at(a.date, a.time)
@@ -158,7 +170,7 @@ function notify(userIds: (string | undefined)[], title: string, body: string, li
   window.dispatchEvent(new Event('bmis:notifications-changed'))
 }
 
-type MessageKind = 'ready' | 'scheduled' | 'confirmed' | 'moved' | 'cancelled' | 'duration' | 'reminder' | 'no_show'
+type MessageKind = 'ready' | 'scheduled' | 'confirmed' | 'moved' | 'cancelled' | 'duration' | 'reminder' | 'no_show' | 'requested'
 /** Plain-language message with everything the resident needs (in-app notice and email). */
 export function visitMessage(a: Appointment, kind: MessageKind, extra?: string) {
   const r = mockResidents.find((x) => x.id === a.residentId)
@@ -167,16 +179,18 @@ export function visitMessage(a: Appointment, kind: MessageKind, extra?: string) 
   const when = a.date ? `${dateLong(a.date)}, ${formatTime(a.time)} to about ${formatTime(endTime(a))} (about ${a.durationMin} minutes)` : ''
   const head: Record<MessageKind, string> = {
     ready: 'Your appointment is ready to schedule. Please choose a date and time under My Appointments.',
+    requested: 'We received your request. You will be notified when the time is confirmed.',
     scheduled: 'Please visit the Barangay Hall at the time below. Open My Appointments to confirm.',
     confirmed: 'Your appointment is confirmed. Please arrive 10 minutes early and bring the items below.',
     moved: `Your appointment was moved.${extra ? ` ${extra}` : ''} Here is the new schedule.`,
     cancelled: `Your appointment${a.date ? ` on ${dateLong(a.date)} at ${formatTime(a.time)}` : ''} was cancelled.${extra ? ` Reason: ${extra}` : ''}`,
     duration: `The expected length of your appointment changed.${extra ? ` ${extra}` : ''}`,
-    reminder: `Reminder: your appointment is ${extra ?? 'soon'}. Please check what to bring before you go.`,
+    reminder: APPOINTMENT_TYPES[a.kind].sensitive ? `You have an upcoming Barangay appointment ${extra ?? 'soon'}.` : `Reminder: your appointment is ${extra ?? 'soon'}. Please check what to bring before you go.`,
     no_show: 'We did not see you at your appointment. Your request is still open; you can choose a new time under My Appointments.',
   }
   const subject: Record<MessageKind, string> = {
     ready: `${type}: please choose a schedule (${a.ref})`,
+    requested: `Appointment request received (${a.ref})`,
     scheduled: `${type} on ${a.date ? dateLong(a.date) : ''} (${a.ref})`,
     confirmed: `Appointment confirmed: ${type}${a.date ? ` on ${dateLong(a.date)}` : ''}`,
     moved: `New schedule for your ${type.toLowerCase()} (${a.ref})`,
@@ -255,7 +269,7 @@ export function completeFor(kind: AppointmentKind, subjectId: string, note: stri
   if (!a) return
   const now = new Date().toISOString()
   a.status = 'completed'
-  a.checkedInAt = a.checkedInAt ?? now
+  a.completedAt = now
   a.outcome = { notes: note, byUserId, at: now }
   a.history.push({ at: now, byUserId, action: `Completed: ${note}` })
   save(list)
@@ -293,7 +307,7 @@ function lengthFor(kind: AppointmentKind, documents: string[], override?: { minu
 }
 
 function checkStaff(kind: AppointmentKind, staffId: string) {
-  const staff = mockUsers.find((u) => u.id === staffId && u.status === 'active' && can(u, APPOINTMENT_TYPES[kind].permission))
+  const staff = mockUsers.find((u) => u.id === staffId && u.status === 'active' && staffFor(kind).includes(u.id))
   if (!staff) throw new ServiceError('staff', 'Choose a staff member who handles this service.')
 }
 
@@ -311,7 +325,7 @@ export function scheduleForCorrection(changeRequestId: string, i: ScheduleInput,
     const kind: AppointmentKind = 'correction_verification'
     const len = lengthFor(kind, i.documents, i.override)
     const pick = !!i.date
-    if (pick) { checkStaff(kind, i.assignedTo); assertFree(i.date, i.time, i.assignedTo, len.minutes) }
+    if (pick) { checkStaff(kind, i.assignedTo); assertFree(i.date, i.time, i.assignedTo, len.minutes, undefined, kind) }
     const residentId = cr.requestedByResidentId ?? cr.residentId
     const userId = mockUsers.find((u) => u.residentId === residentId && u.status === 'active')?.id
     if (!pick && !userId) throw new ServiceError('no_account', 'This resident has no portal account, so they cannot choose a time. Set the time now.')
@@ -350,7 +364,7 @@ export function scheduleConsultation(caseId: string, i: { reason: string; docume
     const kind: AppointmentKind = 'complaint_consult'
     const minutes = lengthOf(kind, i.documents)
     checkStaff(kind, i.assignedTo)
-    assertFree(i.date, i.time, i.assignedTo, minutes)
+    assertFree(i.date, i.time, i.assignedTo, minutes, undefined, kind)
     const now = new Date().toISOString()
     const a: Appointment = {
       id: `apt-${Date.now().toString(36)}`, ref: makeRef(list), kind, subjectId: c.id, subjectRef: c.caseNo, title: 'Complaint consultation',
@@ -374,13 +388,13 @@ export function dayOptions(a: Pick<Appointment, 'kind' | 'durationMin' | 'id'>, 
   let d = manilaToday()
   for (let i = 0; out.length < days && i < 40; i++, d = nextDate(d)) {
     const weekend = new Date(`${d}T12:00:00+08:00`).getUTCDay() % 6 === 0
-    const s = dayState(d, a.durationMin, staff, a.id)
+    const s = dayState(d, a.durationMin, staff, a.id, a.kind)
     if (weekend && s.state === 'closed') continue
     out.push({ date: d, ...s })
   }
   return out
 }
-export const timeOptions = (a: Pick<Appointment, 'kind' | 'durationMin' | 'id'>, date: string) => openTimes(date, a.durationMin, staffFor(a.kind), a.id)
+export const timeOptions = (a: Pick<Appointment, 'kind' | 'durationMin' | 'id'>, date: string) => openTimes(date, a.durationMin, staffFor(a.kind), a.id, a.kind)
 
 function mutate(id: string, by: User, fn: (a: Appointment) => string): Promise<Appointment> {
   return mockRequest(() => {
@@ -402,12 +416,16 @@ export const bookAppointment = (id: string, date: string, time: string, by: User
   if (!(a.status === 'awaiting_schedule' || a.status === 'no_show' || moving || (a.status === 'reschedule_requested' && staffAssist))) throw new ServiceError('state', 'This appointment cannot be scheduled now.')
   if (moving && !staffAssist && !APPOINTMENT_TYPES[a.kind].residentMayMove) throw new ServiceError('review', 'Changes to this appointment are reviewed by the barangay. Use "Request Another Schedule".')
   if (a.checkedInAt) throw new ServiceError('state', 'You were already checked in for this appointment.')
+  const rule = serviceRule(a.kind)
+  if (moving && !staffAssist && rule && startsAt(a) - Date.now() < rule.cancelHours * 3600_000) throw new ServiceError('late', `Changes are possible up to ${rule.cancelHours} hours before. Please call the Barangay Hall.`)
   // Re-checked at the moment of saving, so two people cannot take the same last slot.
   const slot = timeOptions(a, date).find((s) => s.time === time)
   if (!slot) throw new ServiceError('slot', 'Sorry, that time was just taken. Please choose another.')
   const from = a.date ? `${a.date} ${formatTime(a.time)}` : null
-  a.date = date; a.time = time; a.assignedTo = slot.staffId; a.status = 'confirmed'; a.remindersSent = []; a.rescheduleReason = undefined
-  later(a, from ? 'Your appointment was moved' : 'Your appointment is confirmed', from ? 'moved' : 'confirmed', from ? `It was on ${from}.` : undefined)
+  const waits = !!rule?.staffConfirms && !staffAssist
+  a.date = date; a.time = time; a.assignedTo = slot.staffId; a.status = waits ? 'pending_confirmation' : 'confirmed'; a.remindersSent = []; a.rescheduleReason = undefined
+  a.bookedAt = new Date().toISOString(); a.staffConfirmed = !waits
+  later(a, waits ? 'Your request was sent' : from ? 'Your appointment was moved' : 'Your appointment is confirmed', waits ? 'requested' : from ? 'moved' : 'confirmed', from ? `It was on ${from}.` : undefined)
   notify([a.assignedTo], from ? 'Appointment moved' : 'New appointment', `${a.ref} · ${APPOINTMENT_TYPES[a.kind].label} · ${a.date} ${formatTime(a.time)}`, `/appointments/${a.id}`)
   const who = staffAssist ? ' (by staff for the resident)' : ' by the resident'
   return from ? `Moved from ${from} to ${date} ${formatTime(time)}${who}` : `Booked for ${date} ${formatTime(time)}${who}`
@@ -437,7 +455,7 @@ export const rescheduleAppointment = (id: string, date: string, time: string, as
   requireHandler(by, a)
   if (!['awaiting_schedule', 'pending_confirmation', 'confirmed', 'reschedule_requested', 'rescheduled', 'no_show'].includes(a.status)) throw new ServiceError('state', 'This appointment cannot be rescheduled.')
   checkStaff(a.kind, assignedTo)
-  assertFree(date, time, assignedTo, a.durationMin, a.id)
+  assertFree(date, time, assignedTo, a.durationMin, a.id, a.kind)
   const from = a.date ? `${a.date} ${formatTime(a.time)}` : 'no time yet'
   a.date = date; a.time = time; a.assignedTo = assignedTo; a.status = 'rescheduled'; a.remindersSent = []; a.rescheduleReason = undefined
   later(a, 'Your appointment was moved', 'moved', `It was on ${from}.`)
@@ -450,7 +468,7 @@ export const overrideDuration = (id: string, minutes: number, reason: string, by
   if (!OPEN.includes(a.status)) throw new ServiceError('state', 'This appointment can no longer be changed.')
   const len = lengthFor(a.kind, a.documents, { minutes, reason })
   if (len.minutes === a.durationMin) throw new ServiceError('same', 'That is already the appointment length.')
-  if (a.date && BOOKED.includes(a.status)) assertFree(a.date, a.time, a.assignedTo, len.minutes, a.id)
+  if (a.date && BOOKED.includes(a.status)) assertFree(a.date, a.time, a.assignedTo, len.minutes, a.id, a.kind)
   const before = a.durationMin
   const original = a.durationEstimate ?? len.estimate
   a.durationMin = len.minutes
@@ -479,6 +497,7 @@ export const recordVerification = (id: string, result: 'verified' | 'not_verifie
   if (result === 'not_verified' && v.notes.trim().length < 5) throw new ServiceError('notes', 'Explain what did not match and what the resident should do.')
   const now = new Date().toISOString()
   a.status = 'completed'
+  a.completedAt = now
   a.verification = { result, ...v, notes: v.notes.trim(), byUserId: by.id, at: now }
   a.outcome = { notes: result === 'verified' ? 'Documents verified' : `Not verified: ${v.notes.trim()}`, byUserId: by.id, at: now }
   notify([a.userId], result === 'verified' ? 'Documents checked' : 'Your documents could not be verified', result === 'verified' ? 'The Barangay Secretary will now decide on your request.' : v.notes.trim(), `/my/appointments/${a.id}`)
@@ -490,11 +509,12 @@ export const recordVerification = (id: string, result: 'verified' | 'not_verifie
 export const completeAppointment = (id: string, notes: string, by: User) => mutate(id, by, (a) => {
   requireHandler(by, a)
   if (a.kind === 'correction_verification') throw new ServiceError('kind', 'Record the verification result instead.')
-  if (a.kind !== 'complaint_consult') throw new ServiceError('kind', 'Finish this in the request itself (release or hand-over); the appointment then closes automatically.')
+  if (!['complaint_consult', 'chairman_consult', 'general_assist'].includes(a.kind)) throw new ServiceError('kind', 'Finish this in the request itself (release or hand-over); the appointment then closes automatically.')
   if (!a.checkedInAt) throw new ServiceError('state', 'Check the resident in first.')
   if (notes.trim().length < 5) throw new ServiceError('notes', 'Write what happened and the next step.')
   a.status = 'completed'
-  a.outcome = { notes: notes.trim(), byUserId: by.id, at: new Date().toISOString() }
+  a.completedAt = new Date().toISOString()
+  a.outcome = { notes: notes.trim(), byUserId: by.id, at: a.completedAt }
   notify([a.userId], 'Appointment completed', notes.trim(), `/my/appointments/${a.id}`)
   return `Completed: ${notes.trim()}`
 })
@@ -518,6 +538,12 @@ export const cancelAppointment = (id: string, reason: string, by: User) => mutat
 })
 
 // ── Automatic jobs (reminders, no-shows, closures) ───────────────────
+/** Moment a reminder point falls: N days/hours before, or 7:00 AM on the day. */
+export function reminderAt(k: ReminderKey, a: { date: string; time: string }): number {
+  const t = startsAt(a)
+  if (k === 'day') return at(a.date, '07:00')
+  return t - ({ '7d': 7 * 24, '3d': 3 * 24, '1d': 24, '1h': 1 } as const)[k] * 3600_000
+}
 /**
  * Runs on page loads in this prototype; a scheduled server job on Supabase.
  * Each reminder is sent once (keys in remindersSent). A visit nobody checked
@@ -531,12 +557,17 @@ export function runAppointmentJobs(now = Date.now()) {
   for (const a of list.filter((x) => ['pending_confirmation', 'confirmed', 'rescheduled'].includes(x.status) && x.date)) {
     const t = startsAt(a)
     if (on && t > now) {
-      // All reminders now due; send only the nearest one so a late run does not send two at once.
-      const due = r.reminderHours.filter((h) => !a.remindersSent.includes(`${h}h`) && t - now <= h * 3600_000).sort((x, y) => x - y)
+      // Reminder points for this service. Only points after the booking count (a short-notice booking
+      // gets no out-of-date reminders), and a late run sends only the nearest one.
+      const booked = new Date(a.bookedAt ?? a.createdAt).getTime()
+      const keys = serviceRule(a.kind)?.reminders ?? ['1d', '1h']
+      const due = keys.map((k) => ({ k, at: reminderAt(k, a) })).filter((x) => x.at > booked && x.at <= now && !a.remindersSent.includes(x.k)).sort((x, y) => y.at - x.at)
       if (due.length) {
-        const h = due[0]
-        a.remindersSent.push(...due.map((x) => `${x}h`))
-        later(a, h >= 24 ? 'Reminder: your appointment is tomorrow' : `Reminder: appointment in ${h} hours`, 'reminder', h >= 24 ? 'tomorrow' : `in about ${h} hours`)
+        a.remindersSent.push(...due.map((x) => x.k))
+        const k = due[0].k
+        later(a, k === 'day' ? 'Your appointment is today' : `Reminder: appointment ${REMINDER_LABEL[k].replace(' before', ' away')}`, 'reminder', k === 'day' ? 'today' : k === '1h' ? 'in about 1 hour' : `in ${REMINDER_LABEL[k].replace(' before', '')}`)
+        // The assigned staff member gets the day-of and 1-hour reminders for their own schedule.
+        if (k === 'day' || k === '1h') notify([a.assignedTo], k === 'day' ? 'On your schedule today' : 'Appointment in 1 hour', `${formatTime(a.time)} · ${APPOINTMENT_TYPES[a.kind].label}`, `/appointments/${a.id}`)
         changed = true
       }
     }
@@ -580,6 +611,79 @@ export function bookedOutsideHours(r: { officeStart: string; officeEnd: string; 
   }).length
 }
 
+// ── Resident-booked services, staff confirmation, reassignment ───────
+/** Services a resident can book directly (from the service rules). */
+export const bookableServices = (): AppointmentKind[] => (Object.keys(APPOINTMENT_TYPES) as AppointmentKind[]).filter((k) => serviceRule(k)?.residentBookable)
+
+/** Resident asks for a visit; they then pick a time from the free ones. */
+export function requestVisit(kind: AppointmentKind, reason: string, by: User): Promise<Appointment> {
+  return mockRequest(() => {
+    if (!by.residentId) throw new ServiceError('forbidden', 'Only residents can book a visit here.')
+    if (!bookableServices().includes(kind)) throw new ServiceError('kind', 'This service cannot be booked online.')
+    if (reason.trim().length < 5) throw new ServiceError('reason', 'Tell us briefly what you need.')
+    const list = load()
+    if (list.some((a) => a.kind === kind && a.residentId === by.residentId && isOpen(a))) throw new ServiceError('exists', 'You already have one of these. Open it in My Appointments.')
+    const now = new Date().toISOString()
+    const minutes = lengthOf(kind, [])
+    const a: Appointment = {
+      id: `apt-${Date.now().toString(36)}`, ref: makeRef(list), kind, subjectId: `self-${by.residentId}`, title: APPOINTMENT_TYPES[kind].label,
+      residentId: by.residentId, userId: by.id, reason: reason.trim(), documents: ['Valid government-issued ID'], date: '', time: '', durationMin: minutes, durationEstimate: minutes,
+      assignedTo: '', status: 'awaiting_schedule', remindersSent: [], createdAt: now, history: [{ at: now, byUserId: by.id, action: 'Visit requested by the resident' }],
+    }
+    save([...list, a])
+    return a
+  })
+}
+
+/** The assigned official accepts a requested time (services that need it). */
+export const staffConfirm = (id: string, by: User) => mutate(id, by, (a) => {
+  requireHandler(by, a)
+  if (a.status !== 'pending_confirmation' || a.staffConfirmed) throw new ServiceError('state', 'Nothing to confirm.')
+  a.status = 'confirmed'
+  a.staffConfirmed = true
+  later(a, 'Your appointment is confirmed', 'confirmed')
+  return 'Confirmed by staff'
+})
+
+/** Move an appointment to another qualified person at the same time (audited; both are told). */
+export const reassign = (id: string, staffId: string, reason: string, by: User) => mutate(id, by, (a) => {
+  requireHandler(by, a)
+  if (!BOOKED.includes(a.status) || !a.date) throw new ServiceError('state', 'Only booked appointments can be reassigned.')
+  if (staffId === a.assignedTo) throw new ServiceError('same', 'Already assigned to this person.')
+  if (reason.trim().length < 3) throw new ServiceError('reason', 'Give the reason.')
+  checkStaff(a.kind, staffId)
+  assertFree(a.date, a.time, staffId, a.durationMin, a.id, a.kind)
+  const from = a.assignedTo
+  a.assignedTo = staffId
+  notify([staffId], 'Appointment assigned to you', `${a.ref} · ${a.date} ${formatTime(a.time)}`, `/appointments/${a.id}`)
+  notify([from], 'Appointment moved to a colleague', `${a.ref}: ${reason.trim()}`, `/appointments/${a.id}`)
+  return `Reassigned from ${mockUsers.find((u) => u.id === from)?.fullName ?? 'staff'} to ${mockUsers.find((u) => u.id === staffId)?.fullName}: ${reason.trim()}`
+})
+
+/** Resident cancels a self-booked or claim visit before the service's cutoff. */
+export const cancelByResident = (id: string, reason: string, by: User) => mutate(id, by, (a) => {
+  if (!isOwner(a, by)) throw new ServiceError('forbidden', 'This is not your appointment.')
+  if (!['chairman_consult', 'general_assist'].includes(a.kind)) throw new ServiceError('kind', 'This visit is part of a request. Use "Choose another time" instead, or contact the Barangay Hall.')
+  if (!OPEN.includes(a.status)) throw new ServiceError('state', 'This appointment is already closed.')
+  const rule = serviceRule(a.kind)
+  if (a.date && rule && startsAt(a) - Date.now() < rule.cancelHours * 3600_000) throw new ServiceError('late', `Cancelling is possible up to ${rule.cancelHours} hours before. Please call the Barangay Hall.`)
+  a.status = 'cancelled'
+  if (a.assignedTo) notify([a.assignedTo], 'Appointment cancelled by the resident', `${a.ref} · ${a.date} ${formatTime(a.time)}`, `/appointments/${a.id}`)
+  return `Cancelled by the resident${reason.trim() ? `: ${reason.trim()}` : ''}`
+})
+
+/** Real durations of completed visits (check-in to completion), to tune the estimates. */
+export function actualDurations(): Record<string, { avg: number; count: number }> {
+  const out: Record<string, { sum: number; count: number }> = {}
+  for (const a of load().filter((x) => x.status === 'completed' && x.checkedInAt && x.completedAt)) {
+    const m = (new Date(a.completedAt!).getTime() - new Date(a.checkedInAt!).getTime()) / 60_000
+    if (m <= 0 || m > 240) continue
+    const o = (out[a.kind] ??= { sum: 0, count: 0 })
+    o.sum += m; o.count++
+  }
+  return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, { avg: Math.round(v.sum / v.count), count: v.count }]))
+}
+
 // ── Reading ──────────────────────────────────────────────────────────
 export type NamedAppointment = Appointment & { residentName: string }
 const named = (a: Appointment): NamedAppointment => {
@@ -612,17 +716,23 @@ export const appointmentForRequest = (changeRequestId: string) => load().filter(
 export const appointmentFor = (kind: AppointmentKind, subjectId: string) => load().filter((a) => a.subjectId === subjectId && a.kind === kind).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
 
 /** Hearings shown on calendars (read-only; managed in the case module). Parties see their own; staff need hearings.view. */
-export interface HearingEntry { id: string; caseId: string; caseNo: string; date: string; time: string; minutes: number; label: string }
+export interface HearingEntry { id: string; caseId: string; caseNo: string; title: string; date: string; time: string; minutes: number; label: string; place: string; participants: string[] }
+/**
+ * Hearings on calendars (read-only here; managed in the case module, one record).
+ * Parties see their own with a neutral label; staff with hearings.view and the
+ * assigned participants see them.
+ */
 export function hearingsFor(by: User): HearingEntry[] {
   const staff = can(by, 'hearings.view')
-  return mockCases.flatMap((c) => {
+  return mockCases.flatMap((c) => c.hearings.filter((h) => h.status === 'scheduled').flatMap((h) => {
+    const participants = hearingParticipants(c, h)
     const party = !!by.residentId && [...c.complainants, ...c.respondents].some((p) => p.residentId === by.residentId)
-    if (!staff && !party) return []
-    return c.hearings.filter((h) => h.status === 'scheduled').map((h) => ({
-      id: h.id, caseId: c.id, caseNo: c.caseNo, ...manilaParts(h.scheduledAt), minutes: schedulingRules().typeMinutes.hearing ?? 60,
+    if (!staff && !party && !participants.includes(by.id)) return []
+    return [{
+      id: h.id, caseId: c.id, caseNo: c.caseNo, title: party && !staff ? 'Barangay hearing' : c.title, ...manilaParts(h.scheduledAt), minutes: hearingRule(h)?.minutes ?? 60, place: h.place, participants,
       label: h.kind === 'chairman_mediation' ? 'Mediation with the Punong Barangay' : 'Conciliation (Pangkat)',
-    }))
-  })
+    }]
+  }))
 }
 
 // ── Settings ─────────────────────────────────────────────────────────

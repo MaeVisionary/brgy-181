@@ -9,6 +9,7 @@ import { cn } from '@/lib/cn'
 import { formatDateTime } from '@/lib/format'
 import type { ResidentStatus } from '@/lib/residentStatus'
 import type { Transaction } from '@/services/transactionService'
+import { Timeline } from '@/components/ui/Timeline'
 
 /**
  * Building blocks of the Resident Portal (Figma Revision v2), shared by Home,
@@ -186,18 +187,7 @@ export function NeedHelp() {
 export function Updates({ items }: { items: { title: string; at: string; by?: string; note?: string }[] }) {
   return (
     <Section title="Updates">
-      <ul className="divide-y divide-line-soft">
-        {items.map((u, i) => (
-          <li key={i} className="py-2.5">
-            <p className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{u.title}</p>
-            <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">
-              {formatDateTime(u.at)}
-              {u.by && ` · ${u.by}`}
-            </p>
-            {u.note && <p className="mt-1 text-[length:calc(14.5px*var(--fs))] text-navy-900">{u.note}</p>}
-          </li>
-        ))}
-      </ul>
+      <Timeline items={items.map((u) => ({ at: u.at, title: u.title, by: u.by, outcome: u.note && u.note.length <= 90 ? u.note : undefined, details: u.note && u.note.length > 90 ? <p>{u.note}</p> : undefined }))} />
     </Section>
   )
 }

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ChevronRight } from '@/icons'
 import { useAuth } from '@/auth/useAuth'
 import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
+import { Button, ButtonLink } from '@/components/ui/Button'
 import { FieldLabel, Select, TextArea, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
@@ -17,6 +17,9 @@ import {
   DOCUMENT_OPTIONS,
   VISIT_REASONS,
   bookAppointment,
+  bookableServices,
+  cancelByResident,
+  requestVisit,
   cancelAppointment,
   checkIn,
   completeAppointment,
@@ -35,6 +38,8 @@ import {
   listAppointments,
   listMyAppointments,
   markNoShow,
+  reassign,
+  staffConfirm,
   overrideDuration,
   recordVerification,
   requestReschedule,
@@ -52,10 +57,11 @@ import {
 } from '@/services/appointmentService'
 import { EMAIL_STATUS_LABEL, emailsFor } from '@/services/emailService'
 import { ServiceError } from '@/services/mockApi'
-import { bookingsOn, estimateDuration, freeSlots, manilaToday, nextAvailable, nextDate, unavailableReason } from '@/services/schedulingService'
+import { bookingsOn, estimateDuration, freeSlots, manilaToday, nextAvailable, nextDate, unavailableReason, workload } from '@/services/schedulingService'
 import { NotFound } from '@/pages/system/NotFound'
 import { BackLink } from '@/pages/resident/parts'
 import { useStickyState } from '@/hooks/useStickyState'
+import { Timeline } from '@/components/ui/Timeline'
 
 const shortDate = (d: string) => new Date(`${d}T12:00:00+08:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Manila' })
 const staffName = (id: string) => mockUsers.find((u) => u.id === id)?.fullName ?? ''
@@ -315,7 +321,7 @@ export function MyAppointmentsPage() {
   )
   return (
     <>
-      <PageHeader title="My Appointments" />
+      <PageHeader title="My Appointments" actions={bookableServices().length > 0 && <ButtonLink to="/my/appointments/new">Book a visit</ButtonLink>} />
       {failed ? <Card><EmptyState title="Could not load your appointments" body="Please check your connection and try again." /></Card>
         : items === null ? <div className="h-24 animate-pulse rounded-[var(--radius-card)] bg-surface" />
         : items.length === 0 && hearings.length === 0 ? <Card><EmptyState title="No appointments" body="When you need to visit the Barangay Hall, it will appear here." /></Card>
@@ -364,6 +370,7 @@ export function MyAppointmentPage() {
     no_show: 'Your request is still open. Choose a new time below.',
     confirmed: 'Please arrive 10 minutes early and bring the items listed.',
     reschedule_requested: 'The barangay will choose a new time and notify you.',
+    pending_confirmation: a.bookedAt && !a.staffConfirmed ? 'Waiting for the barangay to confirm your time. You will be notified.' : undefined,
   }
   return (
     <>
@@ -392,6 +399,7 @@ export function MyAppointmentPage() {
               <div className="grid grid-cols-1 gap-2 sm:flex">
                 {a.status !== 'confirmed' && <Button onClick={() => run(() => confirmAppointment(a.id, user), 'Your appointment is confirmed!')}>Confirm Appointment</Button>}
                 <Button variant="secondary" onClick={() => setMode(mayMove ? 'pick' : 'ask')}>{mayMove ? 'Choose another time' : 'Request Another Schedule'}</Button>
+                {['chairman_consult', 'general_assist'].includes(a.kind) && <Button variant="ghost" onClick={() => run(() => cancelByResident(a.id, '', user), 'Your appointment was cancelled.')}>Cancel appointment</Button>}
               </div>
             )}
           </>
@@ -400,7 +408,7 @@ export function MyAppointmentPage() {
         <EmailStatus a={a} />
       </Card>
       <Panel className="mt-4" title="Updates">
-        <ol className="space-y-2.5">{[...a.history].reverse().map((h, i) => <li key={i} className="border-l-2 border-line-soft pl-3"><p className={`text-[length:calc(15.5px*var(--fs))] text-navy-900`}>{h.action}</p><p className={`text-[length:calc(13.5px*var(--fs))] text-ink-muted`}>{formatDateTime(h.at)}</p></li>)}</ol>
+        <Timeline items={a.history.map((h) => ({ at: h.at, title: h.action }))} />
       </Panel>
     </>
   )
@@ -408,21 +416,30 @@ export function MyAppointmentPage() {
 
 // ── Staff ────────────────────────────────────────────────────────────
 
-type Range = 'today' | 'week' | 'month' | 'action'
-type CalItem = { key: string; date: string; time: string; title: string; who: string; status: string; tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral'; to: string; kind: AppointmentKind | 'hearing' }
+type Range = 'day' | 'week' | 'month' | 'action'
+type CalItem = { key: string; date: string; time: string; title: string; who: string; status: string; tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral'; to: string; kind: AppointmentKind | 'hearing'; staff: string[] }
 
 function toItems(apps: NamedAppointment[], hearings: HearingEntry[]): CalItem[] {
   return [
-    ...apps.map((a) => ({ key: a.id, date: a.date, time: a.time, title: APPOINTMENT_TYPES[a.kind].label, who: a.residentName, status: APPOINTMENT_STATUS_LABEL[a.status], tone: STATUS_TONE[a.status], to: `/appointments/${a.id}`, kind: a.kind })),
-    ...hearings.map((h) => ({ key: h.id, date: h.date, time: h.time, title: h.label, who: h.caseNo, status: 'Scheduled', tone: 'info' as const, to: `/cases/${h.caseId}`, kind: 'hearing' as const })),
+    ...apps.map((a) => ({ key: a.id, date: a.date, time: a.time, title: APPOINTMENT_TYPES[a.kind].label, who: a.residentName, status: a.status === 'pending_confirmation' && !a.staffConfirmed && a.bookedAt ? 'Needs your confirmation' : APPOINTMENT_STATUS_LABEL[a.status], tone: STATUS_TONE[a.status], to: `/appointments/${a.id}`, kind: a.kind, staff: a.assignedTo ? [a.assignedTo] : [] })),
+    ...hearings.map((h) => ({ key: h.id, date: h.date, time: h.time, title: h.label, who: `${h.caseNo} · ${h.title}`, status: 'Scheduled', tone: 'info' as const, to: `/cases/${h.caseId}`, kind: 'hearing' as const, staff: h.participants })),
   ]
 }
+const monthStart = (d: string) => `${d.slice(0, 8)}01`
+const weekday = (d: string) => new Date(`${d}T12:00:00+08:00`).getUTCDay()
 
-/** Personnel calendar: today, week, month; filters by service and staff; free times per day. */
+/**
+ * One calendar, role-based views. "My calendar" shows what this person
+ * handles or attends (hearings from Case Management appear automatically for
+ * the Punong Barangay and assigned members); "Team" shows every appointment
+ * this person is allowed to see. Day, week and month views; a list on phones.
+ */
 export function AppointmentsPage() {
   const { user } = useAuth()
   const [items, setItems] = useState<NamedAppointment[] | null>(null)
-  const [range, setRange] = useStickyState<Range>('range', 'today')
+  const [scope, setScope] = useStickyState<'mine' | 'team'>('scope', 'mine')
+  const [range, setRange] = useStickyState<Range>('range', 'day')
+  const [day, setDay] = useStickyState('day', manilaToday())
   const [kind, setKind] = useStickyState<'' | AppointmentKind | 'hearing'>('kind', '')
   const [staff, setStaff] = useStickyState('staff', '')
   useEffect(() => { runAppointmentJobs(); if (user) listAppointments(user).then(setItems).catch(() => setItems([])) }, [user])
@@ -430,43 +447,70 @@ export function AppointmentsPage() {
   const kinds = kindsFor(user)
   const hearings = hearingsFor(user)
   const t = manilaToday()
-  const end = range === 'week' ? addDays(t, 6) : range === 'month' ? addDays(t, 30) : t
-  const action = items?.filter((a) => ['awaiting_schedule', 'reschedule_requested', 'no_show', 'pending_confirmation', 'rescheduled'].includes(a.status)) ?? []
-  const all = toItems(items ?? [], hearings).filter((x) => (!kind || x.kind === kind) && (!staff || (items?.find((a) => a.id === x.key)?.assignedTo ?? '') === staff))
-  const shown = range === 'action' ? toItems(action, []).filter((x) => !kind || x.kind === kind)
-    : all.filter((x) => x.date && x.date >= t && x.date <= end && !['Cancelled'].includes(x.status))
+  const all = toItems(items ?? [], hearings)
+    .filter((x) => (scope === 'mine' ? x.staff.includes(user.id) : true))
+    .filter((x) => (!kind || x.kind === kind) && (!staff || x.staff.includes(staff)))
+  const action = toItems((items ?? []).filter((a) => (scope === 'team' || a.assignedTo === user.id || !a.assignedTo) && ['awaiting_schedule', 'reschedule_requested', 'no_show', 'pending_confirmation', 'rescheduled'].includes(a.status)), [])
+  const from = range === 'week' ? day : range === 'month' ? monthStart(day) : day
+  const to = range === 'week' ? addDays(day, 6) : range === 'month' ? addDays(monthStart(day), 41).slice(0, 8) + '00' : day
+  const inRange = (d: string) => (range === 'month' ? d.slice(0, 7) === day.slice(0, 7) : d >= from && d <= to)
+  const shown = range === 'action' ? action : all.filter((x) => x.date && inRange(x.date) && x.status !== 'Cancelled')
   const byDay = new Map<string, CalItem[]>()
   for (const x of shown.sort((p, q) => (p.date + p.time).localeCompare(q.date + q.time))) byDay.set(x.date || 'No time yet', [...(byDay.get(x.date || 'No time yet') ?? []), x])
-  const staffIds = [...new Set(kinds.flatMap((k) => staffFor(k)))]
+  const staffIds = [...new Set([...kinds.flatMap((k) => staffFor(k)), ...hearings.flatMap((h) => h.participants)])]
+  const step = (n: number) => setDay(range === 'month' ? addMonths(day, n) : addDays(day, range === 'week' ? 7 * n : n))
+  const tab = (on: boolean) => `h-11 rounded-[var(--radius-control)] px-4 text-[length:calc(15.5px*var(--fs))] font-semibold ${on ? 'bg-navy-900 text-white' : 'border border-line bg-surface text-navy-900'}`
+  const me = workload(user.id, day)
+
   return (
     <>
-      <PageHeader title="Appointments" />
-      <div className="mb-4 flex flex-wrap items-end gap-2">
-        <div role="tablist" className="flex flex-wrap gap-1.5">
-          {([['today', 'Today'], ['week', 'This week'], ['month', 'Next 30 days'], ['action', `Needs action (${action.length})`]] as const).map(([k, l]) => (
-            <button key={k} role="tab" aria-selected={range === k} onClick={() => setRange(k)} className={`h-11 rounded-[var(--radius-control)] px-4 text-[length:calc(15.5px*var(--fs))] font-semibold ${range === k ? 'bg-navy-900 text-white' : 'border border-line bg-surface text-navy-900'}`}>{l}</button>
-          ))}
+      <PageHeader title="Calendar" />
+      <div className="mb-3 flex flex-wrap gap-1.5" role="tablist" aria-label="Whose calendar">
+        <button role="tab" aria-selected={scope === 'mine'} className={tab(scope === 'mine')} onClick={() => setScope('mine')}>My calendar</button>
+        <button role="tab" aria-selected={scope === 'team'} className={tab(scope === 'team')} onClick={() => setScope('team')}>Team</button>
+      </div>
+      <div className="mb-3 flex flex-wrap items-center gap-1.5" role="tablist" aria-label="View">
+        {([['day', 'Day'], ['week', 'Week'], ['month', 'Month'], ['action', `Needs action (${action.length})`]] as const).map(([k, l]) => (
+          <button key={k} role="tab" aria-selected={range === k} onClick={() => setRange(k)} className={tab(range === k)}>{l}</button>
+        ))}
+      </div>
+      {range !== 'action' && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="secondary" aria-label="Previous" onClick={() => step(-1)}>‹</Button>
+          <p className="min-w-0 flex-1 text-center text-[length:calc(17px*var(--fs))] font-semibold text-navy-900 sm:flex-none sm:text-left">
+            {range === 'month' ? new Date(`${day}T12:00:00+08:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'Asia/Manila' }) : range === 'week' ? `${shortDate(from)} – ${shortDate(to)}` : day === t ? `Today · ${shortDate(day)}` : dateLong(day)}
+          </p>
+          <Button size="sm" variant="secondary" aria-label="Next" onClick={() => step(1)}>›</Button>
+          {day !== t && <Button size="sm" variant="ghost" onClick={() => setDay(t)}>Today</Button>}
         </div>
-        <Select aria-label="Service" className="w-auto min-w-[180px]" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
+      )}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Select aria-label="Service" className="w-full sm:w-auto sm:min-w-[200px]" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
           <option value="">All services</option>
           {kinds.map((k) => <option key={k} value={k}>{APPOINTMENT_TYPES[k].label}</option>)}
           {hearings.length > 0 && <option value="hearing">Hearings</option>}
         </Select>
-        <Select aria-label="Staff" className="w-auto min-w-[180px]" value={staff} onChange={(e) => setStaff(e.target.value)}>
-          <option value="">All staff</option>
-          {staffIds.map((s) => <option key={s} value={s}>{staffName(s)}</option>)}
-        </Select>
+        {scope === 'team' && (
+          <Select aria-label="Staff" className="w-full sm:w-auto sm:min-w-[200px]" value={staff} onChange={(e) => setStaff(e.target.value)}>
+            <option value="">Everyone</option>
+            {staffIds.map((s) => <option key={s} value={s}>{staffName(s)}</option>)}
+          </Select>
+        )}
       </div>
+      {scope === 'mine' && range === 'day' && me.openMinutes > 0 && (
+        <p className="mb-3 text-[length:calc(16px*var(--fs))] text-ink-nav">{me.count} {me.count === 1 ? 'appointment' : 'appointments'} · about {Math.floor(me.freeMinutes / 60)} h {me.freeMinutes % 60} min free</p>
+      )}
+      {range === 'month' && <MonthGrid day={day} items={all} onPick={(d) => { setDay(d); setRange('day') }} />}
       {items === null ? <div className="h-32 animate-pulse rounded-[var(--radius-card)] bg-surface" /> : byDay.size === 0 ? (
-        <Card><EmptyState title={range === 'action' ? 'Nothing needs action' : 'No appointments in this period'} /></Card>
-      ) : [...byDay].map(([day, list]) => (
-        <Panel key={day} className="mb-4" title={day === t ? `Today · ${shortDate(day)}` : day === 'No time yet' ? day : dateLong(day)} bodyClassName="px-0 py-0">
+        <Card><EmptyState title={range === 'action' ? 'Nothing needs action' : 'Nothing scheduled'} /></Card>
+      ) : [...byDay].map(([d, list]) => (
+        <Panel key={d} className="mb-4" title={d === t ? `Today · ${shortDate(d)}` : d === 'No time yet' ? d : dateLong(d)} bodyClassName="px-0 py-0">
           <ul className="divide-y divide-line-soft">
             {list.map((x) => (
               <li key={x.key}>
                 <Link to={x.to} className="flex min-h-[64px] items-center gap-3 px-5 py-3 hover:bg-sky-50">
-                  <span className={`w-[76px] shrink-0 text-[length:calc(15.5px*var(--fs))] font-semibold tabular-nums text-navy-900`}>{x.time ? formatTime(x.time) : '–'}</span>
-                  <span className="min-w-0 flex-1"><span className={`block break-words text-[length:calc(16px*var(--fs))] font-semibold text-navy-900`}>{x.title}</span><span className={`block break-words text-[length:calc(14.5px*var(--fs))] text-ink-muted`}>{x.who}</span></span>
+                  <span className="w-[76px] shrink-0 text-[length:calc(15.5px*var(--fs))] font-semibold tabular-nums text-navy-900">{x.time ? formatTime(x.time) : '–'}</span>
+                  <span className="min-w-0 flex-1"><span className="block break-words text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{x.title}</span><span className="block break-words text-[length:calc(14.5px*var(--fs))] text-ink-muted">{x.who}{scope === 'team' && x.staff.length ? ` · ${x.staff.map(staffName).join(', ')}` : ''}</span></span>
                   <Badge tone={x.tone}>{x.status}</Badge>
                   <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
                 </Link>
@@ -475,8 +519,35 @@ export function AppointmentsPage() {
           </ul>
         </Panel>
       ))}
-      <FreeTimes staffIds={staffIds} />
+      {kinds.length > 0 && <FreeTimes staffIds={staffIds.filter((s) => kinds.some((k) => staffFor(k).includes(s)))} />}
     </>
+  )
+}
+const addMonths = (d: string, n: number) => { const x = new Date(`${monthStart(d)}T12:00:00+08:00`); x.setUTCMonth(x.getUTCMonth() + n); return x.toISOString().slice(0, 10) }
+
+/** Month overview: number of items per day; tap a day to see it. Hidden on small phones (the list below is used). */
+function MonthGrid({ day, items, onPick }: { day: string; items: CalItem[]; onPick: (d: string) => void }) {
+  const first = monthStart(day)
+  const lead = weekday(first)
+  const cells: (string | null)[] = [...Array(lead).fill(null)]
+  for (let d = first; d.slice(0, 7) === first.slice(0, 7); d = nextDate(d)) cells.push(d)
+  const t = manilaToday()
+  return (
+    <Card className="mb-4 hidden p-3 sm:block">
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((w) => <div key={w} className="py-1 text-[length:calc(14px*var(--fs))] font-semibold text-ink-nav">{w}</div>)}
+        {cells.map((d, i) => {
+          if (!d) return <div key={`e${i}`} />
+          const n = items.filter((x) => x.date === d && x.status !== 'Cancelled').length
+          return (
+            <button key={d} type="button" onClick={() => onPick(d)} aria-label={`${dateLong(d)}: ${n} scheduled`} className={`flex min-h-16 flex-col items-center justify-start rounded-[var(--radius-control)] border px-1 py-1.5 hover:bg-sky-50 ${d === t ? 'border-navy-900' : 'border-line-soft'}`}>
+              <span className={`text-[length:calc(15px*var(--fs))] font-semibold ${d === t ? 'text-navy-900' : 'text-ink-nav'}`}>{Number(d.slice(8))}</span>
+              {n > 0 && <span className="mt-1 rounded-full bg-navy-900 px-2 text-[length:calc(13px*var(--fs))] font-semibold text-white">{n}</span>}
+            </button>
+          )
+        })}
+      </div>
+    </Card>
   )
 }
 const addDays = (d: string, n: number) => { let x = d; for (let i = 0; i < n; i++) x = nextDate(x); return x }
@@ -510,7 +581,8 @@ export function AppointmentDetailPage() {
   const { user } = useAuth()
   const [a, setA] = useState<NamedAppointment | null>(null)
   const [missing, setMissing] = useState(false)
-  const [mode, setMode] = useState<null | 'verify' | 'reschedule' | 'cancel' | 'length' | 'complete' | 'assist'>(null)
+  const [mode, setMode] = useState<null | 'verify' | 'reschedule' | 'cancel' | 'length' | 'complete' | 'assist' | 'reassign'>(null)
+  const [to, setTo] = useState('')
   const [v, setV] = useState({ idPresented: false, nameMatches: false, documentChecked: false, idExpired: false, notes: '' })
   const [slot, setSlot] = useState({ date: '', staff: '', time: '' })
   const [text, setText] = useState('')
@@ -580,6 +652,17 @@ export function AppointmentDetailPage() {
               <TextArea aria-label="What happened and the next step" placeholder="What happened and the next step" className="min-h-[72px]" value={text} onChange={(e) => setText(e.target.value)} />
               <div className="flex gap-2"><Button onClick={() => run(() => completeAppointment(a.id, text, user), 'Completed.')}>Mark as Completed</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></div>
             </div>
+          ) : mode === 'reassign' ? (
+            <div className="space-y-2 border-t border-line-soft pt-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Select aria-label="Assign to" value={to} onChange={(e) => setTo(e.target.value)}>
+                  <option value="">Choose a colleague…</option>
+                  {staffFor(a.kind).filter((s) => s !== a.assignedTo).map((s) => <option key={s} value={s}>{staffName(s)}</option>)}
+                </Select>
+                <TextInput aria-label="Reason" placeholder="Reason" value={text} onChange={(e) => setText(e.target.value)} />
+              </div>
+              <div className="flex gap-2"><Button disabled={!to} onClick={() => run(() => reassign(a.id, to, text, user), 'Reassigned. Both staff members were told.')}>Reassign</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></div>
+            </div>
           ) : mode === 'cancel' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">
               <TextInput aria-label="Reason" placeholder="Reason (the resident will see it)" value={text} onChange={(e) => setText(e.target.value)} />
@@ -587,13 +670,15 @@ export function AppointmentDetailPage() {
             </div>
           ) : (
             <div className="flex flex-wrap gap-2 border-t border-line-soft pt-3">
-              {booked && !a.checkedInAt && <Button onClick={() => run(() => checkIn(a.id, user), 'Checked in.')}>Check In</Button>}
+              {a.status === 'pending_confirmation' && a.bookedAt && !a.staffConfirmed && <Button onClick={() => run(() => staffConfirm(a.id, user), 'Confirmed. The resident was told.')}>Confirm appointment</Button>}
+              {booked && !a.checkedInAt && <Button variant={a.status === 'pending_confirmation' && !a.staffConfirmed ? 'secondary' : 'primary'} onClick={() => run(() => checkIn(a.id, user), 'Checked in.')}>Check In</Button>}
               {isVerify && a.checkedInAt && a.status !== 'completed' && <Button onClick={() => setMode('verify')}>Record result</Button>}
-              {a.kind === 'complaint_consult' && a.checkedInAt && a.status !== 'completed' && <Button onClick={() => setMode('complete')}>Record outcome</Button>}
+              {['complaint_consult', 'chairman_consult', 'general_assist'].includes(a.kind) && a.checkedInAt && a.status !== 'completed' && <Button onClick={() => setMode('complete')}>Record outcome</Button>}
               {handledElsewhere && a.status !== 'completed' && <Link to={type.staffLink(a.subjectId)} className={`inline-flex h-12 items-center rounded-[var(--radius-control)] bg-navy-900 px-5 text-[length:calc(16.5px*var(--fs))] font-semibold text-white`}>{a.kind === 'document_claim' ? 'Open request to release' : 'Open borrowing'}</Link>}
               {['awaiting_schedule', 'no_show'].includes(a.status) && <Button variant="secondary" onClick={() => setMode('assist')}>Book for the resident</Button>}
               {['awaiting_schedule', 'pending_confirmation', 'confirmed', 'reschedule_requested', 'rescheduled', 'no_show'].includes(a.status) && !a.checkedInAt && <Button variant="secondary" onClick={() => setMode('reschedule')}>Reschedule</Button>}
               {['awaiting_schedule', 'pending_confirmation', 'confirmed', 'reschedule_requested', 'rescheduled'].includes(a.status) && !a.checkedInAt && <Button variant="ghost" onClick={() => setMode('length')}>Change length</Button>}
+              {booked && !a.checkedInAt && staffFor(a.kind).length > 1 && <Button variant="ghost" onClick={() => { setTo(''); setText(''); setMode('reassign') }}>Reassign</Button>}
               {booked && !a.checkedInAt && <Button variant="secondary" onClick={() => run(() => markNoShow(a.id, user), 'Marked as no-show. The resident was told.')}>No-show</Button>}
               {!['completed', 'cancelled'].includes(a.status) && <Button variant="ghost" onClick={() => setMode('cancel')}>Cancel</Button>}
               {a.status === 'completed' && <Link to={type.staffLink(a.subjectId)} className={`inline-flex h-12 items-center text-[length:calc(16px*var(--fs))] font-semibold text-info hover:underline`}>Go to the request</Link>}
@@ -601,37 +686,43 @@ export function AppointmentDetailPage() {
           )}
         </Card>
         <Panel title="History">
-          <ol className="space-y-2.5">{[...a.history].reverse().map((h, i) => <li key={i} className="border-l-2 border-line-soft pl-3"><p className={`text-[length:calc(15px*var(--fs))] text-navy-900`}>{h.action}</p><p className={`text-[length:calc(13.5px*var(--fs))] text-ink-muted`}>{formatDateTime(h.at)} · {h.byUserId === 'system' ? 'System' : staffName(h.byUserId) || 'Resident'}</p></li>)}</ol>
+          <Timeline items={a.history.map((h) => ({ at: h.at, title: h.action, by: h.byUserId === 'system' ? 'System' : staffName(h.byUserId) || 'Resident', tone: /(reject|not approved|overdue|cancel|no-show|not verified|damage|referred|settled|closed|approved|decided)/i.test(h.action) ? 'important' as const : undefined }))} />
         </Panel>
       </div>
     </>
   )
 }
 
-/** Dashboard summary: today's appointments for the services this person handles. */
+/**
+ * Dashboard: this person's own schedule for today (appointments assigned to
+ * them and hearings they attend), with a simple workload line. The Secretary
+ * does not see the Custodian's or the Chairman's appointments here.
+ */
 export function TodayAppointmentsPanel() {
   const { user } = useAuth()
   const [items, setItems] = useState<NamedAppointment[] | null>(null)
   useEffect(() => { runAppointmentJobs(); if (user) listAppointments(user).then(setItems).catch(() => setItems([])) }, [user])
-  if (!user || !kindsFor(user).length) return null
+  if (!user) return null
   const t = manilaToday()
-  const today = items?.filter((a) => a.date === t && a.status !== 'cancelled') ?? []
-  const pending = items?.filter((a) => ['pending_confirmation', 'rescheduled', 'awaiting_schedule'].includes(a.status)).length ?? 0
-  const asks = items?.filter((a) => a.status === 'reschedule_requested').length ?? 0
-  const late = today.filter((a) => !a.checkedInAt && ['pending_confirmation', 'confirmed', 'rescheduled'].includes(a.status) && Date.now() > new Date(`${a.date}T${a.time}:00+08:00`).getTime()).length
-  const stats: [string, number][] = [['Today', today.length], ['Confirmed', today.filter((a) => a.status === 'confirmed').length], ['Completed', today.filter((a) => a.status === 'completed').length], ['Late, not checked in', late], ['Not yet confirmed', pending], ['Reschedule requests', asks]]
+  const mineAll = toItems((items ?? []).filter((a) => a.assignedTo === user.id), hearingsFor(user).filter((h) => h.participants.includes(user.id)))
+  if (!kindsFor(user).length && !mineAll.length) return null
+  const today = mineAll.filter((x) => x.date === t && x.status !== 'Cancelled').sort((p, q) => p.time.localeCompare(q.time))
+  const next = mineAll.filter((x) => x.date > t && x.status !== 'Cancelled').sort((p, q) => (p.date + p.time).localeCompare(q.date + q.time))[0]
+  const toConfirm = (items ?? []).filter((a) => a.assignedTo === user.id && a.status === 'pending_confirmation' && a.bookedAt && !a.staffConfirmed).length
+  const asks = (items ?? []).filter((a) => a.assignedTo === user.id && a.status === 'reschedule_requested').length
+  const w = workload(user.id, t)
   return (
-    <Panel className="mt-4" title="Today's appointments" actions={<Link to="/appointments" className={`inline-flex min-h-11 items-center text-[length:calc(15.5px*var(--fs))] font-semibold text-info hover:underline`}>Calendar <ChevronRight className="size-4" /></Link>} bodyClassName="px-0 py-0">
-      <dl className="grid grid-cols-3 border-b border-line-soft sm:grid-cols-6">
-        {stats.map(([l, n]) => <div key={l} className="px-4 py-3"><dt className={`text-[length:calc(14px*var(--fs))] text-ink-nav`}>{l}</dt><dd className={`font-display text-[length:calc(24px*var(--fs))] font-extrabold tabular-nums ${l.startsWith('Late') && n ? 'text-danger' : 'text-navy-900'}`}>{items ? n : '–'}</dd></div>)}
-      </dl>
-      {today.length === 0 ? <p className={`px-5 py-5 text-[length:calc(15px*var(--fs))] text-ink-muted`}>No appointments today.</p> : (
+    <Panel className="mt-4" title="Today's schedule" actions={<Link to="/appointments" className="inline-flex min-h-11 items-center text-[length:calc(15.5px*var(--fs))] font-semibold text-info hover:underline">View calendar <ChevronRight className="size-4" /></Link>} bodyClassName="px-0 py-0">
+      <p className="border-b border-line-soft px-5 py-3 text-[length:calc(16px*var(--fs))] text-navy-900">
+        {items === null ? 'Loading…' : `${today.length} today${w.openMinutes ? ` · about ${Math.floor(w.freeMinutes / 60)} h ${w.freeMinutes % 60} min free` : ''}${toConfirm ? ` · ${toConfirm} to confirm` : ''}${asks ? ` · ${asks} reschedule ${asks === 1 ? 'request' : 'requests'}` : ''}`}
+      </p>
+      {today.length === 0 ? <p className="px-5 py-4 text-[length:calc(16px*var(--fs))] text-ink-muted">{next ? `Nothing today. Next: ${shortDate(next.date)}, ${formatTime(next.time)} · ${next.title}` : 'Nothing scheduled today.'}</p> : (
         <ul className="divide-y divide-line-soft">
-          {today.map((a) => (
-            <li key={a.id}><Link to={`/appointments/${a.id}`} className="flex min-h-[56px] items-center gap-3 px-5 py-2.5 hover:bg-sky-50">
-              <span className={`w-[76px] shrink-0 text-[length:calc(15.5px*var(--fs))] font-semibold tabular-nums text-navy-900`}>{formatTime(a.time)}</span>
-              <span className="min-w-0 flex-1 break-words"><span className={`text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900`}>{APPOINTMENT_TYPES[a.kind].label}</span><span className={`text-[length:calc(15px*var(--fs))] text-ink-muted`}> · {a.residentName}</span></span>
-              <Badge tone={STATUS_TONE[a.status]}>{APPOINTMENT_STATUS_LABEL[a.status]}</Badge>
+          {today.map((x) => (
+            <li key={x.key}><Link to={x.to} className="flex min-h-[56px] items-center gap-3 px-5 py-2.5 hover:bg-sky-50">
+              <span className="w-[76px] shrink-0 text-[length:calc(15.5px*var(--fs))] font-semibold tabular-nums text-navy-900">{formatTime(x.time)}</span>
+              <span className="min-w-0 flex-1 break-words"><span className="text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{x.title}</span><span className="text-[length:calc(15px*var(--fs))] text-ink-muted"> · {x.who}</span></span>
+              <Badge tone={x.tone}>{x.status}</Badge>
             </Link></li>
           ))}
         </ul>
@@ -674,5 +765,49 @@ export function ConsultationPanel({ caseId }: { caseId: string }) {
         ) : <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Ask the complainant to come in</Button>}
       </div>
     </Panel>
+  )
+}
+
+/** Resident books a visit for something that is not part of another request. */
+export function BookVisitPage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [kind, setKind] = useState<AppointmentKind | null>(null)
+  const [reason, setReason] = useState('')
+  const [err, setErr] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  if (!user) return null
+  const next = async () => {
+    if (!kind) return
+    setBusy(true); setErr(null)
+    try { const a = await requestVisit(kind, reason, user); navigate(`/my/appointments/${a.id}`, { replace: true }) } catch (e) { setErr(errText(e)) } finally { setBusy(false) }
+  }
+  return (
+    <>
+      <BackLink to="/my/appointments">My Appointments</BackLink>
+      <PageHeader title="Book a visit" />
+      {!kind ? (
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {bookableServices().map((k) => (
+            <li key={k}>
+              <button type="button" onClick={() => setKind(k)} className="flex min-h-16 w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-left hover:border-navy-600 hover:bg-sky-50">
+                <span><span className="block text-[length:calc(17px*var(--fs))] font-semibold text-navy-900">{APPOINTMENT_TYPES[k].label}</span><span className="block text-[length:calc(15px*var(--fs))] text-ink-nav">About {lengthOf(k, [])} minutes</span></span>
+                <ChevronRight className="size-5 shrink-0 text-ink-subtle" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Card className="space-y-4 px-5 py-5">
+          <p className="text-[length:calc(18px*var(--fs))] font-semibold text-navy-900">{APPOINTMENT_TYPES[kind].label}</p>
+          <FieldLabel label="What do you need help with?"><TextArea className="min-h-[96px]" value={reason} onChange={(e) => setReason(e.target.value)} /></FieldLabel>
+          {err && <Note ok={false}>{err}</Note>}
+          <div className="grid grid-cols-1 gap-2 sm:flex">
+            <Button loading={busy} disabled={reason.trim().length < 5} onClick={next}>Next: choose a time</Button>
+            <Button variant="ghost" onClick={() => setKind(null)}>Back</Button>
+          </div>
+        </Card>
+      )}
+    </>
   )
 }

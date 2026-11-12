@@ -2,9 +2,10 @@ import { useState, type ReactNode } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/Button'
 import { Panel } from '@/components/ui/Panel'
-import { APPOINTMENT_TYPES, appointmentSettings, bookedOutsideHours, saveAppointmentSettings, type AppointmentKind } from '@/services/appointmentService'
+import { actualDurations, appointmentSettings, bookedOutsideHours, saveAppointmentSettings } from '@/services/appointmentService'
+import { ROLES } from '@/config/permissions'
 import { ServiceError } from '@/services/mockApi'
-import { DEFAULT_RULES, eligibleStaff, saveSchedulingRules, schedulingRules, type SchedulingRules } from '@/services/schedulingService'
+import { DEFAULT_RULES, REMINDER_LABEL, SERVICE_KEYS, eligibleStaff, saveSchedulingRules, schedulingRules, type ReminderKey, type SchedulingRules } from '@/services/schedulingService'
 import { formatDateTime } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 
@@ -12,7 +13,6 @@ const control = 'h-12 w-full rounded-[var(--radius-control)] border border-line 
 /** Fixed-width number box for list rows (never stretches over the label). */
 const small = 'h-12 w-20 shrink-0 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-right text-[length:calc(16px*var(--fs))] text-navy-900 focus-visible:outline-2 focus-visible:outline-navy-600'
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const REMINDER_CHOICES = [48, 24, 2, 1]
 
 function Field({ label, unit, children }: { label: string; unit?: string; children: ReactNode }) {
   return (
@@ -47,6 +47,7 @@ export function SchedulingRulesPanel() {
   const num = (k: keyof SchedulingRules) => (e: React.ChangeEvent<HTMLInputElement>) => setR({ ...r, [k]: Number(e.target.value) })
   const str = (k: keyof SchedulingRules) => (e: React.ChangeEvent<HTMLInputElement>) => setR({ ...r, [k]: e.target.value })
   const outside = bookedOutsideHours(r)
+  const actuals = actualDurations()
   const save = () => {
     setMsg(null)
     try {
@@ -84,20 +85,42 @@ export function SchedulingRulesPanel() {
         <Section title="Attendance and Reminders">
           <div className={grid}>
             <Field label="No-Show Grace Period" unit="minutes"><input type="number" min={0} className={control} value={r.noShowGraceMinutes} onChange={num('noShowGraceMinutes')} /></Field>
-            <fieldset>
-              <legend className="mb-1.5 text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">Reminder Schedule</legend>
-              <div className="flex flex-wrap gap-x-5 gap-y-1">
-                {REMINDER_CHOICES.map((h) => (
-                  <label key={h} className="flex min-h-12 items-center gap-2 text-[length:calc(16px*var(--fs))] text-navy-900">
-                    <input type="checkbox" className="size-5 accent-[#002132]" checked={r.reminderHours.includes(h)} onChange={(e) => setR({ ...r, reminderHours: e.target.checked ? [...r.reminderHours, h] : r.reminderHours.filter((x) => x !== h) })} />
-                    {h} {h === 1 ? 'hour' : 'hours'} before
-                  </label>
-                ))}
-              </div>
-            </fieldset>
             <label className="flex min-h-12 items-center gap-3 text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">
               <input type="checkbox" className="size-5 accent-[#002132]" checked={reminders} onChange={(e) => setReminders(e.target.checked)} /> Enable Appointment Reminders
             </label>
+          </div>
+        </Section>
+
+        <Section title="Service Durations">
+          <ul className="divide-y divide-line-soft">
+            {SERVICE_KEYS.map((k) => {
+              const sv = r.services[k]
+              const actual = actuals[k]
+              const set = (patch: Partial<typeof sv>) => setR({ ...r, services: { ...r.services, [k]: { ...sv, ...patch } } })
+              return (
+                <li key={k} className="grid grid-cols-1 gap-2 py-3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center md:gap-4">
+                  <span className="min-w-0">
+                    <span className="block text-[length:calc(16px*var(--fs))] font-semibold break-words text-navy-900">{sv.label}</span>
+                    {actual && <span className="block text-[length:calc(15px*var(--fs))] text-ink-nav">Actual average: {actual.avg} min ({actual.count} {actual.count === 1 ? 'visit' : 'visits'})</span>}
+                  </span>
+                  <label className="flex items-center gap-2 text-[length:calc(16px*var(--fs))] text-navy-900">
+                    <input aria-label={`${sv.label}, minutes`} type="number" min={5} max={240} className={small} value={sv.minutes} onChange={(e) => set({ minutes: Number(e.target.value) })} />
+                    <span className="w-16">minutes</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-[length:calc(16px*var(--fs))] text-navy-900">
+                    <input aria-label={`${sv.label}, buffer`} type="number" min={0} max={60} className={small} value={sv.buffer} onChange={(e) => set({ buffer: Number(e.target.value) })} />
+                    <span className="w-24">min buffer</span>
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+        </Section>
+
+        <Section title="Workload Protection">
+          <div className={grid}>
+            <Field label="Appointments Per Person Per Day"><input type="number" min={1} className={control} value={r.staffDailyLimit} onChange={num('staffDailyLimit')} /></Field>
+            <Field label="Longest Stretch Without a Break" unit="minutes"><input type="number" min={30} step={15} className={control} value={r.maxContinuousMinutes} onChange={num('maxContinuousMinutes')} /></Field>
           </div>
         </Section>
 
@@ -147,14 +170,30 @@ export function SchedulingRulesPanel() {
               </div>
             </div>
             <div>
-              <h4 className="mb-3 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">Service Length</h4>
-              <div className={grid}>
-                {Object.entries(r.typeMinutes).map(([k, m]) => (
-                  <Field key={k} label={k === 'hearing' ? 'Hearing' : APPOINTMENT_TYPES[k as AppointmentKind]?.label ?? k} unit="minutes">
-                    <input type="number" min={5} max={240} className={control} value={m} onChange={(e) => setR({ ...r, typeMinutes: { ...r.typeMinutes, [k]: Number(e.target.value) } })} />
-                  </Field>
-                ))}
-              </div>
+              <h4 className="mb-3 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">Service Details</h4>
+              <ul className="divide-y divide-line-soft">
+                {SERVICE_KEYS.map((k) => {
+                  const sv = r.services[k]
+                  const set = (patch: Partial<typeof sv>) => setR({ ...r, services: { ...r.services, [k]: { ...sv, ...patch } } })
+                  return (
+                    <li key={k} className="space-y-2 py-3">
+                      <p className="text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{sv.label} <span className="font-normal text-ink-nav">· {sv.roles.length ? sv.roles.map((x) => ROLES[x]?.name ?? x).join(', ') : 'Assigned per case'}</span></p>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <Field label="Start Times Every" unit="minutes"><select className={control} value={sv.step} onChange={(e) => set({ step: Number(e.target.value) })}>{[5, 10, 15, 30, 60].map((m) => <option key={m} value={m}>{m}</option>)}</select></Field>
+                        <Field label="Per Person Per Day"><input type="number" min={0} className={control} value={sv.maxPerDay} onChange={(e) => set({ maxPerDay: Number(e.target.value) })} /></Field>
+                        <Field label="Changes Allowed Until" unit="hours before"><input type="number" min={0} className={control} value={sv.cancelHours} onChange={(e) => set({ cancelHours: Number(e.target.value) })} /></Field>
+                      </div>
+                      <div className="flex flex-wrap gap-x-5">
+                        {(Object.keys(REMINDER_LABEL) as ReminderKey[]).map((rk) => (
+                          <label key={rk} className="flex min-h-11 items-center gap-2 text-[length:calc(16px*var(--fs))] text-navy-900">
+                            <input type="checkbox" className="size-5 accent-[#002132]" checked={sv.reminders.includes(rk)} onChange={(e) => set({ reminders: e.target.checked ? [...sv.reminders, rk] : sv.reminders.filter((x) => x !== rk) })} /> {REMINDER_LABEL[rk]}
+                          </label>
+                        ))}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
             </div>
             <div>
               <h4 className="mb-3 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">Staff Working Hours</h4>

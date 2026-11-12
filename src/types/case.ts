@@ -29,6 +29,8 @@ export interface Attendance {
   name: string
   side: 'complainant' | 'respondent'
   present: boolean | null
+  /** Absent with a valid reason. */
+  excused?: boolean
 }
 
 export interface Hearing {

@@ -35,6 +35,7 @@ import {
 import { ServiceError } from '@/services/mockApi'
 import { NotFound } from '@/pages/system/NotFound'
 import { BackLink } from '@/pages/resident/parts'
+import { Timeline } from '@/components/ui/Timeline'
 
 const PRIORITY_TONE: Record<Priority, BadgeTone> = { critical: 'danger', high: 'warning', normal: 'neutral', low: 'neutral' }
 const nameOf = (id?: string) => (id === 'system' ? 'System' : mockUsers.find((u) => u.id === id)?.fullName ?? '—')
@@ -284,14 +285,7 @@ export function ConcernIssuePage() {
             </Panel>
           )}
           <Panel title="History">
-            <ol className="space-y-2.5">
-              {[...i.history].reverse().map((h, n) => (
-                <li key={n} className="border-l-2 border-line-soft pl-3">
-                  <p className="text-[length:calc(15px*var(--fs))] text-navy-900">{h.action}</p>
-                  <p className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">{formatDateTime(h.at)} · {nameOf(h.byUserId)}{h.detail ? ` · ${h.detail}` : ''}</p>
-                </li>
-              ))}
-            </ol>
+            <Timeline items={i.history.map((h) => ({ at: h.at, title: h.action, by: nameOf(h.byUserId), tone: /(reject|not approved|overdue|cancel|no-show|not verified|damage|referred|settled|closed|approved|decided)/i.test(h.action) ? 'important' as const : undefined, details: h.detail ? <p>{h.detail}</p> : undefined }))} />
           </Panel>
         </div>
       </div>

@@ -1,117 +1,76 @@
-import { RowList } from '@/components/ui/RowList'
-import { CalendarCheck2, CalendarClock, Gavel, Plus, RotateCcw, Trash2 } from '@/icons'
+import { CalendarCheck2, CalendarClock, ChevronRight, Gavel, Plus } from '@/icons'
 import { HearingCalendar } from './HearingCalendar'
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
-import { Button, ButtonLink } from '@/components/ui/Button'
+import { ButtonLink } from '@/components/ui/Button'
 import { Select, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
-import { formatDate, formatDateTime } from '@/lib/format'
-import { STAGE_LABEL, STAGE_TONE, listCases, mediationDay, removeClosedCase, removedCaseIds, restoreCase, upcomingHearings } from '@/services/caseService'
-import { ServiceError } from '@/services/mockApi'
+import { formatDateTime } from '@/lib/format'
+import { STAGE_LABEL, STAGE_TONE, listCases, mediationDay, removedCaseIds, upcomingHearings } from '@/services/caseService'
 import type { CaseStage } from '@/types/case'
 import { SampleBadge } from '@/pages/dashboard/shared'
-import { KP } from '@/config/barangay'
 import { useStickyState } from '@/hooks/useStickyState'
 
-/** Katarungang Pambarangay case list. */
+/** Katarungang Pambarangay case list: case number, parties, one status, next hearing. Everything else is on the case page. */
 export function CasesPage() {
   const actor = useDocActor()!
-  const navigate = useNavigate()
-  const [showRemoved, setShowRemoved] = useState(false)
-  const [version, setVersion] = useState(0)
-  const cases = useAsync(() => listCases(actor, { includeRemoved: showRemoved }), [actor, showRemoved, version]).data
+  const [showRemoved, setShowRemoved] = useStickyState('removed', false)
+  const cases = useAsync(() => listCases(actor, { includeRemoved: showRemoved }), [actor, showRemoved]).data
   const [stage, setStage] = useStickyState('stage', '')
   const [q, setQ] = useStickyState('q', '')
-  const [confirmId, setConfirmId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const canRemove = actor.permissions.has('cases.decide')
   const removed = removedCaseIds()
   const needle = q.trim().toLowerCase()
   const rows = (cases ?? []).filter((c) => (!stage || c.stage === stage) && (!needle || [c.caseNo, c.blotterNo, c.title, c.nature, ...c.complainants.map((p) => p.name), ...c.respondents.map((p) => p.name)].some((v) => v?.toLowerCase().includes(needle))))
-  const act = async (fn: () => Promise<void>) => {
-    setError(null)
-    try {
-      await fn()
-      setConfirmId(null)
-      setVersion((v) => v + 1)
-    } catch (e) {
-      setError(e instanceof ServiceError ? e.message : 'Something went wrong.')
-    }
-  }
+  const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'Asia/Manila' })
 
   return (
     <>
-      <PageHeader
-        title="Katarungang Pambarangay"
-        subtitle={`Complaints and disputes: mediation under the Barangay Chairman (up to ${KP.chairmanMediationDays} days), then the Lupon if not settled.`}
-        actions={<>{actor.permissions.has('cases.manage') && <ButtonLink to="/cases/new" icon={<Plus className="size-4" />}>New blotter entry</ButtonLink>}<SampleBadge /></>}
-      />
+      <PageHeader title="Cases" actions={actor.permissions.has('cases.manage') && <ButtonLink to="/cases/new" icon={<Plus className="size-4" />}>New blotter entry</ButtonLink>} />
       <Card>
         <div className="flex flex-wrap items-center gap-3 border-b border-line-soft p-4">
-          <TextInput className="w-full sm:w-72" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search case no., blotter no., name" aria-label="Search the blotter" />
-          <Select className="w-56" value={stage} onChange={(e) => setStage(e.target.value)} aria-label="Filter by stage">
+          <TextInput className="w-full sm:w-72" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search cases" aria-label="Search cases" />
+          <Select className="w-full sm:w-56" value={stage} onChange={(e) => setStage(e.target.value)} aria-label="Filter by stage">
             <option value="">All stages</option>
             {(Object.keys(STAGE_LABEL) as CaseStage[]).map((s) => <option key={s} value={s}>{STAGE_LABEL[s]}</option>)}
           </Select>
-          <span className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">{rows.length} cases</span>
           {canRemove && (
-            <label className="ml-auto flex items-center gap-2 text-[length:calc(14.5px*var(--fs))] text-navy-900">
-              <input type="checkbox" className="size-4 accent-[#002132]" checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} />
+            <label className="flex min-h-11 items-center gap-2 text-[length:calc(15.5px*var(--fs))] text-navy-900 sm:ml-auto">
+              <input type="checkbox" className="size-5 accent-[#002132]" checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} />
               Show removed cases ({removed.size})
             </label>
           )}
         </div>
-        {error && <p className="border-b border-line-soft bg-danger-tint px-4 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
-        <RowList rows={rows.map((c) => ({ key: c.id, to: `/cases/${c.id}`, title: c.nature, subtitle: `${c.caseNo} · ${STAGE_LABEL[c.stage]}` }))} />
-        <div className="hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[820px] text-[length:calc(15.5px*var(--fs))]">
-            <thead>
-              <tr className="bg-surface-muted text-left">{['Case / blotter no.', 'Parties', 'Nature', 'Filed', 'Stage', 'Next hearing', ...(canRemove ? [''] : [])].map((h, i) => <th key={i} className="label-caps px-4 py-2.5">{h}</th>)}</tr>
-            </thead>
-            <tbody>
-              {rows.map((c) => {
-                const next = c.hearings.filter((h) => h.status === 'scheduled').sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))[0]
-                const md = mediationDay(c)
-                return (
-                  <tr key={c.id} onClick={() => navigate(`/cases/${c.id}`)} className="cursor-pointer border-t border-line-soft hover:bg-sky-50">
-                    <td className="px-4 py-3.5 whitespace-nowrap"><span className="block font-semibold text-navy-900">{c.caseNo}</span>{c.blotterNo && <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{c.blotterNo}</span>}</td>
-                    <td className="px-4 py-3 text-navy-900">{c.title}</td>
-                    <td className="px-4 py-3">{c.nature}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-ink-muted">{formatDate(c.filedAt)}</td>
-                    <td className="px-4 py-3">
-                      {md && <span className={`mb-1 block text-[length:calc(14px*var(--fs))] font-semibold ${md.overdue ? 'text-danger-ink' : 'text-navy-900'}`}>Day {md.day} of {md.total}</span>}
-                      <Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">{next ? formatDateTime(next.scheduledAt) : <span className="text-ink-subtle">–</span>}</td>
-                    {canRemove && (
-                      <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        {removed.has(c.id) ? (
-                          <Button size="sm" variant="secondary" icon={<RotateCcw className="size-3.5" />} onClick={() => act(() => restoreCase(c.id, actor))}>Restore</Button>
-                        ) : c.stage === 'closed' ? (
-                          confirmId === c.id ? (
-                            <span className="inline-flex items-center gap-2">
-                              <Button size="sm" variant="danger" onClick={() => act(() => removeClosedCase(c.id, actor))}>Remove</Button>
-                              <button type="button" className="text-[length:calc(14px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900" onClick={() => setConfirmId(null)}>Cancel</button>
-                            </span>
-                          ) : (
-                            <Button size="sm" variant="secondary" icon={<Trash2 className="size-3.5" />} onClick={() => setConfirmId(c.id)} aria-label={`Remove ${c.caseNo} from the list`}>
-                              Remove
-                            </Button>
-                          )
-                        ) : null}
-                      </td>
-                    )}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+        {cases === undefined || cases === null ? <div className="h-32 animate-pulse" /> : rows.length === 0 ? (
+          <p className="px-5 py-8 text-center text-[length:calc(16px*var(--fs))] text-ink-muted">No cases found.</p>
+        ) : (
+          <ul className="divide-y divide-line-soft">
+            {rows.map((c) => {
+              const next = c.hearings.filter((h) => h.status === 'scheduled').sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))[0]
+              const late = mediationDay(c)?.overdue
+              return (
+                <li key={c.id}>
+                  <Link to={`/cases/${c.id}`} aria-label={`View case ${c.caseNo}`} className="flex min-h-[76px] items-center gap-4 px-5 py-3.5 transition-colors hover:bg-sky-50 active:bg-sky-100">
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2 text-[length:calc(15px*var(--fs))] font-semibold text-ink-nav">
+                        {c.caseNo}
+                        {late && <span className="inline-flex items-center gap-1 text-danger-ink"><span aria-hidden className="size-2 rounded-full bg-danger" />Past the mediation period</span>}
+                        {removed.has(c.id) && <span className="text-ink-muted">· Removed</span>}
+                      </span>
+                      <span className="block text-[length:calc(17px*var(--fs))] font-semibold break-words text-navy-900">{c.title}</span>
+                      {next && <span className="block text-[length:calc(15px*var(--fs))] text-ink-nav">Next hearing: {shortDate(next.scheduledAt)}</span>}
+                    </span>
+                    <Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>
+                    <ChevronRight className="size-5 shrink-0 text-ink-subtle" />
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </Card>
     </>
   )

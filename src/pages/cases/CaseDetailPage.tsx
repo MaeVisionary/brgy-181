@@ -1,11 +1,12 @@
-import { BellRing, Check, Lock, X } from '@/icons'
+import { BellRing, Check, Lock } from '@/icons'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
 import { useAuth } from '@/auth/useAuth'
 import { ConsultationPanel } from '@/pages/appointments/AppointmentPages'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { TextArea, TextInput } from '@/components/ui/Field'
 import { Card, Panel } from '@/components/ui/Panel'
 import { useDocActor } from '@/hooks/useDocActor'
@@ -15,10 +16,11 @@ import { mockDocumentRequests } from '@/mocks/documentRequests'
 import { userById } from '@/mocks/users'
 import { ROLES } from '@/config/permissions'
 import { ServiceError } from '@/services/mockApi'
-import { STAGE_LABEL, STAGE_TONE, addInternalNote, assignCase, assignableKagawads, applyStep, getCase, mediationDay, recordHearing, reschedule, sendReminder, stepsFor, type CaseStep } from '@/services/caseService'
+import { STAGE_LABEL, STAGE_TONE, addInternalNote, removeClosedCase, removedCaseIds, restoreCase, assignCase, assignableKagawads, applyStep, getCase, mediationDay, recordHearing, reschedule, sendReminder, stepsFor, type CaseStep } from '@/services/caseService'
 import type { CaseStage, KPCase } from '@/types/case'
 import { NotFound } from '@/pages/system/NotFound'
 import { AvailabilityRow, CaseDocuments } from './CaseParts'
+import { Timeline } from '@/components/ui/Timeline'
 
 const PATH: CaseStage[] = ['filed', 'under_review', 'for_assessment', 'mediation_scheduled', 'ongoing_mediation', 'referred_to_lupon', 'lupon_mediation', 'settled', 'closed']
 
@@ -178,82 +180,133 @@ export function CaseDetailPage() {
           )}
 
           <Panel title="Case history">
-            <ol className="space-y-3">
-              {[...c.history].reverse().map((h, i) => (
-                <li key={i} className="border-l-2 border-line-soft pl-3">
-                  <p className="text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">{h.action}</p>
-                  <p className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">{formatDateTime(h.at)} · {userById(h.byUserId)?.fullName ?? 'Resident'} ({ROLES[h.byRole].name})</p>
-                  {h.remarks && <p className="mt-1 rounded-md bg-surface-muted px-2.5 py-1.5 text-[length:calc(14.5px*var(--fs))] text-navy-900">{h.remarks}</p>}
-                </li>
-              ))}
-            </ol>
+            <Timeline items={c.history.map((h) => ({
+              at: h.at, title: h.action, by: userById(h.byUserId)?.fullName ?? 'Resident',
+              tone: /(reject|not approved|overdue|cancel|no-show|not verified|damage|referred|settled|closed|approved|decided)/i.test(h.action) ? 'important' as const : undefined,
+              details: <><p>{userById(h.byUserId)?.fullName ?? 'Resident'} · {ROLES[h.byRole].name}</p>{h.stage && <p>Stage: {STAGE_LABEL[h.stage]}</p>}{h.remarks && <p className="mt-1">{h.remarks}</p>}</>,
+            }))} />
           </Panel>
+          {can('cases.decide') && (c.stage === 'closed' || removedCaseIds().has(c.id)) && <RemovePanel caseId={c.id} />}
         </div>
       </div>
     </>
   )
 }
 
+/** Closed cases can be taken off the list (kept in records) or put back. */
+function RemovePanel({ caseId }: { caseId: string }) {
+  const actor = useDocActor()!
+  const navigate = useNavigate()
+  const [confirm, setConfirm] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const isRemoved = removedCaseIds().has(caseId)
+  const run = async (fn: () => Promise<void>) => { setErr(null); try { await fn(); navigate('/cases') } catch (e) { setErr(e instanceof Error ? e.message : 'Not saved.') } }
+  return (
+    <Panel title="Case list">
+      {isRemoved ? <Button variant="secondary" onClick={() => run(() => restoreCase(caseId, actor))}>Put back on the list</Button>
+        : confirm ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[length:calc(16px*var(--fs))] text-navy-900">Remove this closed case from the list? The record is kept.</span>
+            <Button variant="danger" onClick={() => run(() => removeClosedCase(caseId, actor))}>Remove</Button>
+            <Button variant="ghost" onClick={() => setConfirm(false)}>Keep</Button>
+          </div>
+        ) : <Button variant="secondary" onClick={() => setConfirm(true)}>Remove from the list</Button>}
+      {err && <p role="alert" className="mt-2 text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
+    </Panel>
+  )
+}
+
 function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase['hearings'][number]; manage: boolean; onChange: (c: KPCase) => void }) {
   const actor = useDocActor()!
   const [mode, setMode] = useState<'none' | 'attendance' | 'reschedule'>('none')
-  const [att, setAtt] = useState<(boolean | null)[]>(h.attendance.map((a) => a.present))
+  const [open, setOpen] = useState(false)
+  const [att, setAtt] = useState<(boolean | null | 'excused')[]>(h.attendance.map((a) => (a.excused ? 'excused' : a.present)))
   const [notes, setNotes] = useState('')
   const [when, setWhen] = useState('')
-  const kind = h.kind === 'lupon_mediation' ? 'Lupon mediation' : 'Mediation under the Barangay Chairman'
+  const [confirm, setConfirm] = useState<null | 'attendance' | 'reschedule' | 'reminder'>(null)
+  const [err, setErr] = useState<string | null>(null)
+  const kind = h.kind === 'lupon_mediation' ? 'Conciliation (Lupon)' : 'Mediation'
+  const status = h.status === 'held' ? 'Held' : h.status === 'scheduled' ? 'Scheduled' : h.status === 'rescheduled' ? 'Postponed' : 'Cancelled'
+  const absent = h.attendance.filter((a) => a.present === false && !a.excused)
+  // One short line: what happened, only when there is something to say.
+  const outcome = h.status === 'held' ? (absent.length ? `${absent.map((a) => (a.side === 'complainant' ? 'Complainant' : 'Respondent')).join(' and ')} did not attend.` : h.notes?.split(/(?<=\.)\s/)[0]) : undefined
+  const mark = (a: { present: boolean | null; excused?: boolean }) => (a.excused ? 'Excused' : a.present === true ? 'Present' : a.present === false ? 'Absent' : h.status === 'held' ? 'Not recorded' : 'Expected')
+  const run = async (fn: () => Promise<KPCase>) => {
+    setErr(null)
+    try { onChange(await fn()); setMode('none'); setConfirm(null) } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Not saved.'); setConfirm(null) }
+  }
+  const choice = (i: number, v: boolean | 'excused', label: string) => (
+    <button type="button" onClick={() => setAtt((s) => s.map((x, j) => (j === i ? v : x)))} aria-pressed={att[i] === v}
+      className={cn('min-h-11 rounded-[var(--radius-control)] border px-3 text-[length:calc(15px*var(--fs))] font-semibold', att[i] === v ? 'border-navy-900 bg-navy-900 text-white' : 'border-line text-navy-900')}>{label}</button>
+  )
+
   return (
-    <li className="border-b border-line-soft px-5 py-3 last:border-0">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span>
-          <span className="block text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{formatDateTime(h.scheduledAt)}</span>
-          <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{kind} · {h.place}</span>
+    <li className="border-b border-line-soft px-5 py-4 last:border-0">
+      <div className="flex items-start justify-between gap-3">
+        <span className="min-w-0">
+          <span className="block text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">{formatDateTime(h.scheduledAt)}</span>
+          <span className="block text-[length:calc(15px*var(--fs))] text-ink-nav">{kind} · {h.place}</span>
+          {outcome && <span className="mt-1 block text-[length:calc(15.5px*var(--fs))] text-navy-900">{outcome}</span>}
         </span>
-        <span className="flex items-center gap-2">
-          <Badge tone={h.status === 'held' ? 'neutral' : h.status === 'scheduled' ? 'info' : 'warning'}>{h.status === 'held' ? 'Held' : h.status === 'scheduled' ? 'Scheduled' : h.status === 'rescheduled' ? 'Rescheduled' : 'Cancelled'}</Badge>
-          {h.remindersSentAt.length > 0 && <span className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">Reminder sent {formatDate(h.remindersSentAt[h.remindersSentAt.length - 1])}</span>}
-        </span>
+        <Badge tone={h.status === 'held' ? 'neutral' : h.status === 'scheduled' ? 'info' : 'warning'}>{status}</Badge>
       </div>
-      <div className="mt-3 rounded-md border border-line px-3 py-2">
-        <p className="label-caps mb-1.5">Parties called{h.status === 'held' ? ' · attendance' : ''}</p>
-        <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-          {h.attendance.map((a) => (
-            <li key={a.name} className="flex items-center gap-2 text-[length:calc(14.5px*var(--fs))] text-navy-900">
-              {a.present === true ? <Check className="size-3.5 shrink-0 text-success" /> : a.present === false ? <X className="size-3.5 shrink-0 text-danger" /> : <span className="size-1.5 shrink-0 rounded-full bg-ink-subtle" />}
-              <span className="font-semibold">{a.name}</span>
-              <span className="text-ink-muted capitalize">{a.side}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      {h.status === 'scheduled' && <AvailabilityRow caseId={caseId} h={h} manage={manage} onChange={onChange} />}
-      {h.notes && <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-ink-muted">{h.notes}</p>}
+
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="mt-2 inline-flex min-h-11 items-center gap-1 text-[length:calc(15.5px*var(--fs))] font-semibold text-info hover:underline">
+        {open ? 'Hide details' : h.status === 'cancelled' ? 'View cancellation details' : 'View details'}
+      </button>
+
+      {open && (
+        <div className="mt-2 space-y-3 rounded-[var(--radius-control)] bg-surface-muted px-4 py-3">
+          <ul className="space-y-1.5">
+            {h.attendance.map((a) => (
+              <li key={a.name} className="flex flex-wrap items-baseline justify-between gap-2 text-[length:calc(15.5px*var(--fs))] text-navy-900">
+                <span><span className="font-semibold">{a.name}</span> · <span className="capitalize">{a.side}</span></span>
+                <span className={cn('font-semibold', a.present === false && !a.excused ? 'text-danger-ink' : a.present ? 'text-success' : 'text-ink-nav')}>{mark(a)}</span>
+              </li>
+            ))}
+          </ul>
+          {h.status === 'scheduled' && <AvailabilityRow caseId={caseId} h={h} manage={manage} onChange={onChange} />}
+          {h.notes && <p className="text-[length:calc(15.5px*var(--fs))] text-navy-900">{h.notes}</p>}
+          <p className="text-[length:calc(14.5px*var(--fs))] text-ink-nav">{h.remindersSentAt.length ? `Reminders sent: ${h.remindersSentAt.map((x) => formatDate(x)).join(', ')}` : 'No reminder sent yet.'}</p>
+        </div>
+      )}
+
+      {err && <p role="alert" className="mt-2 text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
       {manage && h.status === 'scheduled' && mode === 'none' && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          <Button size="sm" variant="secondary" onClick={() => setMode('attendance')}>Record attendance</Button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {new Date(h.scheduledAt).getTime() <= Date.now() + 3600_000 && <Button size="sm" onClick={() => setMode('attendance')}>Record attendance</Button>}
           <Button size="sm" variant="secondary" onClick={() => setMode('reschedule')}>Reschedule</Button>
-          <Button size="sm" variant="ghost" icon={<BellRing className="size-3.5" />} onClick={async () => onChange(await sendReminder(caseId, h.id, actor))}>Send reminder</Button>
+          <Button size="sm" variant="ghost" icon={<BellRing className="size-4" />} onClick={() => setConfirm('reminder')}>Send reminder</Button>
         </div>
       )}
       {mode === 'attendance' && (
-        <div className="mt-3 space-y-2 rounded-md border border-line p-3">
+        <div className="mt-3 space-y-3 rounded-[var(--radius-control)] border border-line p-3">
           {h.attendance.map((a, i) => (
-            <label key={a.name} className="flex items-center justify-between gap-3 text-[length:calc(15px*var(--fs))] text-navy-900">
-              {a.name}
-              <span className="flex gap-1">
-                {[true, false].map((v) => <button key={String(v)} type="button" onClick={() => setAtt((s) => s.map((x, j) => (j === i ? v : x)))} className={cn('rounded-md border px-2.5 py-1 text-[length:calc(14px*var(--fs))] font-semibold', att[i] === v ? 'border-navy-900 bg-navy-900 text-white' : 'border-line')}>{v ? 'Present' : 'Absent'}</button>)}
-              </span>
-            </label>
+            <div key={a.name} className="space-y-1.5">
+              <p className="text-[length:calc(15.5px*var(--fs))] text-navy-900"><span className="font-semibold">{a.name}</span> · <span className="capitalize">{a.side}</span></p>
+              <div className="flex flex-wrap gap-2">{choice(i, true, 'Present')}{choice(i, false, 'Absent')}{choice(i, 'excused', 'Excused')}</div>
+            </div>
           ))}
-          <TextArea className="min-h-[60px]" placeholder="What happened at the hearing" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <div className="flex gap-2"><Button size="sm" disabled={att.some((x) => x === null)} onClick={async () => { onChange(await recordHearing(caseId, h.id, att, notes, actor)); setMode('none') }}>Save</Button><Button size="sm" variant="ghost" onClick={() => setMode('none')}>Cancel</Button></div>
+          <TextArea className="min-h-[60px]" placeholder="What happened (outcome, agreement, next step)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <div className="flex gap-2"><Button size="sm" disabled={att.some((x) => x === null)} onClick={() => setConfirm('attendance')}>Save</Button><Button size="sm" variant="ghost" onClick={() => setMode('none')}>Cancel</Button></div>
         </div>
       )}
       {mode === 'reschedule' && (
-        <div className="mt-3 flex flex-wrap items-end gap-2 rounded-md border border-line p-3">
-          <TextInput type="datetime-local" className="w-auto" value={when} onChange={(e) => setWhen(e.target.value)} />
-          <Button size="sm" disabled={!when} onClick={async () => { onChange(await reschedule(caseId, h.id, when, actor)); setMode('none') }}>Save new schedule</Button>
+        <div className="mt-3 flex flex-wrap items-end gap-2 rounded-[var(--radius-control)] border border-line p-3">
+          <TextInput type="datetime-local" aria-label="New date and time" className="w-auto" value={when} onChange={(e) => setWhen(e.target.value)} />
+          <Button size="sm" disabled={!when} onClick={() => setConfirm('reschedule')}>Save new schedule</Button>
           <Button size="sm" variant="ghost" onClick={() => setMode('none')}>Cancel</Button>
         </div>
+      )}
+      {confirm && (
+        <ConfirmDialog
+          title={confirm === 'attendance' ? 'Save attendance?' : confirm === 'reschedule' ? 'Move this hearing?' : 'Send a reminder to the parties?'}
+          confirmLabel={confirm === 'attendance' ? 'Save' : confirm === 'reschedule' ? 'Move hearing' : 'Send'}
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => run(() => (confirm === 'attendance' ? recordHearing(caseId, h.id, att, notes, actor) : confirm === 'reschedule' ? reschedule(caseId, h.id, when, actor) : sendReminder(caseId, h.id, actor)))}
+        >
+          {confirm === 'attendance' ? 'The hearing will be marked as held. Attendance cannot be changed afterwards.' : confirm === 'reschedule' ? 'The parties and assigned personnel will be told the new schedule.' : undefined}
+        </ConfirmDialog>
       )}
     </li>
   )

@@ -68,7 +68,7 @@ const PERSONNEL_NAV: NavGroup[] = [
   { section: 'Resident Records', label: 'Resident Master List', icon: Users, path: '/residents', anyOf: ['residents.view', 'residents.search'] },
   { section: 'Resident Records', label: 'Households', icon: HouseIcon, path: '/residents/households', anyOf: ['residents.view'] },
   { section: 'Resident Records', label: 'Registrations', icon: BadgeCheck, path: '/residents/registrations', anyOf: ['residents.verify'] },
-  { section: 'Resident Records', label: 'Appointments', icon: CalendarClock, path: '/appointments', anyOf: ['residents.approve', 'documents.release', 'cases.manage', 'borrowing.release'] },
+  { section: 'Resident Records', label: 'Calendar', icon: CalendarClock, path: '/appointments', anyOf: ['residents.approve', 'documents.release', 'cases.manage', 'borrowing.release', 'hearings.view', 'cases.assigned'] },
   { section: 'Resident Records', label: 'Record Update Requests', icon: FilePen, path: '/residents/change-requests', anyOf: ['residents.approve'] },
   { section: 'Services', label: 'Document Requests', icon: FileText, path: '/documents', anyOf: ['documents.view'] },
   { section: 'Services', label: 'Approvals', icon: FileCheck2, path: '/documents/approvals', anyOf: ['documents.approve'] },
