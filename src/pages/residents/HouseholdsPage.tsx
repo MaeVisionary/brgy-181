@@ -1,6 +1,6 @@
 import { RowList } from '@/components/ui/RowList'
 import { ChevronRight, Home, Search, Users } from '@/icons'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -8,7 +8,11 @@ import { Pagination, usePaged } from '@/components/ui/Pagination'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
 import { useAsync } from '@/hooks/useAsync'
-import { getHousehold, listHouseholds, listResidents } from '@/services/residentService'
+import { addFamily, createHousehold, getHousehold, listHouseholds, listResidents } from '@/services/residentService'
+import { useAuth } from '@/auth/useAuth'
+import { Button } from '@/components/ui/Button'
+import { FieldLabel, Select, TextInput } from '@/components/ui/Field'
+import { ServiceError } from '@/services/mockApi'
 import { NotFound } from '@/pages/system/NotFound'
 import { SectorBadges, age, fullName } from './common'
 import { useStickyState } from '@/hooks/useStickyState'
@@ -38,7 +42,7 @@ export function HouseholdsPage() {
     ({ h, members }) =>
       (!street || h.street === street) &&
       (!q ||
-        [h.householdNo, `${h.houseNo} ${h.street}`, h.address, ...h.families.map((f) => f.name), ...members.map((m) => fullName(m))].some((t) => t.toLowerCase().includes(q))),
+        [h.householdNo, h.legacyNo ?? '', `${h.houseNo} ${h.street}`, h.address, ...h.families.map((f) => f.name), ...h.families.map((f) => f.familyNo), ...members.map((m) => fullName(m)), ...members.map((m) => m.residentNo), ...members.map((m) => m.contactNo ?? '')].some((t) => t.toLowerCase().includes(q))),
   )
   const paged = usePaged(shown)
   const loading = !households || !residents
@@ -46,6 +50,7 @@ export function HouseholdsPage() {
   return (
     <>
       <PageHeader title="Households" subtitle="A household is everyone living at one address. It can contain more than one family." />
+      <NewHouseholdPanel streets={streets} onCreated={(id) => navigate(`/residents/households/${id}`)} />
 
       <Card className="overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-line-soft p-4 sm:flex-row sm:items-center">
@@ -56,7 +61,7 @@ export function HouseholdsPage() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search household no., address, family or resident name"
+              placeholder="Search any number, address, name or contact"
               className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface pr-3 pl-9 text-[length:calc(15.5px*var(--fs))] text-navy-900 placeholder:text-ink-subtle focus:border-navy-600 focus:outline-none"
             />
           </label>
@@ -148,17 +153,22 @@ const hasSector = (m: { sectors: object }) => Object.values(m.sectors).some(Bool
 
 export function HouseholdDetailPage() {
   const { id = '' } = useParams()
-  const { data, loading } = useAsync(() => getHousehold(id), [id])
+  const { user, can } = useAuth()
+  const [tick, setTick] = useState(0)
+  const { data, loading } = useAsync(() => getHousehold(id), [id, tick])
+  const [famName, setFamName] = useState('')
+  const [famError, setFamError] = useState('')
+  const [busy, setBusy] = useState(false)
   if (loading) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
   if (!data) return <NotFound />
   const { household, members } = data
   return (
     <>
       <BackLink fallbackTo="/residents/households" fallbackLabel="Households" />
-      <PageHeader eyebrow={`Household ${household.householdNo}`} title={household.address} subtitle={`${household.families.length} famil${household.families.length > 1 ? 'ies' : 'y'} · ${members.length} residents`} />
+      <PageHeader eyebrow={`Household Number ${household.householdNo}`} title={household.address} subtitle={`${household.families.length} famil${household.families.length > 1 ? 'ies' : 'y'} · ${members.length} residents`} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {household.families.map((f) => (
-          <Panel key={f.id} keepSubtitle title={f.name} subtitle={`Head: ${fullName(members.find((m) => m.id === f.headResidentId)!)}`} bodyClassName="px-0 py-0">
+          <Panel key={f.id} keepSubtitle title={f.name} subtitle={`${f.familyNo} · Head: ${members.find((m) => m.id === f.headResidentId) ? fullName(members.find((m) => m.id === f.headResidentId)!) : 'not set yet'}`} bodyClassName="px-0 py-0">
             <RowList rows={members.filter((m) => m.familyId === f.id).map((m) => ({ key: m.id, to: `/residents/${m.id}`, title: fullName(m), subtitle: `${m.relationship} · ${age(m)}` }))} />
             <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[460px] text-[length:calc(15px*var(--fs))]">
@@ -182,6 +192,66 @@ export function HouseholdDetailPage() {
           </Panel>
         ))}
       </div>
+      {can('residents.update') && user && (
+        <Panel className="mt-4" title="Add a family to this household" subtitle="For another family living at the same address. It gets its own Family Number.">
+          <form
+            className="flex flex-col gap-3 sm:flex-row sm:items-end"
+            onSubmit={async (e) => {
+              e.preventDefault()
+              setBusy(true); setFamError('')
+              try { await addFamily(household.id, famName, user); setFamName(''); setTick((t) => t + 1) }
+              catch (err) { setFamError(err instanceof ServiceError ? err.message : 'Could not add the family.') }
+              finally { setBusy(false) }
+            }}
+          >
+            <div className="flex-1"><FieldLabel label="Family name"><TextInput value={famName} onChange={(e) => setFamName(e.target.value)} placeholder="e.g. Santos family" /></FieldLabel></div>
+            <Button type="submit" loading={busy}>Add family</Button>
+          </form>
+          {famError && <p role="alert" className="mt-2 text-[length:calc(15px*var(--fs))] text-danger-ink">{famError}</p>}
+          <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-ink-muted">Add members by opening a resident's profile and choosing Change household.</p>
+        </Panel>
+      )}
     </>
+  )
+}
+
+/** New household at an address not yet on record. One household per address; duplicates are refused. */
+function NewHouseholdPanel({ streets, onCreated }: { streets: string[]; onCreated: (id: string) => void }) {
+  const { user, can } = useAuth()
+  const [open, setOpen] = useState(false)
+  const [houseNo, setHouseNo] = useState('')
+  const [street, setStreet] = useState('')
+  const [familyName, setFamilyName] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  if (!user || !can('residents.update')) return null
+  if (!open) return <div className="mb-4"><Button variant="secondary" onClick={() => setOpen(true)}>New household</Button></div>
+  return (
+    <Panel className="mb-4" title="New household" subtitle="Use this only for an address that has no household yet. A Household Number and Family Number are given automatically.">
+      <form
+        className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+        onSubmit={async (e) => {
+          e.preventDefault()
+          setBusy(true); setError('')
+          try { const h = await createHousehold({ houseNo, street, familyName }, user); onCreated(h.id) }
+          catch (err) { setError(err instanceof ServiceError ? err.message : 'Could not create the household.') }
+          finally { setBusy(false) }
+        }}
+      >
+        <FieldLabel label="House number" required><TextInput value={houseNo} onChange={(e) => setHouseNo(e.target.value)} /></FieldLabel>
+        <FieldLabel label="Street" required>
+          <Select value={street} onChange={(e) => setStreet(e.target.value)}>
+            <option value="">Choose street</option>
+            {streets.map((s) => <option key={s}>{s}</option>)}
+          </Select>
+        </FieldLabel>
+        <FieldLabel label="First family name" required><TextInput value={familyName} onChange={(e) => setFamilyName(e.target.value)} placeholder="e.g. Reyes family" /></FieldLabel>
+        {error && <p role="alert" className="text-[length:calc(15px*var(--fs))] text-danger-ink sm:col-span-3">{error}</p>}
+        <div className="flex gap-2 sm:col-span-3">
+          <Button type="submit" loading={busy}>Create household</Button>
+          <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+        </div>
+      </form>
+    </Panel>
   )
 }

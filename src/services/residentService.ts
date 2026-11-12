@@ -1,6 +1,7 @@
 import { AREAS, mockChangeRequests, mockHouseholds, mockRegistrations, mockResidents } from '@/mocks/residents'
 import type { User } from '@/types/auth'
-import type { Household, Resident, ResidentChangeRequest } from '@/types/resident'
+import type { Family, Household, Relationship, Resident, ResidentChangeRequest } from '@/types/resident'
+import { familyNumber, householdNumber, nextNumber, residentNumber } from '@/lib/ids'
 import { ServiceError, mockRequest } from './mockApi'
 import { appointmentForRequest } from './appointmentService'
 import { audit } from './auditService'
@@ -92,7 +93,7 @@ export function searchResidents(query: string, limit = 8): Promise<Resident[]> {
     if (terms.length === 0) return []
     return mockResidents
       .filter((r) => {
-        const hay = `${r.firstName} ${r.middleName ?? ''} ${r.lastName} ${r.residentNo}`.toLowerCase()
+        const hay = `${r.firstName} ${r.middleName ?? ''} ${r.lastName} ${r.residentNo} ${r.legacyNo ?? ''} ${r.contactNo ?? ''}`.toLowerCase()
         return terms.every((t) => hay.includes(t))
       })
       .slice(0, limit)
@@ -438,16 +439,17 @@ export function addResident(rec: ImportRecord, extra: NewResidentExtras = {}): R
   let hh = mockHouseholds.find((h) => norm(h.houseNo) === norm(rec.houseNo) && norm(h.street) === norm(rec.street))
   const id = extra.id ?? `res-imp-${Math.random().toString(36).slice(2, 8)}`
   if (!hh) {
-    hh = {
+    const created: Household = {
       id: `hh-imp-${Math.random().toString(36).slice(2, 8)}`,
-      householdNo: `HH-181-I${String(mockHouseholds.length + 1).padStart(3, '0')}`,
+      householdNo: householdNumber(nextNumber('HH', mockHouseholds.map((h) => h.householdNo))),
       houseNo: rec.houseNo,
       street: rec.street,
       address: `${rec.houseNo} ${rec.street}, Gagalangin, Tondo, Manila`,
-      families: [{ id: '', name: `${rec.lastName} family`, headResidentId: id, memberIds: [] }],
+      families: [],
     }
-    hh.families[0].id = `${hh.id}-f1`
-    mockHouseholds.push(hh)
+    created.families.push({ id: `${created.id}-f1`, familyNo: familyNumber(nextNumber('FAM', allFamilyNos())), name: `${rec.lastName} family`, headResidentId: id, memberIds: [] })
+    mockHouseholds.push(created)
+    hh = created
   }
   const fam = hh.families[0]
   fam.memberIds.push(id)
@@ -456,7 +458,7 @@ export function addResident(rec: ImportRecord, extra: NewResidentExtras = {}): R
   const ageNow = n.getFullYear() - b.getFullYear() - (n < new Date(n.getFullYear(), b.getMonth(), b.getDate()) ? 1 : 0)
   const resident: Resident = {
     id,
-    residentNo: `181-IMP-${String(mockResidents.length + 1).padStart(4, '0')}`,
+    residentNo: residentNumber(new Date().getFullYear(), nextNumber('RES', mockResidents.map((r) => r.residentNo))),
     ...rec,
     householdId: hh.id,
     familyId: fam.id,
@@ -481,4 +483,114 @@ export function importResidents(records: ImportRecord[], by: User): Promise<numb
     for (const rec of records) addResident(rec)
     return records.length
   })
+}
+
+// ── Identifiers and household records ────────────────────────────────
+const allFamilyNos = () => mockHouseholds.flatMap((h) => h.families.map((f) => f.familyNo))
+const isAdult = (birthDate: string) => { const b = new Date(birthDate + 'T00:00:00+08:00'); const t = new Date(); t.setFullYear(t.getFullYear() - 18); return b <= t }
+const canEdit = (u: User) => !!ROLE_PERMISSIONS[u.roleId]?.includes('residents.update') || !!u.extraPermissions?.includes('residents.update')
+
+/**
+ * Possible duplicates before a new resident is added. Shown to Barangay
+ * Personnel; never merged automatically (matching names alone prove nothing).
+ */
+export function possibleDuplicates(p: { firstName: string; lastName: string; birthDate?: string; contactNo?: string; houseNo?: string; street?: string }): { resident: Resident; reasons: string[] }[] {
+  const n = (x?: string) => (x ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const out: { resident: Resident; reasons: string[] }[] = []
+  for (const r of mockResidents) {
+    const reasons: string[] = []
+    const sameName = n(r.firstName) === n(p.firstName) && n(r.lastName) === n(p.lastName)
+    if (sameName && p.birthDate && r.birthDate === p.birthDate) reasons.push('Same name and birthdate')
+    else if (sameName && p.street && n(r.street) === n(p.street)) reasons.push('Same name on the same street')
+    if (p.contactNo && r.contactNo && n(r.contactNo) === n(p.contactNo)) reasons.push('Same contact number')
+    if (reasons.length) out.push({ resident: r, reasons })
+  }
+  return out
+}
+
+/** New household at an address that is not yet recorded (one per address). */
+export function createHousehold(input: { houseNo: string; street: string; familyName: string }, by: User): Promise<Household> {
+  return mockRequest(() => {
+    if (!canEdit(by)) throw new ServiceError('forbidden', 'You cannot change household records.')
+    if (!input.houseNo.trim() || !input.street.trim()) throw new ServiceError('address', 'Enter the house number and street.')
+    const dup = mockHouseholds.find((h) => norm(h.houseNo) === norm(input.houseNo) && norm(h.street) === norm(input.street))
+    if (dup) throw new ServiceError('duplicate', `This address is already household ${dup.householdNo}. Add the family there instead.`)
+    const h: Household = { id: `hh-${Date.now().toString(36)}`, householdNo: householdNumber(nextNumber('HH', mockHouseholds.map((x) => x.householdNo))), houseNo: input.houseNo.trim(), street: input.street.trim(), address: `${input.houseNo.trim()} ${input.street.trim()}, Gagalangin, Tondo, Manila`, families: [] }
+    if (input.familyName.trim()) h.families.push({ id: `${h.id}-f1`, familyNo: familyNumber(nextNumber('FAM', allFamilyNos())), name: input.familyName.trim(), headResidentId: '', memberIds: [] })
+    mockHouseholds.push(h)
+    audit(by, `Household created: ${h.householdNo}`, 'Residents', h.address)
+    return h
+  })
+}
+
+/** Another family living at the same household address. */
+export function addFamily(householdId: string, name: string, by: User): Promise<Family> {
+  return mockRequest(() => {
+    if (!canEdit(by)) throw new ServiceError('forbidden', 'You cannot change household records.')
+    const h = mockHouseholds.find((x) => x.id === householdId)
+    if (!h) throw new ServiceError('not_found', 'Household not found.')
+    if (name.trim().length < 3) throw new ServiceError('name', 'Give the family name.')
+    if (h.families.some((f) => f.name.toLowerCase() === name.trim().toLowerCase())) throw new ServiceError('duplicate', 'This household already has a family with that name.')
+    const f: Family = { id: `${h.id}-f${h.families.length + 1}-${Date.now().toString(36).slice(-3)}`, familyNo: familyNumber(nextNumber('FAM', allFamilyNos())), name: name.trim(), headResidentId: '', memberIds: [] }
+    h.families.push(f)
+    audit(by, `Family added: ${f.familyNo} in ${h.householdNo}`, 'Residents', f.name)
+    return f
+  })
+}
+
+/** Move a resident to another household and family. The resident number never changes; the move is kept. */
+export function moveResident(residentId: string, toFamilyId: string, relationship: Relationship, reason: string, by: User): Promise<Resident> {
+  return mockRequest(() => {
+    if (!canEdit(by)) throw new ServiceError('forbidden', 'You cannot change household records.')
+    if (reason.trim().length < 5) throw new ServiceError('reason', 'Give the reason for the move.')
+    const r = mockResidents.find((x) => x.id === residentId)
+    const toHh = mockHouseholds.find((h) => h.families.some((f) => f.id === toFamilyId))
+    const toFam = toHh?.families.find((f) => f.id === toFamilyId)
+    if (!r || !toHh || !toFam) throw new ServiceError('not_found', 'Resident or family not found.')
+    if (r.familyId === toFamilyId) throw new ServiceError('same', 'Already in this family.')
+    const fromHh = mockHouseholds.find((h) => h.id === r.householdId)
+    const fromFam = fromHh?.families.find((f) => f.id === r.familyId)
+    if (fromFam?.headResidentId === r.id && fromFam.memberIds.length > 1) throw new ServiceError('head', 'Choose a new head for the current family first.')
+    if (relationship === 'Head' && toFam.headResidentId && toFam.memberIds.includes(toFam.headResidentId)) throw new ServiceError('head', 'That family already has a head.')
+    if (relationship === 'Head' && !isAdult(r.birthDate)) throw new ServiceError('head', 'A family head must be 18 or older.')
+    if (fromFam) { fromFam.memberIds = fromFam.memberIds.filter((x) => x !== r.id); if (fromFam.headResidentId === r.id) fromFam.headResidentId = '' }
+    toFam.memberIds.push(r.id)
+    if (relationship === 'Head') toFam.headResidentId = r.id
+    const now = new Date().toISOString()
+    const from = `${fromHh?.householdNo ?? '?'} / ${fromFam?.familyNo ?? '?'}`
+    const to = `${toHh.householdNo} / ${toFam.familyNo}`
+    Object.assign(r, { householdId: toHh.id, familyId: toFam.id, relationship, houseNo: toHh.houseNo, street: toHh.street, updatedAt: now })
+    r.moves = [...(r.moves ?? []), { at: now, byUserId: by.id, from, to, reason: reason.trim() }]
+    audit(by, `Resident moved: ${r.residentNo}`, 'Residents', `${from} → ${to}: ${reason.trim()}`)
+    return r
+  })
+}
+
+/** Set who heads a family (must be a member). */
+export function setFamilyHead(familyId: string, residentId: string, by: User): Promise<Family> {
+  return mockRequest(() => {
+    if (!canEdit(by)) throw new ServiceError('forbidden', 'You cannot change household records.')
+    const h = mockHouseholds.find((x) => x.families.some((f) => f.id === familyId))
+    const f = h?.families.find((x) => x.id === familyId)
+    if (!f || !f.memberIds.includes(residentId)) throw new ServiceError('member', 'The head must be a member of the family.')
+    const r = mockResidents.find((x) => x.id === residentId)
+    if (r && !isAdult(r.birthDate)) throw new ServiceError('head', 'A family head must be 18 or older.')
+    const prev = f.headResidentId
+    f.headResidentId = residentId
+    if (r) r.relationship = 'Head'
+    const old = mockResidents.find((x) => x.id === prev)
+    if (old && old.id !== residentId) old.relationship = 'Relative'
+    audit(by, `Family head set: ${f.familyNo}`, 'Residents', r?.residentNo)
+    return f
+  })
+}
+
+/** Find by any number (resident, household, family, earlier numbers), name, address, or contact (Barangay Personnel). */
+export function findByAny(query: string): { residents: Resident[]; households: Household[] } {
+  const q = query.trim().toLowerCase()
+  if (q.length < 2) return { residents: [], households: [] }
+  const hhMatch = mockHouseholds.filter((h) => [h.householdNo, h.legacyNo, h.address, ...h.families.map((f) => f.familyNo), ...h.families.map((f) => f.name)].some((v) => v?.toLowerCase().includes(q)))
+  const famIds = new Set(hhMatch.flatMap((h) => h.families.filter((f) => f.familyNo.toLowerCase().includes(q)).map((f) => f.id)))
+  const residents = mockResidents.filter((r) => famIds.has(r.familyId) || [r.residentNo, r.legacyNo, `${r.firstName} ${r.middleName ?? ''} ${r.lastName}`, `${r.houseNo} ${r.street}`, r.contactNo].some((v) => v?.toLowerCase().includes(q)))
+  return { residents, households: hhMatch }
 }

@@ -65,7 +65,7 @@ export function UsersPage() {
   }, [toast])
   const q = query.trim().toLowerCase()
   const inGroup = (u: User) => group === 'all' || (group === 'residents' ? u.roleId === 'resident' : u.roleId !== 'resident')
-  const shownAccounts = accounts.filter((u) => inGroup(u) && (!q || [u.fullName, u.username, u.email, u.position, ROLES[u.roleId].name].some((x) => x.toLowerCase().includes(q))))
+  const shownAccounts = accounts.filter((u) => inGroup(u) && (!q || [u.fullName, u.username, u.email, u.position, ROLES[u.roleId].name, u.accountNo ?? ''].some((x) => x.toLowerCase().includes(q))))
   const count = (g: typeof group) => accounts.filter((u) => g === 'all' || (g === 'residents' ? u.roleId === 'resident' : u.roleId !== 'resident')).length
   const pending = requests.filter((r) => r.status === 'pending')
   const matchFor = (r: ResetRequest) => accounts.find((u) => u.username.toLowerCase() === r.identifier || u.email.toLowerCase() === r.identifier)
@@ -125,7 +125,7 @@ export function UsersPage() {
         <label className="relative block flex-1">
           <span className="sr-only">Search accounts</span>
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" />
-          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, username, email or role" className="h-10 w-full rounded-[var(--radius-control)] border border-line bg-surface pr-3 pl-9 text-[length:calc(15.5px*var(--fs))] text-navy-900 placeholder:text-ink-subtle focus:border-navy-600 focus:outline-none" />
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, username, email, role or number" className="h-10 w-full rounded-[var(--radius-control)] border border-line bg-surface pr-3 pl-9 text-[length:calc(15.5px*var(--fs))] text-navy-900 placeholder:text-ink-subtle focus:border-navy-600 focus:outline-none" />
         </label>
       </div>
       <Card className="divide-y divide-line-soft">
@@ -136,7 +136,7 @@ export function UsersPage() {
               <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sky-100 text-[length:calc(13px*var(--fs))] font-semibold text-navy-900">{initials(u.fullName)}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{u.fullName}</span>
-                <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{u.position} · {u.username} · {ROLES[u.roleId].name}</span>
+                <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{u.position} · {u.username} · {ROLES[u.roleId].name}{u.accountNo ? ` · ${u.accountNo}` : ''}</span>
                 <span className="block text-[length:calc(13.5px*var(--fs))] text-ink-muted">{getCredential(u.id)?.mustChange ? 'Temporary password issued' : testAccountByKey(u.id) || getCredential(u.id) ? 'Password set' : 'No password yet'}</span>
               </span>
               <span className="flex w-full items-center gap-3 pl-12 sm:w-auto sm:pl-0">

@@ -24,8 +24,12 @@ export type Relationship = 'Head' | 'Spouse' | 'Partner' | 'Son' | 'Daughter' | 
 
 export interface Resident {
   id: string
-  /** Barangay resident number (format pending confirmation). */
+  /** Permanent resident number, RES-181-YYYY-NNNNNN (see src/lib/ids.ts). Never changes. */
   residentNo: string
+  /** Number used before the standard (still searchable). */
+  legacyNo?: string
+  /** Household and family moves, newest last (kept for the record). */
+  moves?: { at: string; byUserId: string; from: string; to: string; reason: string }[]
   firstName: string
   middleName?: string
   lastName: string
@@ -53,6 +57,8 @@ export interface Resident {
 
 export interface Family {
   id: string
+  /** FAM-181-NNNNNN. */
+  familyNo: string
   /** Display name, e.g. "Dizon family". */
   name: string
   headResidentId: string
@@ -62,7 +68,10 @@ export interface Family {
 /** A household is everyone living at one address; it can hold more than one family. */
 export interface Household {
   id: string
+  /** HH-181-NNNNNN. */
   householdNo: string
+  /** Number used before the standard (still searchable). */
+  legacyNo?: string
   houseNo: string
   street: string
   address: string

@@ -1,5 +1,17 @@
 # BMIS Patch Notes: Report formats, notifications, analytics and cleanup (12 November 2026)
 
+## 2026-11-12 (latest): Identification numbers and household records
+
+- One standard: Resident RES-181-YYYY-NNNNNN, Household HH-181-NNNNNN, Family FAM-181-NNNNNN, resident portal Account ACC-181-NNNNNN, Barangay Personnel EMP-181-NNNNNN. Transaction references (CLR-, APT-, BRW-, ANN-, KP-) are unchanged and never used as a person's number.
+- Numbers come from a counter that only goes up (src/lib/ids.ts), never from a row count, so archived numbers are never reused. Internal ids stay separate. On Supabase these are database sequences with unique constraints and UUID primary keys (docs/supabase/identifiers.sql, not applied).
+- Migration: every resident and household got a new number; the earlier number (181-2026-000N, HH-181-00N) is kept as "Earlier number", shown on the personnel profile and still found by search. Imported and newly registered residents also get standard numbers.
+- Resident My Profile shows the Resident Number and Household Number with a short explanation; My family shows the Family Number. Account Settings shows the Account or Personnel Number.
+- Barangay Personnel: profile shows Household and Family Numbers, Change household (reason required; Resident Number unchanged; household history kept and audited), Make family head (adults 18 and older only). Households: New household (one per address; a second household at the same address is refused), Add a family, families listed with their numbers.
+- Resident menu regrouped: My Appointments and My Calendar moved under Main menu (the menu headings no longer repeat).
+- Search: residents, households and accounts can be found by any number (new or earlier), name, address or contact number.
+- Possible duplicates (same name and birthdate, same name on the same street, same contact number) are shown on registration review and import. Nothing is merged automatically.
+- Prototype limit: resident and household edits are kept in memory for the session; only the number counters persist in this browser. Atomic numbering across devices needs the database.
+
 ## 2026-11-12 (later): Security, accessibility, phones, uploads, registrations
 
 - Roles: only System Administrator, Chairman, Secretary, Kagawad, Treasurer, Property Custodian and Resident. "Authorized Personnel" removed (role, login, seed account). Treasurer sees fee documents only. Kagawads see complaints assigned to them by case personnel.

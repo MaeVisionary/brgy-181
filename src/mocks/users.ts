@@ -1,4 +1,5 @@
 import { OFFICIALS } from '@/config/barangay'
+import { accountNumber, personnelNumber } from '@/lib/ids'
 import type { RoleId, User } from '@/types/auth'
 import { DEMO_RESIDENT_ID } from './residents'
 import { isoDaysAgo } from './random'
@@ -60,5 +61,12 @@ export const mockUsers: User[] = [
     roleId: 'secretary', email: 'former@brgy181.test', status: 'inactive',
   },
 ]
+
+// Human-readable numbers: residents' logins get ACC-, Barangay Personnel get EMP- (never the resident number).
+{
+  let acc = 0
+  let emp = 0
+  for (const u of mockUsers) u.accountNo = u.roleId === 'resident' ? accountNumber(++acc) : personnelNumber(++emp)
+}
 
 export const userById = (id: string) => mockUsers.find((u) => u.id === id)

@@ -83,6 +83,7 @@ export function AccountPage() {
           </div>
           <dl className="mt-4 divide-y divide-line-soft text-[length:calc(15px*var(--fs))]">
             {[
+              ...(user.accountNo ? [[user.roleId === 'resident' ? 'Account Number' : 'Personnel Number', user.accountNo] as [string, string]] : []),
               ['Username', user.username],
               ['Email', user.email],
               ['Role', role.name],

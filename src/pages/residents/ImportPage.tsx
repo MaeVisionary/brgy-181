@@ -9,7 +9,7 @@ import { Card, Panel } from '@/components/ui/Panel'
 import { parseCsv } from '@/lib/csv'
 import { readSheet } from 'read-excel-file/browser'
 import { audit } from '@/services/auditService'
-import { dupKey, findDuplicate, importResidents, type ImportRecord } from '@/services/residentService'
+import { dupKey, findDuplicate, importResidents, possibleDuplicates, type ImportRecord } from '@/services/residentService'
 import { fullName } from './common'
 
 /** Target fields for the master list import (study §1.4 resident information). */
@@ -119,7 +119,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
       const k = dupKey(record)
       const inFile = seen.get(k)
       seen.set(k, i + 2)
-      const dup = findDuplicate(record)
+      const dup = findDuplicate(record) ?? possibleDuplicates(record).find((d) => d.reasons.includes('Same contact number') || d.reasons.includes('Same name and birthdate'))?.resident
       return { line: i + 2, record, errors, duplicateOf: dup ? fullName(dup) : undefined, duplicateInFile: inFile }
     })
   }, [body, map])

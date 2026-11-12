@@ -21,7 +21,7 @@ import { decideId, listPendingIds, type IdDocument } from '@/services/identitySe
 import { fileMeta, openFile } from '@/services/fileStore'
 import { APPOINTMENT_STATUS_LABEL, appointmentForRequest, formatTime } from '@/services/appointmentService'
 import { ScheduleVisitForm } from '@/pages/appointments/AppointmentPages'
-import { PROOF_REQUIRED, decideChangeRequest, displayRequestedValue, listChangeRequests } from '@/services/residentService'
+import { PROOF_REQUIRED, decideChangeRequest, displayRequestedValue, listChangeRequests, possibleDuplicates } from '@/services/residentService'
 import type { ResidentChangeRequest, ResidentRegistration } from '@/types/resident'
 import { fullName } from './common'
 import { useStickyState } from '@/hooks/useStickyState'
@@ -139,6 +139,8 @@ function RegistrationReview({ r, onChange }: { r: ResidentRegistration; onChange
   const a = r.applicant
   const ev = r.evidence
   const match = r.matchedResidentId ? residentById(r.matchedResidentId) : undefined
+  // Possible duplicates are shown, never merged automatically.
+  const dups = match || r.status === 'approved' || r.status === 'auto_approved' ? [] : possibleDuplicates({ firstName: a.firstName, lastName: a.lastName, birthDate: a.birthDate, contactNo: a.contactNo, street: a.street })
   // A stored result always wins; "Not checked" only when the comparison never ran (no face found).
   const face: CheckResult = r.verification.faceMatch === 'failed' || r.verification.faceMatch === 'passed' || !ev || ev.faceSimilarity !== undefined ? r.verification.faceMatch : 'not_checked'
   const checks: CheckResult[] = [r.verification.ocr, face, r.verification.liveness, r.verification.masterListMatch]
@@ -161,6 +163,11 @@ function RegistrationReview({ r, onChange }: { r: ResidentRegistration; onChange
             {waitingVisit ? 'Visit requested' : visit?.completedAt ? 'Visit done · ready for decision' : attention ? `${attention} check${attention > 1 ? 's' : ''} need${attention > 1 ? '' : 's'} attention` : 'All checks passed'}
             {expired && <span className="text-danger-ink"> · ID expired</span>}
           </p>
+          {dups.length > 0 && (
+            <p className="mt-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-warning">
+              Possible duplicate: {dups.map((d) => `${fullName(d.resident)} (${d.resident.residentNo}, ${d.reasons.join(', ').toLowerCase()})`).join('; ')}. Check before approving.
+            </p>
+          )}
         </button>
         <Button size="sm" variant="secondary" onClick={() => setOpen((o) => !o)} aria-expanded={open}>{open ? 'Hide details' : 'Review'}</Button>
       </div>

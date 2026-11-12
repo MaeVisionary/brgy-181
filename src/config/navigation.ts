@@ -1,4 +1,5 @@
 import {
+  CalendarCheck2,
   BadgeCheck,
   Bell,
   BookOpenCheck,
@@ -110,9 +111,9 @@ const RESIDENT_NAV: NavGroup[] = [
   { section: 'Main menu', label: 'Equipment Borrowing', icon: Package, path: '/my/borrowing', anyOf: ['self.borrowing'] },
   { section: 'Main menu', label: 'My Transactions', icon: ClipboardList, path: '/my/transactions', anyOf: ['self.documents', 'self.complaints', 'self.borrowing'] },
   { section: 'Main menu', label: 'Notifications', icon: Bell, path: '/notifications' },
+  { section: 'Main menu', label: 'My Appointments', icon: CalendarClock, path: '/my/appointments', anyOf: ['self.documents', 'self.complaints', 'self.borrowing', 'self.change_requests'] },
+  { section: 'Main menu', label: 'My Calendar', icon: CalendarCheck2, path: '/my/calendar' },
   { section: 'Account', label: 'My Profile', icon: UserRound, path: '/my/profile', anyOf: ['self.profile'] },
-  { section: 'Main menu', label: 'My Calendar', icon: CalendarClock, path: '/my/calendar' },
-  { section: 'Account', label: 'My Appointments', icon: CalendarClock, path: '/my/appointments', anyOf: ['self.documents', 'self.complaints', 'self.borrowing', 'self.change_requests'] },
   { section: 'Account', label: 'Account Settings', icon: Settings2, path: '/account' },
 ]
 

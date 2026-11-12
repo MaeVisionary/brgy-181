@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Panel'
 import { useAsync } from '@/hooks/useAsync'
 import { AREAS } from '@/mocks/residents'
-import { listHouseholds, listResidents } from '@/services/residentService'
+import { listHouseholds, listResidents, findByAny } from '@/services/residentService'
 import { ImportPanel } from './ImportPage'
 import { RegistrationBadge, SectorBadges, age, fullName } from './common'
 import { useStickyState } from '@/hooks/useStickyState'
@@ -35,7 +35,11 @@ export function ResidentsPage() {
   const rows = useMemo(() => {
     let list = residents ?? []
     const t = q.trim().toLowerCase()
-    if (t) list = list.filter((r) => `${fullName(r)} ${r.residentNo} ${r.houseNo} ${r.street}`.toLowerCase().includes(t))
+    if (t) {
+      // Any number (resident, household, family, earlier numbers), name, address or contact.
+      const hit = new Set(findByAny(t).residents.map((r) => r.id))
+      list = list.filter((r) => hit.has(r.id) || `${fullName(r)} ${r.residentNo} ${hhNo(r.householdId)} ${r.houseNo} ${r.street}`.toLowerCase().includes(t))
+    }
     if (area) list = list.filter((r) => r.street === area)
     if (sector) list = list.filter((r) => r.sectors[sector as keyof typeof r.sectors])
     if (voter) list = list.filter((r) => (voter === 'yes' ? r.voter : !r.voter))
@@ -72,7 +76,7 @@ export function ResidentsPage() {
         <div className="grid grid-cols-1 gap-2 border-b border-line-soft p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" />
-            <TextInput className="pl-9" placeholder="Search name, resident no. or address" value={q} onChange={(e) => reset(() => setQ(e.target.value))} aria-label="Search residents" />
+            <TextInput className="pl-9" placeholder="Search any number, name, address or contact" value={q} onChange={(e) => reset(() => setQ(e.target.value))} aria-label="Search residents" />
           </div>
           <Select aria-label="Area" value={area} onChange={(e) => reset(() => setArea(e.target.value))}>
             <option value="">All areas</option>

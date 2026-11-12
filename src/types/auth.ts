@@ -97,6 +97,8 @@ export interface User {
   status: AccountStatus
   /** Linked resident record (residents only). */
   residentId?: string
+  /** ACC-181-NNNNNN for resident logins; EMP-181-NNNNNN for Barangay Personnel. Separate from the resident number. */
+  accountNo?: string
   /**
    * Extra permissions granted to this account on top of its role.
    * Extra permissions an administrator adds to an official for an assigned duty.

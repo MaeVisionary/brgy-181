@@ -49,7 +49,12 @@ export function MyProfilePage() {
       <PageHeader title="My Profile" />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="space-y-4">
-          <Panel keepSubtitle title={fullName(me)} subtitle={`Resident no. ${me.residentNo}`}>
+          <Panel title={fullName(me)}>
+            <div className="mb-4 grid grid-cols-1 gap-3 rounded-[var(--radius-control)] bg-surface-muted px-4 py-3 sm:grid-cols-2">
+              <div><p className="text-[length:calc(15px*var(--fs))] text-ink-nav">Resident Number</p><p className="font-mono text-[length:calc(17px*var(--fs))] font-semibold text-navy-900">{me.residentNo}</p></div>
+              {hh && <div><p className="text-[length:calc(15px*var(--fs))] text-ink-nav">Household Number</p><p className="font-mono text-[length:calc(17px*var(--fs))] font-semibold text-navy-900">{hh.household.householdNo}</p></div>}
+              <p className="text-[length:calc(15px*var(--fs))] text-ink-nav sm:col-span-2">Your Resident Number is your permanent barangay number. Keep it for future transactions.</p>
+            </div>
             <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <F k="Birthdate" v={formatDate(me.birthDate)} />
               <F k="Age" v={age(me)} />
@@ -71,7 +76,7 @@ export function MyProfilePage() {
             </div>
           </Panel>
           {hh && (
-            <Panel keepSubtitle title="My family" subtitle={`Household ${hh.household.householdNo} · ${hh.household.families.length} famil${hh.household.families.length > 1 ? 'ies' : 'y'} at this address`} bodyClassName="px-0 py-0">
+            <Panel keepSubtitle title="My family" subtitle={`Family Number ${hh.household.families.find((f) => f.id === me.familyId)?.familyNo ?? ''}`} bodyClassName="px-0 py-0">
               <RowList rows={family.map((m) => ({ key: m.id, title: <>{fullName(m)}{m.id === me.id && <span className="ml-1 font-normal text-ink-muted">(you)</span>}</>, subtitle: `${m.relationship} · ${age(m)}` }))} />
               <table className="hidden w-full text-[length:calc(15px*var(--fs))] md:table">
                 <thead><tr className="bg-surface-muted text-left">{['Name', 'Relationship', 'Age'].map((h) => <th key={h} className="label-caps px-5 py-2">{h}</th>)}</tr></thead>

@@ -1,5 +1,6 @@
 import type { CivilStatus, Family, Household, Relationship, Resident, ResidentChangeRequest, ResidentRegistration } from '@/types/resident'
 import { MOCK_TODAY, isoDaysAgo } from './random'
+import { familyNumber, householdNumber, residentNumber } from '@/lib/ids'
 
 /**
  * SAMPLE RESIDENTS FOR THE PROTOTYPE. These are fictional people, not verified
@@ -149,6 +150,7 @@ function build() {
   const residents: Resident[] = []
   const households: Household[] = []
   let r = 0
+  let famSeq = 0
   HOUSEHOLDS.forEach((h, hi) => {
     const householdId = `hh-${String(hi + 1).padStart(3, '0')}`
     const families: Family[] = h.families.map((fam, fi) => {
@@ -158,7 +160,9 @@ function build() {
         const id = `res-${String(r).padStart(3, '0')}`
         residents.push({
           id,
-          residentNo: `181-2026-${String(r).padStart(4, '0')}`,
+          // Standard number; the earlier one stays searchable.
+          residentNo: residentNumber(new Date(isoDaysAgo(400 + r * 3)).getFullYear(), r),
+          legacyNo: `181-2026-${String(r).padStart(4, '0')}`,
           firstName: p.f,
           middleName: p.m,
           lastName: p.l,
@@ -190,11 +194,13 @@ function build() {
         })
         return id
       })
-      return { id: familyId, name: fam.name, headResidentId: ids[0], memberIds: ids }
+      famSeq++
+      return { id: familyId, familyNo: familyNumber(famSeq), name: fam.name, headResidentId: ids[0], memberIds: ids }
     })
     households.push({
       id: householdId,
-      householdNo: `HH-181-${String(hi + 1).padStart(3, '0')}`,
+      householdNo: householdNumber(hi + 1),
+      legacyNo: `HH-181-${String(hi + 1).padStart(3, '0')}`,
       houseNo: h.houseNo,
       street: h.street,
       address: `${h.houseNo} ${h.street}, Gagalangin, Tondo, Manila`,

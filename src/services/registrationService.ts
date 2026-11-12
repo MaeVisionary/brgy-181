@@ -11,6 +11,7 @@ import { BARANGAY_CONTACT } from '@/config/barangay'
 import { ROLE_PERMISSIONS } from '@/config/permissions'
 import { mockNotifications } from '@/mocks/notifications'
 import { sendEmail, type EmailRecord } from './emailService'
+import { accountNumber, nextNumber } from '@/lib/ids'
 
 /**
  * ONLINE RESIDENT SELF-REGISTRATION (prototype).
@@ -213,6 +214,8 @@ export async function submitRegistration(input: RegistrationInput): Promise<Resi
     for (const old of mockUsers.filter((u) => isRejectedAccount(u) && (matches(u, input.username.trim().toLowerCase()) || matches(u, user.email)))) {
       mockUsers.splice(mockUsers.indexOf(old), 1)
     }
+    // Login number from the account sequence (never the resident number; never reused).
+    user.accountNo = accountNumber(nextNumber('ACC', mockUsers.map((u) => u.accountNo ?? '')))
     mockUsers.push(user)
     mockRegistrations.push(reg)
     if (auto) linkResident(reg)
