@@ -1,6 +1,43 @@
 # BMIS Patch Notes: Report formats, notifications, analytics and cleanup (12 November 2026)
 
-## 2026-11-12 (latest): Next buttons and icon alignment
+## 2026-11-12 (latest): Purpose-based appointments, document pickup and processing time
+
+Appointments
+- "General assistance" is removed. Book a visit now starts with the purpose: Barangay consultation (Punong Barangay), Community concern (Barangay Secretary), Mediation or dispute (Punong Barangay), Follow-up on my complaint (Punong Barangay; must name one of the resident's own complaints). Each needs a reason from a fixed list, a short description (15 to 500 characters, with a note not to include ID numbers or medical details), a mobile number and a chosen day and time; then a review screen. Field errors appear under each field; the same rules run in the service.
+- Routing follows the purpose: the Punong Barangay holds consultations, mediation and complaint follow-ups (and confirms the time first); the Secretary handles community concerns. Duplicate open bookings for the same purpose are refused; a time taken a moment earlier is refused at saving.
+- Earlier "General assistance" bookings are kept and shown as Community concern with "Purpose not recorded (booked before a purpose was required)".
+
+Document pickup
+- Pickup is booked from the document request (never as a separate visit) as soon as the request is submitted, but only for times after the estimated ready time, within office hours, on open days (holidays and closures shown as Closed) and within pickup capacity.
+- Booking a pickup never marks the document ready. When the Secretary marks it "Signed and sealed: ready for pickup", an earlier pickup stands and the resident is told; otherwise they are asked to choose a time.
+- A booked pickup is released (with a notice saying why and the new expected time) when more information is requested, when processing is extended, or when the estimate moves past it (bigger queue, changed processing time, staff leave). Residents can change or cancel a pickup up to 2 hours before.
+
+Processing time
+- Each document type has its own preparation time in office hours, 12 to 124 hours (initial estimates: Residency and Indigency 12, certificates 16, Cohabitation and Clearance 24, Business clearance 48; marked "initial estimate" until the administrator sets them). Settings > Processing times, also the daily capacity (default 20 requests).
+- The estimate counts only office hours (8:00 to 5:00 with the lunch break), skips weekends, holidays, closures and days when everyone who prepares documents is on leave, adds a day for each full day's worth of requests ahead, pauses while waiting for the resident's reply, and is recalculated every time it is shown. The RA 11032 / Citizen's Charter date stays as "Latest allowed"; estimates past it are flagged for the Secretary.
+- Residents get a receipt with the expected ready time when they submit, and notices when more information is needed, when processing is delayed or extended, when the document is ready, and when the pickup is booked, moved or released.
+
+Secretary and resident screens
+- Document Requests (personnel): stage filters with counts (New, Under review, Processing, Awaiting requirements, Ready for pickup, Pickup scheduled, Completed, Rejected or cancelled), and Ready by and Pickup on every row; delayed or past-charter estimates in red.
+- Request details (personnel): "Processing and pickup" panel with the estimate and how it was counted, the legal latest date, the linked pickup and who releases it.
+- Resident Home: a separate Document Requests section (status, expected ready time, pickup); Upcoming Appointment shows visits only.
+
+## 2026-11-12: User Accounts table
+
+- Desktop (1280 px and wider): table with select boxes, an expand arrow per row (one open at a time), Name, Username, Role, Email, Contact number, Status and compact Edit and More actions. From 1280 to 1535 px the username sits under the name and the contact number under the email. Phones and tablets: account cards with Details, Edit and an actions menu.
+- Expanded rows show only fields the system holds (missing ones say "Not on file" or "Not recorded"): personnel role, responsibility and contact; residents' resident number, verification, registration date and linked record; account number, status, password state and last sign-in.
+- All / Barangay Personnel / Residents with counts; search by name, username, email, role, resident or account number and contact number; 10 per page, back to page 1 when the filter or search changes.
+- Bulk Activate / Deactivate (confirmed first; your own account and test accounts are skipped and named) and Export selected (CSV of name, username, account number, role, email and status only). Logged in the activity log.
+- Add User creates Barangay Personnel accounts (Kagawad or Property Custodian) with a one-time temporary password; residents still get accounts by registering.
+
+## 2026-11-12: Resident home, buttons and personnel activity
+
+- Resident home order: greeting, the three services, Upcoming Appointment (its own section right under the services on every screen size), Document Requests, Barangay Calendar, Barangay Announcements. Phones use full-width rows; tablets and desktops use tiles; from 1280 px the calendar is the wide column with announcements beside it. An appointment the resident still has to confirm gets an accent bar, a soft pulse and "Review and confirm".
+- Sample record (labelled "sample"): the Barangay Secretary schedules an in-person verification for the sample resident's address correction; it shows on the resident's Home, in the Secretary's appointments and in the activity log.
+- Each personnel dashboard has "My recent activity" (the official's own logged actions).
+- Button standard (src/components/ui/Button.tsx): 44 / 48 / 56 px minimum heights, labels wrap instead of clipping, buttons in one row share the same height, 20 px icons, visible focus, pressed and disabled states, solid red only for the final confirmation of a destructive action. Selection cards (certificates, clearances, complaint types, visit purposes) share one height per group. Every page was checked for each role at 375 px and 1280 px with the largest text size: no button below 44 px, no clipped labels, no uneven groups.
+
+## 2026-11-12: Next buttons and icon alignment
 
 - Root cause of steps "jumping": step and page buttons computed "current + 1" (setStep(s => s + 1), setPage(p => p + 1)). A quick double tap ran it twice using the previous screen's check, so registration went from Privacy straight to Valid ID without the details step, and lists skipped a page. Fixed by moving to an exact step/page number, a short lock after each step change, clamped pagination, and a shared Button that ignores a second tap within 400 ms (also stops double submissions).
 - Back goes back exactly one step; the progress bar matches the step shown. Pagination buttons are 44 x 44 px; the resident list uses the shared pager.
@@ -8,7 +45,7 @@
 - Mobile bottom bar: icons pinned at the same height, labels may wrap to two lines instead of being cut off; resident "Documents" shortened to "Requests".
 - On phones the registration Continue button sits above the "please correct" note, so the note does not push it.
 
-## 2026-11-12 (latest): Form validation, face check on phones, auto-save and draft recovery
+## 2026-11-12: Form validation, face check on phones, auto-save and draft recovery
 
 Validation
 - Continue / Submit never does nothing: on a problem the page scrolls to the first field marked in red, puts the cursor there, and says how many items need correcting. Messages sit under the field, say what to fix with an example (e.g. "Please enter a valid email address. Example: name@gmail.com", "Please select Yes or No."), and disappear once corrected. Nothing typed is cleared.

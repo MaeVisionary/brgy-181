@@ -19,9 +19,13 @@ import {
   DOCUMENT_OPTIONS,
   VISIT_REASONS,
   bookAppointment,
-  bookableServices,
   cancelByResident,
-  requestVisit,
+  bookPurposeVisit,
+  CONSULT_KINDS,
+  PURPOSES,
+  myCases,
+  purposeOf,
+  purposeVisitErrors,
   cancelAppointment,
   checkIn,
   completeAppointment,
@@ -60,7 +64,9 @@ import {
 import { EMAIL_STATUS_LABEL, emailsFor } from '@/services/emailService'
 import { ServiceError } from '@/services/mockApi'
 import { calendarEntries } from '@/services/calendarService'
-import { bookingsOn, estimateDuration, freeSlots, manilaToday, nextAvailable, nextDate, unavailableReason, workload } from '@/services/schedulingService'
+import { bookingsOn, estimateDuration, freeSlots, manilaToday, nextAvailable, nextDate, serviceRule as serviceRuleFor, unavailableReason, workload } from '@/services/schedulingService'
+import { SelectionCard, SelectionGrid } from '@/components/ui/SelectionCard'
+import { mockResidents } from '@/mocks/residents'
 import { NotFound } from '@/pages/system/NotFound'
 import { BackLink } from '@/pages/resident/parts'
 import { useStickyState } from '@/hooks/useStickyState'
@@ -282,7 +288,11 @@ function Details({ a, staff }: { a: Appointment; staff?: boolean }) {
       <dd className="font-semibold text-navy-900">{a.date ? `${dateLong(a.date)} · ${formatTime(a.time)} to about ${formatTime(endTime(a))}` : 'Not chosen yet'}</dd>
       <dt className="text-ink-muted">How long</dt><dd className="text-navy-900">About {a.durationMin} minutes{staff && a.durationOverride ? ` (changed from ${a.durationOverride.original}: ${a.durationOverride.reason})` : ''}</dd>
       <dt className="text-ink-muted">Where</dt><dd className="text-navy-900">{BARANGAY_CONTACT.hall}, {BARANGAY_CONTACT.address}</dd>
-      <dt className="text-ink-muted">Why</dt><dd className="text-navy-900">{a.reason}</dd>
+      <dt className="text-ink-muted">Why</dt><dd className="text-navy-900">{a.purpose?.reason ?? a.reason}</dd>
+      {a.purpose?.description && <><dt className="text-ink-muted">Concern</dt><dd className="break-words text-navy-900">{a.purpose.description}</dd></>}
+      {a.purpose?.caseNo && <><dt className="text-ink-muted">Complaint</dt><dd className="text-navy-900">{a.purpose.caseNo}</dd></>}
+      {staff && a.purpose?.contactNo && <><dt className="text-ink-muted">Contact</dt><dd className="text-navy-900">{a.purpose.contactNo}</dd></>}
+      {a.kind === 'document_claim' && a.beforeReady && <><dt className="text-ink-muted">Document</dt><dd className="text-navy-900">Still being prepared. The pickup stands only once it is ready; you will be notified.</dd></>}
       <dt className="text-ink-muted">Bring</dt><dd className="text-navy-900"><ul className="list-disc pl-5">{a.documents.map((d) => <li key={d}>{d}</li>)}</ul></dd>
       {a.instructions && <><dt className="text-ink-muted">Note</dt><dd className="text-navy-900">{a.instructions}</dd></>}
       {staff && a.assignedTo && <><dt className="text-ink-muted">Barangay Personnel</dt><dd className="text-navy-900">{staffName(a.assignedTo)}</dd></>}
@@ -331,7 +341,7 @@ export function MyAppointmentsPage() {
   )
   return (
     <>
-      <PageHeader title="My Appointments" actions={bookableServices().length > 0 && <ButtonLink to="/my/appointments/new">Book a visit</ButtonLink>} />
+      <PageHeader title="My Appointments" actions={PURPOSES.length > 0 && <ButtonLink to="/my/appointments/new">Book a visit</ButtonLink>} />
       {failed ? <Card><EmptyState title="Could not load your appointments" body="Please check your connection and try again." /></Card>
         : items === null ? <div className="h-24 animate-pulse rounded-[var(--radius-card)] bg-surface" />
         : items.length === 0 && hearings.length === 0 ? <Card><EmptyState title="No appointments" body="When you need to visit the Barangay Hall, it will appear here." /></Card>
@@ -409,7 +419,7 @@ export function MyAppointmentPage() {
               <ActionStack>
                 {a.status !== 'confirmed' && <Button onClick={() => run(() => confirmAppointment(a.id, user), 'Your appointment is confirmed!')}>Confirm Appointment</Button>}
                 <Button variant="secondary" onClick={() => setMode(mayMove ? 'pick' : 'ask')}>{mayMove ? 'Choose another time' : 'Request Another Schedule'}</Button>
-                {['chairman_consult', 'general_assist'].includes(a.kind) && <Button variant="ghost" onClick={() => run(() => cancelByResident(a.id, '', user), 'Your appointment was cancelled.')}>Cancel appointment</Button>}
+                {CONSULT_KINDS.includes(a.kind) && !!a.purpose && <Button variant="ghost" onClick={() => run(() => cancelByResident(a.id, '', user), 'Your appointment was cancelled.')}>Cancel appointment</Button>}
               </ActionStack>
             )}
           </>
@@ -688,7 +698,7 @@ export function AppointmentDetailPage() {
               {a.status === 'pending_confirmation' && a.bookedAt && !a.staffConfirmed && <Button onClick={() => run(() => staffConfirm(a.id, user), 'Confirmed. The resident was told.')}>Confirm appointment</Button>}
               {booked && !a.checkedInAt && <Button variant={a.status === 'pending_confirmation' && !a.staffConfirmed ? 'secondary' : 'primary'} onClick={() => run(() => checkIn(a.id, user), 'Checked in.')}>Check In</Button>}
               {isVerify && a.checkedInAt && a.status !== 'completed' && <Button onClick={() => setMode('verify')}>Record result</Button>}
-              {['complaint_consult', 'chairman_consult', 'general_assist'].includes(a.kind) && a.checkedInAt && a.status !== 'completed' && <Button onClick={() => setMode('complete')}>Record outcome</Button>}
+              {CONSULT_KINDS.includes(a.kind) && a.checkedInAt && a.status !== 'completed' && <Button onClick={() => setMode('complete')}>Record outcome</Button>}
               {handledElsewhere && a.status !== 'completed' && <Link to={type.staffLink(a.subjectId)} className={`inline-flex h-12 items-center rounded-[var(--radius-control)] bg-navy-900 px-5 text-[length:calc(16.5px*var(--fs))] font-semibold text-white`}>{a.kind === 'document_claim' ? 'Open request to release' : 'Open borrowing'}</Link>}
               {['awaiting_schedule', 'no_show'].includes(a.status) && <Button variant="secondary" onClick={() => setMode('assist')}>Book for the resident</Button>}
               {['awaiting_schedule', 'pending_confirmation', 'confirmed', 'reschedule_requested', 'rescheduled', 'no_show'].includes(a.status) && !a.checkedInAt && <Button variant="secondary" onClick={() => setMode('reschedule')}>Reschedule</Button>}
@@ -785,53 +795,206 @@ export function ConsultationPanel({ caseId }: { caseId: string }) {
 }
 
 /** Resident books a visit for something that is not part of another request. */
+/**
+ * Book a visit: purpose first (who handles it), then the reason, a short
+ * description, the related complaint when needed, a contact number and a
+ * time. Nothing is booked without a purpose. Document pickup is not here: it
+ * is booked from the document request.
+ */
 export function BookVisitPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const resident = user?.residentId ? mockResidents.find((r) => r.id === user.residentId) : undefined
   const [kind, setKind] = useState<AppointmentKind | null>(null)
   const [reason, setReason] = useState('')
+  const [description, setDescription] = useState('')
+  const [caseId, setCaseId] = useState('')
+  const [contactNo, setContactNo] = useState(resident?.contactNo ?? '')
+  const [slot, setSlot] = useState({ date: '', time: '' })
+  const [step, setStep] = useState<'purpose' | 'details' | 'time' | 'review'>('purpose')
+  const [touched, setTouched] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const box = useMemo(() => ({ current: null as HTMLDivElement | null }), [])
+  const draftValue = useMemo(() => ({ kind: kind ?? '', reason, description, caseId, contactNo }), [kind, reason, description, caseId, contactNo])
+  const visitDraft = useDraft('visit-request', draftValue, { isEmpty: (v) => !v.kind && !v.description.trim() })
   if (!user) return null
-  const [touched, setTouched] = useState(false)
-  const visitDraft = useDraft('visit-request', useMemo(() => ({ kind: kind ?? '', reason }), [kind, reason]), { isEmpty: (v) => !v.reason.trim() })
-  const loadVisit = (d: { kind: string; reason: string } | null) => { if (!d) return; setKind((d.kind || null) as typeof kind); setReason(d.reason) }
-  const reasonErr = reason.trim().length < 5 ? (reason.trim() ? 'Please tell us a little more (at least 5 characters).' : 'Please tell us what you need help with. Example: Help filling in a form') : ''
-  const next = async () => {
-    if (!kind || busy) return
-    setTouched(true)
-    if (reasonErr) { focusFirstInvalid(); return }
-    setBusy(true); setErr(null)
-    try { const a = await requestVisit(kind, reason, user, visitDraft.draftId); visitDraft.clear(); navigate(`/my/appointments/${a.id}`, { replace: true }) } catch (e) { setErr(errText(e)) } finally { setBusy(false) }
+  const purpose = kind ? purposeOf(kind) : undefined
+  const cases = myCases(user)
+  const minutes = kind ? lengthOf(kind, []) : 15
+  const errs = purposeVisitErrors({ kind: kind ?? undefined, reason, description, caseId: caseId || undefined, contactNo, ...slot }, user)
+  const detailKeys = ['reason', 'description', 'caseId', 'contactNo'] as const
+  const detailErr = (k: (typeof detailKeys)[number]) => (touched ? errs[k] : undefined)
+  const loadVisit = (d: typeof draftValue | null) => {
+    if (!d) return
+    setKind((d.kind || null) as AppointmentKind | null); setReason(d.reason); setDescription(d.description); setCaseId(d.caseId); setContactNo(d.contactNo || resident?.contactNo || '')
+    setStep(d.kind ? 'details' : 'purpose')
   }
+  const toTime = () => {
+    setTouched(true)
+    if (detailKeys.some((k) => errs[k])) { window.setTimeout(() => focusFirstInvalid(box.current ?? undefined), 0); return }
+    setStep('time')
+  }
+  const submit = async () => {
+    if (!kind || busy) return
+    setBusy(true); setErr(null)
+    try {
+      const a = await bookPurposeVisit({ kind, reason, description, caseId: caseId || undefined, contactNo, ...slot }, user, visitDraft.draftId)
+      visitDraft.clear()
+      navigate(`/my/appointments/${a.id}`, { replace: true })
+    } catch (e) { setErr(errText(e)); if (e instanceof ServiceError && e.code === 'slot') { setSlot({ date: slot.date, time: '' }); setStep('time') } } finally { setBusy(false) }
+  }
+  const stepNo = { purpose: 1, details: 2, time: 3, review: 4 }[step]
   return (
     <>
       <BackLink to="/my/appointments">My Appointments</BackLink>
-      <PageHeader title="Book a visit" />
-      {visitDraft.recovered && <DraftRecoveryCard savedAt={visitDraft.recovered.savedAt} onContinue={() => loadVisit(visitDraft.resume())} onStartOver={visitDraft.startOver} />}
-      {!kind ? (
-        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {bookableServices().map((k) => (
-            <li key={k}>
-              <button type="button" onClick={() => setKind(k)} className="flex min-h-16 w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-left hover:border-navy-600 hover:bg-sky-50">
-                <span><span className="block text-[length:calc(17px*var(--fs))] font-semibold text-navy-900">{APPOINTMENT_TYPES[k].label}</span><span className="block text-[length:calc(15px*var(--fs))] text-ink-nav">About {lengthOf(k, [])} minutes</span></span>
-                <ChevronRight className="size-5 shrink-0 text-ink-subtle" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
+      <PageHeader title="Book a visit" subtitle={`Step ${stepNo} of 4`} />
+      {visitDraft.recovered && step === 'purpose' && <DraftRecoveryCard savedAt={visitDraft.recovered.savedAt} onContinue={() => loadVisit(visitDraft.resume())} onStartOver={visitDraft.startOver} />}
+      {step === 'purpose' && (
+        <>
+          <p className="mb-3 text-[length:calc(17px*var(--fs))] font-semibold text-navy-900">What is your visit about?</p>
+          <SelectionGrid cols={2}>
+            {PURPOSES.map((p) => (
+              <SelectionCard
+                key={p.kind}
+                title={p.title}
+                note={<>With the {p.who} · about {lengthOf(p.kind, [])} minutes</>}
+                selected={kind === p.kind}
+                onClick={() => { if (kind !== p.kind) { setReason(''); setCaseId('') } setKind(p.kind); setTouched(false); setStep('details') }}
+              />
+            ))}
+          </SelectionGrid>
+          <p className="mt-4 text-[length:calc(15.5px*var(--fs))] text-ink-nav">
+            Picking up a certificate or clearance? Choose the pickup time from <Link to="/my/documents" className="font-semibold text-info hover:underline">your document request</Link>.
+          </p>
+        </>
+      )}
+      {step === 'details' && purpose && (
         <Card className="space-y-4 px-5 py-5">
-          <p className="text-[length:calc(18px*var(--fs))] font-semibold text-navy-900">{APPOINTMENT_TYPES[kind].label}</p>
-          <FieldLabel label="What do you need help with?" required error={touched && reasonErr}><TextArea className="min-h-[96px]" value={reason} onChange={(e) => setReason(e.target.value)} aria-invalid={(touched && !!reasonErr) || undefined} /></FieldLabel>
-          {err && <Note ok={false}>{err}</Note>}
+          <div ref={(el) => { box.current = el }} className="space-y-4">
+            <div>
+              <p className="text-[length:calc(19px*var(--fs))] font-bold text-navy-900">{purpose.title}</p>
+              <p className="text-[length:calc(15.5px*var(--fs))] text-ink-nav">{purpose.help} Handled by the {purpose.who}.</p>
+            </div>
+            <FieldLabel label="Reason for your visit" required error={detailErr('reason')}>
+              <Select value={reason} onChange={(e) => setReason(e.target.value)} aria-invalid={!!detailErr('reason') || undefined}>
+                <option value="">Choose a reason</option>
+                {purpose.reasons.map((r) => <option key={r} value={r}>{r}</option>)}
+              </Select>
+            </FieldLabel>
+            {purpose.needsCase !== 'no' && (
+              <FieldLabel label={purpose.needsCase === 'required' ? 'Which complaint is this about?' : 'Related complaint (if any)'} required={purpose.needsCase === 'required'} error={detailErr('caseId')}>
+                {cases.length === 0 && purpose.needsCase === 'required' ? (
+                  <p className="rounded-[var(--radius-control)] bg-surface-muted px-4 py-3 text-[length:calc(15.5px*var(--fs))] text-navy-900">You have no complaints on record. To start one, <Link to="/my/complaints/new" className="font-semibold text-info hover:underline">file a complaint</Link>.</p>
+                ) : (
+                  <Select value={caseId} onChange={(e) => setCaseId(e.target.value)} aria-invalid={!!detailErr('caseId') || undefined}>
+                    <option value="">{purpose.needsCase === 'required' ? 'Choose your complaint' : 'None'}</option>
+                    {cases.map((c) => <option key={c.id} value={c.id}>{c.caseNo} · {c.title}</option>)}
+                  </Select>
+                )}
+              </FieldLabel>
+            )}
+            <FieldLabel label="Briefly describe your concern" required error={detailErr('description')}>
+              <TextArea className="min-h-[110px]" maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} aria-invalid={!!detailErr('description') || undefined} />
+              <span className="mt-1 flex justify-between gap-3 text-[length:calc(14.5px*var(--fs))] text-ink-nav">
+                <span>Just enough for the right person to prepare. Please do not include ID numbers or medical details.</span>
+                <span className="shrink-0 tabular-nums">{description.trim().length}/500</span>
+              </span>
+            </FieldLabel>
+            <FieldLabel label="Mobile number we can call" required error={detailErr('contactNo')}>
+              <TextInput type="tel" inputMode="numeric" autoComplete="tel" value={contactNo} onChange={(e) => setContactNo(e.target.value)} aria-invalid={!!detailErr('contactNo') || undefined} />
+            </FieldLabel>
+          </div>
           <DraftIndicator status={visitDraft.status} />
           <ActionStack>
-            <Button loading={busy} onClick={next}>Next: choose a time</Button>
-            <Button variant="ghost" onClick={() => setKind(null)}>Back</Button>
+            <Button onClick={toTime}>Next: choose a time</Button>
+            <Button variant="ghost" onClick={() => setStep('purpose')}>Back</Button>
+          </ActionStack>
+        </Card>
+      )}
+      {step === 'time' && kind && (
+        <Card className="px-5 py-5">
+          {err && <div className="mb-3"><Note ok={false}>{err}</Note></div>}
+          <SlotChooser kind={kind} minutes={minutes} value={slot} onChange={setSlot} onNext={() => { setErr(null); setStep('review') }} onBack={() => setStep('details')} />
+        </Card>
+      )}
+      {step === 'review' && purpose && (
+        <Card className="space-y-4 px-5 py-5">
+          <p className="text-[length:calc(19px*var(--fs))] font-bold text-navy-900">Please check your appointment</p>
+          <dl className="grid grid-cols-1 gap-x-5 gap-y-1 text-[length:calc(16.5px*var(--fs))] sm:grid-cols-[auto_1fr] sm:gap-y-2">
+            <dt className="text-ink-nav">Visit</dt><dd className="font-semibold text-navy-900">{purpose.title} · with the {purpose.who}</dd>
+            <dt className="text-ink-nav">Reason</dt><dd className="text-navy-900">{reason}</dd>
+            {caseId && <><dt className="text-ink-nav">Complaint</dt><dd className="text-navy-900">{cases.find((c) => c.id === caseId)?.caseNo}</dd></>}
+            <dt className="text-ink-nav">Your concern</dt><dd className="break-words text-navy-900">{description.trim()}</dd>
+            <dt className="text-ink-nav">Date</dt><dd className="font-semibold text-navy-900">{dateLong(slot.date)}</dd>
+            <dt className="text-ink-nav">Time</dt><dd className="font-semibold text-navy-900">{formatTime(slot.time)} (about {minutes} minutes)</dd>
+            <dt className="text-ink-nav">Place</dt><dd className="text-navy-900">{BARANGAY_CONTACT.hall}</dd>
+            <dt className="text-ink-nav">Contact</dt><dd className="text-navy-900">{contactNo}</dd>
+          </dl>
+          {serviceRuleFor(kind!)?.staffConfirms && <p className="rounded-[var(--radius-control)] bg-sky-50 px-4 py-3 text-[length:calc(15.5px*var(--fs))] text-navy-900">The {purpose.who} confirms this time. We will notify you once it is confirmed.</p>}
+          {err && <Note ok={false}>{err}</Note>}
+          <ActionStack>
+            <Button loading={busy} onClick={submit}>Book appointment</Button>
+            <Button variant="secondary" onClick={() => setStep('time')}>Choose another time</Button>
           </ActionStack>
         </Card>
       )}
     </>
+  )
+}
+
+/** Days, then free times, for a service that has no appointment yet (the slot is re-checked when saving). */
+export function SlotChooser({ kind, minutes, value, onChange, onNext, onBack, days: givenDays, timesFor, nextLabel = 'Next' }: {
+  kind: AppointmentKind; minutes: number; value: { date: string; time: string }; onChange: (v: { date: string; time: string }) => void; onNext: () => void; onBack?: () => void
+  days?: ReturnType<typeof dayOptions>; timesFor?: (date: string) => { time: string }[]; nextLabel?: string
+}) {
+  const days = useMemo(() => givenDays ?? dayOptions({ kind, durationMin: minutes, id: '' }), [givenDays, kind, minutes])
+  const [nudge, setNudge] = useState(false)
+  const times = value.date ? (timesFor ? timesFor(value.date) : timeOptions({ kind, durationMin: minutes, id: '' }, value.date)) : []
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="mb-2 text-[length:calc(17px*var(--fs))] font-semibold text-navy-900">1. Choose a day</p>
+        {days.length === 0 ? <p className="text-[length:calc(15.5px*var(--fs))] text-ink-nav">No days are open for booking right now. Please call the Barangay Hall.</p> : (
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+            {days.map((d) => (
+              <li key={d.date} className="flex">
+                <button type="button" disabled={d.state !== 'open'} aria-pressed={value.date === d.date} onClick={() => onChange({ date: d.date, time: '' })}
+                  className={`flex min-h-[64px] w-full flex-col items-start justify-center rounded-[var(--radius-control)] border px-3 py-2 text-left transition-colors ${value.date === d.date ? 'border-navy-900 bg-navy-900 text-white' : d.state === 'open' ? 'border-line bg-surface text-navy-900 hover:border-navy-600' : 'border-line-soft bg-surface-muted text-ink-subtle'}`}>
+                  <span className="text-[length:calc(16px*var(--fs))] font-semibold">{shortDate(d.date)}</span>
+                  <span className="text-[length:calc(14px*var(--fs))]">{d.state === 'open' ? `${d.free} ${d.free === 1 ? 'time' : 'times'} free` : d.state === 'full' ? 'No free times' : 'Closed'}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {value.date && (
+        <div>
+          <p className="mb-2 text-[length:calc(17px*var(--fs))] font-semibold text-navy-900">2. Choose a time on {shortDate(value.date)}</p>
+          {times.length === 0 ? <p className="text-[length:calc(15.5px*var(--fs))] text-ink-nav">No free times left on this day. Please choose another day.</p> : (
+            <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+              {times.map((t) => (
+                <li key={t.time}>
+                  <button type="button" aria-pressed={value.time === t.time} onClick={() => onChange({ ...value, time: t.time })}
+                    className={`h-12 w-full rounded-[var(--radius-control)] border text-[length:calc(16px*var(--fs))] font-semibold ${value.time === t.time ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:border-navy-600'}`}>
+                    {formatTime(t.time)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {nudge && !value.time && (
+        <p role="alert" data-invalid="true" tabIndex={-1} className="rounded-md bg-danger-tint px-3 py-2 text-[length:calc(15.5px*var(--fs))] font-semibold text-danger-ink">
+          {!value.date ? 'Please choose a day first, then a time.' : times.length ? 'Please choose a time.' : 'There are no free times on this day. Please choose another day.'}
+        </p>
+      )}
+      <ActionStack>
+        <Button onClick={() => { if (!value.time) { setNudge(true); focusFirstInvalid(); return } onNext() }}>{nextLabel}</Button>
+        {onBack && <Button variant="ghost" onClick={onBack}>Back</Button>}
+      </ActionStack>
+    </div>
   )
 }

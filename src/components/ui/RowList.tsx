@@ -26,8 +26,8 @@ export function RowList({ rows, empty, className }: { rows: Row[]; empty?: React
         const body = (
           <>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{r.title}</span>
-              {r.subtitle && <span className="block truncate text-[length:calc(13.5px*var(--fs))] text-ink-muted">{r.subtitle}</span>}
+              <span className="block text-[length:calc(16px*var(--fs))] leading-snug font-semibold break-words text-navy-900">{r.title}</span>
+              {r.subtitle && <span className="block text-[length:calc(14.5px*var(--fs))] break-words text-ink-nav">{r.subtitle}</span>}
             </span>
             {r.trailing && <span className="shrink-0">{r.trailing}</span>}
             {(r.to || r.onClick) && <ChevronRight className="size-4 shrink-0 text-ink-subtle" />}

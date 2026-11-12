@@ -55,7 +55,7 @@ export interface ServiceRule {
   /** The assigned official confirms before it is final. */
   staffConfirms: boolean
 }
-export type ServiceKey = 'correction_verification' | 'document_claim' | 'complaint_consult' | 'equipment_pickup' | 'equipment_return' | 'chairman_consult' | 'general_assist' | 'mediation' | 'conciliation'
+export type ServiceKey = 'correction_verification' | 'document_claim' | 'complaint_consult' | 'equipment_pickup' | 'equipment_return' | 'chairman_consult' | 'community_concern' | 'mediation_inquiry' | 'mediation' | 'conciliation'
 
 export interface SchedulingRules {
   /** 24-hour "HH:MM", Manila time. */
@@ -128,11 +128,12 @@ export const DEFAULT_RULES: SchedulingRules = {
   services: {
     document_claim: { label: 'Document claiming', minutes: 10, buffer: 5, step: 15, roles: ['secretary'], maxPerDay: 0, cancelHours: 2, reminders: ['1d', 'day', '1h'], residentBookable: false, staffConfirms: false },
     correction_verification: { label: 'Original document verification', minutes: 15, buffer: 5, step: 15, roles: ['secretary'], maxPerDay: 0, cancelHours: 2, reminders: ['3d', '1d', 'day', '1h'], residentBookable: false, staffConfirms: false },
-    complaint_consult: { label: 'Complaint consultation (Punong Barangay)', minutes: 30, buffer: 10, step: 30, roles: ['chairman'], maxPerDay: 4, cancelHours: 24, reminders: ['3d', '1d', 'day', '1h'], residentBookable: false, staffConfirms: false },
+    complaint_consult: { label: 'Complaint follow-up', minutes: 30, buffer: 10, step: 30, roles: ['chairman'], maxPerDay: 4, cancelHours: 24, reminders: ['3d', '1d', 'day', '1h'], residentBookable: true, staffConfirms: true },
     equipment_pickup: { label: 'Equipment release', minutes: 15, buffer: 5, step: 15, roles: ['property_custodian'], maxPerDay: 0, cancelHours: 2, reminders: ['1d', 'day', '1h'], residentBookable: false, staffConfirms: false },
     equipment_return: { label: 'Equipment return and inspection', minutes: 15, buffer: 5, step: 15, roles: ['property_custodian'], maxPerDay: 0, cancelHours: 2, reminders: ['1d', 'day'], residentBookable: false, staffConfirms: false },
     chairman_consult: { label: 'Consultation with the Punong Barangay', minutes: 20, buffer: 10, step: 30, roles: ['chairman'], maxPerDay: 4, cancelHours: 24, reminders: ['1d', 'day', '1h'], residentBookable: true, staffConfirms: true },
-    general_assist: { label: 'General assistance', minutes: 15, buffer: 5, step: 15, roles: ['secretary'], maxPerDay: 6, cancelHours: 2, reminders: ['1d', 'day', '1h'], residentBookable: true, staffConfirms: false },
+    community_concern: { label: 'Community concern', minutes: 20, buffer: 5, step: 15, roles: ['secretary'], maxPerDay: 6, cancelHours: 2, reminders: ['1d', 'day', '1h'], residentBookable: true, staffConfirms: false },
+    mediation_inquiry: { label: 'Mediation or dispute', minutes: 30, buffer: 10, step: 30, roles: ['chairman'], maxPerDay: 3, cancelHours: 24, reminders: ['3d', '1d', 'day', '1h'], residentBookable: true, staffConfirms: true },
     mediation: { label: 'Mediation (Punong Barangay)', minutes: 60, buffer: 15, step: 30, roles: ['chairman'], maxPerDay: 3, cancelHours: 48, reminders: ['7d', '3d', '1d', 'day', '1h'], residentBookable: false, staffConfirms: true },
     conciliation: { label: 'Conciliation (Pangkat)', minutes: 60, buffer: 15, step: 30, roles: [], maxPerDay: 3, cancelHours: 48, reminders: ['7d', '3d', '1d', 'day', '1h'], residentBookable: false, staffConfirms: true },
   },
@@ -146,7 +147,7 @@ export const SERVICE_KEYS = Object.keys(DEFAULT_RULES.services) as ServiceKey[]
 export const serviceRule = (k: string, r = schedulingRules()): ServiceRule | undefined => r.services[k as ServiceKey]
 
 const KEY = 'bmis.schedulingRules'
-const SERVICE_KEYS_RAW: ServiceKey[] = ['document_claim', 'correction_verification', 'complaint_consult', 'equipment_pickup', 'equipment_return', 'chairman_consult', 'general_assist', 'mediation', 'conciliation']
+const SERVICE_KEYS_RAW: ServiceKey[] = ['document_claim', 'correction_verification', 'complaint_consult', 'equipment_pickup', 'equipment_return', 'chairman_consult', 'community_concern', 'mediation_inquiry', 'mediation', 'conciliation']
 export function schedulingRules(): SchedulingRules {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<SchedulingRules> | null

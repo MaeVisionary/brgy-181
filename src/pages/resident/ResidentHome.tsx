@@ -11,6 +11,14 @@ import { cn } from '@/lib/cn'
 import { greeting } from '@/lib/format'
 import { APPOINTMENT_STATUS_LABEL, APPOINTMENT_TYPES, hearingsFor, isOpen, listMyAppointments, runAppointmentJobs, type Appointment } from '@/services/appointmentService'
 import { listPublished, type Announcement } from '@/services/announcementService'
+import { claimFor } from '@/services/appointmentService'
+import { listRequests } from '@/services/documentService'
+import { readyEstimate, readyText } from '@/services/processingService'
+import { runPickupChecks } from '@/services/pickupService'
+import { getDocumentType } from '@/documents/catalog'
+import { useDocActor } from '@/hooks/useDocActor'
+import { documentStatusForResident } from '@/lib/residentStatus'
+import type { DocumentRequest, DocumentStatus } from '@/types/document'
 import { calendarEntries, type CalendarEntry } from '@/services/calendarService'
 import { formatTime, manilaToday, nextDate } from '@/services/schedulingService'
 
@@ -53,6 +61,7 @@ export function ResidentHome() {
       <Welcome />
       <QuickActions />
       <UpcomingAppointment />
+      <MyDocumentRequests />
       <div className="grid grid-cols-1 gap-6 sm:gap-8 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] xl:items-start xl:gap-6">
         <BarangayCalendar />
         <Announcements />
@@ -131,7 +140,8 @@ function UpcomingAppointment() {
     return by && by.id !== user.id && by.roleId !== 'resident' ? ROLES[by.roleId]?.name ?? by.position : undefined
   }
   const own: Next[] = ([
-    ...list.filter((a) => a.date && isOpen(a) && a.date >= today).map((a) => ({
+    // Document pickups are shown with their request (Document Requests), not here.
+    ...list.filter((a) => a.kind !== 'document_claim' && a.date && isOpen(a) && a.date >= today).map((a) => ({
       key: a.id, date: a.date, time: a.time, type: APPOINTMENT_TYPES[a.kind].label, purpose: a.title !== APPOINTMENT_TYPES[a.kind].label ? a.title : undefined, location: BARANGAY_CONTACT.hall,
       status: APPOINTMENT_STATUS_LABEL[a.status], tone: (a.status === 'confirmed' ? 'success' : 'warning') as Next['tone'], to: `/my/appointments/${a.id}`,
       setBy: setByOf(a), waiting: RESIDENT_TURN.has(a.status),
@@ -141,7 +151,7 @@ function UpcomingAppointment() {
   ] as Next[]).sort((a, b) => Number(!!b.waiting) - Number(!!a.waiting) || (a.date + a.time).localeCompare(b.date + b.time))
   const next = own[0]
   const more = own.length - 1
-  const needs = list.find((a) => a.status === 'awaiting_schedule')
+  const needs = list.find((a) => a.status === 'awaiting_schedule' && a.kind !== 'document_claim')
 
   return (
     <section aria-labelledby="appt-h">
@@ -294,6 +304,58 @@ function Announcements() {
               </Link>
             </li>
           ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+// ── Document requests (active ones, with ready time and pickup) ─────
+
+const ACTIVE_DOC: DocumentStatus[] = ['submitted', 'under_review', 'needs_info', 'for_assessment', 'processing', 'pending_approval', 'approved', 'for_signature', 'ready_for_pickup']
+
+function MyDocumentRequests() {
+  const actor = useDocActor()
+  const [reqs, setReqs] = useState<DocumentRequest[] | null>(null)
+  useEffect(() => { if (actor) { runPickupChecks(); listRequests(actor).then(setReqs).catch(() => setReqs([])) } }, [actor])
+  const active = (reqs ?? []).filter((r) => ACTIVE_DOC.includes(r.status) && getDocumentType(r.typeId).category !== 'case')
+  const shown = active.slice(0, 3)
+  const whenText = (d: Date) => d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })
+  return (
+    <section aria-labelledby="docs-h">
+      <div className="mb-3 flex min-h-12 flex-wrap items-center justify-between gap-x-3">
+        <h2 id="docs-h" className={heading}>Document Requests</h2>
+        <Link to="/my/documents" className={seeAll}>{active.length > shown.length ? `All ${active.length}` : 'View all'} <ChevronRight className="size-5" /></Link>
+      </div>
+      {reqs === null ? <div className="h-20 animate-pulse rounded-[var(--radius-card)] bg-surface" /> : shown.length === 0 ? (
+        <p className="flex min-h-14 items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3 text-[length:calc(17px*var(--fs))] text-navy-900">
+          <FileText className="size-6 shrink-0 text-ink-nav" /> No active document requests.
+        </p>
+      ) : (
+        <ul className="divide-y divide-line-soft overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
+          {shown.map((r) => {
+            const st = documentStatusForResident(r.status)
+            const e = readyEstimate(r)
+            const claim = claimFor(r.id)
+            const line = readyText(e, whenText)
+            return (
+              <li key={r.id}>
+                <Link to={`/my/documents/${r.id}`} className={cn(rowLink, 'min-h-[76px] px-4 py-3.5 sm:px-5')}>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="text-[length:calc(18px*var(--fs))] leading-snug font-bold break-words text-navy-900">{getDocumentType(r.typeId).name}</span>
+                      <Badge tone={st === 'Ready' ? 'success' : st === 'Action Needed' ? 'warning' : 'info'}>{st}</Badge>
+                    </span>
+                    {line && <span className={cn('mt-0.5 block text-[length:calc(16px*var(--fs))]', e?.state === 'delayed' ? 'text-warning' : 'text-navy-900')}>{line}</span>}
+                    <span className="block text-[length:calc(16px*var(--fs))] text-ink-nav">
+                      {claim?.date ? `Pickup: ${fmt(claim.date, { weekday: 'short', month: 'short', day: 'numeric' })}, ${formatTime(claim.time)}` : st === 'Action Needed' ? 'Please open it to see what is needed' : 'Pickup: choose a time'}
+                    </span>
+                  </span>
+                  <ChevronRight className="size-6 shrink-0 text-ink-subtle" />
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       )}
     </section>

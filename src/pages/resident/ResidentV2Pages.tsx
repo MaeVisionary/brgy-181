@@ -21,6 +21,8 @@ import { ALL_RESIDENT_STATUSES, STATUSES_BY_KIND, caseStageForResident, document
 import { mockUsers } from '@/mocks/users'
 import { getCase } from '@/services/caseService'
 import { estimateFor, standardFor } from '@/services/serviceStandardService'
+import { readyEstimate } from '@/services/processingService'
+import { PickupSection } from './PickupSection'
 import { applyTransition, availableTransitions, getRequest } from '@/services/documentService'
 import { STAGE_ORDER, actOnBorrowing, borrowingStage, fmtDue, getBorrowing, runBorrowingJobs } from '@/services/equipmentService'
 import { appointmentFor, formatTime } from '@/services/appointmentService'
@@ -133,6 +135,8 @@ export function MyTransactionsPage() {
 
 // ── Document request details ────────────────────────────────────────
 
+const readyWhen = (d: Date) => d.toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })
+
 /** Notes the requester is meant to read; other staff notes stay internal. */
 const PUBLIC_REMARKS = new Set<StatusEvent['status']>(['needs_info', 'rejected', 'cancelled', 'under_review'])
 const byLabel = (e: StatusEvent) => {
@@ -146,6 +150,7 @@ export function DocumentDetailsPage() {
   const [req, setReq] = useState<DocumentRequest | null>(null)
   const [notFound, setNotFound] = useState(false)
   useEffect(() => {
+    setNotFound(false)
     if (actor) getRequest(id, actor).then(setReq).catch(() => setNotFound(true))
   }, [id, actor])
   if (notFound) return <NotFound />
@@ -160,6 +165,7 @@ export function DocumentDetailsPage() {
   const std = standardFor(req.typeId)
   const pickup = std.release === 'pickup'
   const est = estimateFor(req)
+  const ready = readyEstimate(req)
   const ended = rs === 'Unsuccessful'
   const done = rs === 'Completed'
 
@@ -185,7 +191,6 @@ export function DocumentDetailsPage() {
     Completed: 'Your request has been completed.',
     Unsuccessful: req.status === 'cancelled' ? 'This request was cancelled.' : 'Your request was not approved. See the reason below.',
   }
-  const C = BARANGAY_CONTACT
   const expected = est ? formatDate((est.extended?.newDate ?? est.expectedBy) + 'T12:00:00+08:00') : null
 
   return (
@@ -202,9 +207,11 @@ export function DocumentDetailsPage() {
                   <dt className="text-ink-muted">Submitted</dt><dd className="text-navy-900">{formatDateTime(req.submittedAt)}</dd>
                   {!report && (
                     <>
-                      <dt className="text-ink-muted">Expected by</dt>
+                      <dt className="text-ink-muted">Estimated ready</dt>
                       <dd className="text-navy-900">
-                        {expected ? <><span className="font-semibold">{expected}</span><span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{est!.extended ? 'Extended' : `Within ${est!.days} working day${est!.days === 1 ? '' : 's'}${est!.fromCharter ? '' : ' (maximum under RA 11032)'}`}</span></> : rs === 'Action Needed' ? 'After you send the requested information' : 'Processing time will be confirmed.'}
+                        {ready && ready.readyAt && ready.state !== 'ready' ? <span className="font-semibold">{readyWhen(ready.readyAt)}</span> : rs === 'Action Needed' ? 'After you send the requested information' : ready?.state === 'ready' ? 'Ready now' : 'Processing time will be confirmed.'}
+                        {ready?.state === 'delayed' && <span className="block text-[length:calc(14.5px*var(--fs))] text-warning">Taking longer than first expected</span>}
+                        {expected && <span className="block text-[length:calc(14.5px*var(--fs))] text-ink-nav">Latest allowed: {expected} ({est!.extended ? 'extended' : `${est!.days} working day${est!.days === 1 ? '' : 's'}${est!.fromCharter ? ', Citizen\'s Charter' : ', RA 11032'}`})</span>}
                       </dd>
                     </>
                   )}
@@ -231,20 +238,7 @@ export function DocumentDetailsPage() {
               <TransitionPanel req={req} actor={actor} ownerView exclude={(t) => t.label === replyStep?.label} onChange={(r) => setReq({ ...r })} />
             )}
 
-            {pickup && !report && (rs === 'Ready' ? (
-              <Section title="Claiming your document">
-                <InfoRows
-                  rows={[
-                    ['Where', `${C.hall}, ${C.address}`],
-                    ['When', `${C.officeHours}. ${C.saturdayHours}.`],
-                    ['Bring', `A valid ID and your reference number ${req.referenceNo}${type.fee ? '. The fee is paid at the Barangay Hall before release' : ''}.`],
-                    ['Someone claiming for you', 'They bring an authorization letter signed by you, a copy of your valid ID, and their own valid ID.'],
-                  ]}
-                />
-              </Section>
-            ) : !ended && !done ? (
-              <p className="flex items-center gap-2 text-[length:calc(15px*var(--fs))] text-ink-nav"><MapPin className="size-4 shrink-0" /> No visit needed until your document is ready. We will notify you.</p>
-            ) : null)}
+            {pickup && !report && !ended && !done && <PickupSection req={req} onChange={() => setReq({ ...req })} />}
 
             <Section title={report ? 'Report details' : 'Request details'}>
               <InfoRows

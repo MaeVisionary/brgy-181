@@ -11,7 +11,9 @@ import { mockUsers } from '@/mocks/users'
 import type { NotificationCategory } from '@/types/activity'
 import type { Permission, User } from '@/types/auth'
 import type { DocumentRequest, DocumentStatus, DocumentTypeId, FieldValue, Transition } from '@/types/document'
-import { cancelFor, completeFor, createAwaitingSchedule } from './appointmentService'
+import { cancelFor, completeFor, createAwaitingSchedule, pickupReady, releasePickup } from './appointmentService'
+import { readyEstimate } from './processingService'
+import { runPickupChecks } from './pickupService'
 import { ServiceError, mockRequest } from './mockApi'
 
 /**
@@ -144,6 +146,10 @@ export function createRequest(input: NewRequestInput, actor: DocActor, clientReq
     mockDocumentRequests.unshift(req)
     if (!input.assisted) {
       notify(usersWith('documents.process'), 'document', 'New document request', `${req.referenceNo}: ${type.name} from ${req.requesterName}.`, `/documents/${req.id}`)
+      // Receipt for the resident, with the estimated ready time (office hours, holidays and the queue counted).
+      const est = readyEstimate(req)
+      const when = est?.readyAt ? ` Expected to be ready by ${est.readyAt.toLocaleString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })}. You can choose a pickup time now.` : ''
+      notify([actor.user.id], 'document', `${req.referenceNo}: request received`, `We received your request for ${type.name}.${when}`, `/my/documents/${req.id}`)
     }
     return req
   }))
@@ -215,8 +221,10 @@ export function applyTransition(
 
     // Notifications follow real events only.
     const owner = ownerUserId(req)
-    // Claiming: a ready document gets a claiming appointment the resident books; release closes it.
-    if (allowed.to === 'ready_for_pickup') createAwaitingSchedule({ kind: 'document_claim', subjectId: req.id, subjectRef: req.referenceNo, title: type.name, residentId: req.residentId, userId: owner, reason: `Claim your ${type.name}`, documents: ['Valid government-issued ID', `Your request reference number (${req.referenceNo})`] }, actor.user.id)
+    // Claiming: a pickup booked earlier stands once the document is ready; otherwise the resident is asked to choose a time.
+    // Release closes it. Asking for more information frees a booked pickup time (the estimate is on hold).
+    if (allowed.to === 'needs_info') releasePickup(req.id, 'The barangay needs more information for your request first.', actor.user.id)
+    if (allowed.to === 'ready_for_pickup' && !pickupReady(req.id)) createAwaitingSchedule({ kind: 'document_claim', subjectId: req.id, subjectRef: req.referenceNo, title: type.name, residentId: req.residentId, userId: owner, reason: `Claim your ${type.name}`, documents: ['Valid government-issued ID', `Your request reference number (${req.referenceNo})`] }, actor.user.id)
     if (allowed.to === 'released') completeFor('document_claim', req.id, 'Document released', actor.user.id)
     if (allowed.to === 'cancelled' || allowed.to === 'rejected') cancelFor('document_claim', req.id, allowed.to === 'cancelled' ? 'The request was cancelled' : 'The request was not approved', actor.user.id)
     const link = `/my/documents/${req.id}`
@@ -406,6 +414,8 @@ export function extendProcessing(id: string, reason: string, actor: DocActor): P
     req.updatedAt = now
     const owner = mockUsers.find((u) => u.residentId && u.residentId === req.residentId)
     if (owner) notify([owner.id], 'document', 'Processing time extended', `${req.referenceNo} · new expected date ${newDate}.`, `/my/documents/${req.id}`)
+    // A pickup booked before the new ready time can no longer be kept; later ones stand.
+    runPickupChecks()
     return req
   })
 }

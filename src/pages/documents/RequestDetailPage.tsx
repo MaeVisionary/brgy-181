@@ -15,6 +15,8 @@ import { formatDateTime } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { canEditValues, extendProcessing, getRequest, saveValues, setRequirement } from '@/services/documentService'
 import { estimateFor } from '@/services/serviceStandardService'
+import { readyEstimate } from '@/services/processingService'
+import { claimFor, dateLong, formatTime } from '@/services/appointmentService'
 import { formatDate } from '@/lib/format'
 import { TextArea } from '@/components/ui/Field'
 import { ServiceError } from '@/services/mockApi'
@@ -221,19 +223,46 @@ export function RequestDetailPage() {
   )
 }
 
-/** Expected date for staff, and the one-time RA 11032 extension with the reason the resident reads. */
+const fmtWhen = (d: Date) => d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })
+
+/** Estimated ready time, the legal latest date, the linked pickup, and the one-time RA 11032 extension with the reason the resident reads. */
 function ProcessingTimePanel({ req, actor, onChange }: { req: DocumentRequest; actor: NonNullable<ReturnType<typeof useDocActor>>; onChange: (r: DocumentRequest) => void }) {
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [err, setErr] = useState<string | null>(null)
   const est = estimateFor(req)
-  if (!est || ['released', 'rejected', 'cancelled'].includes(req.status)) return null
-  const date = req.extension?.newDate ?? est.expectedBy
-  const canExtend = !req.extension && actor.permissions.has('documents.process') && req.status !== 'ready_for_pickup'
+  const ready = readyEstimate(req)
+  const claim = claimFor(req.id)
+  if ((!est && !ready) || ['released', 'rejected', 'cancelled'].includes(req.status)) return null
+  const date = req.extension?.newDate ?? est?.expectedBy ?? ''
+  const canExtend = !!est && !req.extension && actor.permissions.has('documents.process') && req.status !== 'ready_for_pickup'
   return (
-    <Panel title="Processing time">
-      <p className="text-[length:calc(15px*var(--fs))] text-navy-900">Expected by <strong>{formatDate(date + 'T12:00:00+08:00')}</strong></p>
-      <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">{req.extension ? `Extended: ${req.extension.reason}` : `${est.days} working days${est.fromCharter ? '' : ' (RA 11032 maximum)'}`}</p>
+    <Panel title="Processing and pickup">
+      <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-[length:calc(15px*var(--fs))] sm:grid-cols-[auto_1fr]">
+        {ready && (
+          <>
+            <dt className="text-ink-nav">Estimated ready</dt>
+            <dd className={ready.state === 'delayed' || ready.beyondCharter ? 'font-semibold text-danger-ink' : 'font-semibold text-navy-900'}>
+              {ready.state === 'ready' ? 'Ready for pickup' : ready.state === 'paused' ? 'On hold: waiting for the requester\'s reply' : `${fmtWhen(ready.readyAt!)}${ready.state === 'delayed' ? ' (delayed)' : ''}`}
+            </dd>
+            {ready.state !== 'ready' && ready.state !== 'paused' && (
+              <><dt className="text-ink-nav">Counted from</dt><dd className="text-navy-900">{ready.hours} office hours to prepare{ready.queueHours ? ` + ${ready.queueHours} h for ${ready.queueAhead} requests ahead` : ''}</dd></>
+            )}
+          </>
+        )}
+        {est && <><dt className="text-ink-nav">Latest allowed</dt><dd className="text-navy-900">{formatDate(date + 'T12:00:00+08:00')} <span className="text-ink-nav">({req.extension ? `extended: ${req.extension.reason}` : `${est.days} working days${est.fromCharter ? ', Citizen\'s Charter' : ', RA 11032 maximum'}`})</span></dd></>}
+        {ready && (
+          <>
+            <dt className="text-ink-nav">Pickup</dt>
+            <dd className="text-navy-900">
+              {claim?.date ? `${dateLong(claim.date)}, ${formatTime(claim.time)}${claim.beforeReady ? ' (booked before the document is ready)' : ''}` : 'Not booked yet'}
+              {claim?.assignedTo && <span className="block text-ink-nav">Release by {mockUsers.find((u) => u.id === claim.assignedTo)?.fullName}</span>}
+            </dd>
+          </>
+        )}
+      </dl>
+      {ready?.beyondCharter && <p className="mt-2 rounded-[var(--radius-control)] bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">The current estimate is past the charter time. Extend the processing time (with the reason) or prioritize this request.</p>}
+      {claim?.date && claim.beforeReady && req.status !== 'ready_for_pickup' && <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-ink-nav">A pickup time does not make the document ready. Mark it ready only after it is prepared and checked.</p>}
       {canExtend && !open && <Button className="mt-3" size="sm" variant="secondary" onClick={() => setOpen(true)}>Extend once</Button>}
       {open && (
         <div className="mt-3 space-y-2">
