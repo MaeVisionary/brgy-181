@@ -17,15 +17,15 @@ export function HomePage() {
     <PublicLayout>
       {/* Hero: large, faint seal behind the text (low opacity so the text stays easy to read) */}
       <section className="relative overflow-hidden border-b border-line bg-surface">
-        <img
-          aria-hidden
-          alt=""
-          src={`${import.meta.env.BASE_URL}seal.png`}
-          className="bmis-rise pointer-events-none absolute top-1/2 right-[-140px] w-[620px] max-w-none -translate-y-1/2 object-contain opacity-[0.09] grayscale select-none sm:right-[-80px] md:w-[680px] lg:right-[-40px] lg:w-[720px]"
-        />
-        <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-surface via-surface/85 to-transparent lg:w-[62%]" />
-        <div className="relative mx-auto max-w-[1180px] px-4 py-16 sm:px-6 md:py-24">
-          <div className="max-w-[620px]">
+        <div className="relative mx-auto max-w-[1400px] px-5 py-16 sm:px-8 md:py-24 lg:px-12">
+          {/* Seal sits inside the centred container, beside the text (not stuck to the screen edge). */}
+          <img
+            aria-hidden
+            alt=""
+            src={`${import.meta.env.BASE_URL}seal.png`}
+            className="bmis-rise pointer-events-none absolute top-1/2 left-1/2 w-[440px] max-w-none -translate-x-[15%] -translate-y-1/2 object-contain opacity-[0.07] grayscale select-none sm:w-[560px] md:left-auto md:right-[2%] md:w-[600px] md:translate-x-0 lg:right-[6%] lg:w-[640px]"
+          />
+          <div className="relative max-w-[700px]">
             <p className="bmis-rise label-caps text-navy-600">Official digital portal</p>
             <h1 className="bmis-rise bmis-rise-2 mt-3 font-display text-[length:calc(34px*var(--fs))] leading-[1.08] font-extrabold tracking-tight text-navy-900 sm:text-[length:calc(46px*var(--fs))]">
               Welcome to the Digital Portal of <span className="block">Barangay 181</span>
@@ -54,7 +54,7 @@ export function HomePage() {
 
       {/* About */}
       <section id="about" className="scroll-mt-20">
-        <div className="mx-auto max-w-[1180px] px-4 py-14 sm:px-6">
+        <div className="mx-auto max-w-[1400px] px-5 py-16 sm:px-8 lg:px-12">
           <p className="flex flex-wrap items-center gap-2 text-[length:calc(14px*var(--fs))] font-semibold tracking-[0.06em] text-navy-600 uppercase">
             <BarangaySeal className="size-6" /> Tondo, Manila <span className="text-ink-subtle">•</span>
             <span className="tracking-normal text-ink-muted normal-case">Official Public Governance &amp; Resident Services Portal</span>
@@ -111,14 +111,14 @@ export function HomePage() {
 
       {/* Services */}
       <section id="services" className="scroll-mt-20 border-y border-line bg-surface">
-        <div className="mx-auto max-w-[1180px] px-4 py-16 sm:px-6">
+        <div className="mx-auto max-w-[1400px] px-5 py-16 sm:px-8 lg:px-12">
           <p className="label-caps text-center text-navy-600">Barangay services</p>
           <h2 className="mt-2 text-center font-display text-[length:calc(30px*var(--fs))] font-extrabold text-navy-900">What you can do through the portal</h2>
           <p className="mx-auto mt-2 max-w-2xl text-center text-[length:calc(16.5px*var(--fs))] text-ink-muted">
             If you have no gadget or need help using the portal, you can visit the Barangay 181 Hall and personnel will assist you.
           </p>
 
-          <div className="mx-auto mt-8 grid grid-cols-1 max-w-[1180px] gap-4 md:grid-cols-3">
+          <div className="mx-auto mt-10 grid grid-cols-1 gap-5 md:grid-cols-3 lg:gap-6">
             {[
               { icon: FileText, title: 'Document Requests', body: 'Request certificates and clearances online, track each step, then claim the signed and sealed document at the Barangay Hall.', action: 'Request a Document', to: '/my/documents/new' },
               { icon: Gavel, title: 'Complaints and Incident Reports', body: 'Report incidents and file complaints. Cases go through the Katarungang Pambarangay process: blotter, hearing and mediation.', action: 'File a Complaint', to: '/my/complaints/new' },
@@ -151,7 +151,7 @@ export function HomePage() {
 
       {/* Contact */}
       <section id="contact" className="scroll-mt-20 bg-surface-muted">
-        <div className="mx-auto grid grid-cols-1 max-w-[1180px] gap-6 px-4 py-16 sm:px-6 lg:grid-cols-2">
+        <div className="mx-auto grid grid-cols-1 max-w-[1400px] gap-8 px-5 py-16 sm:px-8 lg:px-12 lg:grid-cols-2">
           <div>
             <p className="label-caps text-navy-600">Contact and assistance</p>
             <h2 className="mt-2 font-display text-[length:calc(30px*var(--fs))] font-extrabold text-navy-900">Visit the Barangay 181 Hall</h2>

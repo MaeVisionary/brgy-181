@@ -32,11 +32,11 @@ export function PublicLayout({ children, minimal }: { children: ReactNode; minim
   return (
     <div id="top" className="flex min-h-full flex-col bg-canvas">
       <header className="sticky top-0 z-40 border-b border-line/70 bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
-        <div className="mx-auto flex h-16 max-w-[1180px] items-center gap-4 px-4 sm:px-6">
-          <Link to="/" onClick={(e) => { e.preventDefault(); jump('#top') }} className="flex items-center gap-2.5">
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-5 sm:px-8 lg:px-12">
+          <Link to="/" onClick={(e) => { e.preventDefault(); jump('#top') }} className="flex min-w-0 shrink-0 items-center gap-2.5">
             <BarangaySeal className="size-10" />
             <span className="leading-tight">
-              <span className="block font-display text-[length:calc(17px*var(--fs))] font-extrabold text-navy-900">{BARANGAY.name}</span>
+              <span className="block font-display text-[17px] font-extrabold whitespace-nowrap text-navy-900">{BARANGAY.name}</span>
               <span className="hidden text-[length:calc(13px*var(--fs))] text-ink-muted sm:block">Zone {BARANGAY.zone}, District {BARANGAY.district}, {BARANGAY.city}</span>
             </span>
           </Link>
@@ -82,12 +82,12 @@ export function PublicLayout({ children, minimal }: { children: ReactNode; minim
       <main className="flex-1">{children}</main>
 
       <footer className="border-t border-line bg-surface">
-        <div className="mx-auto grid grid-cols-1 max-w-[1180px] gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div className="mx-auto grid grid-cols-1 max-w-[1400px] gap-10 px-5 py-12 sm:px-8 lg:px-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <div className="flex items-center gap-2.5">
               <BarangaySeal className="size-10" />
               <span className="leading-tight">
-                <span className="block font-display text-[length:calc(17px*var(--fs))] font-extrabold text-navy-900">{BARANGAY.name}</span>
+                <span className="block font-display text-[17px] font-extrabold whitespace-nowrap text-navy-900">{BARANGAY.name}</span>
                 <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">Zone {BARANGAY.zone}, District {BARANGAY.district}, City of {BARANGAY.city}</span>
               </span>
             </div>
@@ -102,7 +102,7 @@ export function PublicLayout({ children, minimal }: { children: ReactNode; minim
           </div>
         </div>
         <div className="border-t border-line-soft">
-          <p className="mx-auto max-w-[1180px] px-4 py-4 text-[length:calc(14px*var(--fs))] text-ink-muted sm:px-6">
+          <p className="mx-auto max-w-[1400px] px-5 py-4 sm:px-8 lg:px-12 text-[length:calc(14px*var(--fs))] text-ink-muted sm:px-6">
             © {new Date().getFullYear()} {BARANGAY.fullName}. Barangay 181 Information Management System.
           </p>
         </div>
