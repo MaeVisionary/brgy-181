@@ -3,6 +3,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { Badge as SmallBadge, type BadgeTone } from '@/components/ui/Badge'
+import { buttonClass } from '@/components/ui/Button'
+import { ROLES } from '@/config/permissions'
+import { mockUsers } from '@/mocks/users'
 import { BARANGAY_CONTACT } from '@/config/barangay'
 import { cn } from '@/lib/cn'
 import { greeting } from '@/lib/format'
@@ -49,10 +52,10 @@ export function ResidentHome() {
     <div className="mx-auto w-full max-w-[1180px] space-y-6 sm:space-y-8">
       <Welcome />
       <QuickActions />
-      <div className="grid grid-cols-1 gap-6 sm:gap-8 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] xl:grid-rows-[auto_1fr] xl:gap-x-6 xl:gap-y-6">
-        <div className="xl:col-start-2 xl:row-start-1"><UpcomingAppointment /></div>
-        <div className="xl:col-start-1 xl:row-span-2 xl:row-start-1"><BarangayCalendar /></div>
-        <div className="xl:col-start-2 xl:row-start-2 xl:self-start"><Announcements /></div>
+      <UpcomingAppointment />
+      <div className="grid grid-cols-1 gap-6 sm:gap-8 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] xl:items-start xl:gap-6">
+        <BarangayCalendar />
+        <Announcements />
       </div>
     </div>
   )
@@ -101,7 +104,16 @@ function QuickActions() {
 
 // ── C. Upcoming appointment (mine only) ─────────────────────────────
 
-interface Next { key: string; date: string; time: string; type: string; location: string; status?: string; tone?: 'success' | 'warning' | 'info'; to: string }
+interface Next {
+  key: string; date: string; time: string; type: string; purpose?: string; location: string; status?: string; tone?: 'success' | 'warning' | 'info'; to: string
+  /** Who set it up, when it was not the resident (e.g. "Barangay Secretary"). */
+  setBy?: string
+  /** The resident still has to do something (confirm a time the Barangay set). */
+  waiting?: boolean
+}
+
+/** Statuses where the next step is the resident's. */
+const RESIDENT_TURN = new Set(['pending_confirmation', 'rescheduled'])
 
 function UpcomingAppointment() {
   const { user } = useAuth()
@@ -114,14 +126,19 @@ function UpcomingAppointment() {
   if (!user) return null
   const today = manilaToday()
   const list = apps ?? []
-  const own: Next[] = [
+  const setByOf = (a: Appointment) => {
+    const by = mockUsers.find((u) => u.id === a.history[0]?.byUserId)
+    return by && by.id !== user.id && by.roleId !== 'resident' ? ROLES[by.roleId]?.name ?? by.position : undefined
+  }
+  const own: Next[] = ([
     ...list.filter((a) => a.date && isOpen(a) && a.date >= today).map((a) => ({
-      key: a.id, date: a.date, time: a.time, type: APPOINTMENT_TYPES[a.kind].label, location: BARANGAY_CONTACT.hall,
+      key: a.id, date: a.date, time: a.time, type: APPOINTMENT_TYPES[a.kind].label, purpose: a.title !== APPOINTMENT_TYPES[a.kind].label ? a.title : undefined, location: BARANGAY_CONTACT.hall,
       status: APPOINTMENT_STATUS_LABEL[a.status], tone: (a.status === 'confirmed' ? 'success' : 'warning') as Next['tone'], to: `/my/appointments/${a.id}`,
+      setBy: setByOf(a), waiting: RESIDENT_TURN.has(a.status),
     })),
     // Hearings in the resident's own case are personal appointments too (never other people's cases).
     ...hearingsFor(user).filter((h) => h.date >= today).map((h) => ({ key: h.id, date: h.date, time: h.time, type: h.label, location: h.place, status: 'Scheduled', tone: 'info' as const, to: `/my/complaints/${h.caseId}` })),
-  ].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+  ] as Next[]).sort((a, b) => Number(!!b.waiting) - Number(!!a.waiting) || (a.date + a.time).localeCompare(b.date + b.time))
   const next = own[0]
   const more = own.length - 1
   const needs = list.find((a) => a.status === 'awaiting_schedule')
@@ -135,19 +152,32 @@ function UpcomingAppointment() {
       {apps === null ? (
         <div className="h-28 animate-pulse rounded-[var(--radius-card)] bg-surface" />
       ) : next ? (
-        <div className="rounded-[var(--radius-card)] border-2 border-navy-900/15 bg-surface p-4 sm:p-5">
-          <div className="flex items-start gap-4">
-            <DateBadge date={next.date} strong />
-            <div className="min-w-0 flex-1">
-              {next.status && <Badge tone={next.tone}>{next.status}</Badge>}
-              <p className="mt-1.5 text-[length:calc(19px*var(--fs))] leading-snug font-bold break-words text-navy-900">{next.type}</p>
-              <p className="mt-1 text-[length:calc(17px*var(--fs))] text-navy-900">{fmt(next.date, { weekday: 'long' })}, {formatTime(next.time)}</p>
-              <p className="text-[length:calc(16.5px*var(--fs))] break-words text-ink-nav">{next.location}</p>
+        <div className={cn('relative overflow-hidden rounded-[var(--radius-card)] border-2 bg-surface p-4 sm:p-5', next.waiting ? 'border-navy-600' : 'border-navy-900/15')}>
+          {/* Quiet cue that this one is waiting for the resident: an accent bar and a soft pulse, no extra wording. */}
+          {next.waiting && <span aria-hidden className="absolute inset-y-0 left-0 w-1.5 bg-navy-600" />}
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="flex min-w-0 flex-1 items-start gap-4">
+              <DateBadge date={next.date} strong />
+              <div className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-center gap-2">
+                  {next.status && <Badge tone={next.tone}>{next.status}</Badge>}
+                  {next.waiting && (
+                    <span aria-hidden className="relative flex size-3">
+                      <span className="absolute inline-flex size-full rounded-full bg-navy-600 opacity-60 motion-safe:animate-ping" />
+                      <span className="relative inline-flex size-3 rounded-full bg-navy-600" />
+                    </span>
+                  )}
+                </span>
+                <p className="mt-1.5 text-[length:calc(19px*var(--fs))] leading-snug font-bold break-words text-navy-900">{next.type}</p>
+                {next.purpose && <p className="text-[length:calc(16.5px*var(--fs))] break-words text-navy-900">{next.purpose}</p>}
+                <p className="mt-1 text-[length:calc(17px*var(--fs))] font-semibold text-navy-900">{fmt(next.date, { weekday: 'long' })}, {formatTime(next.time)}</p>
+                <p className="text-[length:calc(16.5px*var(--fs))] break-words text-ink-nav">{next.location}{next.setBy ? ` · Set by the ${next.setBy}` : ''}</p>
+              </div>
             </div>
+            <Link to={next.to} className={buttonClass(next.waiting ? 'primary' : 'secondary', 'lg', 'w-full md:w-auto md:min-w-[220px]')}>
+              {next.waiting ? 'Review and confirm' : 'View appointment'} <ChevronRight />
+            </Link>
           </div>
-          <Link to={next.to} className="bmis-press mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-control)] bg-navy-900 px-5 text-[length:calc(17px*var(--fs))] font-semibold text-white hover:bg-navy-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-600 sm:w-auto sm:inline-flex">
-            View appointment <ChevronRight className="size-5" />
-          </Link>
         </div>
       ) : needs ? (
         <Link to={`/my/appointments/${needs.id}`} className={cn(rowLink, 'min-h-16 rounded-[var(--radius-card)] border-2 border-warning/50 bg-warning-tint px-4 py-3')}>

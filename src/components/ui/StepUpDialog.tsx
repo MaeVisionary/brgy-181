@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { buttonClass } from './Button'
 import { useAuth } from '@/auth/useAuth'
 import { ServiceError } from '@/services/mockApi'
 import { startChallenge, verifyChallenge } from '@/services/stepUp'
@@ -53,8 +54,8 @@ export function StepUpDialog({ title, children, action, payload, confirmLabel = 
         </label>
         {err && <p role="alert" className="mt-3 text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <button type="button" onClick={onCancel} disabled={busy} className="min-h-12 rounded-[var(--radius-control)] border border-line px-4 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted">Cancel</button>
-          <button type="button" onClick={run} disabled={busy} className="min-h-12 rounded-[var(--radius-control)] bg-navy-900 px-4 text-[length:calc(16.5px*var(--fs))] font-semibold text-white hover:bg-navy-800 disabled:opacity-60">{busy ? 'Checking…' : confirmLabel}</button>
+          <button type="button" onClick={onCancel} disabled={busy} className={buttonClass('secondary', 'md', 'w-full')}>Cancel</button>
+          <button type="button" onClick={run} disabled={busy} className={buttonClass('primary', 'md', 'w-full')}>{busy ? 'Checking…' : confirmLabel}</button>
         </div>
       </div>
     </div>,

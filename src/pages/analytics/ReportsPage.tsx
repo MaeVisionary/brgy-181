@@ -111,8 +111,8 @@ export function ReportsPage() {
           <ul className="space-y-0.5">
             {SENIOR_REPORTS.map((r) => (
               <li key={r.id}>
-                <button type="button" onClick={() => setReportId(r.id)} aria-current={r.id === reportId ? 'page' : undefined} className={cn('flex w-full items-center gap-2 rounded-[var(--radius-control)] px-3 py-2 text-left text-[length:calc(15px*var(--fs))]', r.id === reportId ? 'bg-surface font-semibold text-navy-900 shadow-[0_0_0_1px_var(--color-line)]' : 'text-ink-nav hover:bg-surface/70 hover:text-navy-900')}>
-                  <span className="min-w-0 flex-1 truncate">{SHORT_NAME[r.id] ?? r.name}</span>
+                <button type="button" onClick={() => setReportId(r.id)} aria-current={r.id === reportId ? 'page' : undefined} className={cn('flex min-h-11 w-full items-center gap-2 rounded-[var(--radius-control)] px-3 py-2 text-left text-[length:calc(15px*var(--fs))]', r.id === reportId ? 'bg-surface font-semibold text-navy-900 shadow-[0_0_0_1px_var(--color-line)]' : 'text-ink-nav hover:bg-surface/70 hover:text-navy-900')}>
+                  <span className="min-w-0 flex-1 leading-snug">{SHORT_NAME[r.id] ?? r.name}</span>
                   {r.pii && <Lock className="size-3.5 shrink-0 text-ink-subtle" aria-label="Contains identifiable information" />}
                 </button>
               </li>
@@ -250,7 +250,7 @@ function ReportRow({ id, name, agency, template, canManage, onUpload }: {
 }) {
   const input = useRef<HTMLInputElement>(null)
   const builtIn = BUILTIN_REPORT_TEMPLATES[id]
-  const btn = 'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface w-10 sm:w-auto sm:px-3.5 text-[length:calc(14.5px*var(--fs))] font-semibold whitespace-nowrap text-navy-900 hover:bg-surface-muted'
+  const btn = 'inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface min-w-11 sm:w-auto sm:px-3.5 text-[length:calc(14.5px*var(--fs))] font-semibold whitespace-nowrap text-navy-900 hover:bg-surface-muted'
   return (
     <li className="flex items-center gap-3 px-5 py-3">
       <span className="min-w-0 flex-1">
@@ -265,7 +265,7 @@ function ReportRow({ id, name, agency, template, canManage, onUpload }: {
       {canManage && (
         <>
           <input ref={input} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(id, name, f); e.target.value = '' }} />
-          <button type="button" onClick={() => input.current?.click()} aria-label={`Replace ${name} file`} title="Replace file" className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-control)] text-ink-nav hover:bg-surface-muted hover:text-navy-900">
+          <button type="button" onClick={() => input.current?.click()} aria-label={`Replace ${name} file`} title="Replace file" className="grid size-11 shrink-0 place-items-center rounded-[var(--radius-control)] text-ink-nav hover:bg-surface-muted hover:text-navy-900">
             <Upload className="size-4" />
           </button>
         </>

@@ -36,7 +36,7 @@ export function ForgotPasswordPage() {
       <SealWatermark size={480} className="hidden 2xl:block" />
       <div className="relative mx-auto max-w-[520px] px-4 py-12 sm:py-16">
         <section className="bmis-rise rounded-lg border border-line bg-surface p-7 md:p-9">
-          <button type="button" onClick={() => go(`/login/${type.slug}`, 'back')} className="bmis-press -ml-1 inline-flex items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
+          <button type="button" onClick={() => go(`/login/${type.slug}`, 'back')} className="bmis-press -ml-1 inline-flex min-h-11 items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
             <ArrowLeft className="size-4" /> Back to {type.loginTitle}
           </button>
           <span className="mt-6 grid size-12 place-items-center rounded-lg bg-sky-100 text-navy-900"><KeyRound className="size-6" /></span>

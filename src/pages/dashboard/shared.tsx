@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Panel'
 import { BARANGAY } from '@/config/barangay'
 import { useState } from 'react'
+import { listAudit } from '@/services/auditService'
+import { ensureSampleVisit } from '@/services/appointmentService'
 
 /**
  * Dashboard top (Figma v3): greeting card, then an "… Overview" row that carries
@@ -233,5 +235,35 @@ export function PopulationByStreet() {
         )}
       </Panel>
     </div>
+  )
+}
+
+/**
+ * The signed-in official's own recent actions (from the activity log), so each
+ * person can see what they recorded, scheduled or decided. The full log for
+ * everyone stays with the System Administrator (Activity Log).
+ */
+export function MyRecentActivity({ className }: { className?: string }) {
+  const { user } = useAuth()
+  // Makes sure sample records are in the log before it is read.
+  ensureSampleVisit()
+  if (!user) return null
+  const mine = listAudit().filter((e) => e.userId === user.id).slice(0, 6)
+  return (
+    <Panel className={className} title="My recent activity" subtitle="What you recorded in the system" bodyClassName="px-0 py-0">
+      {mine.length === 0 ? <p className="px-5 py-4 text-[length:calc(15.5px*var(--fs))] text-ink-muted">Nothing recorded yet in this session.</p> : (
+        <ul className="divide-y divide-line-soft">
+          {mine.map((e) => (
+            <li key={e.id} className="flex flex-col gap-0.5 px-5 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+              <span className="min-w-0">
+                <span className="block text-[length:calc(15.5px*var(--fs))] font-semibold break-words text-navy-900">{e.action}</span>
+                <span className="block text-[length:calc(14.5px*var(--fs))] text-ink-nav">{e.module}</span>
+              </span>
+              <span className="shrink-0 text-[length:calc(14.5px*var(--fs))] text-ink-nav">{formatDateTime(e.timestamp)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
   )
 }

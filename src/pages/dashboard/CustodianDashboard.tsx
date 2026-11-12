@@ -11,7 +11,7 @@ import { availableQty, borrowedQty, borrowingPolicy, fmtDue, listBorrowings, lis
 import { BORROW_STATUS, RETURN_BADGE } from '@/pages/equipment/badges'
 import { itemsText } from '@/pages/equipment/BorrowingPages'
 import { TodayAppointmentsPanel } from '@/pages/appointments/AppointmentPages'
-import { DashHeader, ListPanel, Row, Stat, ViewAll } from './shared'
+import { DashHeader, ListPanel, Row, Stat, ViewAll, MyRecentActivity } from './shared'
 
 /** Property Custodian: barangay equipment and borrowing transactions. */
 export function CustodianDashboard() {
@@ -105,7 +105,7 @@ export function CustodianDashboard() {
                 const st = activityStatus(h.action)
                 return (
                   <li key={`${b.id}-${i}`}>
-                    <Link to={`/borrowing/${b.id}`} className="grid grid-cols-[1fr_auto] items-center gap-x-3 px-5 py-2 hover:bg-sky-50">
+                    <Link to={`/borrowing/${b.id}`} className="grid min-h-11 grid-cols-[1fr_auto] items-center gap-x-3 px-5 py-2 hover:bg-sky-50">
                       <span className="font-semibold text-navy-900">{b.refNo}</span>
                       <span className={`justify-self-end rounded px-1.5 text-[length:calc(12.5px*var(--fs))] leading-6 font-semibold ${st.cls}`}>{st.label}</span>
                       <span className="truncate text-[length:calc(13.5px*var(--fs))] text-ink-muted">{b.borrowerName}</span>
@@ -117,6 +117,7 @@ export function CustodianDashboard() {
           </ul>
         )}
       </Panel>
+      <MyRecentActivity className="mt-4" />
     </>
   )
 }

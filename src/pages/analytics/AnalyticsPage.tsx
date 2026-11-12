@@ -26,7 +26,7 @@ export function AnalyticsPage() {
             aria-selected={tab === t.id}
             onClick={() => setParams({ tab: t.id })}
             className={cn(
-              '-mb-px border-b-2 px-3 py-2.5 text-[length:calc(15px*var(--fs))] font-semibold whitespace-nowrap transition-colors',
+              '-mb-px inline-flex min-h-11 items-center border-b-2 px-3 py-2 text-[length:calc(15px*var(--fs))] font-semibold whitespace-nowrap transition-colors',
               tab === t.id ? 'border-navy-900 text-navy-900' : 'border-transparent text-ink-muted hover:text-navy-900',
             )}
           >

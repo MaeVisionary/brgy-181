@@ -10,7 +10,7 @@ import { formatDateTime, initials } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { listAudit } from '@/services/auditService'
 import type { RoleId } from '@/types/auth'
-import { DashHeader, ListPanel, PopulationByStreet, Row, Stat } from './shared'
+import { DashHeader, ListPanel, PopulationByStreet, Row, Stat, MyRecentActivity } from './shared'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 
@@ -50,6 +50,7 @@ export function KagawadDashboard() {
         </div>
         <CouncilList highlight={user?.fullName} />
       </div>
+      <MyRecentActivity className="mt-4" />
     </>
   )
 }

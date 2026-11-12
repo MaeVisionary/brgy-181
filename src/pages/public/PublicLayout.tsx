@@ -52,17 +52,17 @@ export function PublicLayout({ children, minimal }: { children: ReactNode; minim
           <div className={cn('flex shrink-0 items-center gap-1.5 sm:gap-2', minimal ? 'ml-auto' : 'ml-auto lg:ml-3')}>
             <TextSizeControl />
             {!minimal && (
-              <button type="button" onClick={() => go('/register')} className="bmis-press ml-auto hidden h-9 items-center rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted sm:inline-flex lg:ml-0">
+              <button type="button" onClick={() => go('/register')} className="bmis-press ml-auto hidden min-h-11 items-center rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted sm:inline-flex lg:ml-0">
                 Create account
               </button>
             )}
             {!minimal && (
-              <button type="button" onClick={() => go('/portal')} className="bmis-press ml-auto inline-flex h-9 items-center rounded-[var(--radius-control)] bg-navy-900 px-3.5 text-[length:calc(15.5px*var(--fs))] font-semibold whitespace-nowrap text-white hover:bg-navy-800 sm:ml-0 sm:px-5">
+              <button type="button" onClick={() => go('/portal')} className="bmis-press ml-auto inline-flex min-h-11 items-center rounded-[var(--radius-control)] bg-navy-900 px-3.5 text-[length:calc(15.5px*var(--fs))] font-semibold whitespace-nowrap text-white hover:bg-navy-800 sm:ml-0 sm:px-5">
                 Login
               </button>
             )}
             {!minimal && (
-              <button type="button" aria-label={open ? 'Close menu' : 'Open menu'} onClick={() => setOpen((o) => !o)} className="grid size-9 place-items-center rounded-md text-navy-900 lg:hidden">
+              <button type="button" aria-label={open ? 'Close menu' : 'Open menu'} onClick={() => setOpen((o) => !o)} className="grid size-11 place-items-center rounded-md text-navy-900 lg:hidden">
                 {open ? <X className="size-5" /> : <Menu className="size-5" />}
               </button>
             )}

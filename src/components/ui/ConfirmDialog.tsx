@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { cn } from '@/lib/cn'
+import { buttonClass } from './Button'
 
 /**
  * Short, specific confirmation (Apple-style alert). Clicking outside does
@@ -29,10 +29,10 @@ export function ConfirmDialog({ title, children, confirmLabel, cancelLabel = 'Ca
         <h2 id="confirm-title" className="font-display text-[length:calc(20px*var(--fs))] font-bold text-navy-900">{title}</h2>
         {children && <div className="mt-2 text-[length:calc(16px*var(--fs))] text-ink-nav">{children}</div>}
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <button ref={cancelRef} type="button" onClick={onCancel} disabled={busy} className="min-h-12 rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted">
+          <button ref={cancelRef} type="button" onClick={onCancel} disabled={busy} className={buttonClass('secondary', 'md', 'w-full')}>
             {cancelLabel}
           </button>
-          <button type="button" onClick={onConfirm} disabled={busy} className={cn('min-h-12 rounded-[var(--radius-control)] px-4 text-[length:calc(16.5px*var(--fs))] font-semibold text-white disabled:opacity-60', destructive ? 'bg-danger hover:brightness-95' : 'bg-navy-900 hover:bg-navy-800')}>
+          <button type="button" onClick={onConfirm} disabled={busy} className={buttonClass(destructive ? 'danger-solid' : 'primary', 'md', 'w-full')}>
             {confirmLabel}
           </button>
         </div>

@@ -511,7 +511,7 @@ export function ChangeRequestsPage() {
             type="button"
             aria-selected={tab === k}
             onClick={() => setTab(k)}
-            className={tab === k ? 'inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-control)] border border-navy-900 bg-navy-900 px-4 text-[length:calc(15px*var(--fs))] font-semibold text-white' : 'inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted'}
+            className={tab === k ? 'inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-control)] border border-navy-900 bg-navy-900 px-4 text-[length:calc(15px*var(--fs))] font-semibold text-white' : 'inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted'}
           >
             {label} <span className={tab === k ? 'text-white/75' : 'text-ink-muted'}>({n})</span>
           </button>

@@ -52,7 +52,7 @@ export function TextSizeControl({ className }: { className?: string }) {
       className={cn('flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-[10px] border font-bold', size === s ? 'border-navy-900 bg-sky-100 text-navy-900' : 'border-line text-navy-900 hover:bg-surface-muted')}
     >
       <span className={cls}>{face}</span>
-      <span className="text-[12px] font-semibold text-ink-nav">{LABEL[s]}</span>
+      <span className="text-[13.5px] font-semibold text-ink-nav">{LABEL[s]}</span>
     </button>
   )
   return (

@@ -106,7 +106,7 @@ export function NotificationItem({
         </span>
       </button>
       {onDismiss && (
-        <button type="button" onClick={() => onDismiss(n.id)} aria-label={`Dismiss ${n.title}`} title="Dismiss" className="absolute top-1/2 right-1.5 grid size-8 -translate-y-1/2 place-items-center rounded-full text-ink-muted opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 hover:bg-surface-muted hover:text-navy-900 [@media(hover:none)]:opacity-100">
+        <button type="button" onClick={() => onDismiss(n.id)} aria-label={`Dismiss ${n.title}`} title="Dismiss" className="absolute top-1/2 right-1.5 grid size-11 -translate-y-1/2 place-items-center rounded-full text-ink-muted opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 hover:bg-surface-muted hover:text-navy-900 [@media(hover:none)]:opacity-100">
           <X className="size-4" />
         </button>
       )}

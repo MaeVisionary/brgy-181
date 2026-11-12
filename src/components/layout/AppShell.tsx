@@ -95,7 +95,7 @@ export function AppShell() {
           type="button"
           onClick={toggle}
           aria-label={mobileOpen ? 'Close menu' : 'Toggle menu'}
-          className="hidden size-9 place-items-center md:grid rounded-[var(--radius-control)] text-navy-900 hover:bg-surface-muted"
+          className="hidden size-11 place-items-center md:grid rounded-[var(--radius-control)] text-navy-900 hover:bg-surface-muted"
         >
           {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
@@ -135,7 +135,7 @@ export function AppShell() {
             <button type="button" aria-label="Close menu" className="absolute inset-0 bg-navy-900/40" onClick={() => setMobileOpen(false)} />
             <aside className="relative flex h-full w-[310px] max-w-[88vw] flex-col border-r border-line bg-surface shadow-xl">
               <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-line px-4">
-                <button type="button" onClick={() => setMobileOpen(false)} aria-label="Close menu" className="grid size-10 place-items-center rounded-[var(--radius-control)] text-navy-900 hover:bg-surface-muted">
+                <button type="button" onClick={() => setMobileOpen(false)} aria-label="Close menu" className="grid size-11 place-items-center rounded-[var(--radius-control)] text-navy-900 hover:bg-surface-muted">
                   <X className="size-5" />
                 </button>
                 <BarangaySeal />

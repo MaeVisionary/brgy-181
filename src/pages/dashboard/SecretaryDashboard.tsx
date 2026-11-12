@@ -17,7 +17,7 @@ import { listReviewQueue } from '@/services/concernService'
 import { estimateFor } from '@/services/serviceStandardService'
 import { TodayAppointmentsPanel } from '@/pages/appointments/AppointmentPages'
 import { Link } from 'react-router-dom'
-import { DashHeader, EmptyNote, ListPanel, Row, Stat, ViewAll } from './shared'
+import { DashHeader, EmptyNote, ListPanel, Row, Stat, ViewAll, MyRecentActivity } from './shared'
 
 /** Ana Manila Salvador: day-to-day administration of records, documents, complaints and reports. */
 export function SecretaryDashboard() {
@@ -188,6 +188,7 @@ export function SecretaryDashboard() {
           ))}
         </ul>
       </Panel>
+      <MyRecentActivity className="mt-4" />
     </>
   )
 }

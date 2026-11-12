@@ -8,8 +8,8 @@ import type { User } from '@/types/auth'
  */
 const entries: AuditLogEntry[] = []
 
-export function audit(user: User, action: string, module: string, recordRef?: string, outcome: AuditOutcome = 'success') {
-  entries.unshift({
+export function audit(user: User, action: string, module: string, recordRef?: string, outcome: AuditOutcome = 'success', at?: string) {
+  const entry = {
     id: `aud-${Date.now().toString(36)}-${entries.length}`,
     userId: user.id,
     roleAtTime: user.roleId,
@@ -17,8 +17,11 @@ export function audit(user: User, action: string, module: string, recordRef?: st
     module,
     recordRef,
     outcome,
-    timestamp: new Date().toISOString(),
-  })
+    timestamp: at ?? new Date().toISOString(),
+  }
+  // Entries replayed with an earlier time (sample records) keep the newest-first order.
+  const i = entries.findIndex((e) => e.timestamp <= entry.timestamp)
+  if (i === -1) entries.push(entry); else entries.splice(i, 0, entry)
 }
 
 export const listAudit = (): AuditLogEntry[] => entries.slice()

@@ -41,7 +41,7 @@ export function Toggle({
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          'relative inline-flex shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-600 disabled:cursor-not-allowed disabled:opacity-50',
+          'relative inline-flex shrink-0 items-center rounded-full transition-colors before:absolute before:top-1/2 before:left-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-600 disabled:cursor-not-allowed disabled:opacity-50',
           sm ? 'h-6 w-10' : 'h-7 w-12',
           checked ? 'bg-navy-600' : offTone === 'danger' ? 'bg-danger' : 'bg-line',
         )}

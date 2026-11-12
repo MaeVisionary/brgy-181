@@ -1,7 +1,7 @@
 import { BARANGAY_CONTACT } from '@/config/barangay'
 import { once } from '@/lib/idempotency'
 import { mockCases } from '@/mocks/cases'
-import { mockChangeRequests, mockResidents } from '@/mocks/residents'
+import { DEMO_RESIDENT_ID, mockChangeRequests, mockResidents } from '@/mocks/residents'
 import { mockNotifications } from '@/mocks/notifications'
 import { mockUsers } from '@/mocks/users'
 import type { Permission, User } from '@/types/auth'
@@ -559,6 +559,7 @@ export function reminderAt(k: ReminderKey, a: { date: string; time: string }): n
  * in becomes a no-show after the grace time; the underlying request stays open.
  */
 export function runAppointmentJobs(now = Date.now()) {
+  ensureSampleVisit()
   const r = schedulingRules()
   const on = appointmentSettings().remindersOn
   const list = load()
@@ -709,10 +710,12 @@ const named = (a: Appointment): NamedAppointment => {
 const order = (a: Appointment) => (a.date ? startsAt(a) : Number.MAX_SAFE_INTEGER)
 
 export function listMyAppointments(by: User): Promise<Appointment[]> {
+  ensureSampleVisit()
   return mockRequest(() => load().filter((a) => isOwner(a, by)).sort((a, b) => order(a) - order(b)))
 }
 /** Staff see only the services their role handles. */
 export function listAppointments(by: User): Promise<NamedAppointment[]> {
+  ensureSampleVisit()
   return mockRequest(() => {
     const kinds = (Object.keys(APPOINTMENT_TYPES) as AppointmentKind[]).filter((k) => mayHandle(by, k))
     if (!kinds.length) throw new ServiceError('forbidden', 'You cannot view appointments.')
@@ -720,6 +723,7 @@ export function listAppointments(by: User): Promise<NamedAppointment[]> {
   })
 }
 export function getAppointment(id: string, by: User): Promise<NamedAppointment> {
+  ensureSampleVisit()
   return mockRequest(() => {
     const a = load().find((x) => x.id === id)
     if (!a || (!isOwner(a, by) && !mayHandle(by, a.kind))) throw new ServiceError('not_found', 'Appointment not found.')
@@ -763,4 +767,64 @@ export function saveAppointmentSettings(s: AppointmentSettings, by: User) {
   if (!can(by, 'system.settings')) throw new ServiceError('forbidden', 'Only the System Administrator can change reminder settings.')
   localStorage.setItem(SET_KEY, JSON.stringify(s))
   audit(by, `Appointment reminders ${s.remindersOn ? 'on' : 'off'}`, 'Settings')
+}
+
+// ── Sample record (demonstration only) ───────────────────────────────
+/**
+ * One labelled sample so the flow can be seen end to end: the Barangay Secretary
+ * requires an in-person check for the sample resident's address correction and
+ * sets the time; the resident confirms it from Home. The appointment is saved
+ * like any other. The activity-log entry and the resident's notification live
+ * in memory, so they are written again (with their original time) each session.
+ * The whole prototype runs on sample data; this record is marked "sample" in its history and log.
+ */
+export const SAMPLE_VISIT_SUBJECT = 'chg-sample-001'
+let sampleChecked = false
+export function ensureSampleVisit() {
+  if (sampleChecked) return
+  sampleChecked = true
+  const sec = mockUsers.find((u) => u.roleId === 'secretary' && u.status === 'active')
+  const residentUser = mockUsers.find((u) => u.residentId === DEMO_RESIDENT_ID && u.status === 'active')
+  const res = mockResidents.find((r) => r.id === DEMO_RESIDENT_ID)
+  if (!sec || !residentUser || !res) return
+  if (!mockChangeRequests.some((c) => c.id === SAMPLE_VISIT_SUBJECT)) {
+    mockChangeRequests.push({
+      id: SAMPLE_VISIT_SUBJECT, residentId: res.id, submittedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(), field: 'Address',
+      originalValue: `${res.houseNo} ${res.street}`, requestedValue: `${res.houseNo}-B ${res.street}`, reason: 'Sample request: house number changed after the lot was divided.',
+      status: 'pending', proof: { bringOnsite: true },
+    } as (typeof mockChangeRequests)[number])
+  }
+  const list = load()
+  const today = manilaToday()
+  let a = list.find((x) => x.subjectId === SAMPLE_VISIT_SUBJECT)
+  // A sample left in the past (or finished) is replaced, so Home always shows a current example.
+  if (a && (!isOpen(a) || (a.date && a.date < today))) { save(list.filter((x) => x.id !== a!.id)); a = undefined }
+  if (!a) {
+    const kind: AppointmentKind = 'correction_verification'
+    const documents = ['Original valid government-issued ID', 'Original proof of address']
+    const minutes = lengthOf(kind, documents)
+    let date = nextDate(today)
+    let slot: { time: string; staffId: string } | undefined
+    // Only days the Barangay Hall is open (no weekends, holidays or closures) and times still free.
+    for (let i = 0; i < 20; i++) {
+      if (dayState(date, minutes, [sec.id], undefined, kind).state === 'open') slot = openTimes(date, minutes, [sec.id], undefined, kind).find((t) => t.time >= '09:00')
+      if (slot) break
+      date = nextDate(date)
+    }
+    if (!slot) return
+    const now = new Date().toISOString()
+    const fresh = load()
+    a = {
+      id: 'apt-sample-001', ref: makeRef(fresh), kind, subjectId: SAMPLE_VISIT_SUBJECT, subjectRef: SAMPLE_VISIT_SUBJECT, title: 'Record correction: Address',
+      residentId: res.id, userId: residentUser.id, reason: 'Check the supporting document', documents, date, time: slot.time, durationMin: minutes, durationEstimate: minutes,
+      assignedTo: sec.id, instructions: 'Please bring the original documents listed. (Sample record)', status: 'pending_confirmation', remindersSent: [], createdAt: now,
+      history: [{ at: now, byUserId: sec.id, action: `Scheduled for ${date} ${formatTime(slot.time)}–${formatTime(addMinutes(slot.time, minutes))} (${minutes} min, calculated) · sample record` }],
+    }
+    save([...fresh, a])
+  }
+  const made = a.history[0]?.at ?? a.createdAt
+  audit(sec, `Verification visit scheduled ${a.ref}`, 'Residents', `${SAMPLE_VISIT_SUBJECT} · ${a.date} ${a.time} · ${a.durationMin} min · sample`, 'success', made)
+  if (a.status === 'pending_confirmation' && !mockNotifications.some((n) => n.id === `ntf-${a!.id}`)) {
+    mockNotifications.push({ id: `ntf-${a.id}`, userId: residentUser.id, category: 'hearing', title: 'Please visit the Barangay Hall', body: visitMessage(a, 'scheduled').short, createdAt: made, read: false, link: `/my/appointments/${a.id}` })
+  }
 }

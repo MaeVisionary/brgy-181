@@ -88,7 +88,7 @@ export function ResidentProfilePage() {
               <ul>
                 {requests.map((d) => (
                   <li key={d.id} className="border-b border-line-soft last:border-0">
-                    <Link to={`/documents/${d.id}`} className="flex items-center justify-between px-5 py-2.5 hover:bg-sky-50">
+                    <Link to={`/documents/${d.id}`} className="flex min-h-11 items-center justify-between px-5 py-2.5 hover:bg-sky-50">
                       <span className="text-[length:calc(15px*var(--fs))] text-navy-900">{getDocumentType(d.typeId).name} · {d.referenceNo}</span>
                       <StatusBadge status={d.status} typeId={d.typeId} />
                     </Link>
@@ -96,7 +96,7 @@ export function ResidentProfilePage() {
                 ))}
                 {cases.map((c) => (
                   <li key={c.id} className="border-b border-line-soft last:border-0">
-                    <Link to={`/cases/${c.id}`} className="flex items-center justify-between px-5 py-2.5 hover:bg-sky-50">
+                    <Link to={`/cases/${c.id}`} className="flex min-h-11 items-center justify-between px-5 py-2.5 hover:bg-sky-50">
                       <span className="text-[length:calc(15px*var(--fs))] text-navy-900">{c.caseNo} · {c.title}</span>
                       <span className="text-[length:calc(14px*var(--fs))] text-ink-muted">{c.complainants.some((p) => p.residentId === res.id) ? 'Complainant' : 'Respondent'}</span>
                     </Link>
@@ -106,7 +106,7 @@ export function ResidentProfilePage() {
             </Panel>
           )}
         </div>
-        <Panel title="Household and family" actions={hh.data && <Link to={`/residents/households/${hh.data.household.id}`} className="inline-flex items-center gap-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-info hover:underline"><Home className="size-3.5" /> {hh.data.household.householdNo}</Link>}>
+        <Panel title="Household and family" actions={hh.data && <Link to={`/residents/households/${hh.data.household.id}`} className="inline-flex min-h-11 items-center gap-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-info hover:underline"><Home className="size-3.5" /> {hh.data.household.householdNo}</Link>}>
           {hh.data && (
             <>
               <p className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">
@@ -121,7 +121,7 @@ export function ResidentProfilePage() {
               <ul className="space-y-1.5">
                 {familyMembers.map((m) => (
                   <li key={m.id}>
-                    <Link to={`/residents/${m.id}`} className={`flex items-center justify-between rounded-md px-2 py-1.5 text-[length:calc(15px*var(--fs))] hover:bg-sky-50 ${m.id === res.id ? 'bg-sky-100 font-semibold' : ''}`}>
+                    <Link to={`/residents/${m.id}`} className={`flex min-h-11 items-center justify-between rounded-md px-2 py-1.5 text-[length:calc(15px*var(--fs))] hover:bg-sky-50 ${m.id === res.id ? 'bg-sky-100 font-semibold' : ''}`}>
                       <span className="text-navy-900">{fullName(m)}</span>
                       <span className="text-[length:calc(14px*var(--fs))] text-ink-muted">{m.relationship} · {age(m)}</span>
                     </Link>

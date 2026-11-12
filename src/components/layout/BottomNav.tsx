@@ -87,7 +87,7 @@ export function BottomNav() {
           <div className="relative flex max-h-[85dvh] w-full flex-col rounded-t-2xl bg-surface pb-[env(safe-area-inset-bottom)] shadow-xl">
             <div className="relative flex items-center justify-end px-4 pt-3 pb-1">
               <span aria-hidden className="absolute top-3 left-1/2 h-1.5 w-10 -translate-x-1/2 rounded-full bg-line" />
-              <button type="button" onClick={() => setMore(false)} aria-label="Close" className="grid size-10 place-items-center rounded-full text-ink-nav hover:bg-surface-muted"><X className="size-5" /></button>
+              <button type="button" onClick={() => setMore(false)} aria-label="Close" className="grid size-11 place-items-center rounded-full text-ink-nav hover:bg-surface-muted"><X className="size-5" /></button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
               <Sidebar collapsed={false} onNavigate={() => setMore(false)} />

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { DraftConflictNote, DraftIndicator, DraftRecoveryCard, useDraft } from '@/hooks/useDraft'
 import { MSG, focusFirstInvalid, hasErrors } from '@/lib/validation'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ChevronRight } from '@/icons'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/Button'
 import { FieldLabel, TextArea, TextInput } from '@/components/ui/Field'
@@ -10,11 +9,11 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Panel } from '@/components/ui/Panel'
 import { residentFullName } from '@/documents/fill'
 import { useDocActor } from '@/hooks/useDocActor'
-import { cn } from '@/lib/cn'
 import { COMPLAINT_CATEGORIES, submitComplaint, type ComplaintCategory } from '@/services/caseService'
 import { ServiceError } from '@/services/mockApi'
 import { getResident } from '@/services/residentService'
 import type { Resident } from '@/types/resident'
+import { SelectionCard, SelectionGrid } from '@/components/ui/SelectionCard'
 import { BackLink } from './parts'
 import { ConcernForm } from './ConcernForm'
 import { ActionStack } from '@/components/ui/ActionStack'
@@ -83,15 +82,9 @@ export function NewComplaintPage() {
     <>
       <BackLink to="/my/complaints">My Complaints and Reports</BackLink>
       <PageHeader title="What are you reporting?" />
-      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {COMPLAINT_CATEGORIES.map((c) => (
-          <li key={c}>
-            <button type="button" onClick={() => navigate(`/my/complaints/new/${SLUG[c]}`)} className={cn('flex min-h-14 w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-left text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900 hover:border-navy-600 hover:bg-sky-50')}>
-              {c} <ChevronRight className="size-5 shrink-0 text-ink-subtle" />
-            </button>
-          </li>
-        ))}
-      </ul>
+      <SelectionGrid cols="row">
+        {COMPLAINT_CATEGORIES.map((c) => <SelectionCard key={c} title={c} onClick={() => navigate(`/my/complaints/new/${SLUG[c]}`)} />)}
+      </SelectionGrid>
     </>
   )
 

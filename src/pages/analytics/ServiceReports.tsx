@@ -189,7 +189,7 @@ export function ServiceReports() {
         <ul className="space-y-0.5">
           {REPORTS.map((r) => (
             <li key={r.id}>
-              <button type="button" onClick={() => setId(r.id)} aria-current={r.id === id ? 'page' : undefined} className={cn('w-full truncate rounded-[var(--radius-control)] px-3 py-2 text-left text-[length:calc(15px*var(--fs))]', r.id === id ? 'bg-surface font-semibold text-navy-900 shadow-[0_0_0_1px_var(--color-line)]' : 'text-ink-nav hover:bg-surface/70 hover:text-navy-900')}>
+              <button type="button" onClick={() => setId(r.id)} aria-current={r.id === id ? 'page' : undefined} className={cn('flex min-h-11 w-full items-center rounded-[var(--radius-control)] px-3 py-2 text-left leading-snug text-[length:calc(15px*var(--fs))]', r.id === id ? 'bg-surface font-semibold text-navy-900 shadow-[0_0_0_1px_var(--color-line)]' : 'text-ink-nav hover:bg-surface/70 hover:text-navy-900')}>
                 {r.name}
               </button>
             </li>

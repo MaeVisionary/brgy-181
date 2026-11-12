@@ -30,7 +30,7 @@ export function StatCard({
       <p className="flex items-center gap-1.5 text-[length:calc(16px*var(--fs))] leading-snug font-medium text-ink-nav">
         {label}
       </p>
-      <div className="flex items-end justify-between gap-2">
+      <div className="flex flex-wrap items-end justify-between gap-x-2 gap-y-1">
         {loading || value === null ? (
           <span className="h-[26px] w-16 animate-pulse rounded bg-surface-muted" />
         ) : (

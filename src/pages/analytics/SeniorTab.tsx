@@ -262,10 +262,10 @@ export function SeniorTab() {
         {issues.length === 0 ? (
           <p className="text-[length:calc(15px*var(--fs))] text-ink-muted">No issues found in the current selection.</p>
         ) : (
-          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid auto-rows-fr grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {issues.map((i) => (
               <li key={i.code}>
-                <button type="button" onClick={() => set({ issue: i.code })} className="flex w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line px-3 py-2 text-left hover:bg-sky-50">
+                <button type="button" onClick={() => set({ issue: i.code })} className="flex h-full min-h-11 w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line px-3 py-2 text-left hover:bg-sky-50">
                   <span className="text-[length:calc(15px*var(--fs))] text-navy-900">{ISSUE_LABELS[i.code]}</span>
                   <Badge dot={false} tone={i.code === 'age_column_mismatch' ? 'neutral' : 'warning'}>{i.count}</Badge>
                 </button>
@@ -325,7 +325,7 @@ export function SeniorTab() {
 
 function Kpi(props: { label: string; value: number; hint?: string; attention?: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={props.onClick} className="text-left">
+    <button type="button" onClick={props.onClick} className="flex min-w-0 text-left [&>*]:w-full [&>*]:min-w-0">
       <StatCard label={props.label} value={props.value} hint={props.hint} attention={props.attention} />
     </button>
   )

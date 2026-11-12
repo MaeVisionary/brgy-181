@@ -59,7 +59,7 @@ export function FileField({ label, category, ownerResidentId, value, onChange, h
             <span className="block truncate text-[length:calc(15px*var(--fs))] text-navy-900">{value.originalName}</span>
             <span className="block text-[length:calc(13.5px*var(--fs))] text-ink-muted">{formatBytes(value.size)}</span>
           </span>
-          <button type="button" onClick={remove} aria-label={`Remove ${value.originalName}`} className="grid size-10 shrink-0 place-items-center rounded-full text-ink-nav hover:bg-surface-muted"><X className="size-4" /></button>
+          <button type="button" onClick={remove} aria-label={`Remove ${value.originalName}`} className="grid size-11 shrink-0 place-items-center rounded-full text-ink-nav hover:bg-surface-muted"><X className="size-4" /></button>
         </div>
       ) : (
         <button type="button" onClick={() => input.current?.click()} disabled={busy} className={cn('flex min-h-12 w-full items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line bg-surface px-3 py-2.5 text-left text-[length:calc(15px*var(--fs))] text-navy-900 hover:border-navy-600 hover:bg-sky-50', busy && 'opacity-60')}>

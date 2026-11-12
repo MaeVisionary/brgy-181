@@ -299,7 +299,7 @@ export function RegisterPage() {
           <button
             type="button"
             onClick={() => (step === 0 ? go('/login/resident', 'back') : goToStep(step - 1))}
-            className="bmis-press -ml-1 inline-flex items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900"
+            className="bmis-press -ml-1 inline-flex min-h-11 items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900"
           >
             <ArrowLeft className="size-4" /> {step === 0 ? 'Back to sign in' : 'Back'}
           </button>
@@ -471,7 +471,7 @@ export function RegisterPage() {
                 <F label="Password" error={touched ? accountErrs.password : undefined}>
                   <span className="relative block">
                     <input className={cn(field, 'pr-12')} type={showPw ? 'text' : 'password'} placeholder="At least 8 characters, letters and numbers" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" aria-invalid={touched && !!accountErrs.password} />
-                    <button type="button" onClick={() => setShowPw((s) => !s)} aria-label={showPw ? 'Hide password' : 'Show password'} className="absolute top-1/2 right-2 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-ink-muted hover:text-navy-900">
+                    <button type="button" onClick={() => setShowPw((s) => !s)} aria-label={showPw ? 'Hide password' : 'Show password'} className="absolute top-1/2 right-2 grid size-11 -translate-y-1/2 place-items-center rounded-lg text-ink-muted hover:text-navy-900">
                       {showPw ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
                     </button>
                   </span>

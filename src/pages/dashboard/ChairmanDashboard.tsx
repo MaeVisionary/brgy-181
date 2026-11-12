@@ -10,7 +10,7 @@ import { formatDateTime } from '@/lib/format'
 import { STAGE_LABEL, STAGE_TONE, listCases, mediationDay, upcomingHearings } from '@/services/caseService'
 import { listRequests } from '@/services/documentService'
 import { TodayAppointmentsPanel } from '@/pages/appointments/AppointmentPages'
-import { DashHeader, EmptyNote, ListPanel, PopulationByStreet, Row, Stat } from './shared'
+import { DashHeader, EmptyNote, ListPanel, PopulationByStreet, Row, Stat, MyRecentActivity } from './shared'
 
 /** Robert Atad: executive oversight, approvals, assessment of complaints, KP mediation. */
 export function ChairmanDashboard() {
@@ -114,6 +114,7 @@ export function ChairmanDashboard() {
 
       <section className="mt-4 space-y-4">
         <PopulationByStreet />
+        <MyRecentActivity />
       </section>
     </>
   )

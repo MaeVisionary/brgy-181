@@ -34,7 +34,7 @@ export function PortalPage() {
   return (
     <PublicLayout minimal>
       <div className="mx-auto max-w-[1040px] px-4 py-8 sm:px-6 sm:py-12">
-        <button type="button" onClick={() => go('/', 'back')} className="bmis-press mb-5 inline-flex min-h-9 items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
+        <button type="button" onClick={() => go('/', 'back')} className="bmis-press mb-5 inline-flex min-h-11 items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
           <ArrowLeft className="size-4" /> Back to home
         </button>
         {expired && <p role="status" className="mb-4 rounded-[var(--radius-control)] bg-sky-100 px-4 py-3 text-[length:calc(16px*var(--fs))] text-navy-900">You were signed out after {APP_CONFIG.sessionMinutes} minutes without activity. Please sign in again.</p>}
@@ -64,7 +64,7 @@ export function PortalPage() {
                       picked && !isPicked && 'opacity-60',
                     )}
                   >
-                    <span className={cn('grid size-10 shrink-0 place-items-center rounded-lg transition-colors', isPicked ? 'bg-navy-900 text-white' : 'bg-sky-100 text-navy-900 group-hover:bg-navy-900 group-hover:text-white')}>
+                    <span className={cn('grid size-11 shrink-0 place-items-center rounded-lg transition-colors', isPicked ? 'bg-navy-900 text-white' : 'bg-sky-100 text-navy-900 group-hover:bg-navy-900 group-hover:text-white')}>
                       <Icon className="size-[18px]" />
                     </span>
                     <span className="min-w-0 flex-1">

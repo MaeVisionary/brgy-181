@@ -116,7 +116,7 @@ export function UsersPage() {
               type="button"
               aria-selected={group === k}
               onClick={() => setGroup(k)}
-              className={cn('inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-control)] border px-3.5 text-[length:calc(15px*var(--fs))] font-semibold', group === k ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-surface-muted')}
+              className={cn('inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-control)] border px-3.5 text-[length:calc(15px*var(--fs))] font-semibold', group === k ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-surface-muted')}
             >
               {label} <span className={group === k ? 'text-white/75' : 'text-ink-muted'}>({count(k)})</span>
             </button>
@@ -141,7 +141,7 @@ export function UsersPage() {
               </span>
               <span className="flex w-full items-center gap-3 pl-12 sm:w-auto sm:pl-0">
                 <StatusLabel status={u.status === 'active' ? 'Active' : u.status === 'locked' ? 'Locked' : 'Inactive'} tone={u.status === 'active' ? 'success' : u.status === 'locked' ? 'danger' : 'danger'} />
-                <button type="button" aria-expanded={open === u.id} onClick={() => setOpen(open === u.id ? null : u.id)} className="inline-flex min-h-9 items-center gap-0.5 rounded-md px-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-info hover:underline">
+                <button type="button" aria-expanded={open === u.id} onClick={() => setOpen(open === u.id ? null : u.id)} className="inline-flex min-h-11 items-center gap-0.5 rounded-md px-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-info hover:underline">
                   {open === u.id ? 'Close' : <>Manage Account <ChevronRight className="size-4" /></>}
                 </button>
               </span>

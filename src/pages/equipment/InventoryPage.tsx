@@ -59,7 +59,7 @@ export function InventoryPage() {
               return (
                 <tr key={e.id} onClick={() => setOpenId(e.id)} className="cursor-pointer border-t border-line-soft first:border-t-0 hover:bg-sky-50/60">
                   <td className="px-5 py-3">
-                    <button type="button" onClick={() => setOpenId(e.id)} className="text-left font-semibold text-navy-900 hover:underline">{e.name}</button>
+                    <button type="button" onClick={() => setOpenId(e.id)} className="inline-flex min-h-11 items-center text-left font-semibold text-navy-900 hover:underline">{e.name}</button>
                     {e.location && <span className="block text-[length:calc(13.5px*var(--fs))] text-ink-muted">{e.location}</span>}
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums text-navy-900">{e.totalQty}</td>
@@ -191,7 +191,7 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
         <span aria-hidden className="mx-auto mb-3 block h-1.5 w-10 rounded-full bg-line md:hidden" />
         <div className="mb-4 flex items-start justify-between gap-3">
           <h2 className="font-display text-[length:calc(20px*var(--fs))] font-bold text-navy-900">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="-mt-1 -mr-2 grid size-10 place-items-center rounded-full text-ink-nav hover:bg-surface-muted"><X className="size-5" /></button>
+          <button type="button" onClick={onClose} aria-label="Close" className="-mt-1 -mr-2 grid size-11 place-items-center rounded-full text-ink-nav hover:bg-surface-muted"><X className="size-5" /></button>
         </div>
         {children}
       </div>

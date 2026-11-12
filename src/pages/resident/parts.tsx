@@ -176,7 +176,7 @@ export function NeedHelp() {
       <TitleBar><LifeBuoy className="size-4" /> Need help?</TitleBar>
       <p className="text-[length:calc(15px*var(--fs))] text-navy-900">Visit the Barangay 181 Hall, Gagalangin, Tondo, Manila. Personnel can help you with your request.</p>
       <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-navy-900">{BARANGAY_CONTACT.phone} · {BARANGAY_CONTACT.officeHours}</p>
-      <Link to="/my/contact" className="mt-2 inline-flex min-h-9 items-center gap-1 text-[length:calc(15px*var(--fs))] font-semibold text-info hover:underline">
+      <Link to="/my/contact" className="mt-2 inline-flex min-h-11 items-center gap-1 text-[length:calc(15px*var(--fs))] font-semibold text-info hover:underline">
         View contact information <ChevronRight className="size-4" />
       </Link>
     </Card>

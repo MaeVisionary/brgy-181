@@ -2,23 +2,41 @@ import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode 
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/cn'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
-type Size = 'sm' | 'md'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-solid'
+type Size = 'sm' | 'md' | 'lg'
 
-const base =
-  'inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50'
+/**
+ * BMIS button standard (every button and button-like link uses these classes):
+ *  - Height: min 44px (sm), 48px (md, default), 56px (lg, main action on a phone). Labels may wrap to a
+ *    second line; the button grows instead of clipping, and buttons in one row stretch to the same height.
+ *  - Text: semibold, centred, 15.5 / 16.5 / 17.5px (scaled by the text-size setting), leading-tight.
+ *  - Icons: 20px, 8px from the label, never shrink.
+ *  - Radius var(--radius-control), 1px border on every variant (transparent where not visible), so
+ *    neighbouring buttons line up exactly.
+ *  - Destructive: `danger` (red outline) starts a delete/reject; `danger-solid` is only the final
+ *    confirmation in a dialog.
+ *  - States: hover, pressed (darker + slight press), visible focus ring, disabled (50% and not-allowed),
+ *    loading (spinner in place of the icon, aria-busy).
+ */
+export const buttonBase =
+  'bmis-press inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] border font-semibold leading-tight text-center whitespace-normal break-words transition-colors select-none [&_svg]:size-5 [&_svg]:shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-600 disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50'
 
-const variants: Record<Variant, string> = {
-  primary: 'bg-navy-900 text-white hover:bg-navy-800 active:bg-navy-950',
-  secondary: 'border border-line bg-surface text-navy-900 hover:bg-surface-muted',
-  ghost: 'text-ink-nav hover:bg-surface-muted hover:text-navy-900',
-  danger: 'border border-danger/40 bg-surface text-danger-ink hover:bg-danger-tint',
+export const buttonVariants: Record<Variant, string> = {
+  primary: 'border-navy-900 bg-navy-900 text-white hover:bg-navy-800 hover:border-navy-800 active:bg-navy-950',
+  secondary: 'border-line bg-surface text-navy-900 hover:border-navy-600/50 hover:bg-surface-muted active:bg-sky-100',
+  ghost: 'border-transparent text-ink-nav hover:bg-surface-muted hover:text-navy-900 active:bg-sky-100',
+  danger: 'border-danger/50 bg-surface text-danger-ink hover:bg-danger-tint active:bg-danger-tint',
+  'danger-solid': 'border-danger bg-danger text-white hover:brightness-95 active:brightness-90',
 }
 
-const sizes: Record<Size, string> = {
-  sm: 'h-11 px-4 text-[length:calc(15.5px*var(--fs))]',
-  md: 'h-12 px-5 text-[length:calc(16.5px*var(--fs))]',
+export const buttonSizes: Record<Size, string> = {
+  sm: 'min-h-11 px-4 py-1.5 text-[length:calc(15.5px*var(--fs))]',
+  md: 'min-h-12 px-5 py-2 text-[length:calc(16.5px*var(--fs))]',
+  lg: 'min-h-14 px-6 py-2.5 text-[length:calc(17.5px*var(--fs))]',
 }
+
+/** Class string for anything that must look like a button (e.g. a plain <a> or a custom Link). */
+export const buttonClass = (variant: Variant = 'primary', size: Size = 'md', className?: string) => cn(buttonBase, buttonVariants[variant], buttonSizes[size], className)
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
@@ -40,7 +58,7 @@ export function Button({ variant = 'primary', size = 'md', loading, icon, classN
   useEffect(() => { if (!blockedReason) setWhy(false) }, [blockedReason])
   const btn = (
     <button
-      className={cn(base, variants[variant], sizes[size], className)}
+      className={buttonClass(variant, size, className)}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       onClick={(e) => {
@@ -52,7 +70,7 @@ export function Button({ variant = 'primary', size = 'md', loading, icon, classN
       }}
       {...rest}
     >
-      {loading ? <span className="size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" /> : icon}
+      {loading ? <span aria-hidden className="size-5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent" /> : icon}
       {children}
     </button>
   )
@@ -81,9 +99,21 @@ export function ButtonLink({
   children: ReactNode
 }) {
   return (
-    <Link to={to} className={cn(base, variants[variant], sizes[size], className)}>
+    <Link to={to} className={buttonClass(variant, size, className)}>
       {icon}
       {children}
     </Link>
+  )
+}
+
+/**
+ * Icon-only button (notifications, edit, delete, expand…). Always 44×44 with a 20px icon and a
+ * required accessible name, shown as a tooltip too.
+ */
+export function IconButton({ label, variant = 'ghost', className, children, ...rest }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'> & { label: string; variant?: Variant }) {
+  return (
+    <button type="button" aria-label={label} title={label} className={cn(buttonBase, buttonVariants[variant], 'size-11 shrink-0 p-0', className)} {...rest}>
+      {children}
+    </button>
   )
 }

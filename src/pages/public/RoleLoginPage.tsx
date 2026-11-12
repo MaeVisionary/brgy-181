@@ -55,7 +55,7 @@ export function RoleLoginPage() {
   return (
     <PublicLayout minimal>
       <div className="mx-auto max-w-[1000px] px-4 py-8 sm:px-6 sm:py-12">
-        <button type="button" onClick={() => go('/portal', 'back')} className="bmis-press -ml-1 mb-4 inline-flex min-h-9 items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
+        <button type="button" onClick={() => go('/portal', 'back')} className="bmis-press -ml-1 mb-4 inline-flex min-h-11 items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
           <ArrowLeft className="size-4" /> Back to account selection
         </button>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
@@ -110,7 +110,7 @@ export function RoleLoginPage() {
                   type="button"
                   onClick={() => setShow((s) => !s)}
                   aria-label={show ? 'Hide password' : 'Show password'}
-                  className="absolute top-1/2 right-2 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-ink-muted hover:text-navy-900"
+                  className="absolute top-1/2 right-2 grid size-11 -translate-y-1/2 place-items-center rounded-lg text-ink-muted hover:text-navy-900"
                 >
                   {show ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
                 </button>
@@ -150,7 +150,7 @@ export function RoleLoginPage() {
           {type.slug === 'resident' && (
             <p className="mt-5 rounded-lg bg-surface-muted px-4 py-3 text-center text-[length:calc(15.5px*var(--fs))] text-navy-900">
               New resident?{' '}
-              <button type="button" onClick={() => go('/register', 'forward')} className="font-semibold text-info hover:underline">
+              <button type="button" onClick={() => go('/register', 'forward')} className="inline-flex min-h-11 items-center px-1 font-semibold text-info hover:underline">
                 Create an account
               </button>
             </p>
