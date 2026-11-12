@@ -157,7 +157,7 @@ export function NewAssistedRequestPage() {
               )}
             </div>
           ) : (
-            <p className="text-[14.5px] text-ink-muted">Your account cannot search residents. Ask for the residents.search permission.</p>
+            <p className="text-[14.5px] text-ink-muted">Your account cannot search residents. Ask the System Administrator for access.</p>
           )}
         </Panel>
 

@@ -64,7 +64,7 @@ export function InventoryPage() {
           {(items ?? []).flatMap((e) => e.history.map((h) => ({ e, h }))).sort((a, b) => b.h.at.localeCompare(a.h.at)).slice(0, 12).map(({ e, h }, i) => (
             <li key={i} className="text-navy-900">{formatDateTime(h.at)} · <strong>{e.name}</strong>: {h.action}{h.detail ? ` (${h.detail})` : ''}</li>
           ))}
-          {(items ?? []).every((e) => e.history.length === 0) && <li className="text-ink-muted">No changes recorded in this session.</li>}
+          {(items ?? []).every((e) => e.history.length === 0) && <li className="text-ink-muted">No changes recorded yet.</li>}
         </ul>
       </Panel>
     </>

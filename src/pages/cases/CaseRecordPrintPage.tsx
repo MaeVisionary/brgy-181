@@ -107,8 +107,7 @@ export function CaseRecordPrintPage() {
     <>
       <div className="print:hidden">
         <BackLink fallbackTo={`/cases/${c.id}`} fallbackLabel={c.caseNo} />
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="rounded-[var(--radius-control)] bg-warning-tint px-4 py-2.5 text-[15px] text-navy-900">Working layout generated from the case record. Replace it with the barangay’s official KP form when supplied.</p>
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
           <Button icon={<Printer className="size-4" />} onClick={() => window.print()}>Print</Button>
         </div>
       </div>

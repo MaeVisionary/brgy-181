@@ -184,7 +184,7 @@ export function BorrowingDetailPage() {
               ))}
               <TextArea className="min-h-[60px]" placeholder="Notes on damaged or missing items" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
               <Button onClick={() => act(() => actOnBorrowing(b.id, 'return', actor, { remarks, returns: b.items.map((i) => ({ equipmentId: i.equipmentId, good: Number(ret[i.equipmentId].good || 0), damaged: Number(ret[i.equipmentId].damaged || 0), missing: Number(ret[i.equipmentId].missing || 0) })) }))}>Record return</Button>
-              {(rs === 'overdue' || rs === 'grace') && <Button variant="secondary" icon={<BellRing className="size-3.5" />} onClick={() => act(() => sendLateNotice(b.id, actor))}>Send late-return notice (simulated)</Button>}
+              {(rs === 'overdue' || rs === 'grace') && <Button variant="secondary" icon={<BellRing className="size-3.5" />} onClick={() => act(() => sendLateNotice(b.id, actor))}>Send late-return notice</Button>}
             </div>
           )}
           {['returned', 'rejected', 'cancelled'].includes(b.status) && <p className="text-[14.5px] text-ink-muted">This transaction is complete.</p>}

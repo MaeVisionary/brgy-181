@@ -1,3 +1,16 @@
+# BMIS Patch Notes: No developer-facing text (12 November 2026)
+
+Removed or reworded text that described how the prototype works instead of helping users:
+- Request details: "Set by the system" heading removed (values stay); "(in this browser session only)" removed from the saved message.
+- "(simulated)" removed from Send reminder / Send late-return notice.
+- Outcome records: "Working layout…" notice removed.
+- Analytics: "Copy: Built-in, no names" and "Loaded in this tab" removed/reworded.
+- Health page: "Application (frontend)" → "Application"; "Not connected: backend phase" → "Not connected".
+- "Format pending" report schedules → "As required"; dashboard badge reads "Awaiting official file".
+- "…in this session" messages, the permission code in the resident search message, and the unused "module not built yet" screen reworded.
+
+---
+
 # BMIS Patch Notes: Less AI-looking, better use of space (12 November 2026)
 
 - Content uses the full width beside the sidebar (up to 1600px) instead of a narrow 1180px column.

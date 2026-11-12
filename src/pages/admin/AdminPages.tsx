@@ -287,7 +287,7 @@ export function ActivityPage() {
       <PageHeader title="Activity Log" subtitle="Record views, report generation, exports, imports and account changes made in this browser session. The permanent, tamper-protected log is a backend feature." />
       <Card className="overflow-hidden">
         {entries.length === 0 ? (
-          <p className="px-5 py-6 text-[15px] text-ink-muted">No activity recorded in this session yet.</p>
+          <p className="px-5 py-6 text-[15px] text-ink-muted">No activity recorded yet.</p>
         ) : (
           <>
             <table className="hidden w-full text-[15px] xl:table">
@@ -394,8 +394,8 @@ export function SettingsPage() {
 
 export function HealthPage() {
   const items: [string, string, 'ok' | 'pending'][] = [
-    ['Application (frontend)', 'Running', 'ok'],
-    ['Database', 'Not connected: backend phase', 'pending'],
+    ['Application', 'Running', 'ok'],
+    ['Database', 'Not connected', 'pending'],
     ['Regular database backups', 'Not yet set up', 'pending'],
     ['Desktop backup for internet outages', 'Not yet set up', 'pending'],
     ['Email notifications', 'Not configured', 'pending'],

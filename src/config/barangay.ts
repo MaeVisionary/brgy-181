@@ -102,8 +102,8 @@ export const REPORT_CATEGORIES = [
 ] as const
 
 export const RECURRING_REPORTS = [
-  { id: 'cleanup', name: 'Clean-up activities report', schedule: 'Weekly / monthly (format pending)' },
+  { id: 'cleanup', name: 'Clean-up activities report', schedule: 'Weekly / monthly' },
   { id: 'senior-masterlist', name: 'Monthly senior citizen masterlist (OSCA)', schedule: 'Monthly' },
-  { id: 'kp', name: 'Katarungang Pambarangay report', schedule: 'Format pending' },
-  { id: 'personnel', name: 'Barangay personnel report', schedule: 'Format pending' },
+  { id: 'kp', name: 'Katarungang Pambarangay report', schedule: 'As required' },
+  { id: 'personnel', name: 'Barangay personnel report', schedule: 'As required' },
 ] as const

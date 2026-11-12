@@ -38,7 +38,7 @@ export function DataSource() {
                 <dl className="mt-2 flex flex-wrap gap-2">
                   {[
                     ['Records', dataset.records.length.toLocaleString()],
-                    ...(source === 'snapshot' ? [['Copy', 'Built-in, no names']] : [['Loaded', formatDateTime(dataset.loadedAt)]]),
+                    ...(source === 'snapshot' ? [] : [['Loaded', formatDateTime(dataset.loadedAt)]]),
                   ].map(([k, v]) => (
                     <div key={k} className="rounded-md border border-line bg-surface-muted px-2.5 py-1 text-[14px]">
                       <dt className="inline text-ink-muted">{k}: </dt>

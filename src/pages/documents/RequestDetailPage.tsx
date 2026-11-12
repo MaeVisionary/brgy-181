@@ -109,7 +109,7 @@ export function RequestDetailPage() {
                   Missing before it can move forward: {missing.map((f) => (f.group ? `${f.group}: ${f.label}` : f.label)).join(', ')}
                 </p>
               ) : savedAt && !dirty ? (
-                <p className="text-[14.5px] text-success">Saved {formatDateTime(savedAt)} (in this browser session only).</p>
+                <p className="text-[14.5px] text-success">Saved {formatDateTime(savedAt)}.</p>
               ) : undefined
             }
           >
@@ -133,12 +133,11 @@ export function RequestDetailPage() {
               ))}
               {systemFields.length > 0 && (
                 <section>
-                  <p className="label-caps mb-2">Set by the system</p>
                   <dl className="grid gap-2 text-[15px] sm:grid-cols-2">
                     {systemFields.map((f) => (
                       <div key={f.key} className="rounded-[var(--radius-control)] bg-surface-muted px-3 py-2">
                         <dt className="text-[13.5px] text-ink-muted">{f.label}</dt>
-                        <dd className="font-semibold text-navy-900">{(values[f.key] as string) || <span className="font-normal text-ink-muted">{f.help ?? 'Set automatically'}</span>}</dd>
+                        <dd className="font-semibold text-navy-900">{(values[f.key] as string) || <span className="font-normal text-ink-muted">–</span>}</dd>
                       </div>
                     ))}
                   </dl>

@@ -95,7 +95,7 @@ export function SecretaryDashboard() {
                 <span className="block text-[15px] font-semibold text-navy-900">{r.name}</span>
                 <span className="block text-[13.5px] text-ink-muted">{r.schedule.replace(/\s*\(format pending\)/i, '')}</span>
               </span>
-              <Badge tone={r.id === 'senior-masterlist' ? 'success' : 'warning'}>{r.id === 'senior-masterlist' ? 'Analytics ready' : 'Format pending'}</Badge>
+              <Badge tone={r.id === 'senior-masterlist' ? 'success' : 'warning'}>{r.id === 'senior-masterlist' ? 'Analytics ready' : 'Awaiting official file'}</Badge>
             </li>
           ))}
         </ul>

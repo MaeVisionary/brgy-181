@@ -156,7 +156,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
 
       {done !== null && (
         <Card className="mb-4 flex items-center gap-3 border-success/40 bg-success-tint px-5 py-4 text-[15.5px] text-navy-900">
-          <CheckCircle2 className="size-5 text-success" /> {done} records added to the master list in this browser session. <Link to="/residents" className="font-semibold text-info hover:underline">Open the master list</Link>
+          <CheckCircle2 className="size-5 text-success" /> {done} records added to the master list. <Link to="/residents" className="font-semibold text-info hover:underline">Open the master list</Link>
         </Card>
       )}
 

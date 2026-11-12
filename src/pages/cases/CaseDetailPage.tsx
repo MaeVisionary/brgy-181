@@ -230,7 +230,7 @@ function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase
         <div className="mt-2 flex flex-wrap gap-2">
           <Button size="sm" variant="secondary" onClick={() => setMode('attendance')}>Record attendance</Button>
           <Button size="sm" variant="secondary" onClick={() => setMode('reschedule')}>Reschedule</Button>
-          <Button size="sm" variant="ghost" icon={<BellRing className="size-3.5" />} onClick={async () => onChange(await sendReminder(caseId, h.id, actor))}>Send reminder (simulated)</Button>
+          <Button size="sm" variant="ghost" icon={<BellRing className="size-3.5" />} onClick={async () => onChange(await sendReminder(caseId, h.id, actor))}>Send reminder</Button>
         </div>
       )}
       {mode === 'attendance' && (

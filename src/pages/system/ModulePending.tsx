@@ -15,13 +15,8 @@ export function ModulePending({ title, phase, summary }: { title: string; phase?
       <Card>
         <EmptyState
           icon={<Hammer className="size-5" />}
-          title="This module is not built yet"
-          body={
-            <>
-              Access to this page is already checked for your role. The screen itself will be built in{' '}
-              {phase ? <strong className="text-navy-900">Phase {phase}</strong> : 'a later phase'} of the frontend plan.
-            </>
-          }
+          title="This page is not available yet"
+          body="Please check back later."
           action={<ButtonLink to="/dashboard" variant="secondary">Back to dashboard</ButtonLink>}
         />
       </Card>
