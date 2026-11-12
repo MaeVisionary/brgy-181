@@ -25,6 +25,7 @@ import { PROOF_REQUIRED, decideChangeRequest, displayRequestedValue, listChangeR
 import type { ResidentChangeRequest, ResidentRegistration } from '@/types/resident'
 import { fullName } from './common'
 import { useStickyState } from '@/hooks/useStickyState'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 function CheckIcon({ v }: { v: 'passed' | 'failed' | 'inconclusive' }) {
   if (v === 'passed') return <CheckCircle2 className="mt-px size-4 shrink-0 text-success" />
@@ -57,21 +58,21 @@ function Decide({ onDecide, disabled, extra }: { onDecide: (d: 'approved' | 'rej
       <div className="w-full space-y-2">
         <TextArea autoFocus className="min-h-[64px]" aria-label="Reason for rejecting" placeholder="Reason for rejecting" value={note} onChange={(e) => setNote(e.target.value)} />
         {err && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
-        <div className="flex gap-2">
+        <ActionStack>
           <Button size="sm" variant="danger" onClick={() => (note.trim() ? setConfirming(true) : setErr('Add the reason for rejecting.'))} loading={busy}>Reject</Button>
           <Button size="sm" variant="secondary" onClick={() => { setRejecting(false); setErr(null) }} disabled={busy}>Cancel</Button>
-        </div>
+        </ActionStack>
         {confirming && <ConfirmDialog title="Reject this?" confirmLabel="Reject" destructive onCancel={() => setConfirming(false)} onConfirm={() => run('rejected')}>The applicant will be told the reason.</ConfirmDialog>}
       </div>
     )
   }
   return (
     <div className="space-y-1">
-      <div className="flex flex-wrap gap-2">
+      <ActionStack>
         {extra}
         <Button size="sm" onClick={() => run('approved')} loading={busy} disabled={disabled}>Approve</Button>
         <Button size="sm" variant="secondary" onClick={() => setRejecting(true)} disabled={disabled || busy}>Reject</Button>
-      </div>
+      </ActionStack>
       {err && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
     </div>
   )
@@ -333,10 +334,10 @@ function VisitForm({ r, onCancel, onDone }: { r: ResidentRegistration; onCancel:
       </details>
       {!r.applicant.email && <p className="text-[length:calc(14.5px*var(--fs))] text-warning">This applicant has no email address. The request will be saved; contact them by phone{r.applicant.contactNo ? ` (${r.applicant.contactNo})` : ''}.</p>}
       {err && <p role="alert" className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
-      <div className="flex flex-wrap gap-2">
+      <ActionStack>
         <Button size="sm" onClick={send} loading={busy}>Send request</Button>
         <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
-      </div>
+      </ActionStack>
     </div>
   )
 }
@@ -368,10 +369,10 @@ function VisitedForm({ r, onCancel, onDone }: { r: ResidentRegistration; onCance
         <TextArea className="mt-1 min-h-[60px]" value={notes} onChange={(e) => setNotes(e.target.value)} />
       </label>
       {err && <p role="alert" className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
-      <div className="flex flex-wrap gap-2">
+      <ActionStack>
         <Button size="sm" onClick={save}>Save visit</Button>
         <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-      </div>
+      </ActionStack>
     </div>
   )
 }

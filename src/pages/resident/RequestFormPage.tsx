@@ -22,6 +22,7 @@ import { getResident } from '@/services/residentService'
 import { activeDocumentTypes } from '@/services/templateService'
 import type { DocumentTypeId, FieldValue } from '@/types/document'
 import type { Resident } from '@/types/resident'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 /** Requirements satisfied by the requester's own ID on file. */
 const isOwnIdRequirement = (label: string) => /^valid id( of the (person requesting|applicant|owner))?$/i.test(label.trim())
@@ -152,10 +153,10 @@ export function RequestFormPage() {
             </dl>
           </Panel>
           {error && <p role="alert" className="rounded-md bg-danger-tint px-4 py-3 text-[length:calc(16px*var(--fs))] text-danger-ink">{error}</p>}
-          <div className="grid grid-cols-1 gap-2 sm:flex">
+          <ActionStack>
             <Button onClick={submit} loading={busy}>Submit Request</Button>
             <Button variant="secondary" onClick={() => setReviewing(false)}>Change something</Button>
-          </div>
+          </ActionStack>
         </div>
       ) : (
         <div className="space-y-4">
@@ -208,10 +209,10 @@ export function RequestFormPage() {
             </Panel>
           )}
 
-          <div className="grid grid-cols-1 gap-2 sm:flex">
+          <ActionStack>
             <Button onClick={review}>Review Request</Button>
             <Button variant="ghost" onClick={cancel}>Cancel</Button>
-          </div>
+          </ActionStack>
         </div>
       )}
 

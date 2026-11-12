@@ -20,6 +20,7 @@ import { TextArea } from '@/components/ui/Field'
 import { ServiceError } from '@/services/mockApi'
 import type { DocumentRequest, FieldValue } from '@/types/document'
 import { NotFound } from '@/pages/system/NotFound'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 export function RequestDetailPage() {
   const { id = '' } = useParams()
@@ -238,10 +239,10 @@ function ProcessingTimePanel({ req, actor, onChange }: { req: DocumentRequest; a
         <div className="mt-3 space-y-2">
           <TextArea className="min-h-[64px]" aria-label="Reason for the extension" placeholder="Reason the resident will read" value={reason} onChange={(e) => setReason(e.target.value)} />
           {err && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
-          <div className="flex gap-2">
+          <ActionStack>
             <Button size="sm" onClick={async () => { try { onChange(await extendProcessing(req.id, reason, actor)); setOpen(false) } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Failed.') } }}>Extend and notify</Button>
             <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-          </div>
+          </ActionStack>
         </div>
       )}
     </Panel>

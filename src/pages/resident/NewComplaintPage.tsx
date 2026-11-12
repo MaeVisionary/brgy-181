@@ -15,6 +15,7 @@ import { getResident } from '@/services/residentService'
 import type { Resident } from '@/types/resident'
 import { BackLink } from './parts'
 import { ConcernForm } from './ConcernForm'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 /** URL part for each report type, so each form has its own page. */
 const SLUG: Record<ComplaintCategory, string> = { 'Complaint against a person': 'person', 'Incident report': 'incident', 'Community concern': 'concern' }
@@ -99,10 +100,10 @@ export function NewComplaintPage() {
               <FieldLabel label="What happened" required><TextArea className="min-h-[120px]" value={details} onChange={(e) => setDetails(e.target.value)} /></FieldLabel>
               {me && <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">Filed as {residentFullName(me)} · {me.houseNo} {me.street}</p>}
               {err && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
-              <div className="flex gap-2">
+              <ActionStack>
                 <Button onClick={submit} loading={busy} disabled={busy}>Submit report</Button>
                 <Button variant="ghost" onClick={() => navigate('/my/complaints')} disabled={busy}>Cancel</Button>
-              </div>
+              </ActionStack>
             </div>
           </Panel>
         )}

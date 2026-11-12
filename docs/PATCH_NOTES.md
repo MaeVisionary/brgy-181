@@ -432,3 +432,8 @@ Plain tags (sector tags such as PWD or 4Ps, "2 families", attendance counts) hav
 - All automatic jobs (appointment reminders and no-shows, overdue equipment, scheduled announcements, calendar notices) now run on app load and every 5 minutes, not only on specific pages.
 - The browser's built-in prompt and confirm pop-ups were replaced with in-app fields and dialogs (closure cancel, holiday removal, registration rejection).
 - docs/supabase/calendar.sql: tables, checks, RLS, and an is_working_day function used by bookings and deadlines. Not applied.
+
+## Equal-size action buttons (2026-11-12)
+- New shared ActionStack layout for groups of action buttons. Buttons are stacked with 8 px between them, all the same height (48 px), and all as wide as the longest label (at least 240 px on larger screens; full width on phones). Text is centred, so widths no longer depend on text length. Colours, actions and order are unchanged.
+- Applied to the 44 groups of two or more buttons across BMIS: the registration review (Request in-person visit / Approve / Reject), corrections, document approvals and requests, appointments (resident and Barangay Personnel), announcements, the calendar, cases and hearings, concerns, borrowing and inventory, resident request, report and concern forms, reports, and user administration.
+- Checked: Request in-person visit, Approve and Reject measure 240×48 each on desktop and 347×48 each at a narrow width, left-aligned in one column.

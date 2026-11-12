@@ -14,6 +14,7 @@ import { formatShortDate } from '@/lib/format'
 import { addEquipment, equipmentStatus, listEquipment, updateEquipment } from '@/services/equipmentService'
 import { ServiceError } from '@/services/mockApi'
 import type { Equipment, EquipmentCategory } from '@/types/equipment'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 /** Property and equipment records. */
 export function InventoryPage() {
@@ -216,10 +217,10 @@ function AddForm({ onDone, actor, categories }: { onDone: () => void; actor: Non
       </div>
       <CategoryList categories={categories} />
       {err && <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
-      <div className="mt-3 flex gap-2">
+      <ActionStack className="mt-3">
         <Button onClick={async () => { try { if (!category.trim()) throw new ServiceError('category', 'Enter a category.'); await addEquipment({ name, category: category.trim(), description, totalQty: Number(qty), location: location.trim() || undefined }, actor); onDone() } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Failed.') } }}>Save</Button>
         <Button variant="secondary" onClick={onDone}>Cancel</Button>
-      </div>
+      </ActionStack>
     </Panel>
   )
 }

@@ -25,6 +25,7 @@ import { SampleBadge } from '@/pages/dashboard/shared'
 import { BORROW_STATUS, RETURN_BADGE } from './badges'
 import { useStickyState } from '@/hooks/useStickyState'
 import { Timeline } from '@/components/ui/Timeline'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 const eqName = (id: string) => mockEquipment.find((e) => e.id === id)?.name ?? id
 export const itemsText = (b: Borrowing) => b.items.map((i) => `${qtyOf(i)} × ${eqName(i.equipmentId)}`).join(', ')
@@ -178,10 +179,10 @@ export function BorrowingDetailPage() {
                       ))}
                     </div>
                     <TextArea className="min-h-[60px]" placeholder="Reason (needed when approving fewer or not approving)" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
-                    <div className="flex flex-wrap gap-2">
+                    <ActionStack>
                       <Button onClick={() => act(() => actOnBorrowing(b.id, 'approve', actor, { remarks, approvedQty: Object.fromEntries(Object.entries(approve).map(([k, v]) => [k, Number(v || 0)])) }), 'Approved. The resident was asked to choose a pickup time.')}>Approve</Button>
                       <Button variant="danger" onClick={() => act(() => actOnBorrowing(b.id, 'reject', actor, { remarks }), 'Marked as not approved. The resident was told.')}>Not approved</Button>
-                    </div>
+                    </ActionStack>
                   </>
                 )}
               </>
@@ -313,7 +314,7 @@ export function BorrowForm({ assisted, resident, onDone }: { assisted?: boolean;
         <FieldLabel label="Return date"><TextInput type="date" value={stated} onChange={(e) => setStated(e.target.value)} /></FieldLabel>
       </div>
       {err && <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
-      <div className="mt-3 flex gap-2"><Button onClick={submit}>Submit request</Button><Button variant="ghost" onClick={() => onDone()}>Cancel</Button></div>
+      <ActionStack className="mt-3"><Button onClick={submit}>Submit request</Button><Button variant="ghost" onClick={() => onDone()}>Cancel</Button></ActionStack>
     </Panel>
   )
 }

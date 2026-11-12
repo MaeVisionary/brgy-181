@@ -18,6 +18,7 @@ import { listReportTemplates, saveReportTemplate, type ReportTemplate } from '@/
 import { downloadBlob } from '@/services/templateService'
 import { ServiceReports } from './ServiceReports'
 import { BUILTIN_REPORT_TEMPLATES, builtInTemplateUrl } from '@/config/reportTemplates'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 export function ReportsPage() {
   const { user, can } = useAuth()
@@ -132,10 +133,10 @@ export function ReportsPage() {
               {dataset && <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">As of {formatShortDate(reportingDate.toISOString())}</p>}
             </div>
             {output && canExport && (
-              <div className="flex gap-2">
+              <ActionStack>
                 <Button size="sm" variant="secondary" icon={<Download className="size-3.5" />} onClick={() => doExport('pdf')}>PDF</Button>
                 <Button size="sm" variant="secondary" icon={<FileSpreadsheet className="size-3.5" />} onClick={() => doExport('xlsx')}>Excel</Button>
-              </div>
+              </ActionStack>
             )}
           </div>
 

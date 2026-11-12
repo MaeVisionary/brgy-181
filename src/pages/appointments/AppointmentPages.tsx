@@ -63,6 +63,7 @@ import { NotFound } from '@/pages/system/NotFound'
 import { BackLink } from '@/pages/resident/parts'
 import { useStickyState } from '@/hooks/useStickyState'
 import { Timeline } from '@/components/ui/Timeline'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 const shortDate = (d: string) => new Date(`${d}T12:00:00+08:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Manila' })
 const staffName = (id: string) => mockUsers.find((u) => u.id === id)?.fullName ?? ''
@@ -108,10 +109,10 @@ export function TimePicker({ a, onPicked, onBack }: { a: Appointment; onPicked: 
         <dt className="text-ink-muted">Place</dt><dd className="text-navy-900">{BARANGAY_CONTACT.hall}</dd>
         <dt className="text-ink-muted">Bring</dt><dd className="text-navy-900"><ul className="list-disc pl-5">{a.documents.map((d) => <li key={d}>{d}</li>)}</ul></dd>
       </dl>
-      <div className="grid grid-cols-1 gap-2 sm:flex">
+      <ActionStack>
         <Button onClick={book} loading={busy}>Confirm Appointment</Button>
         <Button variant="secondary" onClick={() => setConfirming(false)}>Choose another time</Button>
-      </div>
+      </ActionStack>
     </div>
   )
   return (
@@ -153,10 +154,10 @@ export function TimePicker({ a, onPicked, onBack }: { a: Appointment; onPicked: 
           )}
         </div>
       )}
-      <div className="grid grid-cols-1 gap-2 sm:flex">
+      <ActionStack>
         <Button disabled={!time} onClick={() => setConfirming(true)}>Next</Button>
         {onBack && <Button variant="ghost" onClick={onBack}>Back</Button>}
-      </div>
+      </ActionStack>
     </div>
   )
 }
@@ -258,10 +259,10 @@ export function ScheduleVisitForm({ changeRequestId, onDone, onCancel }: { chang
         <pre className={`mt-2 whitespace-pre-wrap rounded-[var(--radius-control)] bg-surface-muted p-3 font-sans text-[length:calc(14.5px*var(--fs))]`}>{visitMessage(preview, who === 'staff' ? 'scheduled' : 'ready').body}</pre>
       </details>
       {err && <Note ok={false}>{err}</Note>}
-      <div className="flex flex-wrap gap-2">
+      <ActionStack>
         <Button size="sm" onClick={save} loading={busy} disabled={!docs.length || (who === 'staff' && !slot.time) || (!!override && override.reason.trim().length < 5)}>{who === 'staff' ? 'Schedule and notify resident' : 'Ask the resident to choose a time'}</Button>
         <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-      </div>
+      </ActionStack>
     </div>
   )
 }
@@ -394,14 +395,14 @@ export function MyAppointmentPage() {
             {mode === 'ask' ? (
               <div className="space-y-2">
                 <TextArea aria-label="Why, or a better day and time" placeholder="Why, or a better day and time" className="min-h-[72px]" value={reason} onChange={(e) => setReason(e.target.value)} />
-                <div className="grid grid-cols-1 gap-2 sm:flex"><Button onClick={() => run(() => requestReschedule(a.id, reason, user), 'Sent. We will notify you of the new time.')}>Send request</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></div>
+                <ActionStack><Button onClick={() => run(() => requestReschedule(a.id, reason, user), 'Sent. We will notify you of the new time.')}>Send request</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
               </div>
             ) : ['pending_confirmation', 'rescheduled', 'confirmed'].includes(a.status) && !a.checkedInAt && (
-              <div className="grid grid-cols-1 gap-2 sm:flex">
+              <ActionStack>
                 {a.status !== 'confirmed' && <Button onClick={() => run(() => confirmAppointment(a.id, user), 'Your appointment is confirmed!')}>Confirm Appointment</Button>}
                 <Button variant="secondary" onClick={() => setMode(mayMove ? 'pick' : 'ask')}>{mayMove ? 'Choose another time' : 'Request Another Schedule'}</Button>
                 {['chairman_consult', 'general_assist'].includes(a.kind) && <Button variant="ghost" onClick={() => run(() => cancelByResident(a.id, '', user), 'Your appointment was cancelled.')}>Cancel appointment</Button>}
-              </div>
+              </ActionStack>
             )}
           </>
         )}
@@ -631,16 +632,16 @@ export function AppointmentDetailPage() {
               {check('documentChecked', 'Supporting document checked')}
               {check('idExpired', 'The ID is expired')}
               <TextArea aria-label="Notes" placeholder="Notes (required if not verified: what did not match and what to do next)" className="min-h-[72px]" value={v.notes} onChange={(e) => setV({ ...v, notes: e.target.value })} />
-              <div className="flex flex-wrap gap-2 pt-2">
+              <ActionStack className="pt-2">
                 <Button onClick={() => run(() => recordVerification(a.id, 'verified', v, user), 'Marked as verified. You can now decide on the request.')}>Verified</Button>
                 <Button variant="secondary" onClick={() => run(() => recordVerification(a.id, 'not_verified', v, user), 'Marked as not verified. The resident was told.')}>Not verified</Button>
                 <Button variant="ghost" onClick={() => setMode(null)}>Back</Button>
-              </div>
+              </ActionStack>
             </div>
           ) : mode === 'reschedule' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">
               <StaffSlotPicker kind={a.kind} minutes={a.durationMin} ignoreId={a.id} value={slot} onChange={setSlot} />
-              <div className="flex gap-2"><Button disabled={!slot.time} onClick={() => run(() => rescheduleAppointment(a.id, slot.date, slot.time, slot.staff, user), 'Moved. The resident was told and asked to confirm.')}>Save new time</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></div>
+              <ActionStack><Button disabled={!slot.time} onClick={() => run(() => rescheduleAppointment(a.id, slot.date, slot.time, slot.staff, user), 'Moved. The resident was told and asked to confirm.')}>Save new time</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : mode === 'assist' ? (
             <div className="border-t border-line-soft pt-3"><TimePicker a={a} onPicked={() => { setMode(null); setMsg({ ok: true, text: 'Booked for the resident. They were told.' }); load() }} onBack={() => setMode(null)} /></div>
@@ -651,12 +652,12 @@ export function AppointmentDetailPage() {
                 <Select aria-label="New length" value={len} onChange={(e) => setLen(Number(e.target.value))}>{[10, 15, 20, 25, 30, 40, 45, 60, 90].map((m) => <option key={m} value={m}>{m} minutes</option>)}</Select>
                 <TextInput aria-label="Reason" placeholder="Reason (required)" value={text} onChange={(e) => setText(e.target.value)} />
               </div>
-              <div className="flex gap-2"><Button onClick={() => run(() => overrideDuration(a.id, len, text, user), 'Length changed and recorded.')}>Save</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></div>
+              <ActionStack><Button onClick={() => run(() => overrideDuration(a.id, len, text, user), 'Length changed and recorded.')}>Save</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : mode === 'complete' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">
               <TextArea aria-label="What happened and the next step" placeholder="What happened and the next step" className="min-h-[72px]" value={text} onChange={(e) => setText(e.target.value)} />
-              <div className="flex gap-2"><Button onClick={() => run(() => completeAppointment(a.id, text, user), 'Completed.')}>Mark as Completed</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></div>
+              <ActionStack><Button onClick={() => run(() => completeAppointment(a.id, text, user), 'Completed.')}>Mark as Completed</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : mode === 'reassign' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">
@@ -667,15 +668,15 @@ export function AppointmentDetailPage() {
                 </Select>
                 <TextInput aria-label="Reason" placeholder="Reason" value={text} onChange={(e) => setText(e.target.value)} />
               </div>
-              <div className="flex gap-2"><Button disabled={!to} onClick={() => run(() => reassign(a.id, to, text, user), 'Reassigned. Both members of the Barangay Personnel were told.')}>Reassign</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></div>
+              <ActionStack><Button disabled={!to} onClick={() => run(() => reassign(a.id, to, text, user), 'Reassigned. Both members of the Barangay Personnel were told.')}>Reassign</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : mode === 'cancel' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">
               <TextInput aria-label="Reason" placeholder="Reason (the resident will see it)" value={text} onChange={(e) => setText(e.target.value)} />
-              <div className="flex gap-2"><Button variant="danger" onClick={() => run(() => cancelAppointment(a.id, text, user), 'Cancelled. The resident was told.')}>Cancel appointment</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></div>
+              <ActionStack><Button variant="danger" onClick={() => run(() => cancelAppointment(a.id, text, user), 'Cancelled. The resident was told.')}>Cancel appointment</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2 border-t border-line-soft pt-3">
+            <ActionStack className="border-t border-line-soft pt-3">
               {a.status === 'pending_confirmation' && a.bookedAt && !a.staffConfirmed && <Button onClick={() => run(() => staffConfirm(a.id, user), 'Confirmed. The resident was told.')}>Confirm appointment</Button>}
               {booked && !a.checkedInAt && <Button variant={a.status === 'pending_confirmation' && !a.staffConfirmed ? 'secondary' : 'primary'} onClick={() => run(() => checkIn(a.id, user), 'Checked in.')}>Check In</Button>}
               {isVerify && a.checkedInAt && a.status !== 'completed' && <Button onClick={() => setMode('verify')}>Record result</Button>}
@@ -688,7 +689,7 @@ export function AppointmentDetailPage() {
               {booked && !a.checkedInAt && <Button variant="secondary" onClick={() => run(() => markNoShow(a.id, user), 'Marked as no-show. The resident was told.')}>No-show</Button>}
               {!['completed', 'cancelled'].includes(a.status) && <Button variant="ghost" onClick={() => setMode('cancel')}>Cancel</Button>}
               {a.status === 'completed' && <Link to={type.staffLink(a.subjectId)} className={`inline-flex h-12 items-center text-[length:calc(16px*var(--fs))] font-semibold text-info hover:underline`}>Go to the request</Link>}
-            </div>
+            </ActionStack>
           )}
         </Card>
         <Panel title="History">
@@ -767,7 +768,7 @@ export function ConsultationPanel({ caseId }: { caseId: string }) {
             <FieldLabel label="Why should the complainant come in?"><TextArea className="min-h-[60px]" value={reason} onChange={(e) => setReason(e.target.value)} /></FieldLabel>
             <p className="text-[length:calc(15px*var(--fs))] text-ink-muted">About {minutes} minutes</p>
             <StaffSlotPicker kind="complaint_consult" minutes={minutes} value={slot} onChange={setSlot} />
-            <div className="flex flex-wrap gap-2"><Button size="sm" loading={busy} disabled={!slot.time || reason.trim().length < 5} onClick={save}>Schedule and notify</Button><Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></div>
+            <ActionStack><Button size="sm" loading={busy} disabled={!slot.time || reason.trim().length < 5} onClick={save}>Schedule and notify</Button><Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></ActionStack>
           </>
         ) : <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Schedule a consultation</Button>}
       </div>
@@ -809,10 +810,10 @@ export function BookVisitPage() {
           <p className="text-[length:calc(18px*var(--fs))] font-semibold text-navy-900">{APPOINTMENT_TYPES[kind].label}</p>
           <FieldLabel label="What do you need help with?"><TextArea className="min-h-[96px]" value={reason} onChange={(e) => setReason(e.target.value)} /></FieldLabel>
           {err && <Note ok={false}>{err}</Note>}
-          <div className="grid grid-cols-1 gap-2 sm:flex">
+          <ActionStack>
             <Button loading={busy} disabled={reason.trim().length < 5} onClick={next}>Next: choose a time</Button>
             <Button variant="ghost" onClick={() => setKind(null)}>Back</Button>
-          </div>
+          </ActionStack>
         </Card>
       )}
     </>

@@ -17,6 +17,7 @@ import { HOLIDAY_TYPE_LABEL, closureList, holidayList, type Holiday, type Holida
 import { addClosure, calendarEntries, cancelClosure, removeHoliday, runCalendarJobs, saveHoliday, type CalendarEntry } from '@/services/calendarService'
 import { ServiceError } from '@/services/mockApi'
 import { SERVICE_KEYS, formatTime, manilaToday, nextDate, schedulingRules } from '@/services/schedulingService'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 const errText = (e: unknown) => (e instanceof ServiceError ? e.message : 'Something went wrong. Please try again.')
 const shortDate = (d: string) => new Date(`${d}T12:00:00+08:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Manila' })
@@ -134,7 +135,7 @@ function ClosureForm({ onDone, onError }: { onDone: (msg: string) => void; onErr
       )}
       <FieldLabel label="Reason (residents will see it)" required><TextInput value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></FieldLabel>
       <label className={check}><input type="checkbox" className="size-5 accent-[#002132]" checked={f.announce} onChange={(e) => setF({ ...f, announce: e.target.checked })} /> Prepare an announcement for the Punong Barangay's approval</label>
-      <div className="flex flex-wrap gap-2"><Button loading={busy} disabled={!f.from || f.reason.trim().length < 5} onClick={save}>Save closure</Button><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></div>
+      <ActionStack><Button loading={busy} disabled={!f.from || f.reason.trim().length < 5} onClick={save}>Save closure</Button><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></ActionStack>
     </div>
   )
 }
@@ -156,10 +157,10 @@ function HolidayRow({ h, admin, onDone, onError }: { h: Holiday; admin: boolean;
       </div>
       {edit && user && (
         <div className="mt-2 space-y-2 rounded-[var(--radius-control)] bg-surface-muted p-3">
-          <div className="flex flex-wrap gap-2">
+          <ActionStack>
             <Button size="sm" variant={h.hallClosed ? 'secondary' : 'primary'} onClick={() => saveHoliday({ ...h, hallClosed: true, hours: undefined }, user).then(() => { setEdit(false); onDone('Saved. Booked appointments on that day were flagged for a new time.') }).catch(onError)}>Hall closed</Button>
             <Button size="sm" variant={!h.hallClosed ? 'secondary' : 'primary'} onClick={() => saveHoliday({ ...h, hallClosed: false, hours: undefined }, user).then(() => { setEdit(false); onDone('Saved: the hall is open on this day.') }).catch(onError)}>Hall open</Button>
-          </div>
+          </ActionStack>
           <div className="flex flex-wrap items-end gap-2">
             <label className="text-[length:calc(15px*var(--fs))] text-navy-900">Open from<input type="time" className={`${control} w-36`} value={hours.start} onChange={(e) => setHours({ ...hours, start: e.target.value })} /></label>
             <label className="text-[length:calc(15px*var(--fs))] text-navy-900">until<input type="time" className={`${control} w-36`} value={hours.end} onChange={(e) => setHours({ ...hours, end: e.target.value })} /></label>
@@ -192,7 +193,7 @@ function HolidayForm({ onDone, onError }: { onDone: (m: string) => void; onError
         <FieldLabel label="Official source" required><TextInput placeholder="e.g. Proclamation No. ___, s. 2026" value={f.source} onChange={(e) => setF({ ...f, source: e.target.value })} /></FieldLabel>
       </div>
       <label className="flex min-h-11 items-center gap-2.5 text-[length:calc(16px*var(--fs))] text-navy-900"><input type="checkbox" className="size-5 accent-[#002132]" checked={f.hallClosed} onChange={(e) => setF({ ...f, hallClosed: e.target.checked })} /> The Barangay Hall is closed</label>
-      <div className="flex gap-2"><Button onClick={() => saveHoliday(f, user).then(() => { setOpen(false); onDone('Holiday added.') }).catch(onError)}>Add holiday</Button><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></div>
+      <ActionStack><Button onClick={() => saveHoliday(f, user).then(() => { setOpen(false); onDone('Holiday added.') }).catch(onError)}>Add holiday</Button><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></ActionStack>
     </div>
   )
 }

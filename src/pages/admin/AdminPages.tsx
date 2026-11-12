@@ -27,6 +27,7 @@ import { accountTypeBySlug } from '@/config/accountTypes'
 import type { Permission, RoleId, User } from '@/types/auth'
 import { cn } from '@/lib/cn'
 import { useStickyState } from '@/hooks/useStickyState'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 /** FR3: create, deactivate and assign roles to user accounts. */
 export function UsersPage() {
@@ -176,10 +177,10 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
   return (
     <div className="mt-3 space-y-4 rounded-[var(--radius-control)] bg-surface-muted p-4">
       <div className="space-y-3">
-        <div className="flex flex-wrap gap-2">
+        <ActionStack>
           <Button size="sm" variant={u.status === 'active' ? 'danger' : 'primary'} disabled={u.id === me.id} onClick={() => run(() => setStatus(u.id, u.status === 'active' ? 'inactive' : 'active', me))}>{u.status === 'active' ? 'Deactivate' : 'Activate'}</Button>
           <Button size="sm" variant="secondary" icon={<KeyRound className="size-3.5" />} onClick={onReset}>Reset password</Button>
-        </div>
+        </ActionStack>
         {renamable ? (
           <label className="block max-w-md">
             <span className="mb-1 block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">Display name</span>

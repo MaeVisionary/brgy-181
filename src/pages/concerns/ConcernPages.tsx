@@ -36,6 +36,7 @@ import { ServiceError } from '@/services/mockApi'
 import { NotFound } from '@/pages/system/NotFound'
 import { BackLink } from '@/pages/resident/parts'
 import { Timeline } from '@/components/ui/Timeline'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 const PRIORITY_TONE: Record<Priority, BadgeTone> = { critical: 'danger', high: 'warning', normal: 'neutral', low: 'neutral' }
 const nameOf = (id?: string) => (id === 'system' ? 'System' : mockUsers.find((u) => u.id === id)?.fullName ?? '—')
@@ -260,10 +261,10 @@ export function ConcernIssuePage() {
           {manage && (
             <Panel title="Actions">
               <div className="space-y-4">
-                <div className="flex flex-wrap gap-2">
+                <ActionStack>
                   {nextSteps.map(([s, label]) => <Button key={s} size="sm" variant={s === 'open' ? 'secondary' : 'primary'} onClick={() => act(() => setIssueStatus(i.id, s, user), `${label}: done.`)}>{label}</Button>)}
                   {['assigned', 'in_progress', 'under_review'].includes(i.status) && <Button size="sm" onClick={() => setDialog('resolve')}>Resolve</Button>}
-                </div>
+                </ActionStack>
                 {!['resolved', 'closed'].includes(i.status) && (
                   <div className="space-y-2 border-t border-line-soft pt-3">
                     <FieldLabel label="Assign to">
@@ -273,10 +274,10 @@ export function ConcernIssuePage() {
                     <Button size="sm" variant="secondary" disabled={!form.assignee} onClick={() => act(() => assignIssue(i.id, form.assignee, form.expected, user), 'Assigned.')}>Assign</Button>
                   </div>
                 )}
-                <div className="flex flex-wrap gap-2 border-t border-line-soft pt-3">
+                <ActionStack className="border-t border-line-soft pt-3">
                   <Button size="sm" variant="secondary" onClick={() => setDialog('priority')}>Change priority</Button>
                   <Button size="sm" variant="secondary" onClick={() => setDialog('merge')}>Merge another issue</Button>
-                </div>
+                </ActionStack>
                 <div className="space-y-2 border-t border-line-soft pt-3">
                   <TextArea aria-label="Note" placeholder="Add a note or action taken" className="min-h-[64px]" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
                   <Button size="sm" variant="secondary" disabled={!form.note.trim()} onClick={() => act(() => addIssueNote(i.id, form.note, user), 'Note added.').then(() => setForm((f) => ({ ...f, note: '' })))}>Add note</Button>

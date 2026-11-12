@@ -17,6 +17,7 @@ import { ServiceError } from '@/services/mockApi'
 import { searchResidents } from '@/services/residentService'
 import type { DocumentTypeId, FieldValue } from '@/types/document'
 import type { Resident } from '@/types/resident'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 /** Documents encoded for people who are not a resident on record. */
 const NON_RESIDENT_TYPES: DocumentTypeId[] = ['non-residency', 'notice-of-hearing']
@@ -189,14 +190,14 @@ export function NewAssistedRequestPage() {
             )}
 
             {error && <p className="rounded-md bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
-            <div className="flex gap-2">
+            <ActionStack>
               <Button onClick={submit} loading={busy}>
                 Create request
               </Button>
               <Button variant="ghost" onClick={() => navigate('/documents')}>
                 Cancel
               </Button>
-            </div>
+            </ActionStack>
           </>
         )}
       </div>

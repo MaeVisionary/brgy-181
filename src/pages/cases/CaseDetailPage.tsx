@@ -21,6 +21,7 @@ import type { CaseStage, KPCase } from '@/types/case'
 import { NotFound } from '@/pages/system/NotFound'
 import { AvailabilityRow, CaseDocuments } from './CaseParts'
 import { Timeline } from '@/components/ui/Timeline'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 const PATH: CaseStage[] = ['filed', 'under_review', 'for_assessment', 'mediation_scheduled', 'ongoing_mediation', 'referred_to_lupon', 'lupon_mediation', 'settled', 'closed']
 
@@ -162,7 +163,7 @@ export function CaseDetailPage() {
                 )}
                 {step.remarks && <label className="block"><span className="mb-1 block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">{step.outcome === 'settled' ? 'Settlement terms' : 'Note'} {step.remarks === 'required' && '*'}</span><TextArea value={remarks} onChange={(e) => setRemarks(e.target.value)} /></label>}
                 {err && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
-                <div className="flex gap-2"><Button onClick={run}>Confirm</Button><Button variant="ghost" onClick={() => { setStep(null); setErr(null) }}>Back</Button></div>
+                <ActionStack><Button onClick={run}>Confirm</Button><Button variant="ghost" onClick={() => { setStep(null); setErr(null) }}>Back</Button></ActionStack>
               </div>
             ) : (
               <div className="space-y-2">{steps.map((s, i) => <Button key={s.label} className="w-full" variant={s.outcome === 'dismissed' || s.outcome === 'withdrawn' || s.outcome === 'not_settled' ? 'danger' : i === 0 ? 'primary' : 'secondary'} onClick={() => setStep(s)}>{s.label}</Button>)}</div>
@@ -273,11 +274,11 @@ function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase
 
       {err && <p role="alert" className="mt-2 text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
       {manage && h.status === 'scheduled' && mode === 'none' && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <ActionStack className="mt-3">
           {new Date(h.scheduledAt).getTime() <= Date.now() + 3600_000 && <Button size="sm" onClick={() => setMode('attendance')}>Record attendance</Button>}
           <Button size="sm" variant="secondary" onClick={() => setMode('reschedule')}>Reschedule</Button>
           <Button size="sm" variant="ghost" icon={<BellRing className="size-4" />} onClick={() => setConfirm('reminder')}>Send reminder</Button>
-        </div>
+        </ActionStack>
       )}
       {mode === 'attendance' && (
         <div className="mt-3 space-y-3 rounded-[var(--radius-control)] border border-line p-3">
@@ -288,7 +289,7 @@ function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase
             </div>
           ))}
           <TextArea className="min-h-[60px]" placeholder="What happened (outcome, agreement, next step)" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <div className="flex gap-2"><Button size="sm" disabled={att.some((x) => x === null)} onClick={() => setConfirm('attendance')}>Save</Button><Button size="sm" variant="ghost" onClick={() => setMode('none')}>Cancel</Button></div>
+          <ActionStack><Button size="sm" disabled={att.some((x) => x === null)} onClick={() => setConfirm('attendance')}>Save</Button><Button size="sm" variant="ghost" onClick={() => setMode('none')}>Cancel</Button></ActionStack>
         </div>
       )}
       {mode === 'reschedule' && (

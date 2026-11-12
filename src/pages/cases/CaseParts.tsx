@@ -14,6 +14,7 @@ import { prepareHearingDocuments, recordAcknowledgment, recordDelivery } from '@
 import { ServiceError } from '@/services/mockApi'
 import type { Availability, AvailabilityWho, Hearing, KPCase } from '@/types/case'
 import type { DocumentRequest } from '@/types/document'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -150,10 +151,10 @@ function ServedDoc({ d: initial }: { d: DocumentRequest }) {
             <Step ok={!!d.acknowledgment} label="Receipt acknowledged" sub={d.acknowledgment && `${d.acknowledgment.receivedBy} · ${formatDate(d.acknowledgment.on)}`} />
           </ol>
           {can && generated && mode === 'none' && (
-            <div className="mt-2 flex flex-wrap gap-2">
+            <ActionStack className="mt-2">
               {!d.delivery && <Button size="sm" variant="secondary" onClick={() => setMode('deliver')}>Record delivery</Button>}
               {d.delivery && !d.acknowledgment && <Button size="sm" variant="secondary" onClick={() => setMode('ack')}>Record acknowledgment</Button>}
-            </div>
+            </ActionStack>
           )}
           {mode !== 'none' && (
             <div className="mt-2 grid grid-cols-1 gap-2 rounded-md border border-line p-3 sm:grid-cols-3">

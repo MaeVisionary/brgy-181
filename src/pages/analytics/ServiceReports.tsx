@@ -18,6 +18,7 @@ import { audit } from '@/services/auditService'
 import { STAGE_LABEL, listCases } from '@/services/caseService'
 import { listRequests } from '@/services/documentService'
 import { equipmentStatus, listBorrowings, listEquipment, returnState } from '@/services/equipmentService'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 type ReportId = 'documents' | 'complaints' | 'borrowing' | 'equipment' | 'personnel' | 'fees'
 
@@ -205,10 +206,10 @@ export function ServiceReports() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h2 className="min-w-0 font-display text-[length:calc(20px*var(--fs))] font-bold text-navy-900">{def.name}</h2>
           {output && can('reports.export') && (
-            <div className="flex gap-2">
+            <ActionStack>
               <Button size="sm" variant="secondary" icon={<Download className="size-3.5" />} onClick={() => doExport('pdf')}>PDF</Button>
               <Button size="sm" variant="secondary" icon={<FileSpreadsheet className="size-3.5" />} onClick={() => doExport('xlsx')}>Excel</Button>
-            </div>
+            </ActionStack>
           )}
         </div>
         {id !== 'equipment' && (

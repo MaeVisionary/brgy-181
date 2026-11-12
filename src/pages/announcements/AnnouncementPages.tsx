@@ -24,6 +24,7 @@ import {
 import { ServiceError } from '@/services/mockApi'
 import { formatTime } from '@/services/schedulingService'
 import { NotFound } from '@/pages/system/NotFound'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 const longDate = (d: string) => new Date(d.length === 10 ? `${d}T12:00:00+08:00` : d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' })
 const shortDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'Asia/Manila' })
@@ -261,12 +262,12 @@ export function AnnouncementEditorPage() {
             <label className="flex min-h-12 items-end gap-2.5 pb-2 text-[length:calc(16px*var(--fs))] font-semibold text-navy-900"><input type="checkbox" className="size-5 accent-[#002132]" checked={c.urgent} onChange={(e) => set({ urgent: e.target.checked })} /> Mark as important</label>
           </div>
           {err && <p role="alert" className="rounded-[var(--radius-control)] bg-danger-tint px-4 py-3 text-[length:calc(16px*var(--fs))] text-danger-ink">{err}</p>}
-          <div className="grid grid-cols-1 gap-2 sm:flex">
+          <ActionStack>
             {!live && <Button loading={busy} onClick={() => run(true)}>Submit for Approval</Button>}
             {live && <Button loading={busy} onClick={() => run(false)}>Send changes for approval</Button>}
             <Button variant="secondary" onClick={() => setPreview(true)}>Preview</Button>
             {!live && <Button variant="ghost" loading={busy} onClick={() => run(false)}>Save Draft</Button>}
-          </div>
+          </ActionStack>
         </Card>
       )}
     </>
@@ -312,17 +313,17 @@ export function AnnouncementAdminPage() {
               {approver && reviewable && a.createdBy !== user.id && (mode === 'revise' || mode === 'reject' ? (
                 <div className="space-y-2">
                   <TextArea aria-label={mode === 'revise' ? 'What should change' : 'Reason'} placeholder={mode === 'revise' ? 'What should change' : 'Reason (the Secretary will see it)'} className="min-h-[80px]" value={note} onChange={(e) => setNote(e.target.value)} />
-                  <div className="flex flex-wrap gap-2">
+                  <ActionStack>
                     <Button variant={mode === 'reject' ? 'danger' : 'primary'} onClick={() => run(() => (mode === 'revise' ? requestRevision(a.id, note, user) : rejectAnnouncement(a.id, note, user)), mode === 'revise' ? 'Sent back to the Secretary.' : 'Rejected. The Secretary was told.')}>{mode === 'revise' ? 'Request revision' : 'Reject'}</Button>
                     <Button variant="ghost" onClick={() => setMode(null)}>Back</Button>
-                  </div>
+                  </ActionStack>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-2">
+                <ActionStack>
                   <Button onClick={() => setMode('approve')}>{a.revision ? 'Approve change' : 'Approve'}</Button>
                   <Button variant="secondary" onClick={() => setMode('revise')}>Request revision</Button>
                   {!a.revision && <Button variant="ghost" onClick={() => setMode('reject')}>Reject</Button>}
-                </div>
+                </ActionStack>
               ))}
               {writer && ['draft', 'returned', 'rejected', 'scheduled', 'published', 'pending'].includes(a.status) && <ButtonLink variant="secondary" to={`/announcements/${a.id}/edit`}>Edit</ButtonLink>}
               {writer && ['draft', 'returned'].includes(a.status) && <Button onClick={() => run(() => submitForApproval(a.id, user), 'Sent to the Punong Barangay for approval.')}>Submit for Approval</Button>}
@@ -330,7 +331,7 @@ export function AnnouncementAdminPage() {
               {writer && ['scheduled', 'published', 'pending', 'draft', 'returned'].includes(a.status) && (mode === 'cancel' ? (
                 <div className="space-y-2">
                   <TextInput aria-label="Reason" placeholder="Reason" value={note} onChange={(e) => setNote(e.target.value)} />
-                  <div className="flex gap-2"><Button variant="danger" onClick={() => run(() => cancelAnnouncement(a.id, note, user), 'Cancelled.')}>Cancel announcement</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></div>
+                  <ActionStack><Button variant="danger" onClick={() => run(() => cancelAnnouncement(a.id, note, user), 'Cancelled.')}>Cancel announcement</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
                 </div>
               ) : <Button variant="ghost" onClick={() => { setNote(''); setMode('cancel') }}>Cancel announcement</Button>)}
               {!approver && !writer && <p className="text-[length:calc(16px*var(--fs))] text-ink-nav">View only.</p>}

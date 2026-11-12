@@ -16,6 +16,7 @@ import { applyTransition, availableTransitions, listRequests, type DocActor } fr
 import { ServiceError } from '@/services/mockApi'
 import type { DocumentRequest, Transition } from '@/types/document'
 import { useStickyState } from '@/hooks/useStickyState'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 const nameOf = (id?: string) => mockUsers.find((u) => u.id === id)?.fullName ?? 'Barangay Secretary'
 
@@ -190,12 +191,12 @@ function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: Doc
               <TextArea className="min-h-[70px]" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
             </label>
             {error && <p role="alert" className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
-            <div className="flex flex-wrap gap-2">
+            <ActionStack>
               <Button variant={picked.tone === 'danger' ? 'danger' : 'primary'} loading={busy} disabled={picked.remarks === 'required' && !remarks.trim()} onClick={decide}>
                 Confirm: {picked.label}
               </Button>
               <Button variant="secondary" onClick={() => setPicked(null)} disabled={busy}>Go back</Button>
-            </div>
+            </ActionStack>
           </div>
         )}
       </div>

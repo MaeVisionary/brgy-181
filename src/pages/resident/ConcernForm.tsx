@@ -10,6 +10,7 @@ import { AREAS } from '@/mocks/residents'
 import { submitConcern } from '@/services/concernService'
 import type { StoredFile } from '@/services/fileStore'
 import { ServiceError } from '@/services/mockApi'
+import { ActionStack } from '@/components/ui/ActionStack'
 
 /** Community concern: short, plain form. The type is optional; the system suggests one. */
 export function ConcernForm() {
@@ -76,10 +77,10 @@ export function ConcernForm() {
         </details>
         <p className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">Other residents never see your name. If others report the same problem, we handle them together.</p>
         {err && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
-        <div className="flex gap-2">
+        <ActionStack>
           <Button onClick={submit} loading={busy}>Send concern</Button>
           <Button variant="ghost" onClick={() => navigate('/my/complaints')} disabled={busy}>Cancel</Button>
-        </div>
+        </ActionStack>
       </div>
     </Panel>
   )
