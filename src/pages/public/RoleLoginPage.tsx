@@ -131,7 +131,7 @@ export function RoleLoginPage() {
 
             {notice && (
               <p role="alert" className="bmis-rise flex items-start gap-2.5 rounded-lg border border-danger/25 bg-danger-tint px-4 py-3 text-[length:calc(15px*var(--fs))] text-navy-900">
-                <AlertCircle className="mt-px size-4 shrink-0 text-danger" />
+                <AlertCircle className="icon-line w-4 text-danger" />
                 <span>
                   {notice}
                   {notice.startsWith('Status: Rejected') && (

@@ -29,7 +29,7 @@ const PRIORITY = [
 const SHORT: Record<string, string> = {
   '/dashboard': 'Home',
   '/my/transactions': 'Activity',
-  '/my/documents': 'Documents',
+  '/my/documents': 'Requests',
   '/documents': 'Requests',
   '/documents/approvals': 'Approvals',
   '/residents/registrations': 'Sign-ups',
@@ -65,17 +65,17 @@ export function BottomNav() {
             const on = active(g.path!)
             return (
               <li key={g.path}>
-                <NavLink to={g.path!} end={g.path === '/dashboard'} aria-current={on ? 'page' : undefined} className={cn('flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[length:calc(11.5px*var(--fs))] font-semibold', on ? 'text-navy-900' : 'text-ink-muted')}>
-                  <Icon className={cn('size-[22px]', on && 'text-info')} />
-                  <span className="max-w-full truncate px-1">{SHORT[g.path!] ?? g.label}</span>
+                <NavLink to={g.path!} end={g.path === '/dashboard'} aria-current={on ? 'page' : undefined} className={cn('flex min-h-[56px] flex-col items-center justify-start gap-0.5 pt-2 pb-1 text-[length:calc(11.5px*var(--fs))] font-semibold', on ? 'text-navy-900' : 'text-ink-muted')}>
+                  <Icon className={cn('size-[22px] shrink-0', on && 'text-info')} />
+                  <span className="line-clamp-2 max-w-full px-1 text-center leading-tight">{SHORT[g.path!] ?? g.label}</span>
                 </NavLink>
               </li>
             )
           })}
           <li>
-            <button type="button" onClick={() => setMore(true)} aria-haspopup="dialog" className={cn('flex min-h-[56px] w-full flex-col items-center justify-center gap-0.5 text-[length:calc(11.5px*var(--fs))] font-semibold', more ? 'text-navy-900' : 'text-ink-muted')}>
-              <DotsThreeCircle className="size-[22px]" weight="duotone" />
-              More
+            <button type="button" onClick={() => setMore(true)} aria-haspopup="dialog" className={cn('flex min-h-[56px] w-full flex-col items-center justify-start gap-0.5 pt-2 pb-1 text-[length:calc(11.5px*var(--fs))] font-semibold', more ? 'text-navy-900' : 'text-ink-muted')}>
+              <DotsThreeCircle className="size-[22px] shrink-0" weight="duotone" />
+              <span className="line-clamp-2 max-w-full px-1 text-center leading-tight">More</span>
             </button>
           </li>
         </ul>

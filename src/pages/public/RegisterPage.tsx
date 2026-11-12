@@ -200,8 +200,22 @@ export function RegisterPage() {
     : step === 4 ? Object.keys(accountErrs).length
     : 0
 
+  // Step changes go to an exact step number (never "current + 1" from a stale render), and repeat taps
+  // are ignored until the new step has been shown for a moment. Before this, a quick double tap ran
+  // "+1" twice with the previous step's check and skipped a step (e.g. Privacy straight to Valid ID).
+  const stepLock = useRef(false)
+  const goToStep = (to: number) => {
+    if (stepLock.current) return
+    stepLock.current = true
+    setStep(Math.max(0, Math.min(4, to)))
+  }
+  useEffect(() => {
+    const t = window.setTimeout(() => { stepLock.current = false }, 450)
+    return () => window.clearTimeout(t)
+  }, [step])
+
   const next = () => {
-    if (busy) return
+    if (busy || stepLock.current) return
     setTouched(true)
     if (stepProblems > 0) {
       focusFirstInvalid(sectionRef.current)
@@ -213,7 +227,7 @@ export function RegisterPage() {
       return
     }
     if (step === 1 && !username) setUsername(d.email.trim().toLowerCase())
-    setStep((s) => s + 1)
+    goToStep(step + 1)
   }
 
   // ── Processing ─────────────────────────────────────────────────────
@@ -284,7 +298,7 @@ export function RegisterPage() {
         {step < 5 && (
           <button
             type="button"
-            onClick={() => (step === 0 ? go('/login/resident', 'back') : setStep((s) => s - 1))}
+            onClick={() => (step === 0 ? go('/login/resident', 'back') : goToStep(step - 1))}
             className="bmis-press -ml-1 inline-flex items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900"
           >
             <ArrowLeft className="size-4" /> {step === 0 ? 'Back to sign in' : 'Back'}
@@ -524,7 +538,7 @@ export function RegisterPage() {
           {step < 5 && (
             <div className="mt-6 flex flex-col items-stretch gap-3 sm:mt-8 sm:flex-row sm:items-center sm:justify-end">
               {touched && stepProblems > 0 && (
-                <p role="alert" className="text-[length:calc(15px*var(--fs))] font-semibold text-danger-ink sm:mr-auto">
+                <p role="alert" className="text-center text-[length:calc(15px*var(--fs))] font-semibold text-danger-ink sm:mr-auto sm:text-left">
                   {step === 2 && idFace === 'checking' && stepProblems === 1
                     ? 'Still checking your ID photo. Please wait a moment.'
                     : stepProblems === 1 ? 'Please correct the item marked in red.' : `Please correct the ${stepProblems} items marked in red.`}
@@ -536,7 +550,7 @@ export function RegisterPage() {
                   {draft.status === 'saved' && <button type="button" onClick={discardDraftAndReset} className="text-[length:calc(14px*var(--fs))] font-semibold text-info hover:underline">Clear saved entries</button>}
                 </div>
               )}
-              <Button className="h-12 w-full rounded-lg px-7 text-[length:calc(17px*var(--fs))] sm:w-auto" onClick={next} loading={busy} disabled={busy}>
+              <Button className="order-first h-12 w-full rounded-lg px-7 text-[length:calc(17px*var(--fs))] sm:order-last sm:w-auto" onClick={next} loading={busy} disabled={busy}>
                 {step === 4 ? 'Submit registration' : 'Continue'}
               </Button>
             </div>
@@ -861,7 +875,7 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
 function Li({ children }: { children: ReactNode }) {
   return (
     <li className="flex items-start gap-2.5">
-      <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
+      <CheckCircle2 className="icon-line w-4 text-success" />
       {children}
     </li>
   )
@@ -873,7 +887,7 @@ function ErrorText({ children }: { children: ReactNode }) {
 
 function Status({ tone, icon, children }: { tone: 'info' | 'success' | 'warning' | 'danger'; icon: ReactNode; children: ReactNode }) {
   const cls = { info: 'bg-sky-100 text-navy-900', success: 'bg-success-tint text-navy-900', warning: 'bg-warning-tint text-navy-900', danger: 'bg-danger-tint text-navy-900' }[tone]
-  return <p role="status" className={cn('mt-3 flex items-start gap-2 rounded-lg px-4 py-3 text-left text-[length:calc(15px*var(--fs))]', cls)}><span className="mt-px shrink-0">{icon}</span>{children}</p>
+  return <p role="status" className={cn('mt-3 flex items-start gap-2 rounded-lg px-4 py-3 text-left text-[length:calc(15px*var(--fs))]', cls)}><span className="icon-line flex items-center">{icon}</span>{children}</p>
 }
 
 function FilePick({ label, icon, capture, inline, onFile }: { label: string; icon?: ReactNode; capture?: boolean | 'user'; inline?: boolean; onFile: (f: File | undefined) => void }) {

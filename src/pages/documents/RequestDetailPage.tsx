@@ -109,7 +109,7 @@ export function RequestDetailPage() {
             footer={
               missing.length > 0 ? (
                 <p className="flex items-start gap-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">
-                  <AlertTriangle className="mt-px size-4 shrink-0" />
+                  <AlertTriangle className="icon-line w-4" />
                   Missing before it can move forward: {missing.map((f) => (f.group ? `${f.group}: ${f.label}` : f.label)).join(', ')}
                 </p>
               ) : savedAt && !dirty ? (

@@ -68,7 +68,7 @@ export function AccountPage() {
       <PageHeader title="Account Settings" subtitle="Your account details and password." />
       {mustChangePassword && (
         <Card className="mb-4 flex items-start gap-3 border-warning/40 bg-warning-tint px-5 py-4 text-[length:calc(15.5px*var(--fs))] text-navy-900">
-          <ShieldAlert className="mt-0.5 size-5 shrink-0 text-warning" />
+          <ShieldAlert className="icon-line w-5 text-warning" />
           Your password was reset by the System Administrator. Choose a new password to continue.
         </Card>
       )}

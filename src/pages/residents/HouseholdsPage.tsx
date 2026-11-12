@@ -134,7 +134,7 @@ export function HouseholdsPage() {
                         {h.families.length > 1 && <span className="rounded-md bg-navy-900 px-2 py-0.5 text-[length:calc(13.5px*var(--fs))] font-semibold text-white">{h.families.length} families</span>}
                       </span>
                       <span className="block text-[length:calc(15px*var(--fs))] text-navy-900">{h.houseNo} {h.street}</span>
-                      <span className="mt-0.5 flex items-center gap-1.5 text-[length:calc(14px*var(--fs))] text-ink-muted"><Users className="size-3.5" /> {members.length} residents · {h.families.map((f) => f.name).join(', ')}</span>
+                      <span className="mt-0.5 flex items-start gap-1.5 text-[length:calc(14px*var(--fs))] text-ink-muted"><Users className="icon-line w-3.5" /> {members.length} residents · {h.families.map((f) => f.name).join(', ')}</span>
                     </span>
                     <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
                   </Link>

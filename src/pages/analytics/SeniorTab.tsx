@@ -312,8 +312,8 @@ export function SeniorTab() {
                 {rows.length ? page * PAGE + 1 : 0}–{Math.min(rows.length, page * PAGE + PAGE)} of {rows.length}
               </span>
               <span className="flex gap-2">
-                <Button size="sm" variant="secondary" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-                <Button size="sm" variant="secondary" disabled={(page + 1) * PAGE >= rows.length} onClick={() => { setPage((p) => p + 1); if (user && page === 0) audit(user, 'Viewed senior citizen records', 'Analytics') }}>Next</Button>
+                <Button size="sm" variant="secondary" disabled={page === 0} onClick={() => setPage(Math.max(0, page - 1))}>Previous</Button>
+                <Button size="sm" variant="secondary" disabled={(page + 1) * PAGE >= rows.length} onClick={() => { setPage(Math.min(Math.max(0, Math.ceil(rows.length / PAGE) - 1), page + 1)); if (user && page === 0) audit(user, 'Viewed senior citizen records', 'Analytics') }}>Next</Button>
               </span>
             </div>
           </>

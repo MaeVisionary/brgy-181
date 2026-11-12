@@ -92,7 +92,7 @@ export function TransitionPanel({
           )}
           {error && (
             <p role="alert" className="flex items-start gap-2 rounded-md bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">
-              <AlertCircle className="mt-px size-4 shrink-0" />
+              <AlertCircle className="icon-line w-4" />
               {error}
             </p>
           )}

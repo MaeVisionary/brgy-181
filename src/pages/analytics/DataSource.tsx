@@ -91,7 +91,7 @@ export function DataSource() {
         <ul className="mt-3 space-y-1 rounded-md border border-warning/40 bg-warning-tint/50 px-3 py-2 text-[length:calc(14.5px*var(--fs))]">
           {dataset.messages.filter((m) => m.level !== 'info').map((m, i) => (
             <li key={i} className="flex items-start gap-2 text-navy-900">
-              {m.level === 'warning' ? <AlertTriangle className="mt-px size-4 shrink-0 text-warning" /> : <XCircle className="mt-px size-4 shrink-0 text-danger" />}
+              {m.level === 'warning' ? <AlertTriangle className="icon-line w-4 text-warning" /> : <XCircle className="icon-line w-4 text-danger" />}
               {m.text}
             </li>
           ))}

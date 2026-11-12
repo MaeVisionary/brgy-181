@@ -43,7 +43,7 @@ export function ForgotPasswordPage() {
           <h1 className="mt-4 font-display text-[length:calc(26px*var(--fs))] font-extrabold text-navy-900">Reset your password</h1>
           {sent ? (
             <div className="bmis-rise mt-4 space-y-3 text-[length:calc(16px*var(--fs))] text-navy-900">
-              <p className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" /> Your request was sent to the System Administrator.</p>
+              <p className="flex items-start gap-2"><CheckCircle2 className="icon-line w-5 text-success" /> Your request was sent to the System Administrator.</p>
               <p className="text-ink-muted">
                 If an account matches, the administrator will set a temporary password and give it to you
                 {type.slug === 'resident' ? ' after confirming your identity. You can also go to the Barangay 181 Hall with a valid ID.' : '.'} You will be asked to choose a new password when you sign in.

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/cn'
 
@@ -35,6 +35,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export function Button({ variant = 'primary', size = 'md', loading, icon, className, children, disabled, blockedReason, onClick, ...rest }: ButtonProps) {
   const [why, setWhy] = useState(false)
+  // A second tap within 400 ms is ignored, so a double tap never runs an action twice (two steps, two submissions).
+  const lastTap = useRef(0)
   useEffect(() => { if (!blockedReason) setWhy(false) }, [blockedReason])
   const btn = (
     <button
@@ -42,6 +44,9 @@ export function Button({ variant = 'primary', size = 'md', loading, icon, classN
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       onClick={(e) => {
+        const now = Date.now()
+        if (now - lastTap.current < 400) { e.preventDefault(); return }
+        lastTap.current = now
         if (blockedReason) { e.preventDefault(); setWhy(true); return }
         onClick?.(e)
       }}

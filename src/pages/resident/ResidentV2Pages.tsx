@@ -596,7 +596,7 @@ export function ContactPage() {
         <ul className="mt-2 divide-y divide-line-soft">
           {help.map((h) => (
             <li key={h} className="flex items-start gap-2.5 py-2.5 text-[length:calc(15.5px*var(--fs))] text-navy-900">
-              <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" /> {h}
+              <CheckCircle2 className="icon-line w-4 text-success" /> {h}
             </li>
           ))}
         </ul>

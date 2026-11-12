@@ -98,7 +98,7 @@ export function TemplatesPage() {
                   onClick={() => select(d.id)}
                   className={cn('flex w-full items-start gap-2.5 px-4 py-3 text-left transition-colors', d.id === selected.id ? 'bg-sky-100' : 'hover:bg-sky-50')}
                 >
-                  <FileText className="mt-0.5 size-4 shrink-0 text-navy-900" />
+                  <FileText className="icon-line w-4 text-navy-900" />
                   <span className="min-w-0 flex-1">
                     <span className="block text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{d.name}</span>
                     <span className="block text-[length:calc(13.5px*var(--fs))] text-ink-muted">

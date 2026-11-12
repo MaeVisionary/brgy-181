@@ -157,7 +157,7 @@ export function UsersPage() {
       </Card>
       {toast && (
         <div role="status" className="fixed right-4 bottom-4 z-50 flex max-w-sm items-start gap-2 rounded-lg border border-success/40 bg-surface px-4 py-3 text-[length:calc(15px*var(--fs))] text-navy-900 shadow-[0_8px_24px_rgba(0,33,50,0.15)]">
-          <CheckCircle2 className="mt-px size-4 shrink-0 text-success" /> {toast}
+          <CheckCircle2 className="icon-line w-4 text-success" /> {toast}
         </div>
       )}
     </>

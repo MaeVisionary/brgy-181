@@ -1,5 +1,13 @@
 # BMIS Patch Notes: Report formats, notifications, analytics and cleanup (12 November 2026)
 
+## 2026-11-12 (latest): Next buttons and icon alignment
+
+- Root cause of steps "jumping": step and page buttons computed "current + 1" (setStep(s => s + 1), setPage(p => p + 1)). A quick double tap ran it twice using the previous screen's check, so registration went from Privacy straight to Valid ID without the details step, and lists skipped a page. Fixed by moving to an exact step/page number, a short lock after each step change, clamped pagination, and a shared Button that ignores a second tap within 400 ms (also stops double submissions).
+- Back goes back exactly one step; the progress bar matches the step shown. Pagination buttons are 44 x 44 px; the resident list uses the shared pager.
+- Icon alignment standard (src/index.css, icon-line): icons beside text that can wrap sit in a box one text line tall, centred on the first line at every text size. Applied to 21 icons that used fixed nudges (2.5 px off at default size). Row arrows stay centred on the row.
+- Mobile bottom bar: icons pinned at the same height, labels may wrap to two lines instead of being cut off; resident "Documents" shortened to "Requests".
+- On phones the registration Continue button sits above the "please correct" note, so the note does not push it.
+
 ## 2026-11-12 (latest): Form validation, face check on phones, auto-save and draft recovery
 
 Validation

@@ -28,9 +28,9 @@ import { useStickyState } from '@/hooks/useStickyState'
 import { ActionStack } from '@/components/ui/ActionStack'
 
 function CheckIcon({ v }: { v: 'passed' | 'failed' | 'inconclusive' }) {
-  if (v === 'passed') return <CheckCircle2 className="mt-px size-4 shrink-0 text-success" />
-  if (v === 'failed') return <XCircle className="mt-px size-4 shrink-0 text-danger" />
-  return <CircleHelp className="mt-px size-4 shrink-0 text-warning" />
+  if (v === 'passed') return <CheckCircle2 className="icon-line w-4 text-success" />
+  if (v === 'failed') return <XCircle className="icon-line w-4 text-danger" />
+  return <CircleHelp className="icon-line w-4 text-warning" />
 }
 
 /** Approve / Reject. A reason is asked for only when rejecting. */
@@ -89,7 +89,7 @@ const RESULT = {
 function CheckRow({ label, v, detail }: { label: string; v: CheckResult; detail?: string }) {
   return (
     <li className={v === 'passed' || v === 'not_checked' ? 'flex items-start gap-2 py-1.5' : 'flex items-start gap-2 rounded-md bg-danger-tint px-2 py-1.5'}>
-      {v === 'not_checked' ? <CircleHelp className="mt-px size-4 shrink-0 text-ink-subtle" /> : <CheckIcon v={v} />}
+      {v === 'not_checked' ? <CircleHelp className="icon-line w-4 text-ink-subtle" /> : <CheckIcon v={v} />}
       <span className="min-w-0 flex-1 text-[length:calc(15px*var(--fs))] text-navy-900">{label}{detail && <span className="text-ink-muted"> · {detail}</span>}</span>
       <span className={`shrink-0 text-[length:calc(14px*var(--fs))] font-semibold ${RESULT[v].cls}`}>{RESULT[v].label}</span>
     </li>
@@ -226,7 +226,7 @@ function RegistrationReview({ r, onChange }: { r: ResidentRegistration; onChange
             </ul>
             {ev && ev.reasons.length > 0 && (
               <ul className="mt-2 space-y-1 text-[length:calc(14.5px*var(--fs))] text-danger-ink">
-                {ev.reasons.map((x) => <li key={x} className="flex gap-2"><XCircle className="mt-0.5 size-4 shrink-0" />{x}</li>)}
+                {ev.reasons.map((x) => <li key={x} className="flex gap-2"><XCircle className="icon-line w-4" />{x}</li>)}
               </ul>
             )}
           </Section>

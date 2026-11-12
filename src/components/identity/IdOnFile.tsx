@@ -28,7 +28,7 @@ export function IdStatusLine({ doc, state, className }: { doc?: IdDocument; stat
   const detail = doc && [doc.idType, maskIdNumber(doc.idNumber), doc.expiresAt && `${state === 'expired' ? 'expired' : 'expires'} ${formatShortDate(doc.expiresAt + 'T12:00:00+08:00')}`].filter(Boolean).join(' · ')
   return (
     <div className={cn('flex items-start gap-2', className)}>
-      <Icon className={cn('mt-0.5 size-4 shrink-0', s.cls)} />
+      <Icon className={cn('icon-line w-4', s.cls)} />
       <div className="min-w-0 text-[length:calc(14.5px*var(--fs))]">
         <p className={cn('font-semibold', s.cls)}>{s.label}</p>
         {detail && <p className="text-ink-muted">{detail}</p>}

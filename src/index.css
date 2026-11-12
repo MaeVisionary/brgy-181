@@ -203,3 +203,18 @@ html[data-nav-dir='back']::view-transition-new(root) {
   :root[data-text='small'] { --fs: 1; }
   :root[data-text='large'] { --fs: 1.28; }
 }
+
+/*
+ * ICON ALIGNMENT STANDARD
+ * Icons beside text that can wrap: the icon box is exactly one text line tall
+ * and the drawing is centred in it, so the icon lines up with the first line
+ * at every text size (Aa) and stays put when the label wraps.
+ * Use: <Icon className="icon-line w-4" /> in an items-start row.
+ * Icons in single-line controls (buttons, nav, chips): items-center rows, gap-2,
+ * size-4 in buttons/inline text, size-5 in navigation and section headers.
+ */
+@utility icon-line {
+  height: 1.5em;
+  height: 1lh;
+  flex-shrink: 0;
+}

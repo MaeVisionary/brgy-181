@@ -1,5 +1,6 @@
 import { RowList } from '@/components/ui/RowList'
-import { ArrowDownUp, Search, Upload } from '@/icons'
+import { Pagination } from '@/components/ui/Pagination'
+import { Search, Upload } from '@/icons'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -128,13 +129,7 @@ export function ResidentsPage() {
             </tbody>
           </table>
         </div>
-        <div className="flex items-center justify-between border-t border-line-soft px-4 py-3 text-[length:calc(14.5px*var(--fs))] text-ink-muted">
-          <span className="flex items-center gap-1.5"><ArrowDownUp className="hidden size-3.5 sm:block" />{rows.length ? page * PAGE + 1 : 0}–{Math.min(rows.length, page * PAGE + PAGE)} of {rows.length} residents</span>
-          <span className="flex gap-2">
-            <button type="button" disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded-md border border-line px-3 py-1 font-semibold text-navy-900 disabled:opacity-40">Previous</button>
-            <button type="button" disabled={(page + 1) * PAGE >= rows.length} onClick={() => setPage((p) => p + 1)} className="rounded-md border border-line px-3 py-1 font-semibold text-navy-900 disabled:opacity-40">Next</button>
-          </span>
-        </div>
+        <Pagination page={page} pages={Math.max(1, Math.ceil(rows.length / PAGE))} total={rows.length} size={PAGE} onPage={setPage} noun="residents" />
       </Card>
     </>
   )

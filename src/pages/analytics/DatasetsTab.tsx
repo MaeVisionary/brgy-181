@@ -28,7 +28,7 @@ export function DatasetsTab() {
         return (
           <div key={d.name} className="flex items-start justify-between gap-4 px-5 py-4">
             <span className="flex items-start gap-3">
-              <Database className="mt-0.5 size-4 shrink-0 text-ink-muted" />
+              <Database className="icon-line w-4 text-ink-muted" />
               <span>
                 <span className="block text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{d.name}</span>
                 <span className="block text-[length:calc(14.5px*var(--fs))] text-ink-muted">{d.note}</span>
