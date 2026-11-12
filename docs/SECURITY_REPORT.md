@@ -15,7 +15,7 @@ The app is **frontend-only**. Every rule below runs in the browser's service lay
 | F3 | One person could change roles alone | High | **Fixed and tested**: two-person approval |
 | F4 | Confirmation fingerprint ignored nested details (a confirmed change could be swapped) | High | **Fixed and tested** |
 | F5 | Saved role changes dropped permissions added in later releases | Medium | **Fixed and tested** |
-| F6 | Audit log kept in memory, editable in principle | High | **Blocked** (append-only table + trigger written) |
+| F6 | Audit log kept on the device (local storage), editable in principle | High | **Blocked** (append-only table + trigger written) |
 | F7 | VAWC cases can be scheduled for barangay mediation (RA 9262) | High (legal) | **Pending** (Roadmap Phase 1) |
 | F8 | Registration ID photos stored inline in browser data | Medium | **Pending** (moves to private bucket with backend) |
 | F9 | No backups or tested restore | High | **Blocked** |
@@ -65,7 +65,7 @@ Rules: initiator cannot approve; the affected account cannot approve; one pendin
 | Private storage | Blocked (SQL written) |
 | Sessions revoked after critical changes | Blocked |
 | Audit log protected | Blocked (SQL written) |
-| Secure account recovery | Pending (currently: administrator resets with a temporary password) |
+| Secure account recovery | Done in the prototype (single-use hashed reset links, 15-minute expiry, rate limits, reviewed recovery requests, sessions ended after a reset); e-mail delivery and server enforcement pending |
 | Privilege escalation tests | Prototype: passed · Backend: blocked |
 | Unauthorized API tests | Blocked |
 | Backup and restore verified | Blocked |

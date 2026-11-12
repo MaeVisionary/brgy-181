@@ -2,7 +2,7 @@ import { APP_CONFIG } from '@/config/app'
 import { GRANTABLE_STAFF_PERMISSIONS, ROLE_PERMISSIONS } from '@/config/permissions'
 import { SAMPLE_IDS, residentById } from '@/mocks/residents'
 import { mockUsers } from '@/mocks/users'
-import { audit } from '@/services/auditService'
+import { audit, pauseAuditSaving } from '@/services/auditService'
 import { bookAppointment, bookPurposeVisit, ensureSampleVisit, listMyAppointments, staffConfirm, timeOptions } from '@/services/appointmentService'
 import { addClosure } from '@/services/calendarService'
 import { applyStep, assignCase, stepsFor, submitComplaint } from '@/services/caseService'
@@ -14,6 +14,7 @@ import { decideId, getIdOnFile, stateOf, submitReplacementId } from '@/services/
 import { manilaToday, nextDate } from '@/services/schedulingService'
 import { isWorkingDay } from '@/services/serviceStandardService'
 import { demoAccessRequest, rejectAccessRequest } from '@/services/userService'
+import { recordRecoveryFinding, scheduleRecoveryVisit, submitRecovery } from '@/services/accountRecoveryService'
 import type { Permission, User } from '@/types/auth'
 
 /**
@@ -50,7 +51,7 @@ function purge() {
   if (borrowings) { for (const x of borrowings) if (!keep(x)) gone.add(x.id); write('bmis.borrowings', borrowings.filter(keep)) }
   // The equipment service already loaded them into memory: take them out there too.
   for (let i = mockBorrowings.length - 1; i >= 0; i--) if (gone.has(mockBorrowings[i].id) || isDemo(mockBorrowings[i] as Rec)) mockBorrowings.splice(i, 1)
-  for (const k of ['bmis.calendar.closures', 'bmis.accessRequests']) { const l = read<Rec[] | null>(k, null); if (l) write(k, l.filter(keep)) }
+  for (const k of ['bmis.calendar.closures', 'bmis.accessRequests', 'bmis.recoveryRequests']) { const l = read<Rec[] | null>(k, null); if (l) write(k, l.filter(keep)) }
   const apps = read<Rec[] | null>('bmis.appointments', null)
   if (apps) write('bmis.appointments', apps.filter((x) => keep(x) && !gone.has(x.subjectId ?? '')))
   const c = read<{ submissions: Rec[]; issues: Rec[] } | null>('bmis.concerns', null)
@@ -114,6 +115,7 @@ async function run() {
   const latency = cfg.mockLatencyMs
   // Near-instant, but never two records in the same millisecond (ids use the clock).
   cfg.mockLatencyMs = 4
+  pauseAuditSaving(true)
   const locked = await takeLock()
   if (locked) purge()
   const reg = empty()
@@ -265,6 +267,24 @@ async function run() {
       }
     })
 
+    // 9a. Account recovery: a resident who lost her e-mail (for the Secretary) and a Kagawad (for the
+    // System Administrator, identity checked, visit set). The device's request limit is left as it was.
+    await step('recovery', async () => {
+      const rate = localStorage.getItem('bmis.recoveryRate')
+      try {
+        await submitRecovery({ accountType: 'resident', fullName: lourdes.fullName, identifier: lourdes.username, reason: 'My old e-mail account was closed by the provider. (demo)', newMobile: '09171112233' })
+        await new Promise((r) => setTimeout(r, 5))
+        const { ref } = await submitRecovery({ accountType: 'personnel', fullName: kag.fullName, identifier: kag.username, accountNo: kag.accountNo, reason: 'Lost access to my e-mail after changing phones. (demo)', newEmail: 'kagawad.new@example.test' })
+        const q = read<{ id: string; ref: string }[]>('bmis.recoveryRequests', []).find((x) => x.ref === ref)
+        if (q) {
+          await recordRecoveryFinding(q.id, 'Office ID and EMP number match the personnel file. (demo)', admin)
+          await scheduleRecoveryVisit(q.id, { date: workday(1), time: '10:00' }, admin)
+        }
+      } finally {
+        if (rate === null) localStorage.removeItem('bmis.recoveryRate'); else localStorage.setItem('bmis.recoveryRate', rate)
+      }
+    })
+
     // 9. Security log: blocked sign-in attempts and a record export (activity log, admin dashboard).
     audit(sec, 'Sign-in blocked: wrong password (3 tries) from a new device', 'Security', 'secretary · demo', 'failure', daysAgo(1, 22))
     audit(admin, 'Sign-in blocked: unknown username "admin181"', 'Security', 'demo', 'failure', daysAgo(2, 3))
@@ -275,6 +295,7 @@ async function run() {
     write(REG_KEY, reg)
     if (locked) localStorage.removeItem(LOCK)
     cfg.mockLatencyMs = latency
+    pauseAuditSaving(false)
     window.dispatchEvent(new Event('bmis:notifications-changed'))
   }
 }
@@ -302,7 +323,7 @@ async function demoIdImage(): Promise<File> {
 export const RECORD_KEYS = [
   'bmis.appointments', 'bmis.borrowings', 'bmis.equipment', 'bmis.concerns', 'bmis.calendar.closures', 'bmis.calendar.sent', 'bmis.accessRequests',
   'bmis.idDocuments', 'bmis.files', 'bmis.files.failed', 'bmis.emailLog', 'bmis.idempotency', 'bmis.registrations', 'bmis.registeredUsers',
-  'bmis.notificationsDismissed', 'bmis.demoNotificationsRead', 'bmis.resetRequests', 'bmis.removedCases', 'bmis.announcements', REG_KEY,
+  'bmis.notificationsDismissed', 'bmis.demoNotificationsRead', 'bmis.resetRequests', 'bmis.removedCases', 'bmis.announcements', 'bmis.accountStore', 'bmis.recoveryRequests', REG_KEY,
 ]
 export function resetDemoData(by: User) {
   audit(by, 'Reset demo data', 'Settings', 'records cleared and demo data reloaded')

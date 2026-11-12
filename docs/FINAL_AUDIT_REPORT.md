@@ -46,7 +46,7 @@ By area:
 Security and data
 1. **Test-account login is in the public site's code.** The deploy workflow passes the test accounts' e-mail and password hash (`VITE_TEST_ACCOUNT_*`) into the built JavaScript, so anyone can read them and try to guess the password offline. Use a long random password for the test accounts, change it after every demo, and remove the test login from the public build before any real use.
 2. **No server-side enforcement** of roles, two-person approval, lockout or audit (see section 5). Database rules are written (`docs/supabase/*.sql`) but not applied.
-3. **Notifications and the activity log live only in the open browser tab** (lost on reload; R0460, R0477, R0624, R0626). The audit log does not store old/new values or a request id.
+3. **Notifications live only in the open browser tab** (lost on reload; the activity log is now kept on the device, shared by its tabs, but not on a server; R0460, R0477, R0624, R0626). The audit log does not store old/new values or a request id.
 4. **Registration still auto-approves** when every automatic check passes (`registrationService`, status `auto_approved`), although a later rule says only Barangay Personnel decide (R0054, R0041).
 5. **Account lockout is permanent** until an administrator resets the password (R0584 asks for a temporary lock); "Forgot password" only sends a request to the administrator (R0582).
 6. **Browser OCR and face matching were built** (tesseract.js, face-api) although an early constraint said not to process IDs or faces until authorized (C01, R1029). Confirm this was authorized; otherwise switch it off.
@@ -117,7 +117,7 @@ Waiting for the barangay (confirm or replace the values the system uses now):
 | Database and API | Supabase project with the tables and row-level security in `docs/supabase/` | Designed, not applied |
 | Authentication | Server sign-in, password reset by e-mail, temporary lockout, sessions | Browser simulation only |
 | Permissions | Role checks and two-person approval enforced by the database | Browser only |
-| Audit log | Stored on the server, tamper-protected, with old/new values | In-memory, per tab |
+| Audit log | Stored on the server, tamper-protected, with old/new values | Kept on the device (newest 2,000 entries), not tamper-protected |
 | Notifications | Stored per user; real e-mail and SMS | In-memory; e-mail simulated |
 | File storage | Private bucket, signed links, virus scan, retention | Browser storage |
 | Backups | Scheduled database backups and an offline copy | Not set up |

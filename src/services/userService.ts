@@ -1,5 +1,5 @@
 import { EDITABLE_ROLES, GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS, PERMISSION_GROUPS, PERMISSION_LABELS, ROLES, ROLE_PERMISSIONS, writeRolePermissions } from '@/config/permissions'
-import { mockUsers } from '@/mocks/users'
+import { mockUsers, rememberAccount } from '@/mocks/users'
 import type { Permission, RoleId, User } from '@/types/auth'
 import { audit } from './auditService'
 import { sendResetLinkFor } from './passwordResetService'
@@ -25,6 +25,7 @@ export function setStatus(id: string, status: 'active' | 'inactive', by: User): 
     if (!u) throw new ServiceError('not_found', 'Account not found.')
     if (u.id === by.id) throw new ServiceError('self', 'You cannot deactivate your own account.')
     u.status = status
+    rememberAccount(u)
     audit(by, status === 'active' ? 'Activated account' : 'Deactivated account', 'User accounts', u.username)
     return u
   })
@@ -39,6 +40,7 @@ export function setDisplayName(id: string, fullName: string, by: User): Promise<
     if (!['property_custodian', 'system_admin', 'staff'].includes(u.roleId)) throw new ServiceError('official', 'Officials\' names come from the barangay records and are not edited here.')
     if (!fullName.trim()) throw new ServiceError('invalid', 'Enter a name.')
     u.fullName = fullName.trim()
+    rememberAccount(u)
     audit(by, 'Updated account name', 'User accounts', u.username)
     return u
   })
@@ -90,6 +92,7 @@ export async function createPersonnelAccount(i: NewPersonnelAccount, by: User): 
       status: 'active', accountNo: personnelNumber(seq), createdAt: new Date().toISOString(), contactNo: i.contactNo?.replace(/[\s-]/g, '') || undefined,
     }
     mockUsers.push(user)
+    rememberAccount(user, true)
     audit(by, 'Created account', 'User accounts', `${user.username} · ${ROLES[user.roleId].name}`)
     return user
   })
@@ -282,6 +285,7 @@ function apply(r: AccessRequest) {
     if (!u) throw new ServiceError('not_found', 'Account not found.')
     if (r.kind === 'account-role') u.roleId = r.payload.roleId!
     else u.extraPermissions = r.payload.perms!
+    rememberAccount(u)
   }
 }
 

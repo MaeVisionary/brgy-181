@@ -240,7 +240,7 @@ export function RolesPage() {
   )
 }
 
-/** FR24: who did what and when. In memory for this session; the backend keeps the protected log. */
+/** FR24: who did what and when. Kept on this device (sample entries are rebuilt each start); the backend keeps the protected log. */
 export function ActivityPage() {
   const entries = listAudit()
   const paged = usePaged(entries)

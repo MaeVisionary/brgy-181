@@ -1,6 +1,6 @@
 import { ROLE_PERMISSIONS } from '@/config/permissions'
 import { mockNotifications } from '@/mocks/notifications'
-import { mockUsers } from '@/mocks/users'
+import { mockUsers, rememberAccount } from '@/mocks/users'
 import type { RoleId, User } from '@/types/auth'
 import { audit } from './auditService'
 import { sendEmail } from './emailService'
@@ -224,6 +224,7 @@ export function completeRecovery(recoveryId: string) {
   const u = mockUsers.find((x) => x.id === q.matchedUserId)
   if (u && q.newEmail && q.decision?.sentTo?.startsWith('new') && !mockUsers.some((x) => x.id !== u.id && x.email.toLowerCase() === q.newEmail)) {
     u.email = q.newEmail
+    rememberAccount(u)
     q.history.push({ at: q.completedAt, by: 'system', action: 'Account e-mail changed to the verified new address' })
     audit(u, 'Account e-mail changed after recovery', 'Security', q.ref)
   }

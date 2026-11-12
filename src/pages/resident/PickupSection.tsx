@@ -1,3 +1,5 @@
+import { useSteps } from '@/hooks/useSteps'
+import { StepProgress } from '@/components/ui/StepProgress'
 import { useEffect, useMemo, useState } from 'react'
 import { CalendarClock, Clock } from '@/icons'
 import { useAuth } from '@/auth/useAuth'
@@ -26,7 +28,9 @@ export function PickupSection({ req, onChange }: { req: DocumentRequest; onChang
   useEffect(() => { runPickupChecks(); setTick((t) => t + 1) }, [req.status])
   const claim = useMemo(() => claimFor(req.id), [req.id, tick]) // eslint-disable-line react-hooks/exhaustive-deps
   const el = useMemo(() => pickupEligibility(req), [req, tick]) // eslint-disable-line react-hooks/exhaustive-deps
-  const [mode, setMode] = useState<'view' | 'pick' | 'review'>('view')
+  // Same step controller as every other form: one move per tap, Back keeps the chosen time.
+  const steps = useSteps(['view', 'pick', 'review'] as const)
+  const mode = steps.current
   const [slot, setSlot] = useState({ date: '', time: '' })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -41,8 +45,8 @@ export function PickupSection({ req, onChange }: { req: DocumentRequest; onChang
   const refresh = () => { setTick((t) => t + 1); onChange() }
   const book = async () => {
     setBusy(true); setErr(null)
-    try { await schedulePickup(req.id, slot.date, slot.time, user); setOk(booked ? 'Your pickup time was changed.' : 'Your pickup time is booked.'); setMode('view'); refresh() }
-    catch (e) { setErr(e instanceof ServiceError ? e.message : 'The pickup time could not be saved. Please try again.'); setMode('pick') }
+    try { await schedulePickup(req.id, slot.date, slot.time, user); setOk(booked ? 'Your pickup time was changed.' : 'Your pickup time is booked.'); steps.goTo('view'); refresh() }
+    catch (e) { setErr(e instanceof ServiceError ? e.message : 'The pickup time could not be saved. Please try again.'); steps.goTo('pick') }
     finally { setBusy(false) }
   }
   const cancel = async () => {
@@ -65,7 +69,7 @@ export function PickupSection({ req, onChange }: { req: DocumentRequest; onChang
             {ready ? 'Your document is ready. Please come at this time.' : 'Booked. Your document is still being prepared; this time stands once it is ready, and we will notify you.'}
           </p>
           <ActionStack className="mt-3">
-            <Button variant="secondary" onClick={() => { setSlot({ date: '', time: '' }); setErr(null); setOk(null); setMode('pick') }}>Change pickup time</Button>
+            <Button variant="secondary" onClick={() => { setSlot({ date: '', time: '' }); setErr(null); setOk(null); steps.next() }}>Change pickup time</Button>
             <Button variant="ghost" onClick={() => setCancelling(true)}>Cancel pickup time</Button>
           </ActionStack>
         </div>
@@ -77,16 +81,17 @@ export function PickupSection({ req, onChange }: { req: DocumentRequest; onChang
             {ready ? 'Your document is ready. Choose when you will pick it up.' : <>You can choose your pickup time now. The earliest is <strong>{when(el.from)}</strong>, after your document is expected to be ready.</>}
           </p>
           <ActionStack className="mt-3">
-            <Button onClick={() => { setSlot({ date: '', time: '' }); setErr(null); setOk(null); setMode('pick') }}>Choose pickup time</Button>
+            <Button onClick={() => { setSlot({ date: '', time: '' }); setErr(null); setOk(null); steps.next() }}>Choose pickup time</Button>
           </ActionStack>
         </div>
       ))}
 
+      {mode !== 'view' && <StepProgress labels={['Choose a time', 'Check and book']} index={steps.index - 1} className="mb-3" />}
       {mode === 'pick' && (
         <div className="space-y-3">
           {err && <p role="alert" className="rounded-[var(--radius-control)] bg-danger-tint px-4 py-3 text-[length:calc(15.5px*var(--fs))] text-danger-ink">{err}</p>}
           {!('blocked' in el) && !ready && <p className="text-[length:calc(15.5px*var(--fs))] text-ink-nav">Only times after {when(el.from)} are shown.</p>}
-          <SlotChooser kind="document_claim" minutes={minutes} value={slot} onChange={setSlot} days={days} timesFor={(d) => pickupTimes(req, d)} nextLabel="Next: review" onNext={() => setMode('review')} onBack={() => setMode('view')} />
+          <SlotChooser kind="document_claim" minutes={minutes} value={slot} onChange={setSlot} days={days} timesFor={(d) => pickupTimes(req, d)} nextLabel="Next: review" onNext={() => steps.next(() => !!slot.date && !!slot.time)} onBack={() => steps.back()} />
         </div>
       )}
 
@@ -101,7 +106,7 @@ export function PickupSection({ req, onChange }: { req: DocumentRequest; onChang
           ]} />
           <ActionStack>
             <Button loading={busy} onClick={book}>{booked ? 'Change pickup time' : 'Book pickup time'}</Button>
-            <Button variant="secondary" onClick={() => setMode('pick')}>Choose another time</Button>
+            <Button variant="secondary" onClick={() => steps.back()}>Choose another time</Button>
           </ActionStack>
         </div>
       )}

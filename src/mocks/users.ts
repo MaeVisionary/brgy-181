@@ -81,3 +81,31 @@ export const mockUsers: User[] = [
 }
 
 export const userById = (id: string) => mockUsers.find((u) => u.id === id)
+
+// ── Account changes kept on this device (prototype persistence) ─────────
+//
+// Personnel accounts added by the administrator, and changes made to any
+// account (status, name, e-mail after a verified recovery, role, extra
+// permissions), are saved here so they survive a reload. Passwords are not
+// kept here (see credentialStore). The backend replaces this.
+const ACC_KEY = 'bmis.accountStore'
+type Kept = Pick<User, 'email' | 'status' | 'fullName' | 'roleId' | 'position' | 'extraPermissions'>
+interface AccountStore { added: User[]; changes: Record<string, Kept> }
+const readStore = (): AccountStore => { try { return { added: [], changes: {}, ...JSON.parse(localStorage.getItem(ACC_KEY) ?? '{}') } } catch { return { added: [], changes: {} } } }
+
+/** Saves an added account, or the current state of an existing one. Call after changing it. */
+export function rememberAccount(u: User, added = false) {
+  const s = readStore()
+  if (added) s.added = [...s.added.filter((x) => x.id !== u.id), u]
+  else if (s.added.some((x) => x.id === u.id)) s.added = s.added.map((x) => (x.id === u.id ? u : x))
+  else s.changes[u.id] = { email: u.email, status: u.status, fullName: u.fullName, roleId: u.roleId, position: u.position, extraPermissions: u.extraPermissions }
+  try { localStorage.setItem(ACC_KEY, JSON.stringify(s)) } catch { /* storage full or blocked */ }
+}
+
+/** Applies saved changes (runs on load, and again after registered accounts are restored). */
+export function applyAccountChanges() {
+  const s = readStore()
+  for (const u of s.added) if (!mockUsers.some((x) => x.id === u.id)) mockUsers.push(u)
+  for (const [id, c] of Object.entries(s.changes)) { const u = mockUsers.find((x) => x.id === id); if (u) Object.assign(u, c) }
+}
+applyAccountChanges()

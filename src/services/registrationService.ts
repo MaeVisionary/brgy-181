@@ -1,6 +1,6 @@
 import type { SeniorRecord } from '@/analytics/seniorTypes'
 import { mockRegistrations, mockResidents } from '@/mocks/residents'
-import { mockUsers } from '@/mocks/users'
+import { mockUsers, applyAccountChanges, rememberAccount } from '@/mocks/users'
 import type { Permission, User } from '@/types/auth'
 import type { AltCheckKey, AltStatus, AltVerification, CheckResult, RegistrationEvidence, Resident, ResidentRegistration } from '@/types/resident'
 import { verificationPolicy } from './verificationPolicy'
@@ -102,6 +102,7 @@ function linkResident(reg: ResidentRegistration): Resident {
     mockRegistrations.push(r)
     if (isApproved(r)) linkResident(r)
   }
+  applyAccountChanges()
 })()
 
 // ── Record matching ──────────────────────────────────────────────────
@@ -392,13 +393,13 @@ export function decideRegistrationReport(id: string, action: 'no_change' | 'susp
     } else if (action === 'suspend') {
       if (r.status !== 'open') throw new ServiceError('state', 'Only an open report can lead to a suspension.')
       r.status = 'suspended'
-      if (account) account.status = 'inactive'
+      if (account) { account.status = 'inactive'; rememberAccount(account) }
       log(reg, by.id, 'Account suspended while the registration is checked', note)
       if (account) notifyUsers([account.id], 'Your account is on hold', `${reg.referenceNo}: please visit the Barangay Hall with a valid ID. ${note.trim()}`)
     } else {
       if (r.status !== 'suspended') throw new ServiceError('state', 'Only a suspended account can be reinstated.')
       r.status = 'reinstated'
-      if (account) account.status = 'active'
+      if (account) { account.status = 'active'; rememberAccount(account) }
       log(reg, by.id, 'Account reinstated', note)
       if (account) notifyUsers([account.id], 'Your account is active again', `${reg.referenceNo}: ${note.trim()}`)
     }

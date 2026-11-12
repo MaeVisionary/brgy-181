@@ -1,6 +1,13 @@
 # BMIS Patch Notes: Report formats, notifications, analytics and cleanup (12 November 2026)
 
-## 2026-11-12 (latest): Forgot password and account recovery
+## 2026-11-12 (latest): Saved account changes and activity log, pickup steps, demo recovery requests
+
+- Account changes are kept on the device and survive a reload: personnel accounts added by the administrator, activation and deactivation, name changes, approved role or permission changes, suspensions from registration reports, and the e-mail changed after a verified account recovery. "Reset demo data" removes added accounts like it removes registered ones.
+- The activity log is kept on the device (shared by its tabs, newest 2,000 entries). Sample entries made while the demo data loads are not saved, so they do not pile up on each start.
+- Document pickup uses the same step controller as the other forms: "Step 1 of 2: Choose a time", "Step 2 of 2: Check and book"; Next needs a date and time, rapid taps move one step, and Back keeps the chosen time.
+- Demo data adds two account recovery requests: Lourdes Santos (lost e-mail, waiting for the Secretary) and Kagawad Angelito Dela Cruz (identity checked by the System Administrator, Hall visit set for the next working day).
+
+## 2026-11-12: Forgot password and account recovery
 
 - "Forgot password?" on every sign-in page: enter the registered e-mail; the answer is the same whether or not an account exists. A single-use reset link is sent (random 32-byte token; only its SHA-256 hash is stored), expires in 15 minutes, and cancels any earlier link. Limits: 3 requests per address per 15 minutes, 10 per device per hour, 5 invalid links per 15 minutes (valid links are not affected).
 - Create New Password page: at least 12 characters (up to 128), passphrases welcome, no forced symbols or capitals; common passwords, repeated or sequential characters, and the person's own username or e-mail are refused. Show/hide, length guide, and the token is removed from the address bar once read. Barangay Personnel also confirm their account number (EMP-181-…).
