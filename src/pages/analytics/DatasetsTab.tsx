@@ -30,8 +30,8 @@ export function DatasetsTab() {
             <span className="flex items-start gap-3">
               <Database className="mt-0.5 size-4 shrink-0 text-ink-muted" />
               <span>
-                <span className="block text-[15.5px] font-semibold text-navy-900">{d.name}</span>
-                <span className="block text-[14.5px] text-ink-muted">{d.note}</span>
+                <span className="block text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{d.name}</span>
+                <span className="block text-[length:calc(14.5px*var(--fs))] text-ink-muted">{d.note}</span>
               </span>
             </span>
             <Badge tone={status[1] as 'success' | 'neutral' | 'info'}>{status[0]}</Badge>

@@ -28,7 +28,7 @@ export function Toggle({
   return (
     <span className="inline-flex items-center gap-3">
       {showState && (
-        <span className={cn('w-[72px] text-right text-[14.5px] font-semibold', disabled ? 'text-ink-subtle' : checked ? 'text-navy-600' : offTone === 'danger' ? 'text-danger-ink' : 'text-ink-muted')}>
+        <span className={cn('w-[72px] text-right text-[length:calc(14.5px*var(--fs))] font-semibold', disabled ? 'text-ink-subtle' : checked ? 'text-navy-600' : offTone === 'danger' ? 'text-danger-ink' : 'text-ink-muted')}>
           {checked ? 'Enabled' : 'Disabled'}
         </span>
       )}

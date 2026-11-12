@@ -33,13 +33,13 @@ export function ForgotPasswordPage() {
     <PublicLayout minimal>
       <div className="mx-auto max-w-[520px] px-4 py-12 sm:py-16">
         <section className="bmis-rise rounded-lg border border-line bg-surface p-7 md:p-9">
-          <button type="button" onClick={() => go(`/login/${type.slug}`, 'back')} className="bmis-press -ml-1 inline-flex items-center gap-1.5 rounded-full px-1 text-[15px] font-semibold text-ink-muted hover:text-navy-900">
+          <button type="button" onClick={() => go(`/login/${type.slug}`, 'back')} className="bmis-press -ml-1 inline-flex items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
             <ArrowLeft className="size-4" /> Back to {type.loginTitle}
           </button>
           <span className="mt-6 grid size-12 place-items-center rounded-lg bg-sky-100 text-navy-900"><KeyRound className="size-6" /></span>
-          <h1 className="mt-4 font-display text-[26px] font-extrabold text-navy-900">Reset your password</h1>
+          <h1 className="mt-4 font-display text-[length:calc(26px*var(--fs))] font-extrabold text-navy-900">Reset your password</h1>
           {sent ? (
-            <div className="bmis-rise mt-4 space-y-3 text-[16px] text-navy-900">
+            <div className="bmis-rise mt-4 space-y-3 text-[length:calc(16px*var(--fs))] text-navy-900">
               <p className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" /> Your request was sent to the System Administrator.</p>
               <p className="text-ink-muted">
                 If an account matches, the administrator will set a temporary password and give it to you
@@ -49,18 +49,18 @@ export function ForgotPasswordPage() {
             </div>
           ) : (
             <form onSubmit={submit} noValidate className="mt-2 space-y-4">
-              <p className="text-[16px] text-ink-muted">Enter the username or email of your {type.title} account.</p>
+              <p className="text-[length:calc(16px*var(--fs))] text-ink-muted">Enter the username or email of your {type.title} account.</p>
               <label className="block">
-                <span className="mb-1.5 block text-[15px] font-semibold text-navy-900">Username or Email</span>
+                <span className="mb-1.5 block text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">Username or Email</span>
                 <input
-                  className={cn('h-12 w-full rounded-lg border bg-surface px-4 text-[17px] text-navy-900 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none', touched && !identifier.trim() ? 'border-danger' : 'border-line')}
+                  className={cn('h-12 w-full rounded-lg border bg-surface px-4 text-[length:calc(17px*var(--fs))] text-navy-900 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none', touched && !identifier.trim() ? 'border-danger' : 'border-line')}
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   autoComplete="username"
                 />
-                {touched && !identifier.trim() && <span className="mt-1 block text-[14.5px] text-danger-ink">Enter your username or email.</span>}
+                {touched && !identifier.trim() && <span className="mt-1 block text-[length:calc(14.5px*var(--fs))] text-danger-ink">Enter your username or email.</span>}
               </label>
-              <Button type="submit" loading={busy} className="bmis-press h-12 w-full rounded-lg text-[17px]">Send reset request</Button>
+              <Button type="submit" loading={busy} className="bmis-press h-12 w-full rounded-lg text-[length:calc(17px*var(--fs))]">Send reset request</Button>
             </form>
           )}
         </section>

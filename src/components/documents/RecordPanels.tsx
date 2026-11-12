@@ -42,21 +42,21 @@ export function VerificationPanel({ req, actor, onChange }: { req: DocumentReque
     <Panel title={def.title} subtitle={def.help} icon={<ClipboardCheck className="size-5" />}>
       {v ? (
         <div className={v.result === 'confirmed' ? 'rounded-[var(--radius-control)] bg-success-tint px-4 py-3' : 'rounded-[var(--radius-control)] bg-danger-tint px-4 py-3'}>
-          <p className="text-[15px] font-semibold text-navy-900">{v.result === 'confirmed' ? 'Confirmed' : 'Not confirmed'} · checked {formatDate(v.checkedOn)}</p>
-          <p className="mt-1 text-[15px] text-navy-900">{v.findings}</p>
-          <p className="mt-1 text-[13.5px] text-ink-muted">Recorded by {nameOf(v.byUserId)} · {formatDateTime(v.at)}</p>
+          <p className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{v.result === 'confirmed' ? 'Confirmed' : 'Not confirmed'} · checked {formatDate(v.checkedOn)}</p>
+          <p className="mt-1 text-[length:calc(15px*var(--fs))] text-navy-900">{v.findings}</p>
+          <p className="mt-1 text-[length:calc(13.5px*var(--fs))] text-ink-muted">Recorded by {nameOf(v.byUserId)} · {formatDateTime(v.at)}</p>
         </div>
       ) : (
-        <p className="text-[15px] text-warning">Not recorded yet.</p>
+        <p className="text-[length:calc(15px*var(--fs))] text-warning">Not recorded yet.</p>
       )}
       {open && (
         <div className="mt-4 space-y-3 border-t border-line-soft pt-4">
-          <p className="text-[15px] font-semibold text-navy-900">{v ? 'Record a new check' : 'Record the result'}</p>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <p className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{v ? 'Record a new check' : 'Record the result'}</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FieldLabel label="Result" required>
               <div className="flex flex-wrap gap-2">
                 {(['confirmed', 'not_confirmed'] as const).map((k) => (
-                  <label key={k} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-line px-3 text-[15px] text-navy-900 has-[:checked]:border-navy-900 has-[:checked]:bg-sky-100">
+                  <label key={k} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-line px-3 text-[length:calc(15px*var(--fs))] text-navy-900 has-[:checked]:border-navy-900 has-[:checked]:bg-sky-100">
                     <input type="radio" name={`ver-${req.id}`} className="size-4 accent-[#002132]" checked={result === k} onChange={() => setResult(k)} />
                     {k === 'confirmed' ? 'Confirmed' : 'Not confirmed'}
                   </label>
@@ -70,7 +70,7 @@ export function VerificationPanel({ req, actor, onChange }: { req: DocumentReque
           <FieldLabel label="Findings" required>
             <TextArea className="min-h-[80px]" value={findings} onChange={(e) => setFindings(e.target.value)} placeholder="What was checked and what was found." />
           </FieldLabel>
-          {error && <p role="alert" className="text-[14.5px] text-danger-ink">{error}</p>}
+          {error && <p role="alert" className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
           <Button onClick={save} loading={busy} disabled={!findings.trim()}>Save {def.title.toLowerCase()}</Button>
         </div>
       )}
@@ -103,16 +103,16 @@ export function PaymentPanel({ req, actor, onChange }: { req: DocumentRequest; a
   return (
     <Panel title="Fee payment" icon={<Receipt className="size-5" />}>
       {p ? (
-        <div className="rounded-[var(--radius-control)] bg-success-tint px-4 py-3 text-[15px] text-navy-900">
+        <div className="rounded-[var(--radius-control)] bg-success-tint px-4 py-3 text-[length:calc(15px*var(--fs))] text-navy-900">
           <p className="font-semibold">Paid ₱{p.amount.toFixed(2)} · O.R. No. {p.orNo}</p>
-          <p className="text-[13.5px] text-ink-muted">Recorded by {nameOf(p.byUserId)} · {formatDateTime(p.at)}</p>
+          <p className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">Recorded by {nameOf(p.byUserId)} · {formatDateTime(p.at)}</p>
         </div>
       ) : (
-        <p className="text-[15px] text-warning">Not paid yet.</p>
+        <p className="text-[length:calc(15px*var(--fs))] text-warning">Not paid yet.</p>
       )}
       {canRecord && (
         <div className="mt-4 space-y-3 border-t border-line-soft pt-4">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FieldLabel label="Official receipt no." required>
               <TextInput value={orNo} onChange={(e) => setOrNo(e.target.value)} />
             </FieldLabel>
@@ -120,7 +120,7 @@ export function PaymentPanel({ req, actor, onChange }: { req: DocumentRequest; a
               <TextInput type="number" min="0" step="0.01" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </FieldLabel>
           </div>
-          {error && <p role="alert" className="text-[14.5px] text-danger-ink">{error}</p>}
+          {error && <p role="alert" className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
           <Button onClick={save} loading={busy} disabled={!orNo.trim() || !amount}>Record payment</Button>
         </div>
       )}

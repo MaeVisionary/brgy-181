@@ -1,4 +1,4 @@
-import { Building2, Gavel, Landmark, Package, Wallet, ShieldCheck, UserRound, Users, type LucideIcon } from '@/icons'
+import { Building2, Gavel, Landmark, Package, Wallet, ShieldCheck, UserRound, type LucideIcon } from '@/icons'
 import type { RoleId } from '@/types/auth'
 
 /** Account types offered on the portal's selection screen. */
@@ -59,15 +59,6 @@ export const ACCOUNT_TYPES: AccountType[] = [
     description: 'Record fees paid for barangay documents and view collection reports.',
     icon: Wallet,
     roles: ['treasurer'],
-    recovery: 'Ask the System Administrator to reset your password.',
-  },
-  {
-    slug: 'authorized-personnel',
-    title: 'Authorized Barangay Personnel',
-    loginTitle: 'Authorized Personnel Login',
-    description: 'Access the barangay functions assigned to your account by the System Administrator.',
-    icon: Users,
-    roles: ['staff'],
     recovery: 'Ask the System Administrator to reset your password.',
   },
   {

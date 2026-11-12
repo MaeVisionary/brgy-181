@@ -8,9 +8,9 @@ import { cn } from '@/lib/cn'
 import { initials } from '@/lib/format'
 
 const itemBase =
-  'flex w-full items-center gap-3 rounded-[var(--radius-control)] px-3 py-2 text-[16px] leading-[1.3] font-medium transition-colors'
+  'flex w-full items-center gap-3 rounded-[var(--radius-control)] px-3 py-2 text-[length:calc(16px*var(--fs))] leading-[1.3] font-medium transition-colors'
 
-function useVisibleNav(): NavGroup[] {
+export function useVisibleNav(): NavGroup[] {
   const { role, canAny } = useAuth()
   if (!role) return []
   const visible = (item: { anyOf?: NavLeaf['anyOf'] }) => !item.anyOf || canAny(item.anyOf)
@@ -88,13 +88,13 @@ function FlatNav({
                 type="button"
                 onClick={() => toggleSection(sec.label!)}
                 aria-expanded={!folded[sec.label] || sec.items.some((g) => g.path === activePath)}
-                className="mb-1 flex w-full items-center justify-between gap-2 rounded-md px-3 py-1 text-left text-[12.5px] leading-snug font-semibold tracking-[0.08em] text-ink-muted uppercase hover:text-navy-900"
+                className="mb-1 flex w-full items-center justify-between gap-2 rounded-md px-3 py-1 text-left text-[length:calc(12.5px*var(--fs))] leading-snug font-semibold tracking-[0.08em] text-ink-muted uppercase hover:text-navy-900"
               >
                 <span className="min-w-0">{sec.label}</span>
                 <ChevronRight className={cn('size-3.5 shrink-0 transition-transform', (!folded[sec.label] || sec.items.some((g) => g.path === activePath)) && 'rotate-90')} />
               </button>
             ) : (
-              <p className="mb-1 px-3 text-[12.5px] font-semibold tracking-[0.08em] text-ink-muted uppercase">{sec.label}</p>
+              <p className="mb-1 px-3 text-[length:calc(12.5px*var(--fs))] font-semibold tracking-[0.08em] text-ink-muted uppercase">{sec.label}</p>
             ))}
             {sec.label && collapsed && i > 0 && <hr className="mx-2 mb-2 border-line-soft" />}
             {!(foldable && !collapsed && sec.label && folded[sec.label] && !sec.items.some((g) => g.path === activePath)) && (
@@ -130,12 +130,12 @@ function FlatNav({
       </div>
       <div className={cn('p-3', collapsed && 'px-2')}>
         <div className={cn('flex items-center gap-3 rounded-md bg-surface-muted p-2.5', collapsed && 'justify-center p-1.5')}>
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-navy-900 text-[13px] font-semibold text-white">{initials(user.fullName)}</span>
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-navy-900 text-[length:calc(13px*var(--fs))] font-semibold text-white">{initials(user.fullName)}</span>
           {!collapsed && (
             <>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[14.5px] font-semibold text-navy-900">{user.fullName}</span>
-                <span className="block truncate text-[13px] text-ink-muted">{user.position}</span>
+                <span className="block truncate text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">{user.fullName}</span>
+                <span className="block truncate text-[length:calc(13px*var(--fs))] text-ink-muted">{user.position}</span>
               </span>
               <button type="button" onClick={logout} aria-label="Sign out" title="Sign out" className="grid size-9 place-items-center rounded-md text-ink-nav hover:bg-surface hover:text-navy-900">
                 <LogOut className="size-4" />

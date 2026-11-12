@@ -59,6 +59,8 @@ export interface KPCase {
   caseNo: string
   /** Entry number in the barangay blotter. */
   blotterNo?: string
+  /** Kagawads assigned to help with this complaint. */
+  assignedTo?: string[]
   incidentDate?: string
   incidentPlace?: string
   /** Online complaint/report this case was recorded from. */

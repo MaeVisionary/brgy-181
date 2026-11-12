@@ -1,4 +1,5 @@
-import { EXPIRING_SOON_DAYS, ID_FILE_MAX_BYTES, ID_FILE_TYPES, idHasExpiry } from '@/config/idTypes'
+import { EXPIRING_SOON_DAYS, idHasExpiry } from '@/config/idTypes'
+import { attachUploads, fileMeta } from './fileStore'
 import { ROLE_PERMISSIONS } from '@/config/permissions'
 import { mockRegistrations, mockResidents } from '@/mocks/residents'
 import type { Permission, User } from '@/types/auth'
@@ -42,8 +43,10 @@ export interface IdDocument {
   reviewedAt?: string
   reviewedBy?: string
   reviewNote?: string
-  /** Downscaled image; shown only to staff who can verify residents. */
+  /** Registration photo kept inline by the earlier prototype (staff only). */
   image?: string
+  /** Stored ID photo or PDF (file store); opened by staff through a short-lived link. */
+  fileId?: string
   source: 'registration' | 'replacement'
   /** What the text reader found on the photo (not proof of authenticity). */
   ocr?: { name: boolean; idNumber: boolean; expiry?: boolean }
@@ -128,7 +131,7 @@ export function getIdOnFile(residentId: string, viewer: User): Promise<IdDocumen
     if (!own && !staff) throw new ServiceError('forbidden', 'You do not have access to this record.')
     const doc = current(residentId)
     if (!doc) return undefined
-    if (!staff) return { ...doc, image: undefined }
+    if (!staff) return { ...doc, image: undefined, fileId: undefined }
     audit(viewer, 'Viewed ID on file', 'Residents', residentId)
     return doc
   })
@@ -138,23 +141,20 @@ export interface IdUpload {
   idType: string
   idNumber: string
   expiresAt?: string
-  image: string
-  fileType: string
-  fileSize: number
+  /** File already checked and stored by the upload field. */
+  fileId: string
   ocr?: IdDocument['ocr']
 }
 
 /** Validates an ID before it is saved (type, number, expiry, file). */
-export function idUploadProblem(u: Omit<IdUpload, 'image'> & { image?: string }, today = new Date()): string | null {
+export function idUploadProblem(u: Omit<IdUpload, 'fileId'> & { fileId?: string }, today = new Date()): string | null {
   if (!u.idType) return 'Choose the type of ID.'
   if (u.idNumber.trim().length < 4) return 'Enter the ID number shown on the card.'
   if (idHasExpiry(u.idType)) {
     if (!u.expiresAt) return 'Enter the expiry date printed on the ID.'
     if (new Date(u.expiresAt + 'T23:59:59+08:00').getTime() < today.getTime()) return 'This ID has expired. Please use a valid ID.'
   }
-  if (!ID_FILE_TYPES.includes(u.fileType)) return 'Upload a JPG, PNG or WebP photo of the ID.'
-  if (u.fileSize > ID_FILE_MAX_BYTES) return 'The photo is too large (8 MB maximum).'
-  if (!u.image) return 'Add a photo of the front of the ID.'
+  if (!u.fileId) return 'Add a photo or PDF of the front of the ID.'
   return null
 }
 
@@ -164,6 +164,8 @@ export function submitReplacementId(residentId: string, u: IdUpload, by: User): 
     if (by.residentId !== residentId) throw new ServiceError('forbidden', 'You can only update your own ID.')
     const problem = idUploadProblem(u)
     if (problem) throw new ServiceError('invalid', problem)
+    const f = fileMeta(u.fileId)
+    if (!f || f.ownerResidentId !== residentId || f.category !== 'id') throw new ServiceError('invalid', 'Add a photo or PDF of the front of the ID.')
     if (stateOf(current(residentId)) === 'pending') throw new ServiceError('pending', 'Your ID is already being verified.')
     const now = new Date().toISOString()
     const doc: IdDocument = {
@@ -174,13 +176,14 @@ export function submitReplacementId(residentId: string, u: IdUpload, by: User): 
       expiresAt: idHasExpiry(u.idType) ? u.expiresAt : undefined,
       uploadedAt: now,
       review: 'pending',
-      image: u.image,
+      fileId: u.fileId,
       source: 'replacement',
       ocr: u.ocr,
       history: [{ at: now, action: 'Uploaded by resident', by: by.id }],
     }
     replacements.push(doc)
     persist()
+    attachUploads([u.fileId], doc.id)
     audit(by, 'Uploaded a replacement ID', 'Residents', residentId)
     return doc
   })

@@ -83,8 +83,8 @@ export function ReportsPage() {
     <>
       <PageHeader title="Barangay Reports" />
 
-      {templateMsg && <p role="status" className={cn('mb-3 rounded-md px-3 py-2 text-[14.5px]', templateMsg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{templateMsg.text}</p>}
-      <div className="grid gap-4 lg:grid-cols-2">
+      {templateMsg && <p role="status" className={cn('mb-3 rounded-md px-3 py-2 text-[length:calc(14.5px*var(--fs))]', templateMsg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{templateMsg.text}</p>}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Panel title="Official Forms" bodyClassName="px-0 py-0">
           <ul className="divide-y divide-line-soft">
             {OFFICIAL_FORMS.map((r) => (
@@ -103,14 +103,14 @@ export function ReportsPage() {
 
       <ServiceReports />
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
+      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
         {/* Desktop: report list. Phones/tablets: a compact selector. */}
         <nav aria-label="Analytics reports" className="hidden h-fit xl:sticky xl:top-0 xl:block">
           <h2 className="label-caps mb-2 px-3">Analytics</h2>
           <ul className="space-y-0.5">
             {SENIOR_REPORTS.map((r) => (
               <li key={r.id}>
-                <button type="button" onClick={() => setReportId(r.id)} aria-current={r.id === reportId ? 'page' : undefined} className={cn('flex w-full items-center gap-2 rounded-[var(--radius-control)] px-3 py-2 text-left text-[15px]', r.id === reportId ? 'bg-surface font-semibold text-navy-900 shadow-[0_0_0_1px_var(--color-line)]' : 'text-ink-nav hover:bg-surface/70 hover:text-navy-900')}>
+                <button type="button" onClick={() => setReportId(r.id)} aria-current={r.id === reportId ? 'page' : undefined} className={cn('flex w-full items-center gap-2 rounded-[var(--radius-control)] px-3 py-2 text-left text-[length:calc(15px*var(--fs))]', r.id === reportId ? 'bg-surface font-semibold text-navy-900 shadow-[0_0_0_1px_var(--color-line)]' : 'text-ink-nav hover:bg-surface/70 hover:text-navy-900')}>
                   <span className="min-w-0 flex-1 truncate">{SHORT_NAME[r.id] ?? r.name}</span>
                   {r.pii && <Lock className="size-3.5 shrink-0 text-ink-subtle" aria-label="Contains identifiable information" />}
                 </button>
@@ -122,14 +122,14 @@ export function ReportsPage() {
         <Card className="min-w-0 px-5 py-4">
           <label className="mb-3 block xl:hidden">
             <span className="sr-only">Report</span>
-            <select value={reportId} onChange={(e) => setReportId(e.target.value)} className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15.5px] font-semibold text-navy-900">
+            <select value={reportId} onChange={(e) => setReportId(e.target.value)} className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">
               {SENIOR_REPORTS.map((r) => <option key={r.id} value={r.id}>{SHORT_NAME[r.id] ?? r.name}</option>)}
             </select>
           </label>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="font-display text-[20px] font-bold text-navy-900">{def.name}</h2>
-              {dataset && <p className="text-[14px] text-ink-muted">As of {formatShortDate(reportingDate.toISOString())}</p>}
+              <h2 className="font-display text-[length:calc(20px*var(--fs))] font-bold text-navy-900">{def.name}</h2>
+              {dataset && <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">As of {formatShortDate(reportingDate.toISOString())}</p>}
             </div>
             {output && canExport && (
               <div className="flex gap-2">
@@ -140,25 +140,25 @@ export function ReportsPage() {
           </div>
 
           {!dataset ? (
-            <p className="mt-3 text-[15px] text-ink-muted">
+            <p className="mt-3 text-[length:calc(15px*var(--fs))] text-ink-muted">
               No masterlist loaded. <Link to="/analytics" className="font-semibold text-info hover:underline">Load it in Analytics</Link>.
             </p>
           ) : locked ? (
-            <p className="mt-3 flex items-center gap-2 text-[15px] text-ink-muted"><Lock className="size-4" /> Requires access to resident records.</p>
+            <p className="mt-3 flex items-center gap-2 text-[length:calc(15px*var(--fs))] text-ink-muted"><Lock className="size-4" /> Requires access to resident records.</p>
           ) : output ? (
             <>
               {output.summary.length > 0 && (
                 <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
                   {output.summary.slice(0, 4).map(([k, v]) => (
                     <div key={k} className="min-w-0">
-                      <dd className="font-display text-[26px] leading-none font-extrabold tabular-nums text-navy-900">{v}</dd>
-                      <dt className="mt-1 text-[14px] leading-snug text-ink-nav">{k}</dt>
+                      <dd className="font-display text-[length:calc(26px*var(--fs))] leading-none font-extrabold tabular-nums text-navy-900">{v}</dd>
+                      <dt className="mt-1 text-[length:calc(14px*var(--fs))] leading-snug text-ink-nav">{k}</dt>
                     </div>
                   ))}
                 </dl>
               )}
               {output.summary.length > 4 && (
-                <dl className="mt-4 grid gap-x-8 border-t border-line-soft pt-3 text-[14.5px] sm:grid-cols-2">
+                <dl className="mt-4 grid grid-cols-1 gap-x-8 border-t border-line-soft pt-3 text-[length:calc(14.5px*var(--fs))] sm:grid-cols-2">
                   {output.summary.slice(4).map(([k, v]) => (
                     <div key={k} className="flex items-baseline justify-between gap-3 border-b border-line-soft py-1.5">
                       <dt className="text-ink-nav">{k}</dt>
@@ -168,8 +168,19 @@ export function ReportsPage() {
                 </dl>
               )}
               {output.rows.length > 0 && (
-                <div className="mt-4 max-h-[420px] overflow-auto rounded-md border border-line-soft">
-                  <table className="w-full text-[14.5px]">
+                <ul className="mt-4 divide-y divide-line-soft border-y border-line-soft md:hidden">
+                  {output.rows.slice(0, 50).map((r, i) => (
+                    <li key={i} className="py-2.5">
+                      <p className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{r[0]}</p>
+                      <p className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">{r.slice(1).map((v, j) => `${output.columns[j + 1]}: ${v}`).join(' · ')}</p>
+                    </li>
+                  ))}
+                  {output.rows.length > 50 && <li className="py-2 text-[length:calc(14px*var(--fs))] text-ink-muted">Showing 50 of {output.rows.length}. Export to see all.</li>}
+                </ul>
+              )}
+              {output.rows.length > 0 && (
+                <div className="mt-4 hidden max-h-[420px] overflow-auto rounded-md border border-line-soft md:block">
+                  <table className="w-full text-[length:calc(14.5px*var(--fs))]">
                     <thead className="sticky top-0 bg-surface-muted">
                       <tr className="text-left">{output.columns.map((c) => <th key={c} className="label-caps px-3 py-2 whitespace-nowrap">{c}</th>)}</tr>
                     </thead>
@@ -179,10 +190,10 @@ export function ReportsPage() {
                       ))}
                     </tbody>
                   </table>
-                  {output.rows.length > 200 && <p className="px-3 py-2 text-[14px] text-ink-muted">Showing 200 of {output.rows.length} rows.</p>}
+                  {output.rows.length > 200 && <p className="px-3 py-2 text-[length:calc(14px*var(--fs))] text-ink-muted">Showing 200 of {output.rows.length} rows.</p>}
                 </div>
               )}
-              <details className="mt-4 text-[14px]">
+              <details className="mt-4 text-[length:calc(14px*var(--fs))]">
                 <summary className="cursor-pointer font-semibold text-ink-nav hover:text-navy-900">Report details</summary>
                 <label className="mt-2 flex items-center gap-2 text-navy-900">
                   <input type="checkbox" className="size-4 accent-[#002132]" checked={useFilters} onChange={(e) => setUseFilters(e.target.checked)} />
@@ -238,12 +249,12 @@ function ReportRow({ id, name, agency, template, canManage, onUpload }: {
 }) {
   const input = useRef<HTMLInputElement>(null)
   const builtIn = BUILTIN_REPORT_TEMPLATES[id]
-  const btn = 'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface w-10 sm:w-auto sm:px-3.5 text-[14.5px] font-semibold whitespace-nowrap text-navy-900 hover:bg-surface-muted'
+  const btn = 'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface w-10 sm:w-auto sm:px-3.5 text-[length:calc(14.5px*var(--fs))] font-semibold whitespace-nowrap text-navy-900 hover:bg-surface-muted'
   return (
     <li className="flex items-center gap-3 px-5 py-3">
       <span className="min-w-0 flex-1">
         <span className="block font-semibold text-navy-900">{name}</span>
-        <span className="block text-[14px] text-ink-muted">{agency}</span>
+        <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{agency}</span>
       </span>
       {template ? (
         <button type="button" className={btn} aria-label={`Download ${name}`} onClick={() => downloadBlob(template.blob, template.fileName)}><Download className="size-4" /><span className="hidden sm:inline">Download</span></button>

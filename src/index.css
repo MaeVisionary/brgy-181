@@ -55,12 +55,17 @@
   body {
     background: var(--color-canvas);
     color: var(--color-ink);
+    font-size: calc(16px * var(--fs));
+    line-height: 1.5;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
   :focus-visible {
-    outline: 2px solid var(--color-navy-600);
+    outline: 3px solid var(--color-navy-600);
     outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   }
 }
 
@@ -155,7 +160,7 @@ html[data-nav-dir='back']::view-transition-new(root) {
 @layer components {
   /* Uppercase metric label: Inter 600, 10.5px, +8% tracking (figma) */
   .label-caps {
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs));
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -179,4 +184,22 @@ html[data-nav-dir='back']::view-transition-new(root) {
   button:disabled {
     cursor: not-allowed;
   }
+}
+
+/* A select sizes itself to its longest option; never let that push a phone layout wider than the screen. */
+@layer base {
+  select {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+/* Text size (Small / Default / Large), set on <html> by the A- / A+ control. Only text scales; layouts reflow. */
+:root { --fs: 1; }
+@media (max-width: 767px) { :root { --fs: 1.08; } }
+:root[data-text='small'] { --fs: 0.92; }
+:root[data-text='large'] { --fs: 1.2; }
+@media (max-width: 767px) {
+  :root[data-text='small'] { --fs: 1; }
+  :root[data-text='large'] { --fs: 1.28; }
 }

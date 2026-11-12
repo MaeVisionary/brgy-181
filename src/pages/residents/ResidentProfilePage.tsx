@@ -41,8 +41,8 @@ export function ResidentProfilePage() {
 
   const Field = ({ k, v }: { k: string; v: React.ReactNode }) => (
     <div>
-      <dt className="text-[13.5px] text-ink-muted">{k}</dt>
-      <dd className="text-[15.5px] text-navy-900">{v || <span className="text-ink-subtle">Not recorded</span>}</dd>
+      <dt className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">{k}</dt>
+      <dd className="text-[length:calc(15.5px*var(--fs))] text-navy-900">{v || <span className="text-ink-subtle">Not recorded</span>}</dd>
     </div>
   )
 
@@ -51,14 +51,14 @@ export function ResidentProfilePage() {
       <BackLink fallbackTo="/residents" fallbackLabel="Resident Master List" />
       <PageHeader eyebrow={`Resident no. ${res.residentNo}`} title={fullName(res)} subtitle={`${res.houseNo} ${res.street}, Gagalangin, Tondo, Manila`} actions={
           <div className="rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-2">
-            <p className="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Portal account</p>
-            <div className="mt-1 [&>span]:h-7 [&>span]:px-2.5 [&>span]:text-[14.5px]"><RegistrationBadge status={res.registrationStatus} /></div>
+            <p className="text-[length:calc(13px*var(--fs))] font-semibold tracking-[0.06em] text-ink-muted uppercase">Portal account</p>
+            <div className="mt-1 [&>span]:h-7 [&>span]:px-2.5 [&>span]:text-[length:calc(14.5px*var(--fs))]"><RegistrationBadge status={res.registrationStatus} /></div>
           </div>
         } />
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="space-y-4">
           <Panel title="Personal information">
-            <dl className="grid gap-3 sm:grid-cols-3">
+            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field k="Birthdate" v={formatDate(res.birthDate)} />
               <Field k="Age" v={age(res)} />
               <Field k="Sex" v={res.sex === 'male' ? 'Male' : 'Female'} />
@@ -68,7 +68,7 @@ export function ResidentProfilePage() {
             </dl>
           </Panel>
           <Panel title="Residency, employment and education">
-            <dl className="grid gap-3 sm:grid-cols-3">
+            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field k="Resident since" v={res.residentSince} />
               <Field k="Area" v={res.street} />
               <Field k="OSCA ID no." v={res.oscaId} />
@@ -76,14 +76,14 @@ export function ResidentProfilePage() {
               <Field k="Educational attainment" v={res.education} />
             </dl>
           </Panel>
-          <Panel title="Sectors">{Object.values(res.sectors).some(Boolean) ? <SectorBadges r={res} /> : <p className="text-[15px] text-ink-muted">No sector recorded for this resident (senior citizen, PWD, solo parent, 4Ps or program beneficiary).</p>}</Panel>
+          <Panel title="Sectors">{Object.values(res.sectors).some(Boolean) ? <SectorBadges r={res} /> : <p className="text-[length:calc(15px*var(--fs))] text-ink-muted">No sector recorded for this resident (senior citizen, PWD, solo parent, 4Ps or program beneficiary).</p>}</Panel>
           {(requests.length > 0 || cases.length > 0) && (
             <Panel title="Transactions" bodyClassName="px-0 py-0">
               <ul>
                 {requests.map((d) => (
                   <li key={d.id} className="border-b border-line-soft last:border-0">
                     <Link to={`/documents/${d.id}`} className="flex items-center justify-between px-5 py-2.5 hover:bg-sky-50">
-                      <span className="text-[15px] text-navy-900">{getDocumentType(d.typeId).name} · {d.referenceNo}</span>
+                      <span className="text-[length:calc(15px*var(--fs))] text-navy-900">{getDocumentType(d.typeId).name} · {d.referenceNo}</span>
                       <StatusBadge status={d.status} typeId={d.typeId} />
                     </Link>
                   </li>
@@ -91,8 +91,8 @@ export function ResidentProfilePage() {
                 {cases.map((c) => (
                   <li key={c.id} className="border-b border-line-soft last:border-0">
                     <Link to={`/cases/${c.id}`} className="flex items-center justify-between px-5 py-2.5 hover:bg-sky-50">
-                      <span className="text-[15px] text-navy-900">{c.caseNo} · {c.title}</span>
-                      <span className="text-[14px] text-ink-muted">{c.complainants.some((p) => p.residentId === res.id) ? 'Complainant' : 'Respondent'}</span>
+                      <span className="text-[length:calc(15px*var(--fs))] text-navy-900">{c.caseNo} · {c.title}</span>
+                      <span className="text-[length:calc(14px*var(--fs))] text-ink-muted">{c.complainants.some((p) => p.residentId === res.id) ? 'Complainant' : 'Respondent'}</span>
                     </Link>
                   </li>
                 ))}
@@ -100,19 +100,19 @@ export function ResidentProfilePage() {
             </Panel>
           )}
         </div>
-        <Panel title="Household and family" actions={hh.data && <Link to={`/residents/households/${hh.data.household.id}`} className="inline-flex items-center gap-1 text-[14.5px] font-semibold text-info hover:underline"><Home className="size-3.5" /> {hh.data.household.householdNo}</Link>}>
+        <Panel title="Household and family" actions={hh.data && <Link to={`/residents/households/${hh.data.household.id}`} className="inline-flex items-center gap-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-info hover:underline"><Home className="size-3.5" /> {hh.data.household.householdNo}</Link>}>
           {hh.data && (
             <>
-              <p className="text-[14.5px] text-ink-muted">
+              <p className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">
                 {hh.data.household.families.length} famil{hh.data.household.families.length > 1 ? 'ies' : 'y'} and {hh.data.members.length} residents at this address.
               </p>
               <p className="label-caps mt-4 mb-2">{family?.name} · relationship: {res.relationship}</p>
               <ul className="space-y-1.5">
                 {familyMembers.map((m) => (
                   <li key={m.id}>
-                    <Link to={`/residents/${m.id}`} className={`flex items-center justify-between rounded-md px-2 py-1.5 text-[15px] hover:bg-sky-50 ${m.id === res.id ? 'bg-sky-100 font-semibold' : ''}`}>
+                    <Link to={`/residents/${m.id}`} className={`flex items-center justify-between rounded-md px-2 py-1.5 text-[length:calc(15px*var(--fs))] hover:bg-sky-50 ${m.id === res.id ? 'bg-sky-100 font-semibold' : ''}`}>
                       <span className="text-navy-900">{fullName(m)}</span>
-                      <span className="text-[14px] text-ink-muted">{m.relationship} · {age(m)}</span>
+                      <span className="text-[length:calc(14px*var(--fs))] text-ink-muted">{m.relationship} · {age(m)}</span>
                     </Link>
                   </li>
                 ))}

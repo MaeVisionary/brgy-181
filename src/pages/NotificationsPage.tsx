@@ -12,7 +12,7 @@ export function NotificationsPage() {
       <PageHeader
         title="Notifications"
         actions={unread > 0 && (
-          <button type="button" onClick={markAllRead} className="inline-flex min-h-11 items-center text-[15px] font-semibold text-info hover:underline">
+          <button type="button" onClick={markAllRead} className="inline-flex min-h-11 items-center text-[length:calc(15px*var(--fs))] font-semibold text-info hover:underline">
             Mark all as read
           </button>
         )}
@@ -25,7 +25,7 @@ export function NotificationsPage() {
         <div className="space-y-5">
           {groupByDay(items).map(([label, list]) => (
             <section key={label}>
-              <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-[0.04em] text-ink-muted uppercase">{label}</h2>
+              <h2 className="mb-2 px-1 text-[length:calc(13px*var(--fs))] font-semibold tracking-[0.04em] text-ink-muted uppercase">{label}</h2>
               <div className="space-y-2">
                 {list.map((n) => <NotificationItem key={n.id} n={n} onRead={markRead} onDismiss={dismiss} />)}
               </div>

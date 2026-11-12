@@ -67,21 +67,21 @@ export function AccountPage() {
     <>
       <PageHeader title="Account Settings" subtitle="Your account details and password." />
       {mustChangePassword && (
-        <Card className="mb-4 flex items-start gap-3 border-warning/40 bg-warning-tint px-5 py-4 text-[15.5px] text-navy-900">
+        <Card className="mb-4 flex items-start gap-3 border-warning/40 bg-warning-tint px-5 py-4 text-[length:calc(15.5px*var(--fs))] text-navy-900">
           <ShieldAlert className="mt-0.5 size-5 shrink-0 text-warning" />
           Your password was reset by the System Administrator. Choose a new password to continue.
         </Card>
       )}
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <Panel title="Account">
           <div className="flex items-center gap-3">
-            <span className="grid size-11 place-items-center rounded-full bg-navy-900 text-[15px] font-semibold text-white">{initials(user.fullName)}</span>
+            <span className="grid size-11 place-items-center rounded-full bg-navy-900 text-[length:calc(15px*var(--fs))] font-semibold text-white">{initials(user.fullName)}</span>
             <span>
-              <span className="block font-display text-[17.5px] font-extrabold text-navy-900">{user.fullName}</span>
-              <span className="block text-[14.5px] text-ink-muted">{user.position}</span>
+              <span className="block font-display text-[length:calc(17.5px*var(--fs))] font-extrabold text-navy-900">{user.fullName}</span>
+              <span className="block text-[length:calc(14.5px*var(--fs))] text-ink-muted">{user.position}</span>
             </span>
           </div>
-          <dl className="mt-4 divide-y divide-line-soft text-[15px]">
+          <dl className="mt-4 divide-y divide-line-soft text-[length:calc(15px*var(--fs))]">
             {[
               ['Username', user.username],
               ['Email', user.email],
@@ -103,14 +103,14 @@ export function AccountPage() {
             <Req label="New password">{pw(next, setNext, 'new-password')}</Req>
             <Req label="Confirm new password">{pw(confirm, setConfirm, 'new-password')}</Req>
             {!mustChangePassword && (
-              <p className={`rounded-md px-3 py-2 text-[14.5px] ${limited ? 'bg-danger-tint text-danger-ink' : 'bg-surface-muted text-ink-nav'}`}>
+              <p className={`rounded-md px-3 py-2 text-[length:calc(14.5px*var(--fs))] ${limited ? 'bg-danger-tint text-danger-ink' : 'bg-surface-muted text-ink-nav'}`}>
                 {limited
                   ? `Limit reached: ${PASSWORD_CHANGE_LIMIT} changes in ${PASSWORD_CHANGE_WINDOW_DAYS} days. You can change it again on ${nextAt ? formatDate(nextAt.toISOString()) : 'a later date'}.`
                   : `You can change your password ${left} more time${left === 1 ? '' : 's'} in the next ${PASSWORD_CHANGE_WINDOW_DAYS} days.`}
               </p>
             )}
-            {error && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">{error}</p>}
-            {done && <p className="flex items-center gap-2 rounded-md bg-success-tint px-3 py-2 text-[14.5px] text-navy-900"><CheckCircle2 className="size-4 text-success" /> Password updated.</p>}
+            {error && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
+            {done && <p className="flex items-center gap-2 rounded-md bg-success-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-navy-900"><CheckCircle2 className="size-4 text-success" /> Password updated.</p>}
             <div className="flex flex-wrap gap-2 pt-1">
               <Button type="button" variant="secondary" icon={show ? <EyeOff className="size-4" /> : <Eye className="size-4" />} onClick={() => setShow((s) => !s)}>
                 {show ? 'Hide password' : 'Show password'}
@@ -128,7 +128,7 @@ export function AccountPage() {
 function Req({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[14.5px] font-semibold text-navy-900">
+      <span className="mb-1.5 block text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">
         {label} <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span>
       </span>
       {children}

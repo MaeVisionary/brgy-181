@@ -36,7 +36,7 @@ export function CaseRecordPrintPage() {
   const names = (side: 'complainants' | 'respondents') => c[side].map((p) => p.name).join(', ')
 
   const doc = (
-      <article className="mx-auto max-w-[800px] bg-white px-10 py-12 font-serif text-[15px] leading-relaxed text-black shadow-sm print:shadow-none">
+      <article className="mx-auto max-w-[800px] bg-white px-10 py-12 font-serif text-[length:calc(15px*var(--fs))] leading-relaxed text-black shadow-sm print:shadow-none">
       <header className="text-center">
         <p>Republic of the Philippines</p>
         <p>{BARANGAY.fullName}</p>
@@ -56,7 +56,7 @@ export function CaseRecordPrintPage() {
           <p>For: {c.nature}</p>
         </div>
       </div>
-      <h1 className="mt-8 text-center text-[20px] font-bold tracking-wide uppercase">{TITLES[kind]}</h1>
+      <h1 className="mt-8 text-center text-[length:calc(20px*var(--fs))] font-bold tracking-wide uppercase">{TITLES[kind]}</h1>
 
       {kind === 'mediation' && (
         <section className="mt-6 space-y-4">

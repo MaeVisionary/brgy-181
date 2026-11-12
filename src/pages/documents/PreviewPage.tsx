@@ -38,11 +38,11 @@ export function PreviewPage() {
     <>
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <Link to={`/documents/${req.id}`} className="mb-1 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-ink-muted hover:text-navy-900">
+          <Link to={`/documents/${req.id}`} className="mb-1 inline-flex items-center gap-1.5 text-[length:calc(14.5px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
             <ArrowLeft className="size-4" /> Back to request
           </Link>
-          <h1 className="font-display text-[24px] font-extrabold text-navy-900">
-            {type.name} <span className="font-sans text-[16px] font-semibold text-ink-muted">· {req.referenceNo}</span>
+          <h1 className="font-display text-[length:calc(24px*var(--fs))] font-extrabold text-navy-900">
+            {type.name} <span className="font-sans text-[length:calc(16px*var(--fs))] font-semibold text-ink-muted">· {req.referenceNo}</span>
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -53,7 +53,7 @@ export function PreviewPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
         <Card className="min-w-0 bg-surface-muted p-3 sm:p-6">
           <ScaledPages pageWidthMm={type.template.pageSize.widthMm}>
             <DocumentPages type={type} values={values} mode="screen" missing={new Set(missing.map((f) => f.key))} pendingSystemLabel={issueLabel} />
@@ -63,12 +63,12 @@ export function PreviewPage() {
         <div className="space-y-3">
           <Card className="px-5 py-4">
             {printable ? (
-              <p className="flex items-start gap-2 text-[15px] text-navy-900">
+              <p className="flex items-start gap-2 text-[length:calc(15px*var(--fs))] text-navy-900">
                 <CheckCircle2 className="mt-px size-4 shrink-0 text-success" />
                 Ready to print. Only the official page{type.template.pages.length > 1 ? 's are' : ' is'} printed.
               </p>
             ) : (
-              <div className="space-y-2 text-[15px] text-navy-900">
+              <div className="space-y-2 text-[length:calc(15px*var(--fs))] text-navy-900">
                 <p className="flex items-start gap-2 font-semibold">
                   <AlertTriangle className="mt-px size-4 shrink-0 text-warning" /> Not ready to print yet
                 </p>
@@ -90,7 +90,7 @@ export function PreviewPage() {
               </div>
             )}
           </Card>
-          <Card className="px-5 py-4 text-[14.5px] text-ink-muted">
+          <Card className="px-5 py-4 text-[length:calc(14.5px*var(--fs))] text-ink-muted">
             <p className="label-caps mb-1.5">Printing</p>
             In the print dialog choose paper size <strong className="text-navy-900">{type.template.pageSize.name}</strong>, margins{' '}
             <strong className="text-navy-900">None</strong>, scale <strong className="text-navy-900">100%</strong>, and turn on background graphics. To get a PDF, pick{' '}

@@ -111,6 +111,25 @@ export interface ResidentRegistration {
   evidence?: RegistrationEvidence
   /** Account created with the registration; active once approved. */
   accountUserId?: string
+  /** Secretary asked the applicant to come to the Barangay Hall. */
+  inPerson?: InPersonVerification
+}
+
+export interface InPersonVerification {
+  reason: string
+  bring: string
+  date?: string
+  time?: string
+  notes?: string
+  requestedBy: string
+  requestedAt: string
+  /** Email ids (see emailService) sent about this request. */
+  emailIds: string[]
+  completedAt?: string
+  completedBy?: string
+  /** Documents the Secretary inspected at the Hall. */
+  inspected?: string
+  outcomeNotes?: string
 }
 
 export type CheckResult = 'passed' | 'failed' | 'inconclusive'
@@ -140,11 +159,11 @@ export interface ResidentChangeRequest {
   /** Resident who asked, when it is not the record's owner. */
   requestedByResidentId?: string
   /** Supporting document for corrections that need proof. */
-  proof?: { fileName?: string; url?: string; bringOnsite?: boolean }
+  proof?: { fileName?: string; url?: string; fileId?: string; bringOnsite?: boolean }
   /** On whose behalf: own record, a minor dependent, an authorized representative, or a household update. */
   basis?: 'self' | 'dependent' | 'representative' | 'household'
   /** Guardianship proof or representative authorization; verified by staff. */
-  authorization?: { kind?: string; fileName?: string; url?: string; bringOnsite?: boolean }
+  authorization?: { kind?: string; fileName?: string; url?: string; fileId?: string; bringOnsite?: boolean }
   submittedAt: string
   field: string
   originalValue: string

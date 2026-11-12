@@ -11,7 +11,7 @@ export function TestAccountBar() {
   const navigate = useNavigate()
   if (!user || !isTestUser(user.id)) return null
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-[#7a4b00] px-4 py-1.5 text-[14px] text-white/90">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-[#7a4b00] px-4 py-1.5 text-[length:calc(14px*var(--fs))] text-white/90">
       <span className="inline-flex items-center gap-1.5 font-semibold text-white">
         <FlaskConical className="size-3.5" /> Test account
       </span>
@@ -24,7 +24,7 @@ export function TestAccountBar() {
             switchTestLevel(e.target.value as RoleId)
             navigate('/dashboard')
           }}
-          className="h-7 rounded-md border border-white/25 bg-[#5c3800] px-2 text-[14px] text-white"
+          className="h-7 rounded-md border border-white/25 bg-[#5c3800] px-2 text-[length:calc(14px*var(--fs))] text-white"
         >
           {TEST_LEVELS.map((r) => (
             <option key={r} value={r}>{ROLES[r].name}</option>

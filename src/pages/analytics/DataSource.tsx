@@ -34,13 +34,13 @@ export function DataSource() {
             <p className="label-caps">Data source</p>
             {dataset ? (
               <>
-                <p className="font-display text-[18px] font-bold text-navy-900" title={dataset.fileName}>{dataset.fileName}</p>
+                <p className="font-display text-[length:calc(18px*var(--fs))] font-bold text-navy-900" title={dataset.fileName}>{dataset.fileName}</p>
                 <dl className="mt-2 flex flex-wrap gap-2">
                   {[
                     ['Records', dataset.records.length.toLocaleString()],
                     ...(source === 'snapshot' ? [] : [['Loaded', formatDateTime(dataset.loadedAt)]]),
                   ].map(([k, v]) => (
-                    <div key={k} className="rounded-md border border-line bg-surface-muted px-2.5 py-1 text-[14px]">
+                    <div key={k} className="rounded-md border border-line bg-surface-muted px-2.5 py-1 text-[length:calc(14px*var(--fs))]">
                       <dt className="inline text-ink-muted">{k}: </dt>
                       <dd className="inline font-semibold text-navy-900">{v}</dd>
                     </div>
@@ -49,8 +49,8 @@ export function DataSource() {
               </>
             ) : (
               <>
-                <p className="font-display text-[18px] font-bold text-navy-900">No masterlist loaded</p>
-                <p className="text-[14.5px] text-ink-muted">
+                <p className="font-display text-[length:calc(18px*var(--fs))] font-bold text-navy-900">No masterlist loaded</p>
+                <p className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">
                   {canImport ? 'Load the senior citizen (OSCA) masterlist Excel file to see the analytics.' : 'Ask the Barangay Secretary to load the senior citizen masterlist.'}
                 </p>
               </>
@@ -59,12 +59,12 @@ export function DataSource() {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end xl:shrink-0">
           <label className="block">
-            <span className="mb-1 block text-[14px] font-semibold text-navy-900">Ages computed as of</span>
+            <span className="mb-1 block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">Ages computed as of</span>
             <input
               type="date"
               value={iso(reportingDate)}
               onChange={(e) => e.target.value && setReportingDate(new Date(`${e.target.value}T00:00:00Z`))}
-              className="h-10 rounded-[var(--radius-control)] border border-line px-3 text-[15px] text-navy-900"
+              className="h-10 rounded-[var(--radius-control)] border border-line px-3 text-[length:calc(15px*var(--fs))] text-navy-900"
             />
           </label>
           {dataset?.fileDate && iso(dataset.fileDate) !== iso(reportingDate) && (
@@ -83,12 +83,12 @@ export function DataSource() {
         </div>
       </div>
       {error && (
-        <p className="mt-3 flex items-center gap-2 rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">
+        <p className="mt-3 flex items-center gap-2 rounded-md bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">
           <XCircle className="size-4" /> {error}
         </p>
       )}
       {dataset && dataset.messages.some((m) => m.level !== 'info') && (
-        <ul className="mt-3 space-y-1 rounded-md border border-warning/40 bg-warning-tint/50 px-3 py-2 text-[14.5px]">
+        <ul className="mt-3 space-y-1 rounded-md border border-warning/40 bg-warning-tint/50 px-3 py-2 text-[length:calc(14.5px*var(--fs))]">
           {dataset.messages.filter((m) => m.level !== 'info').map((m, i) => (
             <li key={i} className="flex items-start gap-2 text-navy-900">
               {m.level === 'warning' ? <AlertTriangle className="mt-px size-4 shrink-0 text-warning" /> : <XCircle className="mt-px size-4 shrink-0 text-danger" />}

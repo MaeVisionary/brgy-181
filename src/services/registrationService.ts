@@ -7,6 +7,10 @@ import { audit } from './auditService'
 import { hashPassword, passwordProblem, setCredential } from './credentialStore'
 import { ServiceError, mockRequest } from './mockApi'
 import { addResident } from './residentService'
+import { BARANGAY_CONTACT } from '@/config/barangay'
+import { ROLE_PERMISSIONS } from '@/config/permissions'
+import { mockNotifications } from '@/mocks/notifications'
+import { sendEmail, type EmailRecord } from './emailService'
 
 /**
  * ONLINE RESIDENT SELF-REGISTRATION (prototype).
@@ -235,15 +239,18 @@ export function decideRegistration(id: string, decision: 'approved' | 'rejected'
   return mockRequest(() => {
     const reg = mockRegistrations.find((r) => r.id === id)
     if (!reg) throw new ServiceError('not_found', 'Registration not found.')
+    if (!(ROLE_PERMISSIONS[by.roleId]?.includes('residents.approve') || by.extraPermissions?.includes('residents.approve'))) throw new ServiceError('forbidden', 'You cannot decide registrations.')
     if (reg.status !== 'manual_review') throw new ServiceError('decided', 'This registration was already decided.')
-    if (decision === 'rejected' && !note.trim()) throw new ServiceError('note', 'Add the reason for denying.')
+    if (decision === 'rejected' && !note.trim()) throw new ServiceError('note', 'Add the reason for rejecting.')
     reg.status = decision
     reg.decidedBy = by.id
     reg.decidedAt = new Date().toISOString()
     reg.decisionNote = note.trim() || undefined
     if (decision === 'approved') linkResident(reg)
     persist()
-    audit(by, decision === 'approved' ? 'Registration approved' : 'Registration denied', 'Residents', reg.referenceNo)
+    audit(by, decision === 'approved' ? 'Registration approved' : 'Registration rejected', 'Residents', reg.referenceNo)
+    if (reg.accountUserId)
+      mockNotifications.push({ id: `ntf-${Math.random().toString(36).slice(2, 9)}`, userId: reg.accountUserId, category: 'registration', title: decision === 'approved' ? 'Your registration was approved' : 'Your registration was not approved', body: `${reg.referenceNo}${decision === 'rejected' && reg.decisionNote ? ` · ${reg.decisionNote}` : ''}`, createdAt: reg.decidedAt!, read: false })
     return reg
   })
 }
@@ -252,9 +259,106 @@ export function decideRegistration(id: string, decision: 'approved' | 'rejected'
 export function pendingAccountMessage(userId: string): string | null {
   const reg = mockRegistrations.find((r) => r.accountUserId === userId)
   if (!reg) return null
+  if (reg.status === 'manual_review' && reg.inPerson && !reg.inPerson.completedAt)
+    return `Please visit the ${BARANGAY_CONTACT.hall} to complete your registration (${reg.referenceNo}). Reason: ${reg.inPerson.reason} Please bring: ${reg.inPerson.bring}.`
   if (reg.status === 'manual_review')
     return `Status: Pending Approval. Your registration (${reg.referenceNo}) is being reviewed by the Barangay Secretary. You can sign in once it is approved.`
   if (reg.status === 'rejected')
     return `Status: Rejected. Your registration (${reg.referenceNo}) was not approved${reg.decisionNote ? `. Reason: ${reg.decisionNote.trim().replace(/[.\s]+$/, '')}` : ''}. You can register again with corrected details, or visit the Barangay Hall with a valid ID.`
   return null
+}
+
+// ── In-person verification ───────────────────────────────────────────
+
+export const IN_PERSON_REASONS = [
+  'The ID needs to be checked in person.',
+  'Your name or birthdate does not match our records.',
+  'The face check needs to be confirmed in person.',
+  'Your existing barangay record needs clarification.',
+  'Additional supporting documents are needed.',
+] as const
+
+const canVerify = (u: User) => !!(ROLE_PERMISSIONS[u.roleId]?.includes('residents.verify') || u.extraPermissions?.includes('residents.verify'))
+
+/** Email text built only from real applicant data and what the Secretary entered. */
+export function inPersonEmail(reg: ResidentRegistration, v: { reason: string; bring: string; date?: string; time?: string; notes?: string }) {
+  const name = [reg.applicant.firstName, reg.applicant.lastName].join(' ')
+  const when = v.date ? `${new Date(v.date + 'T12:00:00+08:00').toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' })}${v.time ? `, ${v.time}` : ''}` : null
+  const lines = [
+    `Dear ${name},`,
+    '',
+    'Thank you for registering with Barangay 181.',
+    '',
+    'We need to check some information in your registration before we can complete it.',
+    '',
+    `Reason: ${v.reason.trim()}`,
+    '',
+    `Please bring: ${v.bring.trim()}`,
+    '',
+    `Visit: ${BARANGAY_CONTACT.hall}, ${BARANGAY_CONTACT.address}`,
+    when ? `Appointment: ${when}` : `Office hours: ${BARANGAY_CONTACT.officeHours}`,
+    ...(v.notes?.trim() ? ['', v.notes.trim()] : []),
+    '',
+    `Your registration (${reg.referenceNo}) is still under review. We will update you once the check is done.`,
+    '',
+    'Thank you.',
+    '',
+    'Barangay 181',
+    'Resident Registration Office',
+  ]
+  return { subject: 'Action required: please visit Barangay 181 for your resident registration', body: lines.join('\n') }
+}
+
+/** Secretary asks the applicant to come in. Not an approval or a rejection. */
+export async function requestInPerson(id: string, v: { reason: string; bring: string; date?: string; time?: string; notes?: string; body?: string }, by: User): Promise<{ reg: ResidentRegistration; email: EmailRecord | null }> {
+  const reg = mockRegistrations.find((r) => r.id === id)
+  if (!reg) throw new ServiceError('not_found', 'Registration not found.')
+  if (!canVerify(by)) throw new ServiceError('forbidden', 'You cannot review registrations.')
+  if (reg.status !== 'manual_review') throw new ServiceError('decided', 'This registration was already decided.')
+  if (reg.inPerson && !reg.inPerson.completedAt) throw new ServiceError('duplicate', 'A visit was already requested. Resend the email instead.')
+  if (!v.reason.trim()) throw new ServiceError('reason', 'Give the reason for the visit.')
+  if (!v.bring.trim()) throw new ServiceError('bring', 'Say what the applicant needs to bring.')
+  const mail = inPersonEmail(reg, v)
+  const to = reg.applicant.email
+  const email = to ? await sendEmail({ to, subject: mail.subject, body: v.body?.trim() || mail.body, ref: reg.referenceNo }) : null
+  const now = new Date().toISOString()
+  reg.inPerson = { reason: v.reason.trim(), bring: v.bring.trim(), date: v.date || undefined, time: v.time || undefined, notes: v.notes?.trim() || undefined, requestedBy: by.id, requestedAt: now, emailIds: email ? [email.id] : [] }
+  if (reg.accountUserId) {
+    mockNotifications.push({ id: `ntf-${Math.random().toString(36).slice(2, 9)}`, userId: reg.accountUserId, category: 'registration', title: 'Please visit Barangay 181', body: `${reg.referenceNo} · bring ${v.bring.trim()}`, createdAt: now, read: false })
+  }
+  persist()
+  audit(by, `In-person verification requested${email ? ` (${email.status})` : ' (no email address)'}`, 'Residents', reg.referenceNo)
+  return { reg, email }
+}
+
+/** Sends the visit email again (e.g. after a failure). */
+export async function resendInPersonEmail(id: string, by: User): Promise<EmailRecord> {
+  const reg = mockRegistrations.find((r) => r.id === id)
+  if (!reg?.inPerson) throw new ServiceError('not_found', 'No visit request found.')
+  if (!canVerify(by)) throw new ServiceError('forbidden', 'You cannot review registrations.')
+  if (!reg.applicant.email) throw new ServiceError('no_email', 'This applicant has no email address.')
+  const mail = inPersonEmail(reg, reg.inPerson)
+  const email = await sendEmail({ to: reg.applicant.email, subject: mail.subject, body: mail.body, ref: reg.referenceNo })
+  reg.inPerson.emailIds.push(email.id)
+  persist()
+  audit(by, `Visit email resent (${email.status})`, 'Residents', reg.referenceNo)
+  return email
+}
+
+/** The applicant came in: record what was checked, then the Secretary decides. */
+export function completeInPerson(id: string, v: { inspected: string; notes: string }, by: User): Promise<ResidentRegistration> {
+  return mockRequest(() => {
+    const reg = mockRegistrations.find((r) => r.id === id)
+    if (!reg?.inPerson) throw new ServiceError('not_found', 'No visit request found.')
+    if (!canVerify(by)) throw new ServiceError('forbidden', 'You cannot review registrations.')
+    if (reg.inPerson.completedAt) throw new ServiceError('done', 'The visit was already recorded.')
+    if (!v.inspected.trim()) throw new ServiceError('inspected', 'List the documents you checked.')
+    reg.inPerson.completedAt = new Date().toISOString()
+    reg.inPerson.completedBy = by.id
+    reg.inPerson.inspected = v.inspected.trim()
+    reg.inPerson.outcomeNotes = v.notes.trim() || undefined
+    persist()
+    audit(by, 'In-person verification completed', 'Residents', reg.referenceNo)
+    return reg
+  })
 }

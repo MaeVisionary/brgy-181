@@ -87,9 +87,9 @@ export default function App() {
           <Route path="/residents/:id" element={guard(['residents.view'], 'personnel', <ResidentProfilePage />)} />
 
           {/* Katarungang Pambarangay */}
-          <Route path="/cases" element={guard(['cases.view', 'cases.manage'], 'personnel', <CasesPage />)} />
+          <Route path="/cases" element={guard(['cases.view', 'cases.manage', 'cases.assigned'], 'personnel', <CasesPage />)} />
           <Route path="/cases/new" element={guard(['cases.manage'], 'personnel', <NewCasePage />)} />
-          <Route path="/cases/:id" element={guard(['cases.view', 'cases.manage'], 'personnel', <CaseDetailPage />)} />
+          <Route path="/cases/:id" element={guard(['cases.view', 'cases.manage', 'cases.assigned'], 'personnel', <CaseDetailPage />)} />
           <Route path="/cases/:id/print/:kind" element={guard(['cases.view', 'cases.manage'], 'personnel', <CaseRecordPrintPage />)} />
           <Route path="/hearings" element={guard(['hearings.view', 'hearings.manage'], 'personnel', <HearingsPage />)} />
 

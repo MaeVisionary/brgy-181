@@ -43,7 +43,7 @@ export const mockBorrowings: Borrowing[] = [
     items: [{ equipmentId: 'eq-003', qty: 1 }],
     dateOfUse: '2026-11-07', statedReturnDate: '2026-11-08', requestedAt: isoDaysAgo(2, 15), status: 'approved',
     history: [
-      { at: isoDaysAgo(2, 15), byUserId: 'usr-staff', byRole: 'staff', action: 'Encoded at the Barangay Hall' },
+      { at: isoDaysAgo(2, 15), byUserId: 'usr-cust', byRole: 'property_custodian', action: 'Encoded at the Barangay Hall' },
       { at: isoDaysAgo(1, 9), byUserId: 'usr-cust', byRole: 'property_custodian', action: 'Approved: equipment available' },
     ],
   },
@@ -64,7 +64,7 @@ export const mockBorrowings: Borrowing[] = [
     dateOfUse: '2026-10-10', requestedAt: isoDaysAgo(27, 8), status: 'released', ...released(26),
     conditionOnRelease: 'Good, complete with mask set',
     history: [
-      { at: isoDaysAgo(27, 8), byUserId: 'usr-staff', byRole: 'staff', action: 'Encoded at the Barangay Hall' },
+      { at: isoDaysAgo(27, 8), byUserId: 'usr-cust', byRole: 'property_custodian', action: 'Encoded at the Barangay Hall' },
       { at: isoDaysAgo(27, 9), byUserId: 'usr-cust', byRole: 'property_custodian', action: 'Approved: equipment available' },
       { at: isoDaysAgo(26, 10), byUserId: 'usr-cust', byRole: 'property_custodian', action: 'Released', remarks: 'Condition: good, complete with mask set' },
     ],
@@ -75,7 +75,7 @@ export const mockBorrowings: Borrowing[] = [
     dateOfUse: '2026-10-20', requestedAt: isoDaysAgo(18, 9), status: 'released', ...released(16),
     conditionOnRelease: 'Good',
     history: [
-      { at: isoDaysAgo(18, 9), byUserId: 'usr-staff', byRole: 'staff', action: 'Encoded at the Barangay Hall' },
+      { at: isoDaysAgo(18, 9), byUserId: 'usr-cust', byRole: 'property_custodian', action: 'Encoded at the Barangay Hall' },
       { at: isoDaysAgo(17, 9), byUserId: 'usr-cust', byRole: 'property_custodian', action: 'Approved: equipment available' },
       { at: isoDaysAgo(16, 10), byUserId: 'usr-cust', byRole: 'property_custodian', action: 'Released' },
     ],

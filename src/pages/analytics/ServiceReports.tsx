@@ -182,13 +182,13 @@ export function ServiceReports() {
   }
 
   return (
-    <div className="mt-4 grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
       <nav aria-label="Service reports" className="hidden h-fit xl:sticky xl:top-0 xl:block">
         <h2 className="label-caps mb-2 px-3">Services</h2>
         <ul className="space-y-0.5">
           {REPORTS.map((r) => (
             <li key={r.id}>
-              <button type="button" onClick={() => setId(r.id)} aria-current={r.id === id ? 'page' : undefined} className={cn('w-full truncate rounded-[var(--radius-control)] px-3 py-2 text-left text-[15px]', r.id === id ? 'bg-surface font-semibold text-navy-900 shadow-[0_0_0_1px_var(--color-line)]' : 'text-ink-nav hover:bg-surface/70 hover:text-navy-900')}>
+              <button type="button" onClick={() => setId(r.id)} aria-current={r.id === id ? 'page' : undefined} className={cn('w-full truncate rounded-[var(--radius-control)] px-3 py-2 text-left text-[length:calc(15px*var(--fs))]', r.id === id ? 'bg-surface font-semibold text-navy-900 shadow-[0_0_0_1px_var(--color-line)]' : 'text-ink-nav hover:bg-surface/70 hover:text-navy-900')}>
                 {r.name}
               </button>
             </li>
@@ -198,12 +198,12 @@ export function ServiceReports() {
       <Card className="min-w-0 px-5 py-4">
         <label className="mb-3 block xl:hidden">
           <span className="sr-only">Service report</span>
-          <select value={id} onChange={(e) => setId(e.target.value as typeof id)} className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15.5px] font-semibold text-navy-900">
+          <select value={id} onChange={(e) => setId(e.target.value as typeof id)} className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">
             {REPORTS.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
         </label>
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <h2 className="min-w-0 font-display text-[20px] font-bold text-navy-900">{def.name}</h2>
+          <h2 className="min-w-0 font-display text-[length:calc(20px*var(--fs))] font-bold text-navy-900">{def.name}</h2>
           {output && can('reports.export') && (
             <div className="flex gap-2">
               <Button size="sm" variant="secondary" icon={<Download className="size-3.5" />} onClick={() => doExport('pdf')}>PDF</Button>
@@ -213,8 +213,8 @@ export function ServiceReports() {
         </div>
         {id !== 'equipment' && (
           <div className="mt-3 grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
-            <label className="block min-w-0 text-[14px] font-semibold text-ink-nav">From<TextInput className="mt-0.5 w-full sm:w-44" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /></label>
-            <label className="block min-w-0 text-[14px] font-semibold text-ink-nav">To<TextInput className="mt-0.5 w-full sm:w-44" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></label>
+            <label className="block min-w-0 text-[length:calc(14px*var(--fs))] font-semibold text-ink-nav">From<TextInput className="mt-0.5 w-full sm:w-44" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /></label>
+            <label className="block min-w-0 text-[length:calc(14px*var(--fs))] font-semibold text-ink-nav">To<TextInput className="mt-0.5 w-full sm:w-44" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></label>
             {(from || to) && <Button size="sm" variant="ghost" onClick={() => { setFrom(''); setTo('') }}>Clear dates</Button>}
           </div>
         )}
@@ -225,13 +225,13 @@ export function ServiceReports() {
             <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
               {output.summary.slice(0, 4).map(([k, v]) => (
                 <div key={k} className="min-w-0">
-                  <dd className="font-display text-[26px] leading-none font-extrabold tabular-nums text-navy-900">{v}</dd>
-                  <dt className="mt-1 text-[14px] leading-snug text-ink-nav">{k}</dt>
+                  <dd className="font-display text-[length:calc(26px*var(--fs))] leading-none font-extrabold tabular-nums text-navy-900">{v}</dd>
+                  <dt className="mt-1 text-[length:calc(14px*var(--fs))] leading-snug text-ink-nav">{k}</dt>
                 </div>
               ))}
             </dl>
             {output.summary.length > 4 && (
-              <dl className="mt-4 grid gap-x-8 border-t border-line-soft pt-3 text-[14.5px] sm:grid-cols-2">
+              <dl className="mt-4 grid grid-cols-1 gap-x-8 border-t border-line-soft pt-3 text-[length:calc(14.5px*var(--fs))] sm:grid-cols-2">
                 {output.summary.slice(4).map(([k, v]) => (
                   <div key={k} className="flex items-baseline justify-between gap-3 border-b border-line-soft py-1.5">
                     <dt className="text-ink-nav">{k}</dt>
@@ -241,10 +241,19 @@ export function ServiceReports() {
               </dl>
             )}
             {output.rows.length === 0 ? (
-              <p className="mt-4 text-[15px] text-ink-muted">No records for this period.</p>
+              <p className="mt-4 text-[length:calc(15px*var(--fs))] text-ink-muted">No records for this period.</p>
             ) : (
-              <div className="mt-4 overflow-x-auto rounded-md border border-line-soft">
-                <table className="w-full min-w-[640px] text-[14.5px]">
+              <>
+              <ul className="mt-4 divide-y divide-line-soft border-y border-line-soft md:hidden">
+                {output.rows.slice(0, 50).map((r, i) => (
+                  <li key={i} className="py-2.5">
+                    <p className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{r[0]}</p>
+                    <p className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">{r.slice(1).map((v, j) => `${output.columns[j + 1]}: ${v}`).join(' · ')}</p>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4 hidden overflow-x-auto rounded-md border border-line-soft md:block">
+                <table className="w-full min-w-[640px] text-[length:calc(14.5px*var(--fs))]">
                   <thead><tr className="bg-surface-muted text-left">{output.columns.map((c) => <th key={c} className="label-caps px-3 py-2 whitespace-nowrap">{c}</th>)}</tr></thead>
                   <tbody>
                     {output.rows.slice(0, 50).map((r, i) => (
@@ -253,9 +262,10 @@ export function ServiceReports() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
-            {output.rows.length > 50 && <p className="mt-2 text-[14px] text-ink-muted">Showing 50 of {output.rows.length} rows. Export to see all.</p>}
-            {output.note && <p className="mt-2 text-[14px] text-ink-muted">{output.note}</p>}
+            {output.rows.length > 50 && <p className="mt-2 text-[length:calc(14px*var(--fs))] text-ink-muted">Showing 50 of {output.rows.length} rows. Export to see all.</p>}
+            {output.note && <p className="mt-2 text-[length:calc(14px*var(--fs))] text-ink-muted">{output.note}</p>}
           </>
         )}
       </Card>

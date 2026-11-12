@@ -52,8 +52,8 @@ export function Panel({
         <div className="flex min-w-0 items-start gap-3">
           {icon && <span className={cn('mt-0.5', 'text-navy-900')}>{icon}</span>}
           <div className="min-w-0">
-            <h2 className={cn('font-display text-[17px] font-bold', 'text-navy-900')}>{title}</h2>
-            {subtitle && keepSubtitle && <p className={cn('mt-0.5 text-[14px]', dark ? 'text-ink-nav' : 'text-ink-muted')}>{subtitle}</p>}
+            <h2 className={cn('font-display text-[length:calc(19px*var(--fs))] font-bold', 'text-navy-900')}>{title}</h2>
+            {subtitle && keepSubtitle && <p className={cn('mt-0.5 text-[length:calc(14px*var(--fs))]', dark ? 'text-ink-nav' : 'text-ink-muted')}>{subtitle}</p>}
           </div>
         </div>
         {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

@@ -1,14 +1,12 @@
 import { BarChart3, CalendarClock, ChevronRight, FileText, Gavel, ShieldCheck, UserRoundPen } from '@/icons'
-import { StatusBadge } from '@/components/documents/DocParts'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { Panel } from '@/components/ui/Panel'
-import { TaskTile } from '@/components/ui/StatCard'
 import { RECURRING_REPORTS } from '@/config/barangay'
 import { getDocumentType } from '@/documents/catalog'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
-import { formatDateTime, formatShortDate } from '@/lib/format'
+import { formatDateTime } from '@/lib/format'
 import { STAGE_LABEL, STAGE_TONE, listCases, upcomingHearings } from '@/services/caseService'
 import { availableTransitions, listRequests } from '@/services/documentService'
 import { getResidentQueueCounts } from '@/services/residentService'
@@ -40,37 +38,50 @@ export function SecretaryDashboard() {
     <>
       <DashHeader
         overview="Secretary Overview"
-        subtitle="Resident records, document requests, complaints and reports for Barangay 181."
+        subtitle=""
         actions={<ButtonLink to="/reports" icon={<BarChart3 className="size-4" />}>Reports</ButtonLink>}
       />
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <Stat label="Pending registrations" value={q?.registrationsForReview ?? null} attention={!!q?.registrationsForReview} to="/residents/registrations" />
-        <Stat label="Pending document requests" value={newDocs} attention={!!newDocs} to="/documents" />
+      {/* Document pipeline at a glance (registrations live under Needs attention, not here twice). */}
+      <section aria-label="Document requests" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="New requests" value={newDocs} to="/documents" />
         <Stat label="Under verification" value={toPrepare} to="/documents" />
         <Stat label="Forwarded to Chairman" value={awaitingChairman} to="/documents" />
-        <Stat label="Completed requests" value={completed} to="/documents" />
+        <Stat label="Completed" value={completed} to="/documents" />
       </section>
 
-      <section className="mt-3 grid auto-rows-fr grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <TaskTile icon={<ShieldCheck className="size-4" />} label="Registrations to verify" count={q?.registrationsForReview ?? null} to="/residents/registrations" attention={!!q?.registrationsForReview} />
-        <TaskTile icon={<UserRoundPen className="size-4" />} label="Resident update requests" count={q?.pendingChangeRequests ?? null} to="/residents/change-requests" />
-        <TaskTile icon={<FileText className="size-4" />} label="Complaint, incident and blotter submissions" count={submissions} to="/documents" />
-        <TaskTile icon={<Gavel className="size-4" />} label="Cases needing updates" count={caseUpdates?.length ?? null} to="/cases" />
-      </section>
+      <Panel className="mt-4" title="Needs attention" bodyClassName="px-0 py-0">
+        <ul className="divide-y divide-line-soft">
+          {([
+            [ShieldCheck, 'Registrations to verify', q?.registrationsForReview ?? null, '/residents/registrations'],
+            [UserRoundPen, 'Resident update requests', q?.pendingChangeRequests ?? null, '/residents/change-requests'],
+            [FileText, 'Complaints and reports', submissions, '/documents'],
+            [Gavel, 'Cases needing updates', caseUpdates?.length ?? null, '/cases'],
+          ] as const).map(([Icon, label, n, to]) => (
+            <li key={label}>
+              <Link to={to} className="flex min-h-[60px] items-center gap-4 px-5 py-3 transition-colors hover:bg-sky-50 focus-visible:bg-sky-50 active:bg-sky-100">
+                <Icon className="size-[22px] shrink-0 text-navy-600" />
+                <span className="min-w-0 flex-1 text-[length:calc(16.5px*var(--fs))] font-medium text-navy-900">{label}</span>
+                <span className={`font-display text-[length:calc(22px*var(--fs))] font-extrabold tabular-nums ${n ? 'text-navy-900' : 'text-ink-subtle'}`}>{n ?? '–'}</span>
+                <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Panel>
 
       {/* Work queue across the full width; hearings and case records side by side below it. */}
       <section className="mt-4">
         <Panel title="Your work queue" actions={<ViewAll to="/documents" />} bodyClassName="px-0 py-0">
-          <dl className="grid grid-cols-3 divide-x divide-line-soft border-b border-line-soft text-center">
+          <dl className="grid grid-cols-3 divide-x divide-line-soft border-b border-line-soft">
             {([
               ['Needs your action', myQueue?.length ?? null, 'text-navy-900'],
               ['Open requests', openCount, 'text-navy-900'],
               ['Completed this week', doneThisWeek, 'text-success'],
             ] as const).map(([label, n, tone]) => (
-              <div key={label} className="px-2 py-2">
-                <dt className="text-[13px] text-ink-muted">{label}</dt>
-                <dd className={`font-display text-[18px] leading-tight font-extrabold tabular-nums ${tone}`}>{n ?? '–'}</dd>
+              <div key={label} className="flex flex-col justify-between gap-2 px-3 py-5 sm:px-6">
+                <dt className="text-[length:calc(16px*var(--fs))] leading-snug font-medium text-ink-nav">{label}</dt>
+                <dd className={`font-display text-[length:calc(34px*var(--fs))] leading-none font-extrabold tabular-nums ${tone}`}>{n ?? '–'}</dd>
               </div>
             ))}
           </dl>
@@ -82,12 +93,12 @@ export function SecretaryDashboard() {
             <ul className="divide-y divide-line-soft">
               {myQueue.slice(0, 10).map((d) => (
                 <li key={d.id}>
-                  <Link to={`/documents/${d.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-2 transition-colors hover:bg-sky-50">
-                    <span className="min-w-0 flex-1 basis-60">
-                      <span className="block truncate text-[15px] font-semibold text-navy-900">{getDocumentType(d.typeId).name} · {d.requesterName}</span>
-                      <span className="block text-[13.5px] text-ink-muted">{d.referenceNo} · {formatShortDate(d.submittedAt)}</span>
+                  <Link to={`/documents/${d.id}`} className="flex min-h-[60px] items-center gap-3 px-5 py-3 transition-colors hover:bg-sky-50 active:bg-sky-100">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{getDocumentType(d.typeId).name}</span>
+                      <span className="block truncate text-[length:calc(15px*var(--fs))] text-ink-nav">{d.requesterName}</span>
                     </span>
-                    <StatusBadge status={d.status} typeId={d.typeId} />
+                    <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
                   </Link>
                 </li>
               ))}
@@ -95,7 +106,7 @@ export function SecretaryDashboard() {
           )}
         </Panel>
       </section>
-      <section className="mt-4 grid gap-4 lg:grid-cols-2">
+      <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <ListPanel
             title="Upcoming hearings"
             items={hearings}
@@ -115,13 +126,13 @@ export function SecretaryDashboard() {
       </section>
 
       <Panel className="mt-4" title="Reports to prepare">
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {RECURRING_REPORTS.map((r) => (
             <li key={r.id}>
               <Link to="/reports" className="flex items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line-soft bg-surface px-3.5 py-3 hover:border-line hover:bg-surface-muted">
                 <span className="min-w-0">
-                  <span className="block text-[15px] font-semibold text-navy-900">{r.name}</span>
-                  <span className="block text-[14px] text-ink-muted">{r.schedule.replace(/\s*\(format pending\)/i, '')}</span>
+                  <span className="block text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{r.name}</span>
+                  <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{r.schedule.replace(/\s*\(format pending\)/i, '')}</span>
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
               </Link>

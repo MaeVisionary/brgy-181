@@ -1,3 +1,4 @@
+import { toneForPath } from '@/icons/tones'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/cn'
@@ -25,22 +26,22 @@ export function StatCard({
   loading?: boolean
 }) {
   const body = (
-    <Card className={cn('flex h-full flex-col justify-between px-4 py-3.5 sm:px-5', to && 'transition-colors hover:bg-sky-50')}>
-      <p className="flex items-center gap-1.5 text-[14.5px] text-ink-nav">
+    <Card className={cn('flex h-full min-h-[112px] flex-col justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5', to && 'transition-colors hover:bg-sky-50 active:bg-sky-100')}>
+      <p className="flex items-center gap-1.5 text-[length:calc(16px*var(--fs))] leading-snug font-medium text-ink-nav">
         {label}
       </p>
-      <div className="mt-1.5 flex items-end justify-between gap-2">
+      <div className="flex items-end justify-between gap-2">
         {loading || value === null ? (
           <span className="h-[26px] w-16 animate-pulse rounded bg-surface-muted" />
         ) : (
-          <span className={cn('font-display text-[26px] leading-none font-extrabold', attention && value ? 'text-danger-ink' : 'text-navy-900')}>{formatNumber(value)}</span>
+          <span className={cn('font-display text-[length:calc(34px*var(--fs))] leading-none font-extrabold tabular-nums', attention && value ? 'text-danger-ink' : 'text-navy-900')}>{formatNumber(value)}</span>
         )}
-        {hint && <span className="text-[14px] text-ink-muted">{hint}</span>}
+        {hint && <span className="text-[length:calc(14px*var(--fs))] text-ink-muted">{hint}</span>}
       </div>
     </Card>
   )
   return to ? (
-    <Link to={to} className="block rounded-[var(--radius-card)]">
+    <Link to={to} className="block h-full rounded-[var(--radius-card)]">
       {body}
     </Link>
   ) : (
@@ -67,15 +68,15 @@ export function TaskTile({
       <Card className="flex h-full items-center gap-3 rounded-md px-4 py-3 transition-colors hover:bg-sky-50">
         <span
           className={cn(
-            'grid size-8 shrink-0 place-items-center rounded-md',
-            attention ? 'bg-danger-tint text-danger' : 'bg-sky-100 text-navy-900',
+            'grid size-8 shrink-0 place-items-center rounded-[8px]',
+            attention ? 'bg-danger-tint text-danger' : toneForPath(to),
           )}
         >
           {icon}
         </span>
         <span className="min-w-0">
-          <span className="block text-[14px] leading-tight font-semibold text-navy-900">{label}</span>
-          <span className="font-display text-[20px] leading-tight font-extrabold text-navy-900">
+          <span className="block text-[length:calc(15.5px*var(--fs))] leading-tight font-semibold text-navy-900">{label}</span>
+          <span className="font-display text-[length:calc(24px*var(--fs))] leading-tight font-extrabold text-navy-900">
             {count === null ? '–' : formatNumber(count)}
           </span>
         </span>

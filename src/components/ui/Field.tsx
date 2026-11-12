@@ -2,12 +2,12 @@ import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTML
 import { cn } from '@/lib/cn'
 
 export const inputClass =
-  'w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15.5px] text-navy-900 placeholder:text-ink-subtle focus:border-navy-600 focus:outline-none disabled:bg-surface-muted disabled:text-ink-muted'
+  'w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(16.5px*var(--fs))] text-navy-900 placeholder:text-ink-subtle focus:border-navy-600 focus:outline-none disabled:bg-surface-muted disabled:text-ink-muted'
 
 export function FieldLabel({ label, required, children }: { label: ReactNode; hint?: ReactNode; required?: boolean; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[14.5px] font-semibold text-navy-900">
+      <span className="mb-1.5 block text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">
         {label}
         {required && <span className="text-danger-ink"> *</span>}
       </span>
@@ -17,7 +17,7 @@ export function FieldLabel({ label, required, children }: { label: ReactNode; hi
 }
 
 export function TextInput({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn(inputClass, 'h-10', className)} {...rest} />
+  return <input className={cn(inputClass, 'h-12', className)} {...rest} />
 }
 
 export function TextArea({ className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
@@ -26,7 +26,7 @@ export function TextArea({ className, ...rest }: TextareaHTMLAttributes<HTMLText
 
 export function Select({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={cn(inputClass, 'h-10', className)} {...rest}>
+    <select className={cn(inputClass, 'h-12', className)} {...rest}>
       {children}
     </select>
   )

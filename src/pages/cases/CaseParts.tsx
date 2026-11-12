@@ -34,7 +34,7 @@ export function AvailabilityRow({ caseId, h, manage, onChange }: { caseId: strin
       <p className="label-caps mb-1.5">Availability for this schedule</p>
       <div className="space-y-1.5">
         {WHO.map(([who, label]) => (
-          <label key={who} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[14.5px] text-navy-900">
+          <label key={who} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[length:calc(14.5px*var(--fs))] text-navy-900">
             <span className="font-semibold">{label}</span>
             {manage ? (
               <Select className="w-full sm:w-52" value={av[who]} onChange={async (e) => onChange(await setAvailability(caseId, h.id, who, e.target.value as Availability, actor))}>
@@ -46,7 +46,7 @@ export function AvailabilityRow({ caseId, h, manage, onChange }: { caseId: strin
           </label>
         ))}
       </div>
-      {clash && <p className="mt-1.5 text-[14px] text-warning">Someone cannot attend. Consider rescheduling.</p>}
+      {clash && <p className="mt-1.5 text-[length:calc(14px*var(--fs))] text-warning">Someone cannot attend. Consider rescheduling.</p>}
     </div>
   )
 }
@@ -77,13 +77,13 @@ export function CaseDocuments({ c, docs, onPrepared }: { c: KPCase; docs: Docume
     <Panel title="Case documents" bodyClassName="px-0 py-0">
       {next && actor.permissions.has('cases.manage') && !prepared && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft bg-sky-50 px-5 py-3">
-          <p className="text-[15px] text-navy-900">Hearing on {formatDate(next.scheduledAt)}: summons for the respondent and notice of hearing for the complainant.</p>
+          <p className="text-[length:calc(15px*var(--fs))] text-navy-900">Hearing on {formatDate(next.scheduledAt)}: summons for the respondent and notice of hearing for the complainant.</p>
           <Button size="sm" onClick={prepare}>Prepare summons and notice</Button>
         </div>
       )}
-      {msg && <p role="status" className={cn('border-b border-line-soft px-5 py-2.5 text-[14.5px]', msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{msg.text}</p>}
+      {msg && <p role="status" className={cn('border-b border-line-soft px-5 py-2.5 text-[length:calc(14.5px*var(--fs))]', msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{msg.text}</p>}
       {docs.length === 0 ? (
-        <p className="px-5 py-4 text-[15px] text-ink-muted">No summons or notice yet.</p>
+        <p className="px-5 py-4 text-[length:calc(15px*var(--fs))] text-ink-muted">No summons or notice yet.</p>
       ) : (
         <ul>{docs.map((d) => <ServedDoc key={d.id} d={d} />)}</ul>
       )}
@@ -92,13 +92,13 @@ export function CaseDocuments({ c, docs, onPrepared }: { c: KPCase; docs: Docume
         {outcomeDocs.some((o) => o.show) ? (
           <div className="flex flex-wrap gap-2">
             {outcomeDocs.filter((o) => o.show).map((o) => (
-              <Link key={o.kind} to={`/cases/${c.id}/print/${o.kind}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-control)] border border-line px-3.5 text-[15px] font-semibold text-navy-900 hover:bg-surface-muted">
+              <Link key={o.kind} to={`/cases/${c.id}/print/${o.kind}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-control)] border border-line px-3.5 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted">
                 <Printer className="size-4" /> {o.label}
               </Link>
             ))}
           </div>
         ) : (
-          <p className="text-[14.5px] text-ink-muted">None yet.</p>
+          <p className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">None yet.</p>
         )}
       </div>
     </Panel>
@@ -130,21 +130,21 @@ function ServedDoc({ d: initial }: { d: DocumentRequest }) {
   }
 
   const Step = ({ ok, label, sub }: { ok: boolean; label: string; sub?: string }) => (
-    <li className={cn('flex items-start gap-1.5 text-[14px]', ok ? 'text-navy-900' : 'text-ink-muted')}>
+    <li className={cn('flex items-start gap-1.5 text-[length:calc(14px*var(--fs))]', ok ? 'text-navy-900' : 'text-ink-muted')}>
       <span className={cn('mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border', ok ? 'border-success bg-success text-white' : 'border-line')}>{ok && <Check className="size-3" strokeWidth={3} />}</span>
-      <span>{label}{sub && <span className="block text-[13px] text-ink-muted">{sub}</span>}</span>
+      <span>{label}{sub && <span className="block text-[length:calc(13px*var(--fs))] text-ink-muted">{sub}</span>}</span>
     </li>
   )
 
   return (
     <li className="border-b border-line-soft px-5 py-3 last:border-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Link to={`/documents/${d.id}`} className="text-[15.5px] font-semibold text-navy-900 hover:underline">{getDocumentType(d.typeId).name} · {d.referenceNo}</Link>
+        <Link to={`/documents/${d.id}`} className="text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900 hover:underline">{getDocumentType(d.typeId).name} · {d.referenceNo}</Link>
         <StatusBadge status={d.status} typeId={d.typeId} />
       </div>
       {served && (
         <>
-          <ol className="mt-2 grid gap-2 sm:grid-cols-3">
+          <ol className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
             <Step ok={generated} label="Generated and signed" />
             <Step ok={!!d.delivery} label="Delivered" sub={d.delivery && `${d.delivery.deliveredTo} · ${d.delivery.method} · ${formatDate(d.delivery.on)}`} />
             <Step ok={!!d.acknowledgment} label="Receipt acknowledged" sub={d.acknowledgment && `${d.acknowledgment.receivedBy} · ${formatDate(d.acknowledgment.on)}`} />
@@ -156,13 +156,13 @@ function ServedDoc({ d: initial }: { d: DocumentRequest }) {
             </div>
           )}
           {mode !== 'none' && (
-            <div className="mt-2 grid gap-2 rounded-md border border-line p-3 sm:grid-cols-3">
-              <label className="block text-[14px] font-semibold text-navy-900">{mode === 'deliver' ? 'Given to' : 'Signed by'} *<TextInput className="mt-0.5" value={who} onChange={(e) => setWho(e.target.value)} /></label>
+            <div className="mt-2 grid grid-cols-1 gap-2 rounded-md border border-line p-3 sm:grid-cols-3">
+              <label className="block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">{mode === 'deliver' ? 'Given to' : 'Signed by'} *<TextInput className="mt-0.5" value={who} onChange={(e) => setWho(e.target.value)} /></label>
               {mode === 'deliver' && (
-                <label className="block text-[14px] font-semibold text-navy-900">How<Select className="mt-0.5" value={method} onChange={(e) => setMethod(e.target.value)}>{['Personal service', 'Left at residence', 'Through a family member'].map((m) => <option key={m}>{m}</option>)}</Select></label>
+                <label className="block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">How<Select className="mt-0.5" value={method} onChange={(e) => setMethod(e.target.value)}>{['Personal service', 'Left at residence', 'Through a family member'].map((m) => <option key={m}>{m}</option>)}</Select></label>
               )}
-              <label className="block text-[14px] font-semibold text-navy-900">Date *<TextInput className="mt-0.5" type="date" max={today()} value={on} onChange={(e) => setOn(e.target.value)} /></label>
-              {error && <p className="text-[14px] text-danger-ink sm:col-span-3">{error}</p>}
+              <label className="block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">Date *<TextInput className="mt-0.5" type="date" max={today()} value={on} onChange={(e) => setOn(e.target.value)} /></label>
+              {error && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink sm:col-span-3">{error}</p>}
               <div className="flex gap-2 sm:col-span-3">
                 <Button size="sm" disabled={!who.trim() || !on} onClick={save}>Save</Button>
                 <Button size="sm" variant="ghost" onClick={() => { setMode('none'); setError(null) }}>Cancel</Button>

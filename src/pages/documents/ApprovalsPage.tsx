@@ -1,7 +1,6 @@
 import { CheckCircle2, ChevronDown, FileText, Inbox, Paperclip } from '@/icons'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { StatusBadge } from '@/components/documents/DocParts'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { TextArea } from '@/components/ui/Field'
@@ -37,7 +36,7 @@ export function ApprovalsPage() {
       {done.length > 0 && (
         <div role="status" className="mb-4 space-y-1 rounded-[var(--radius-control)] bg-success-tint px-4 py-3">
           {done.map((d) => (
-            <p key={d.ref} className="flex items-center gap-2 text-[15px] text-navy-900"><CheckCircle2 className="size-4 shrink-0 text-success" /> {d.ref}: {d.text}</p>
+            <p key={d.ref} className="flex items-center gap-2 text-[length:calc(15px*var(--fs))] text-navy-900"><CheckCircle2 className="size-4 shrink-0 text-success" /> {d.ref}: {d.text}</p>
           ))}
         </div>
       )}
@@ -96,15 +95,14 @@ function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: Doc
     <Card className="overflow-hidden">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-sky-300 bg-bar px-5 py-3.5">
         <div className="min-w-0">
-          <p className="text-[13.5px] font-semibold text-ink-nav">{req.referenceNo} · requested {formatDate(req.submittedAt)}</p>
-          <h2 className="font-display text-[18px] font-bold text-navy-900">{type.name}</h2>
-          <p className="text-[15.5px] text-navy-900">{req.requesterName}</p>
+          <h2 className="font-display text-[length:calc(19px*var(--fs))] font-bold text-navy-900">{type.name}</h2>
+          <p className="text-[length:calc(16px*var(--fs))] text-navy-900">{req.requesterName}</p>
+          <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">{req.referenceNo} · {formatDate(req.submittedAt)}</p>
         </div>
-        <StatusBadge status={req.status} typeId={req.typeId} />
       </div>
 
-      <div className="grid gap-4 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <dl className="space-y-2.5 text-[15px]">
+      <div className="grid grid-cols-1 gap-4 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <dl className="space-y-2.5 text-[length:calc(15px*var(--fs))]">
           <div>
             <dt className="label-caps">Purpose</dt>
             <dd className="text-navy-900">{purpose || 'Not stated on this document'}</dd>
@@ -134,9 +132,9 @@ function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: Doc
         <div>
           <p className="label-caps flex items-center gap-1.5"><Paperclip className="size-3.5" /> Supporting documents</p>
           {type.requirements.length === 0 ? (
-            <p className="text-[15px] text-ink-muted">None required.</p>
+            <p className="text-[length:calc(15px*var(--fs))] text-ink-muted">None required.</p>
           ) : (
-            <ul className="mt-1 space-y-1 text-[15px]">
+            <ul className="mt-1 space-y-1 text-[length:calc(15px*var(--fs))]">
               {type.requirements.map((x) => (
                 <li key={x.label} className={req.requirements[x.label]?.provided ? 'text-navy-900' : 'text-warning'}>
                   {req.requirements[x.label]?.provided ? '✓' : '•'} {x.label}
@@ -145,27 +143,27 @@ function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: Doc
               ))}
             </ul>
           )}
-          <p className="mt-1 text-[13.5px] text-ink-muted">{provided.length} of {type.requirements.length} checked by the Secretary.</p>
+          <p className="mt-1 text-[length:calc(13.5px*var(--fs))] text-ink-muted">{provided.length} of {type.requirements.length} checked by the Secretary.</p>
         </div>
       </div>
 
       <div className="border-t border-line-soft px-5 py-3">
-        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-info hover:underline">
+        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex min-h-11 items-center gap-1.5 text-[length:calc(15px*var(--fs))] font-semibold text-info hover:underline">
           <ChevronDown className={open ? 'size-4 rotate-180 transition-transform' : 'size-4 transition-transform'} /> {open ? 'Hide details' : 'View details'}
         </button>
         {open && (
           <div className="mt-2">
-            <dl className="grid gap-2 text-[15px] sm:grid-cols-2">
+            <dl className="grid grid-cols-1 gap-2 text-[length:calc(15px*var(--fs))] sm:grid-cols-2">
               {type.fields.filter((f) => f.by !== 'system' && values[f.key] !== undefined && values[f.key] !== '').map((f) => (
                 <div key={f.key} className="rounded-md bg-surface-muted px-3 py-2">
-                  <dt className="text-[13.5px] text-ink-muted">{f.group ? `${f.group}: ` : ''}{f.label}</dt>
+                  <dt className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">{f.group ? `${f.group}: ` : ''}{f.label}</dt>
                   <dd className="break-words text-navy-900">{Array.isArray(values[f.key]) ? (values[f.key] as string[]).join(', ') : String(values[f.key])}</dd>
                 </div>
               ))}
             </dl>
             <div className="mt-2 flex flex-wrap gap-3">
-              <Link to={`/documents/${req.id}/preview`} className="inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-info hover:underline"><FileText className="size-4" /> Preview the document</Link>
-              <Link to={`/documents/${req.id}`} className="inline-flex min-h-11 items-center text-[15px] font-semibold text-info hover:underline">Open full record and history</Link>
+              <Link to={`/documents/${req.id}/preview`} className="inline-flex min-h-11 items-center gap-1.5 text-[length:calc(15px*var(--fs))] font-semibold text-info hover:underline"><FileText className="size-4" /> Preview the document</Link>
+              <Link to={`/documents/${req.id}`} className="inline-flex min-h-11 items-center text-[length:calc(15px*var(--fs))] font-semibold text-info hover:underline">Open full record and history</Link>
             </div>
           </div>
         )}
@@ -179,18 +177,18 @@ function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: Doc
                 {t.label}
               </Button>
             ))}
-            {actions.length === 0 && <p className="text-[15px] text-ink-muted">No actions available.</p>}
+            {actions.length === 0 && <p className="text-[length:calc(15px*var(--fs))] text-ink-muted">No actions available.</p>}
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-[16px] font-semibold text-navy-900">{picked.label}: {type.name} for {req.requesterName}?</p>
+            <p className="text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{picked.label}: {type.name} for {req.requesterName}?</p>
             <label className="block">
-              <span className="mb-1 block text-[14.5px] font-semibold text-navy-900">
+              <span className="mb-1 block text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">
                 Remarks {picked.remarks === 'required' ? <span className="text-danger-ink">* (required)</span> : <span className="font-normal text-ink-muted">(optional)</span>}
               </span>
               <TextArea className="min-h-[70px]" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
             </label>
-            {error && <p role="alert" className="text-[14.5px] text-danger-ink">{error}</p>}
+            {error && <p role="alert" className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
             <div className="flex flex-wrap gap-2">
               <Button variant={picked.tone === 'danger' ? 'danger' : 'primary'} loading={busy} disabled={picked.remarks === 'required' && !remarks.trim()} onClick={decide}>
                 Confirm: {picked.label}

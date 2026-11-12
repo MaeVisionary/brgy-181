@@ -96,10 +96,10 @@ export function NotificationItem({
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline gap-2">
-            <span className={cn('min-w-0 truncate text-[15px] text-navy-900', n.read ? 'font-semibold' : 'font-bold')}>{n.title}</span>
-            <span className="shrink-0 text-[12.5px] text-ink-muted">{shortTime(n.createdAt)}</span>
+            <span className={cn('min-w-0 truncate text-[length:calc(15px*var(--fs))] text-navy-900', n.read ? 'font-semibold' : 'font-bold')}>{n.title}</span>
+            <span className="shrink-0 text-[length:calc(12.5px*var(--fs))] text-ink-muted">{shortTime(n.createdAt)}</span>
           </span>
-          <span className={cn('block text-[14px] text-ink-nav', !open && 'truncate')}>{n.body}</span>
+          <span className={cn('block text-[length:calc(14px*var(--fs))] text-ink-nav', !open && 'truncate')}>{n.body}</span>
         </span>
       </button>
       {onDismiss && (
@@ -116,8 +116,8 @@ export function NoNotifications() {
   return (
     <div className="flex flex-col items-center px-4 py-10 text-center">
       <span className="grid size-11 place-items-center rounded-full bg-surface-muted text-ink-muted"><Bell className="size-5" /></span>
-      <p className="mt-2 text-[15px] font-semibold text-navy-900">No notifications yet</p>
-      <p className="text-[14px] text-ink-muted">You'll see updates here when something needs your attention.</p>
+      <p className="mt-2 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">No notifications yet</p>
+      <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">You'll see updates here when something needs your attention.</p>
     </div>
   )
 }

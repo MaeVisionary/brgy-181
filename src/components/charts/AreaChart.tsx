@@ -56,7 +56,7 @@ export function AreaChart({ data }: { data: AreaBreakdown[] }) {
           }}
         />
       </div>
-      <div className="mt-3 flex gap-5 text-[14px] text-ink-muted">
+      <div className="mt-3 flex gap-5 text-[length:calc(14px*var(--fs))] text-ink-muted">
         <span className="inline-flex items-center gap-1.5">
           <span className="size-2.5 rounded-[2px] bg-navy-900" /> Residents
         </span>

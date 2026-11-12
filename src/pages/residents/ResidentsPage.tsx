@@ -1,3 +1,4 @@
+import { RowList } from '@/components/ui/RowList'
 import { ArrowDownUp, Search, Upload } from '@/icons'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -67,7 +68,7 @@ export function ResidentsPage() {
         </Card>
       )}
       <Card>
-        <div className="grid gap-2 border-b border-line-soft p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
+        <div className="grid grid-cols-1 gap-2 border-b border-line-soft p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" />
             <TextInput className="pl-9" placeholder="Search name, resident no. or address" value={q} onChange={(e) => reset(() => setQ(e.target.value))} aria-label="Search residents" />
@@ -95,8 +96,9 @@ export function ResidentsPage() {
             <option value="area">Sort: area</option>
           </Select>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-[15px]">
+        <RowList rows={rows.slice(page * PAGE, page * PAGE + PAGE).map((r) => ({ key: r.id, to: `/residents/${r.id}`, title: fullName(r), subtitle: r.residentNo }))} />
+        <div className="hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[900px] text-[length:calc(15px*var(--fs))]">
             <thead>
               <tr className="bg-surface-muted text-left">
                 {['Resident', 'Age', 'Address', 'Household', 'Contact', 'Sectors', 'Voter', 'Record'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}
@@ -107,7 +109,7 @@ export function ResidentsPage() {
                 <tr key={r.id} onClick={() => navigate(`/residents/${r.id}`)} className="cursor-pointer border-t border-line-soft hover:bg-sky-50">
                   <td className="px-4 py-2.5">
                     <span className="block font-semibold text-navy-900">{r.lastName}, {r.firstName} {r.middleName}</span>
-                    <span className="block text-[13.5px] text-ink-muted">{r.residentNo}</span>
+                    <span className="block text-[length:calc(13.5px*var(--fs))] text-ink-muted">{r.residentNo}</span>
                   </td>
                   <td className="px-4 py-2.5 tabular-nums">{age(r)}</td>
                   <td className="px-4 py-2.5">{r.houseNo} {r.street}</td>
@@ -121,8 +123,8 @@ export function ResidentsPage() {
             </tbody>
           </table>
         </div>
-        <div className="flex items-center justify-between border-t border-line-soft px-4 py-3 text-[14.5px] text-ink-muted">
-          <span className="flex items-center gap-1.5"><ArrowDownUp className="size-3.5" />{rows.length ? page * PAGE + 1 : 0}–{Math.min(rows.length, page * PAGE + PAGE)} of {rows.length} residents</span>
+        <div className="flex items-center justify-between border-t border-line-soft px-4 py-3 text-[length:calc(14.5px*var(--fs))] text-ink-muted">
+          <span className="flex items-center gap-1.5"><ArrowDownUp className="hidden size-3.5 sm:block" />{rows.length ? page * PAGE + 1 : 0}–{Math.min(rows.length, page * PAGE + PAGE)} of {rows.length} residents</span>
           <span className="flex gap-2">
             <button type="button" disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded-md border border-line px-3 py-1 font-semibold text-navy-900 disabled:opacity-40">Previous</button>
             <button type="button" disabled={(page + 1) * PAGE >= rows.length} onClick={() => setPage((p) => p + 1)} className="rounded-md border border-line px-3 py-1 font-semibold text-navy-900 disabled:opacity-40">Next</button>

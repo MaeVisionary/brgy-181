@@ -127,7 +127,7 @@ export interface DocumentRequest {
   issuedAt?: string
   values: Record<string, FieldValue>
   /** Requirement label → presented/attached. File contents are never stored in this prototype. */
-  requirements: Record<string, { provided: boolean; note?: string }>
+  requirements: Record<string, { provided: boolean; note?: string; fileId?: string }>
   assisted?: { encodedByUserId: string; at: string }
   /** Katarungang Pambarangay case this document belongs to (summon, notice of hearing). */
   caseId?: string

@@ -69,7 +69,7 @@ export function setExtraPermissions(id: string, perms: Permission[], by: User): 
 }
 
 /** Personnel positions the administrator may assign (elected officials keep their role). */
-export const ASSIGNABLE_ROLES: RoleId[] = ['staff', 'property_custodian', 'treasurer']
+export const ASSIGNABLE_ROLES: RoleId[] = ['property_custodian', 'treasurer']
 
 export function setRole(id: string, roleId: RoleId, by: User): Promise<User> {
   return mockRequest(() => {

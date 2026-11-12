@@ -1,4 +1,4 @@
-import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Inbox, Info, Mail, MapPin, MessageSquareWarning, Package, Paperclip, Phone, ReceiptText, XCircle } from '@/icons'
+import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Inbox, Info, Mail, MapPin, MessageSquareWarning, Package, Phone, ReceiptText, XCircle } from '@/icons'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -16,6 +16,10 @@ import { isFilled } from '@/documents/fill'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 import { cn } from '@/lib/cn'
+import { FileField } from '@/components/ui/FileField'
+import { MAX_TRANSACTION_BYTES } from '@/config/uploads'
+import { attachUploads, totalSize, type StoredFile } from '@/services/fileStore'
+import { toneForPath } from '@/icons/tones'
 import { formatDate, formatDateTime } from '@/lib/format'
 import { ALL_RESIDENT_STATUSES, STATUSES_BY_KIND, borrowingStatusForResident, caseStageForResident, documentStatusForResident, type ResidentStatus } from '@/lib/residentStatus'
 import { mockUsers } from '@/mocks/users'
@@ -30,7 +34,7 @@ import type { DocumentRequest, StatusEvent, Transition } from '@/types/document'
 import type { Borrowing } from '@/types/equipment'
 import { itemsText } from '@/pages/equipment/BorrowingPages'
 import { NotFound } from '@/pages/system/NotFound'
-import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, Progress, Pulse, Section, TitleBar, TransactionList, Updates, needsYou, stepsFrom } from './parts'
+import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, Progress, Section, TitleBar, TransactionList, Updates, needsYou, stepsFrom } from './parts'
 
 /** Example announcements showing the format barangay posts will take. */
 const ANNOUNCEMENTS = [
@@ -81,21 +85,21 @@ export function ResidentHome() {
         <StatCard label="Completed" value={tx ? tx.filter((t) => t.status === 'Completed').length : null} to="/my/transactions" />
       </section>
 
-      <h2 className="font-display text-[19px] font-bold text-navy-900">How can we help you today?</h2>
-      <div className="mt-3 grid gap-3 md:grid-cols-3">
+      <h2 className="font-display text-[length:calc(19px*var(--fs))] font-bold text-navy-900">How can we help you today?</h2>
+      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
         {actions.map(({ to, icon: Icon, title, body }) => (
           <Link key={title} to={to} className="bmis-press flex min-h-[72px] items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3.5 transition-colors hover:border-navy-600/40 hover:bg-sky-50">
-            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-sky-100 text-navy-900"><Icon className="size-[18px]" /></span>
+            <span className={cn('grid size-10 shrink-0 place-items-center rounded-[10px]', toneForPath(to))}><Icon className="size-[18px]" /></span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[16px] font-semibold text-navy-900">{title}</span>
-              <span className="block text-[14.5px] text-ink-muted">{body}</span>
+              <span className="block text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{title}</span>
+              <span className="block text-[length:calc(14.5px*var(--fs))] text-ink-muted">{body}</span>
             </span>
             <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
           </Link>
         ))}
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <DarkHeadCard title="My Recent Activities" to="/my/transactions">
           {recent === null ? (
             <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-14 animate-pulse rounded bg-surface-muted" />)}</div>
@@ -126,8 +130,8 @@ function DarkHeadCard({ title, to, children }: { title: string; to: string; chil
   return (
     <Card className="overflow-hidden">
       <div className="flex items-center justify-between gap-3 bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5">
-        <h2 className="font-display text-[17.5px] font-bold">{title}</h2>
-        <Link to={to} className="inline-flex min-h-9 shrink-0 items-center gap-1 text-[14.5px] font-semibold text-navy-900 hover:underline">
+        <h2 className="font-display text-[length:calc(17.5px*var(--fs))] font-bold">{title}</h2>
+        <Link to={to} className="inline-flex min-h-9 shrink-0 items-center gap-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900 hover:underline">
           View all <ChevronRight className="size-4" />
         </Link>
       </div>
@@ -139,17 +143,14 @@ function DarkHeadCard({ title, to, children }: { title: string; to: string; chil
 function ActivityRow({ t }: { t: Transaction }) {
   return (
     <li>
-      <Link to={t.to} className={cn('flex items-center gap-3 px-5 py-3.5', needsYou(t) ? 'border-l-4 border-l-warning bg-warning-tint/60 hover:bg-warning-tint' : 'hover:bg-sky-50')}>
+      <Link to={t.to} className={cn('flex min-h-[64px] items-center gap-3 px-5 py-3 transition-colors hover:bg-sky-50 active:bg-sky-100', needsYou(t) && 'border-l-4 border-l-warning pl-4')}>
         <span className="min-w-0 flex-1">
-          {needsYou(t) && <span className="mb-1 flex items-center gap-2 text-[14px] font-semibold text-warning"><Pulse /> Action needed: reply to the barangay</span>}
-          <span className="block text-[12.5px] font-semibold tracking-[0.06em] text-ink-muted uppercase">{t.kindLabel}</span>
-          <span className="block truncate text-[16px] font-semibold text-navy-900">{t.title}</span>
-          <span className="block text-[14px] text-ink-muted">Ref. no. {t.referenceNo} · Submitted {formatDate(t.submittedAt)}</span>
+          <span className="block truncate text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">{t.title}</span>
+          <span className="block truncate text-[length:calc(14.5px*var(--fs))] text-ink-muted">{t.kindLabel}</span>
         </span>
-        <span className="hidden sm:block"><StatusDot status={t.status} /></span>
+        <StatusDot status={t.status} />
         <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
       </Link>
-      <span className="block px-5 pb-3 sm:hidden"><StatusDot status={t.status} /></span>
     </li>
   )
 }
@@ -163,11 +164,11 @@ import { StatusLabel as StatusLabelInline } from '@/components/ui/StatusLabel'
 function AnnouncementItem({ a, full }: { a: (typeof ANNOUNCEMENTS)[number]; full?: boolean }) {
   return (
     <li className={cn('px-5 py-4', full && 'sm:px-6')}>
-      <p className="text-[13px] font-semibold tracking-[0.06em] text-navy-600 uppercase">
+      <p className="text-[length:calc(13px*var(--fs))] font-semibold tracking-[0.06em] text-navy-600 uppercase">
         {a.kind} <span className="font-normal tracking-normal text-ink-muted normal-case">· Published {formatDate(a.date)}</span>
       </p>
-      <p className="mt-1 font-display text-[17px] font-bold text-navy-900">{a.title}</p>
-      <p className="text-[15px] text-ink-nav">{a.body}</p>
+      <p className="mt-1 font-display text-[length:calc(17px*var(--fs))] font-bold text-navy-900">{a.title}</p>
+      <p className="text-[length:calc(15px*var(--fs))] text-ink-nav">{a.body}</p>
     </li>
   )
 }
@@ -178,25 +179,25 @@ function NeedAssistance() {
     <section className="mt-4 border-t border-line pt-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-display text-[19px] font-bold text-navy-900">Need Assistance?</h2>
+          <h2 className="font-display text-[length:calc(19px*var(--fs))] font-bold text-navy-900">Need Assistance?</h2>
         </div>
-        <Link to="/my/contact" className="inline-flex h-11 shrink-0 items-center justify-center gap-1 self-start rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[15px] font-semibold text-navy-900 hover:bg-surface-muted sm:self-center">
+        <Link to="/my/contact" className="inline-flex h-11 shrink-0 items-center justify-center gap-1 self-start rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted sm:self-center">
           View contact information <ChevronRight className="size-4" />
         </Link>
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
-          <p className="flex items-center gap-1.5 text-[15.5px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
-          <p className="mt-1 text-[15px] text-navy-900">{C.hall}, {C.address}</p>
+          <p className="flex items-center gap-1.5 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
+          <p className="mt-1 text-[length:calc(15px*var(--fs))] text-navy-900">{C.hall}, {C.address}</p>
         </div>
         <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
-          <p className="flex items-center gap-1.5 text-[15.5px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
-          <a href={`tel:${C.phone.replace(/[^\d+]/g, '')}`} className="mt-1 block text-[15px] text-info hover:underline">{C.phone}</a>
-          <a href={`mailto:${C.email}`} className="block text-[15px] break-all text-info hover:underline">{C.email}</a>
+          <p className="flex items-center gap-1.5 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
+          <a href={`tel:${C.phone.replace(/[^\d+]/g, '')}`} className="mt-1 block text-[length:calc(15px*var(--fs))] text-info hover:underline">{C.phone}</a>
+          <a href={`mailto:${C.email}`} className="block text-[length:calc(15px*var(--fs))] break-all text-info hover:underline">{C.email}</a>
         </div>
         <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
-          <p className="flex items-center gap-1.5 text-[15.5px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
-          <p className="mt-1 text-[15px] text-navy-900">{C.officeHours}</p>
+          <p className="flex items-center gap-1.5 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
+          <p className="mt-1 text-[length:calc(15px*var(--fs))] text-navy-900">{C.officeHours}</p>
         </div>
       </div>
     </section>
@@ -249,7 +250,7 @@ export function MyTransactionsPage() {
             aria-selected={kind === f.key}
             onClick={() => set({ type: f.key, status: '' })}
             className={cn(
-              'inline-flex h-11 items-center justify-between gap-2 rounded-[var(--radius-control)] border px-4 text-[15.5px] font-semibold transition-colors sm:justify-start',
+              'inline-flex h-11 items-center justify-between gap-2 rounded-[var(--radius-control)] border px-4 text-[length:calc(15.5px*var(--fs))] font-semibold transition-colors sm:justify-start',
               kind === f.key ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-surface-muted',
             )}
           >
@@ -257,12 +258,12 @@ export function MyTransactionsPage() {
           </button>
         ))}
       </div>
-      <label className="mt-4 flex items-center gap-3 text-[15px] font-semibold text-navy-900">
+      <label className="mt-4 flex items-center gap-3 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">
         Status
         <select
           value={status}
           onChange={(e) => set({ status: e.target.value })}
-          className="h-11 min-w-[180px] rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15.5px] font-normal text-navy-900 focus:border-navy-600 focus:outline-none"
+          className="h-11 min-w-[180px] rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(15.5px*var(--fs))] font-normal text-navy-900 focus:border-navy-600 focus:outline-none"
         >
           <option value="">All statuses</option>
           {statusOptions.map(([s, n]) => <option key={s} value={s}>{s} ({n})</option>)}
@@ -275,16 +276,16 @@ export function MyTransactionsPage() {
         ) : shown.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-12 text-center">
             <Inbox className="size-9 text-ink-subtle" strokeWidth={1.5} />
-            <p className="mt-3 font-display text-[19px] font-bold text-navy-900">{status ? 'No transactions with this status.' : EMPTY[kind].title}</p>
-            <p className="mt-1 max-w-md text-[15.5px] text-ink-muted">{status ? 'Try another status, or choose "All statuses".' : EMPTY[kind].body}</p>
+            <p className="mt-3 font-display text-[length:calc(19px*var(--fs))] font-bold text-navy-900">{status ? 'No transactions with this status.' : EMPTY[kind].title}</p>
+            <p className="mt-1 max-w-md text-[length:calc(15.5px*var(--fs))] text-ink-muted">{status ? 'Try another status, or choose "All statuses".' : EMPTY[kind].body}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               {!status && (
-                <Link to={EMPTY[kind].to} className="inline-flex h-11 items-center rounded-[var(--radius-control)] bg-navy-900 px-5 text-[15.5px] font-semibold text-white hover:bg-navy-800">
+                <Link to={EMPTY[kind].to} className="inline-flex h-11 items-center rounded-[var(--radius-control)] bg-navy-900 px-5 text-[length:calc(15.5px*var(--fs))] font-semibold text-white hover:bg-navy-800">
                   {EMPTY[kind].action}
                 </Link>
               )}
               {(status || kind !== 'all') && (
-                <button type="button" onClick={() => set({ type: 'all', status: '' })} className="inline-flex h-11 items-center rounded-[var(--radius-control)] border border-line bg-surface px-5 text-[15.5px] font-semibold text-navy-900 hover:bg-surface-muted">
+                <button type="button" onClick={() => set({ type: 'all', status: '' })} className="inline-flex h-11 items-center rounded-[var(--radius-control)] border border-line bg-surface px-5 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted">
                   Show all transactions
                 </button>
               )}
@@ -365,15 +366,15 @@ export function DocumentDetailsPage() {
         main={
           <>
             <Section title="What happens next">
-              <p className="text-[16px] text-navy-900">{next[rs]}</p>
+              <p className="text-[length:calc(16px*var(--fs))] text-navy-900">{next[rs]}</p>
               {!ended && !done && (
-                <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 text-[15px]">
+                <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 text-[length:calc(15px*var(--fs))]">
                   <dt className="text-ink-muted">Submitted</dt><dd className="text-navy-900">{formatDateTime(req.submittedAt)}</dd>
                   {!report && (
                     <>
                       <dt className="text-ink-muted">Expected by</dt>
                       <dd className="text-navy-900">
-                        {expected ? <><span className="font-semibold">{expected}</span><span className="block text-[14px] text-ink-muted">{est!.extended ? 'Extended' : `Within ${est!.days} working day${est!.days === 1 ? '' : 's'}${est!.fromCharter ? '' : ' (maximum under RA 11032)'}`}</span></> : rs === 'Action Needed' ? 'After you send the requested information' : 'Processing time will be confirmed.'}
+                        {expected ? <><span className="font-semibold">{expected}</span><span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{est!.extended ? 'Extended' : `Within ${est!.days} working day${est!.days === 1 ? '' : 's'}${est!.fromCharter ? '' : ' (maximum under RA 11032)'}`}</span></> : rs === 'Action Needed' ? 'After you send the requested information' : 'Processing time will be confirmed.'}
                       </dd>
                     </>
                   )}
@@ -391,8 +392,8 @@ export function DocumentDetailsPage() {
 
             {rs === 'Action Needed' && needInfo?.remarks && (
               <Section title="Message from the barangay">
-                <p className="text-[15.5px] text-navy-900">“{needInfo.remarks}”</p>
-                <p className="mt-1 text-[14px] text-ink-muted">{ROLES[needInfo.byRole].name} · {formatDateTime(needInfo.at)}</p>
+                <p className="text-[length:calc(15.5px*var(--fs))] text-navy-900">“{needInfo.remarks}”</p>
+                <p className="mt-1 text-[length:calc(14px*var(--fs))] text-ink-muted">{ROLES[needInfo.byRole].name} · {formatDateTime(needInfo.at)}</p>
               </Section>
             )}
             {replyStep && <ReplyForm req={req} step={replyStep} actor={actor} onDone={(r) => setReq({ ...r })} />}
@@ -412,7 +413,7 @@ export function DocumentDetailsPage() {
                 />
               </Section>
             ) : !ended && !done ? (
-              <p className="flex items-center gap-2 text-[15px] text-ink-nav"><MapPin className="size-4 shrink-0" /> No visit needed until your document is ready. We will notify you.</p>
+              <p className="flex items-center gap-2 text-[length:calc(15px*var(--fs))] text-ink-nav"><MapPin className="size-4 shrink-0" /> No visit needed until your document is ready. We will notify you.</p>
             ) : null)}
 
             <Section title={report ? 'Report details' : 'Request details'}>
@@ -495,7 +496,7 @@ export function ComplaintDetailsPage() {
                     ['Type of meeting', next.kind === 'lupon_mediation' ? 'Mediation with the Lupon' : 'Mediation with the Barangay Chairman'],
                   ]}
                 />
-                <p className="mt-2 text-[14.5px] text-ink-muted">
+                <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-ink-muted">
                   Please attend in person. You will receive a reminder {KP.reminderDaysBefore} day before the hearing. If you have questions, visit or contact the Barangay Hall.
                 </p>
               </Section>
@@ -512,7 +513,7 @@ export function ComplaintDetailsPage() {
             </Section>
             {c.details && (
               <Section title="What happened">
-                <p className="text-[15.5px] whitespace-pre-wrap text-navy-900">{c.details.replace(/^\[[^\]]+\]\s*/, '')}</p>
+                <p className="text-[length:calc(15.5px*var(--fs))] whitespace-pre-wrap text-navy-900">{c.details.replace(/^\[[^\]]+\]\s*/, '')}</p>
               </Section>
             )}
             <Updates items={[...c.history].reverse().map((h) => ({ title: h.action, at: h.at, by: h.byRole === 'resident' ? 'You' : ROLES[h.byRole]?.name }))} />
@@ -523,10 +524,10 @@ export function ComplaintDetailsPage() {
             <Progress steps={stepsFrom(labels, idx, notes, rs === 'Completed')} />
             {c.hearings.length > 0 && <Card className="overflow-hidden px-5 py-4">
               <TitleBar>What these words mean</TitleBar>
-              <p className="text-[15px] font-semibold text-navy-900">Mediation</p>
-              <p className="text-[14.5px] text-ink-nav">A meeting where the Barangay Chairman helps both sides agree on a solution.</p>
-              <p className="mt-2 text-[15px] font-semibold text-navy-900">Lupon</p>
-              <p className="text-[14.5px] text-ink-nav">If there is no agreement, the case may go to the Lupon Tagapamayapa, a barangay panel that continues the mediation.</p>
+              <p className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">Mediation</p>
+              <p className="text-[length:calc(14.5px*var(--fs))] text-ink-nav">A meeting where the Barangay Chairman helps both sides agree on a solution.</p>
+              <p className="mt-2 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">Lupon</p>
+              <p className="text-[length:calc(14.5px*var(--fs))] text-ink-nav">If there is no agreement, the case may go to the Lupon Tagapamayapa, a barangay panel that continues the mediation.</p>
             </Card>}
             <NeedHelp />
           </>
@@ -607,14 +608,14 @@ export function BorrowingDetailsPage() {
               <div className="flex flex-wrap items-center gap-2">
                 {confirm ? (
                   <>
-                    <span className="text-[15px] text-navy-900">Cancel this request?</span>
+                    <span className="text-[length:calc(15px*var(--fs))] text-navy-900">Cancel this request?</span>
                     <Button size="sm" variant="danger" onClick={cancel}>Yes, cancel request</Button>
                     <Button size="sm" variant="ghost" onClick={() => setConfirm(false)}>Keep it</Button>
                   </>
                 ) : (
                   <Button size="sm" variant="danger" onClick={() => setConfirm(true)}>Cancel request</Button>
                 )}
-                {err && <span className="text-[14.5px] text-danger-ink">{err}</span>}
+                {err && <span className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</span>}
               </div>
             )}
 
@@ -658,31 +659,31 @@ export function ContactPage() {
     <>
       <BackLink to="/dashboard">Back to Home</BackLink>
       <PageHeader title="Contact and Assistance" subtitle="Having trouble using the portal or accessing a barangay service? Our personnel are here to help." />
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="px-5 py-4">
-          <p className="flex items-center gap-2 text-[16px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
-          <p className="mt-2 text-[15.5px] font-semibold text-navy-900">{BARANGAY_CONTACT.hall}</p>
-          <p className="text-[15px] text-navy-900">{BARANGAY_CONTACT.address}</p>
+          <p className="flex items-center gap-2 text-[length:calc(16px*var(--fs))] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
+          <p className="mt-2 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{BARANGAY_CONTACT.hall}</p>
+          <p className="text-[length:calc(15px*var(--fs))] text-navy-900">{BARANGAY_CONTACT.address}</p>
         </Card>
         <Card className="px-5 py-4">
-          <p className="flex items-center gap-2 text-[16px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
-          <p className="mt-2 text-[14px] text-ink-muted">Phone</p>
-          <a href={`tel:${BARANGAY_CONTACT.phone.replace(/[^\d+]/g, '')}`} className="block text-[15.5px] font-semibold text-info hover:underline">{BARANGAY_CONTACT.phone}</a>
-          <a href={`tel:${BARANGAY_CONTACT.mobile.replace(/[^\d+]/g, '')}`} className="block text-[15.5px] font-semibold text-info hover:underline">{BARANGAY_CONTACT.mobile}</a>
-          <p className="mt-2 flex items-center gap-1 text-[14px] text-ink-muted"><Mail className="size-3.5" /> Email</p>
-          <a href={`mailto:${BARANGAY_CONTACT.email}`} className="block text-[15.5px] font-semibold break-all text-info hover:underline">{BARANGAY_CONTACT.email}</a>
+          <p className="flex items-center gap-2 text-[length:calc(16px*var(--fs))] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
+          <p className="mt-2 text-[length:calc(14px*var(--fs))] text-ink-muted">Phone</p>
+          <a href={`tel:${BARANGAY_CONTACT.phone.replace(/[^\d+]/g, '')}`} className="block text-[length:calc(15.5px*var(--fs))] font-semibold text-info hover:underline">{BARANGAY_CONTACT.phone}</a>
+          <a href={`tel:${BARANGAY_CONTACT.mobile.replace(/[^\d+]/g, '')}`} className="block text-[length:calc(15.5px*var(--fs))] font-semibold text-info hover:underline">{BARANGAY_CONTACT.mobile}</a>
+          <p className="mt-2 flex items-center gap-1 text-[length:calc(14px*var(--fs))] text-ink-muted"><Mail className="size-3.5" /> Email</p>
+          <a href={`mailto:${BARANGAY_CONTACT.email}`} className="block text-[length:calc(15.5px*var(--fs))] font-semibold break-all text-info hover:underline">{BARANGAY_CONTACT.email}</a>
         </Card>
         <Card className="px-5 py-4">
-          <p className="flex items-center gap-2 text-[16px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
-          <p className="mt-2 text-[15.5px] font-semibold text-navy-900">{BARANGAY_CONTACT.officeHours}</p>
-          <p className="text-[15px] text-navy-900">{BARANGAY_CONTACT.saturdayHours}</p>
+          <p className="flex items-center gap-2 text-[length:calc(16px*var(--fs))] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
+          <p className="mt-2 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{BARANGAY_CONTACT.officeHours}</p>
+          <p className="text-[length:calc(15px*var(--fs))] text-navy-900">{BARANGAY_CONTACT.saturdayHours}</p>
         </Card>
       </div>
       <Card className="mt-4 max-w-3xl px-5 py-4">
-        <h2 className="font-display text-[18px] font-bold text-navy-900">What personnel can help you with</h2>
+        <h2 className="font-display text-[length:calc(18px*var(--fs))] font-bold text-navy-900">What personnel can help you with</h2>
         <ul className="mt-2 divide-y divide-line-soft">
           {help.map((h) => (
-            <li key={h} className="flex items-start gap-2.5 py-2.5 text-[15.5px] text-navy-900">
+            <li key={h} className="flex items-start gap-2.5 py-2.5 text-[length:calc(15.5px*var(--fs))] text-navy-900">
               <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" /> {h}
             </li>
           ))}
@@ -702,7 +703,7 @@ export function AnnouncementsPage() {
           {ANNOUNCEMENTS.map((a) => <AnnouncementItem key={a.title} a={a} full />)}
         </ul>
       </Card>
-      <p className="mt-3 max-w-3xl text-[14px] text-ink-muted">
+      <p className="mt-3 max-w-3xl text-[length:calc(14px*var(--fs))] text-ink-muted">
         Barangay personnel cannot post announcements in the system yet, so the items above are sample content showing how announcements will appear.
       </p>
     </>
@@ -715,7 +716,7 @@ export function AnnouncementsPage() {
  */
 function ReplyForm({ req, step, actor, onDone }: { req: DocumentRequest; step: Transition; actor: NonNullable<ReturnType<typeof useDocActor>>; onDone: (r: DocumentRequest) => void }) {
   const items = req.requestedItems?.length ? req.requestedItems : []
-  const [files, setFiles] = useState<Record<string, string>>({})
+  const [files, setFiles] = useState<Record<string, StoredFile | null>>({})
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -724,7 +725,12 @@ function ReplyForm({ req, step, actor, onDone }: { req: DocumentRequest; step: T
     setBusy(true)
     setError(null)
     try {
-      onDone(await applyTransition(req.id, step, message, actor, { files }))
+      const ids = Object.values(files).filter((f): f is StoredFile => !!f).map((f) => f.id)
+      if (totalSize(ids) > MAX_TRANSACTION_BYTES) throw new ServiceError('too_large', 'Attachments total more than 10 MB. Remove a file or use a smaller one.')
+      const names = Object.fromEntries(Object.entries(files).filter(([, f]) => f).map(([k, f]) => [k, f!.originalName]))
+      const r = await applyTransition(req.id, step, message, actor, { files: names })
+      attachUploads(ids, req.referenceNo)
+      onDone(r)
     } catch (e) {
       setError(e instanceof ServiceError ? e.message : 'Your reply could not be sent. Please try again.')
     } finally {
@@ -732,37 +738,24 @@ function ReplyForm({ req, step, actor, onDone }: { req: DocumentRequest; step: T
     }
   }
   return (
-    <Section title="Send what the barangay asked for" subtitle="Attach each item, add a short message, then send your reply.">
+    <Section title="Send what the barangay asked for">
       <div className="space-y-3">
         {items.map((item) => (
           <div key={item}>
-            <p className="mb-1 text-[14.5px] font-semibold text-navy-900">{item} <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></p>
-            <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line px-3 py-2 text-[15px] text-navy-900 hover:border-navy-600 hover:bg-sky-50">
-              <Paperclip className="size-4 shrink-0 text-ink-muted" />
-              <span className="min-w-0 flex-1 truncate">{files[item] ?? 'Choose a photo or PDF'}</span>
-              {files[item] && <span className="text-[14px] font-semibold text-info">Change</span>}
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  if (f) setFiles((x) => ({ ...x, [item]: f.name }))
-                }}
-              />
-            </label>
+            <p className="mb-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">{item} <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></p>
+            <FileField category="reply" value={files[item] ?? null} onChange={(f) => setFiles((x) => ({ ...x, [item]: f }))} />
           </div>
         ))}
         <label className="block">
-          <span className="mb-1 block text-[14.5px] font-semibold text-navy-900">Your message <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></span>
+          <span className="mb-1 block text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">Your message <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></span>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="For example: Here is a clearer photo of my ID."
-            className="min-h-[80px] w-full rounded-[var(--radius-control)] border border-line px-3 py-2 text-[15.5px] text-navy-900 focus:border-navy-600 focus:outline-none"
+            className="min-h-[80px] w-full rounded-[var(--radius-control)] border border-line px-3 py-2 text-[length:calc(15.5px*var(--fs))] text-navy-900 focus:border-navy-600 focus:outline-none"
           />
         </label>
-        {error && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">{error}</p>}
+        {error && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
         <Button className="h-11 w-full sm:w-auto" loading={busy} disabled={!ready} onClick={send}>Send reply</Button>
       </div>
     </Section>

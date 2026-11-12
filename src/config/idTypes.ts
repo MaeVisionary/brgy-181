@@ -32,10 +32,6 @@ export const idHasExpiry = (type: string) => ID_TYPE_RULES.find((t) => t.name ==
 /** Days before expiry when the resident is reminded to renew. */
 export const EXPIRING_SOON_DAYS = 30
 
-/** Upload limits for ID photos. */
-export const ID_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-export const ID_FILE_MAX_BYTES = 8 * 1024 * 1024
-
 /** "•••• 4821": only the last four characters are ever shown. */
 export function maskIdNumber(n: string) {
   const s = n.replace(/[^A-Za-z0-9]/g, '')

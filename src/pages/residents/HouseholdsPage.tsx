@@ -1,3 +1,4 @@
+import { RowList } from '@/components/ui/RowList'
 import { ChevronRight, Home, Search, Users } from '@/icons'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -55,19 +56,19 @@ export function HouseholdsPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search household no., address, family or resident name"
-              className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface pr-3 pl-9 text-[15.5px] text-navy-900 placeholder:text-ink-subtle focus:border-navy-600 focus:outline-none"
+              className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface pr-3 pl-9 text-[length:calc(15.5px*var(--fs))] text-navy-900 placeholder:text-ink-subtle focus:border-navy-600 focus:outline-none"
             />
           </label>
           <select
             value={street}
             onChange={(e) => setStreet(e.target.value)}
             aria-label="Filter by street"
-            className="h-11 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15.5px] text-navy-900 focus:border-navy-600 focus:outline-none sm:w-52"
+            className="h-11 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(15.5px*var(--fs))] text-navy-900 focus:border-navy-600 focus:outline-none sm:w-52"
           >
             <option value="">All streets</option>
             {streets.map((s) => <option key={s}>{s}</option>)}
           </select>
-          <span className="text-[14.5px] whitespace-nowrap text-ink-muted">
+          <span className="text-[length:calc(14.5px*var(--fs))] whitespace-nowrap text-ink-muted">
             {shown.length} of {rows.length} households
           </span>
         </div>
@@ -79,12 +80,12 @@ export function HouseholdsPage() {
             icon={<Home className="size-5" />}
             title="No households found"
             body="Try another name, address or household number, or choose All streets."
-            action={(q || street) ? <button type="button" onClick={() => { setQuery(''); setStreet('') }} className="text-[15px] font-semibold text-info hover:underline">Clear search</button> : undefined}
+            action={(q || street) ? <button type="button" onClick={() => { setQuery(''); setStreet('') }} className="text-[length:calc(15px*var(--fs))] font-semibold text-info hover:underline">Clear search</button> : undefined}
           />
         ) : (
           <>
             {/* Desktop and tablet: table */}
-            <table className="hidden w-full text-[15.5px] xl:table">
+            <table className="hidden w-full text-[length:calc(15.5px*var(--fs))] xl:table">
               <thead>
                 <tr className="bg-surface-muted text-left">
                   {['Household no.', 'Address', 'Families', 'Head of family', 'Residents', ''].map((t, i) => <th key={i} className="label-caps px-4 py-2.5 align-middle">{t}</th>)}
@@ -102,7 +103,7 @@ export function HouseholdsPage() {
                     <td className="px-4 py-3.5 align-middle text-navy-900">{h.houseNo} {h.street}</td>
                     <td className="px-4 py-3.5 align-middle">
                       {h.families.length > 1 && (
-                        <span className="mb-1 inline-flex items-center gap-1 rounded-md bg-navy-900 px-2 py-0.5 text-[14px] font-semibold text-white">
+                        <span className="mb-1 inline-flex items-center gap-1 rounded-md bg-navy-900 px-2 py-0.5 text-[length:calc(14px*var(--fs))] font-semibold text-white">
                           <Users className="size-3.5" /> {h.families.length} families
                         </span>
                       )}
@@ -124,10 +125,10 @@ export function HouseholdsPage() {
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2 font-semibold text-navy-900">
                         <Home className="size-4 text-ink-muted" /> {h.householdNo}
-                        {h.families.length > 1 && <span className="rounded-md bg-navy-900 px-2 py-0.5 text-[13.5px] font-semibold text-white">{h.families.length} families</span>}
+                        {h.families.length > 1 && <span className="rounded-md bg-navy-900 px-2 py-0.5 text-[length:calc(13.5px*var(--fs))] font-semibold text-white">{h.families.length} families</span>}
                       </span>
-                      <span className="block text-[15px] text-navy-900">{h.houseNo} {h.street}</span>
-                      <span className="mt-0.5 flex items-center gap-1.5 text-[14px] text-ink-muted"><Users className="size-3.5" /> {members.length} residents · {h.families.map((f) => f.name).join(', ')}</span>
+                      <span className="block text-[length:calc(15px*var(--fs))] text-navy-900">{h.houseNo} {h.street}</span>
+                      <span className="mt-0.5 flex items-center gap-1.5 text-[length:calc(14px*var(--fs))] text-ink-muted"><Users className="size-3.5" /> {members.length} residents · {h.families.map((f) => f.name).join(', ')}</span>
                     </span>
                     <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
                   </Link>
@@ -154,11 +155,12 @@ export function HouseholdDetailPage() {
     <>
       <BackLink fallbackTo="/residents/households" fallbackLabel="Households" />
       <PageHeader eyebrow={`Household ${household.householdNo}`} title={household.address} subtitle={`${household.families.length} famil${household.families.length > 1 ? 'ies' : 'y'} · ${members.length} residents`} />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {household.families.map((f) => (
           <Panel key={f.id} keepSubtitle title={f.name} subtitle={`Head: ${fullName(members.find((m) => m.id === f.headResidentId)!)}`} bodyClassName="px-0 py-0">
-            <div className="overflow-x-auto">
-            <table className="w-full min-w-[460px] text-[15px]">
+            <RowList rows={members.filter((m) => m.familyId === f.id).map((m) => ({ key: m.id, to: `/residents/${m.id}`, title: fullName(m), subtitle: `${m.relationship} · ${age(m)}` }))} />
+            <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[460px] text-[length:calc(15px*var(--fs))]">
               <thead>
                 <tr className="bg-surface-muted text-left">
                   {['Name', 'Relationship to the head', 'Age', 'Sectors'].map((h) => <th key={h} className="label-caps px-4 py-2 first:pl-5">{h}</th>)}
@@ -170,7 +172,7 @@ export function HouseholdDetailPage() {
                     <td className="py-2.5 pr-4 pl-5"><Link to={`/residents/${m.id}`} className="font-semibold text-navy-900 hover:underline">{fullName(m)}</Link></td>
                     <td className="px-4 py-2.5 text-ink-nav">{m.relationship}</td>
                     <td className="px-4 py-2.5 tabular-nums text-navy-900">{age(m)}</td>
-                    <td className="px-4 py-2.5">{hasSector(m) ? <SectorBadges r={m} /> : <span className="text-[14px] text-ink-muted">None</span>}</td>
+                    <td className="px-4 py-2.5">{hasSector(m) ? <SectorBadges r={m} /> : <span className="text-[length:calc(14px*var(--fs))] text-ink-muted">None</span>}</td>
                   </tr>
                 ))}
               </tbody>

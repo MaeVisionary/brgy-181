@@ -1,3 +1,4 @@
+import { RowList } from '@/components/ui/RowList'
 import { PackagePlus } from '@/icons'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
@@ -41,7 +42,7 @@ export function CustodianDashboard() {
         <Stat label="Missing units" value={sum((e) => e.missingQty)} to="/inventory" />
       </section>
 
-      <section className="mt-4 grid gap-4 xl:grid-cols-2">
+      <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <ListPanel
           dark
           title="Requests to review"
@@ -65,8 +66,9 @@ export function CustodianDashboard() {
       </section>
 
       <Panel className="mt-4" title="Equipment records" actions={<ViewAll to="/inventory" />} bodyClassName="px-0 py-0">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-[15px]">
+        <RowList rows={(equipment ?? []).map((e) => ({ key: e.id, to: '/inventory', title: e.name, subtitle: `${e.totalQty} total · ${availableQty(e)} available` }))} />
+        <div className="hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[560px] text-[length:calc(15px*var(--fs))]">
             <thead>
               <tr className="bg-surface-muted text-left">
                 {['Equipment', 'Total', 'Available', 'Borrowed', 'Damaged', 'Missing'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}
@@ -103,9 +105,9 @@ export function CustodianDashboard() {
                   <li key={`${b.id}-${i}`}>
                     <Link to={`/borrowing/${b.id}`} className="grid grid-cols-[1fr_auto] items-center gap-x-3 px-5 py-2 hover:bg-sky-50">
                       <span className="font-semibold text-navy-900">{b.refNo}</span>
-                      <span className={`justify-self-end rounded px-1.5 text-[12.5px] leading-6 font-semibold ${st.cls}`}>{st.label}</span>
-                      <span className="truncate text-[13.5px] text-ink-muted">{b.borrowerName}</span>
-                      <span className="justify-self-end text-[13.5px] whitespace-nowrap text-ink-muted">{formatShortDate(h.at)}</span>
+                      <span className={`justify-self-end rounded px-1.5 text-[length:calc(12.5px*var(--fs))] leading-6 font-semibold ${st.cls}`}>{st.label}</span>
+                      <span className="truncate text-[length:calc(13.5px*var(--fs))] text-ink-muted">{b.borrowerName}</span>
+                      <span className="justify-self-end text-[length:calc(13.5px*var(--fs))] whitespace-nowrap text-ink-muted">{formatShortDate(h.at)}</span>
                     </Link>
                   </li>
                 )

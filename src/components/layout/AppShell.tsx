@@ -10,6 +10,9 @@ import { NotificationMenu } from './NotificationMenu'
 import { TestAccountBar } from './TestAccountBar'
 import { isTestUser } from '@/config/testAccount'
 import { Sidebar } from './Sidebar'
+import { BottomNav } from './BottomNav'
+import { TextSizeControl } from './TextSizeControl'
+import { cleanupAbandoned } from '@/services/fileStore'
 import { useTrail } from '@/components/ui/BackLink'
 
 /** Development-only; not bundled in production builds. */
@@ -32,6 +35,8 @@ export function AppShell() {
   const [today] = useState(() => new Date())
   const { pathname } = useLocation()
   useTrail()
+  // Remove uploads that were never submitted (after the configured period).
+  useEffect(() => { cleanupAbandoned().catch(() => undefined) }, [])
 
   // The page scrolls inside <main>, so each new page starts at the top.
   useEffect(() => {
@@ -57,28 +62,30 @@ export function AppShell() {
     <div className="flex h-dvh flex-col overflow-hidden">
       {isTestUser(user?.id) ? <TestAccountBar /> : DevPreviewBar && <Suspense fallback={null}><DevPreviewBar /></Suspense>}
 
-      <header className="relative z-30 flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface px-4 sm:px-5">
+      <header className="relative z-30 flex h-16 shrink-0 items-center gap-2 border-b border-line bg-surface pr-2 pl-4 sm:gap-3 sm:px-5">
         <button
           type="button"
           onClick={toggle}
           aria-label={mobileOpen ? 'Close menu' : 'Toggle menu'}
-          className="grid size-9 place-items-center rounded-[var(--radius-control)] text-navy-900 hover:bg-surface-muted"
+          className="hidden size-9 place-items-center md:grid rounded-[var(--radius-control)] text-navy-900 hover:bg-surface-muted"
         >
           {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
         <div className="flex min-w-0 items-center gap-2.5">
           <BarangaySeal />
           <div className="min-w-0 leading-tight">
-            <p className="truncate font-display text-[16px] font-extrabold text-navy-900">{APP_CONFIG.barangayName}</p>
-            <p className="truncate text-[13px] text-ink-muted">{role?.portalLabel}</p>
+            {/* Header text keeps a fixed size so the brand never gets cut off at large text sizes. */}
+            <p className="font-display text-[17px] font-extrabold whitespace-nowrap text-navy-900">{APP_CONFIG.barangayName}</p>
+            <p className="hidden truncate text-[13px] text-ink-muted min-[360px]:block">{role?.portalLabel}</p>
           </div>
         </div>
 
-        <div className="ml-auto flex items-center gap-4">
-          <div className="hidden text-right leading-tight sm:block">
-            <p className="text-[13px] text-ink-muted">{formatWeekday(today)}</p>
-            <p className="text-[15px] font-semibold text-navy-900">{formatDate(today)}</p>
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-3">
+          <div className="mr-2 hidden text-right leading-tight lg:block">
+            <p className="text-[length:calc(13px*var(--fs))] text-ink-muted">{formatWeekday(today)}</p>
+            <p className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{formatDate(today)}</p>
           </div>
+          <TextSizeControl />
           <NotificationMenu />
         </div>
       </header>
@@ -105,8 +112,8 @@ export function AppShell() {
                 </button>
                 <BarangaySeal />
                 <div className="min-w-0 leading-tight">
-                  <p className="truncate font-display text-[16px] font-extrabold text-navy-900">{APP_CONFIG.barangayName}</p>
-                  <p className="truncate text-[13px] text-ink-muted">{role?.portalLabel}</p>
+                  <p className="truncate font-display text-[length:calc(16px*var(--fs))] font-extrabold text-navy-900">{APP_CONFIG.barangayName}</p>
+                  <p className="truncate text-[length:calc(13px*var(--fs))] text-ink-muted">{role?.portalLabel}</p>
                 </div>
               </div>
               <div className="min-h-0 flex-1">
@@ -122,6 +129,7 @@ export function AppShell() {
           </div>
         </main>
       </div>
+      <BottomNav />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { GRANTABLE_STAFF_PERMISSIONS, ROLES } from '@/config/permissions'
+import { ROLES } from '@/config/permissions'
 import { DEMO_RESIDENT_ID } from '@/mocks/residents'
 import type { RoleId, User } from '@/types/auth'
 
@@ -36,7 +36,7 @@ export const TEST_ACCOUNTS: TestAccountDef[] = [
 /** First test account (kept for older references). */
 export const TEST_ACCOUNT: TestAccountDef = TEST_ACCOUNTS[0] ?? define('', '', '', 'Ruffa Mae Silorio')
 
-export const TEST_LEVELS: RoleId[] = ['system_admin', 'chairman', 'secretary', 'kagawad', 'property_custodian', 'treasurer', 'staff', 'resident']
+export const TEST_LEVELS: RoleId[] = ['system_admin', 'chairman', 'secretary', 'kagawad', 'property_custodian', 'treasurer', 'resident']
 
 export const testAccountOf = (id: string | undefined): TestAccountDef | undefined =>
   id ? TEST_ACCOUNTS.find((a) => id.startsWith(a.idPrefix)) : undefined
@@ -58,6 +58,5 @@ export function testUserFor(role: RoleId, account: TestAccountDef = TEST_ACCOUNT
     email: account.email,
     status: 'active',
     residentId: role === 'resident' ? DEMO_RESIDENT_ID : undefined,
-    extraPermissions: role === 'staff' ? [...GRANTABLE_STAFF_PERMISSIONS] : undefined,
   }
 }

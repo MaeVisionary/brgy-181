@@ -13,5 +13,5 @@ const tones: Record<BadgeTone, string> = {
 /** Status shown as a small tinted label (no dot). */
 export function StatusLabel({ status, tone, className }: { status: ResidentStatus | string; tone?: BadgeTone; className?: string }) {
   const t = tones[tone ?? RESIDENT_STATUS_TONE[status as ResidentStatus] ?? 'neutral']
-  return <span className={cn('inline-flex h-6 items-center rounded px-1.5 text-[12.5px] font-semibold whitespace-nowrap', t, className)}>{status}</span>
+  return <span className={cn('inline-flex h-6 items-center rounded px-1.5 text-[length:calc(12.5px*var(--fs))] font-semibold whitespace-nowrap', t, className)}>{status}</span>
 }

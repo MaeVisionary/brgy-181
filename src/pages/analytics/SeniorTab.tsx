@@ -1,3 +1,4 @@
+import { RowList } from '@/components/ui/RowList'
 import { Download, FilterX, Lock, Search } from '@/icons'
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
@@ -104,7 +105,7 @@ export function SeniorTab() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <div className="relative sm:col-span-2 lg:col-span-4">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" />
             <TextInput className="pl-9" placeholder={showPii ? 'Search name or address' : 'Search address'} value={filters.search ?? ''} onChange={(e) => { setPage(0); setFilters((f) => ({ ...f, search: e.target.value || undefined })) }} aria-label="Search records" />
@@ -118,11 +119,11 @@ export function SeniorTab() {
           <FilterSelect label="Voter" value={filters.voter} options={['Yes', 'No', 'Missing']} onChange={(v) => set({ voter: v as Filters['voter'] })} />
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-line-soft pt-3">
-          <span className="text-[14.5px] text-ink-muted">
+          <span className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">
             Showing <strong className="text-navy-900">{rows.length}</strong> of {all.length} records
           </span>
           {active.map(([k, v]) => (
-            <button key={k} type="button" onClick={() => set({ [k]: v } as Filters)} className="rounded-full bg-sky-100 px-2.5 py-1 text-[14px] font-semibold text-navy-900 hover:bg-sky-300/40">
+            <button key={k} type="button" onClick={() => set({ [k]: v } as Filters)} className="rounded-full bg-sky-100 px-2.5 py-1 text-[length:calc(14px*var(--fs))] font-semibold text-navy-900 hover:bg-sky-300/40">
               {FILTER_LABELS[k]}: {k === 'issue' ? ISSUE_LABELS[v as keyof typeof ISSUE_LABELS] : v} ×
             </button>
           ))}
@@ -156,10 +157,10 @@ export function SeniorTab() {
       </section>
 
       {/* Age and gender */}
-      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Panel title="Age Distribution" subtitle={`Computed from birthdates as of ${reportingDate.toISOString().slice(0, 10)} · click a bar to filter`}>
           <SimpleBar labels={ages.map((a) => a.key)} values={ages.map((a) => a.count)} selected={filters.ageGroup} onSelect={(l) => set({ ageGroup: l as Filters['ageGroup'] })} />
-          <dl className="mt-3 grid grid-cols-3 gap-3 text-[14.5px]">
+          <dl className="mt-3 grid grid-cols-3 gap-3 text-[length:calc(14.5px*var(--fs))]">
             <Fact label="With birthdate" value={`${s.validAges} of ${s.total}`} />
             <Fact label="Average age" value={s.averageAge === null ? '–' : s.averageAge.toFixed(1)} />
             <Fact label="Oldest" value={s.oldestAge ?? '–'} />
@@ -173,7 +174,7 @@ export function SeniorTab() {
       </section>
 
       {/* Address */}
-      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Panel title="Residents by Area" subtitle="Records per street · click a bar to filter. An address is not treated as a household.">
           <SimpleBar labels={streets.slice(0, 10).map((c) => c.key)} values={streets.slice(0, 10).map((c) => c.count)} selected={filters.street} onSelect={(l) => set({ street: l })} horizontal height={Math.max(180, Math.min(10, streets.length) * 30)} />
         </Panel>
@@ -182,7 +183,7 @@ export function SeniorTab() {
             <TextInput placeholder="Search area" value={addrQuery} onChange={(e) => setAddrQuery(e.target.value)} aria-label="Search area" />
           </div>
           <div className="max-h-[320px] overflow-y-auto">
-            <table className="w-full text-[14.5px]">
+            <table className="w-full text-[length:calc(14.5px*var(--fs))]">
               <thead className="sticky top-0 bg-surface-muted">
                 <tr className="text-left"><th className="label-caps px-4 py-2">Area</th><th className="label-caps px-2 py-2 text-right">Records</th><th className="label-caps px-4 py-2 text-right">%</th></tr>
               </thead>
@@ -201,7 +202,7 @@ export function SeniorTab() {
       </section>
 
       {/* Civil status, status, voter */}
-      <section className="mt-4 grid gap-4 lg:grid-cols-3">
+      <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Panel title="Civil Status">
           <CountTable rows={civil.map((c) => [c.key === 'Missing' ? 'Missing / unclassified' : c.key, c.count, `${c.pct.toFixed(1)}%`])} onRow={(k) => set({ civilStatus: k.startsWith('Missing') ? 'Missing' : k })} />
         </Panel>
@@ -214,7 +215,7 @@ export function SeniorTab() {
       </section>
 
       {/* OSCA */}
-      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+      <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <Panel title="OSCA Registration" subtitle="A populated ID field is not proof that the ID is valid">
           <CountTable
             rows={[
@@ -227,14 +228,15 @@ export function SeniorTab() {
           />
         </Panel>
         <Panel title="OSCA Registration by Year" subtitle="Only dates that could be read reliably">
-          {osca.length ? <SimpleBar labels={osca.map((o) => o.key)} values={osca.map((o) => o.count)} height={200} label="Registrations" /> : <p className="text-[15px] text-ink-muted">No readable issue dates in the current selection.</p>}
+          {osca.length ? <SimpleBar labels={osca.map((o) => o.key)} values={osca.map((o) => o.count)} height={200} label="Registrations" /> : <p className="text-[length:calc(15px*var(--fs))] text-ink-muted">No readable issue dates in the current selection.</p>}
         </Panel>
       </section>
 
       {/* Community planning insights */}
-      <Panel className="mt-4" title="Area Summary" subtitle="Where registered senior citizens are, for assistance and outreach planning. No conclusions about poverty, health or eligibility are drawn." bodyClassName="px-0 py-0">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[620px] text-[15px]">
+      <Panel className="mt-4" title="Area Summary" bodyClassName="px-0 py-0">
+        <RowList rows={areas.map((a) => ({ key: a.area, onClick: () => set({ street: a.area }), title: a.area, subtitle: `${a.seniors} seniors · ${a.bedridden} bedridden · ${a.noOsca} without OSCA ID` }))} />
+        <div className="hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[620px] text-[length:calc(15px*var(--fs))]">
             <thead>
               <tr className="bg-surface-muted text-left">
                 {['Area', 'Seniors', 'Bedridden', 'Needs Update', 'Without OSCA ID'].map((h) => <th key={h} className="label-caps px-4 py-2.5">{h}</th>)}
@@ -256,15 +258,15 @@ export function SeniorTab() {
       </Panel>
 
       {/* Data quality */}
-      <Panel className="mt-4" title="Records Requiring Verification" subtitle="Flagged for review by authorized personnel. Nothing is deleted or merged automatically.">
+      <Panel className="mt-4" title="Records Requiring Verification">
         {issues.length === 0 ? (
-          <p className="text-[15px] text-ink-muted">No issues found in the current selection.</p>
+          <p className="text-[length:calc(15px*var(--fs))] text-ink-muted">No issues found in the current selection.</p>
         ) : (
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {issues.map((i) => (
               <li key={i.code}>
                 <button type="button" onClick={() => set({ issue: i.code })} className="flex w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line px-3 py-2 text-left hover:bg-sky-50">
-                  <span className="text-[15px] text-navy-900">{ISSUE_LABELS[i.code]}</span>
+                  <span className="text-[length:calc(15px*var(--fs))] text-navy-900">{ISSUE_LABELS[i.code]}</span>
                   <Badge dot={false} tone={i.code === 'age_column_mismatch' ? 'neutral' : 'warning'}>{i.count}</Badge>
                 </button>
               </li>
@@ -274,15 +276,16 @@ export function SeniorTab() {
       </Panel>
 
       {/* Drill-down */}
-      <Panel className="mt-4" title="Records" subtitle={showPii ? 'Identifiable details are limited to what the analysis needs. Contact numbers and full birthdates are not shown.' : undefined} bodyClassName="px-0 py-0">
+      <Panel className="mt-4" title="Records" bodyClassName="px-0 py-0">
         {!showPii ? (
-          <p className="flex items-center gap-2 px-5 py-5 text-[15px] text-ink-muted">
-            <Lock className="size-4" /> Individual records are only visible to personnel with access to resident records. You can still use all aggregate figures above.
+          <p className="flex items-center gap-2 px-5 py-5 text-[length:calc(15px*var(--fs))] text-ink-muted">
+            <Lock className="size-4" /> Requires access to resident records.
           </p>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-[14.5px]">
+            <RowList rows={rows.slice(page * PAGE, page * PAGE + PAGE).map((r) => ({ key: String(r.sheetRow), title: r.fullName, subtitle: [r.age != null ? `${r.age} yrs` : null, r.street ?? 'Unclassified', r.oscaId ? `OSCA ${r.oscaId}` : null].filter(Boolean).join(' · ') }))} />
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[760px] text-[length:calc(14.5px*var(--fs))]">
                 <thead>
                   <tr className="bg-surface-muted text-left">
                     {['Row', 'Name', 'Age', 'Area', 'Gender', 'Status', 'OSCA ID', 'Needs'].map((h) => <th key={h} className="label-caps px-3 py-2">{h}</th>)}
@@ -304,7 +307,7 @@ export function SeniorTab() {
                 </tbody>
               </table>
             </div>
-            <div className="flex items-center justify-between border-t border-line-soft px-4 py-2.5 text-[14.5px] text-ink-muted">
+            <div className="flex items-center justify-between border-t border-line-soft px-4 py-2.5 text-[length:calc(14.5px*var(--fs))] text-ink-muted">
               <span>
                 {rows.length ? page * PAGE + 1 : 0}–{Math.min(rows.length, page * PAGE + PAGE)} of {rows.length}
               </span>
@@ -331,21 +334,21 @@ function Kpi(props: { label: string; value: number; hint?: string; attention?: b
 function Fact({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-md bg-surface-muted px-3 py-2">
-      <dt className="text-[13px] text-ink-muted">{label}</dt>
-      <dd className="font-display text-[18px] font-extrabold text-navy-900">{value}</dd>
+      <dt className="text-[length:calc(13px*var(--fs))] text-ink-muted">{label}</dt>
+      <dd className="font-display text-[length:calc(18px*var(--fs))] font-extrabold text-navy-900">{value}</dd>
     </div>
   )
 }
 
 function CountTable({ rows, onRow }: { rows: (string | number)[][]; onRow?: (key: string) => void }) {
   return (
-    <table className="mt-3 w-full text-[15px]">
+    <table className="mt-3 w-full text-[length:calc(15px*var(--fs))]">
       <tbody>
         {rows.map((r) => (
           <tr key={String(r[0])} onClick={onRow ? () => onRow(String(r[0])) : undefined} className={`border-t border-line-soft ${onRow ? 'cursor-pointer hover:bg-sky-50' : ''}`}>
             <td className="py-1.5 pr-2 text-navy-900">{r[0]}</td>
             <td className="py-1.5 text-right font-semibold tabular-nums text-navy-900">{r[1]}</td>
-            <td className="py-1.5 pl-3 text-right text-[14px] text-ink-muted">{r[2]}</td>
+            <td className="py-1.5 pl-3 text-right text-[length:calc(14px*var(--fs))] text-ink-muted">{r[2]}</td>
           </tr>
         ))}
       </tbody>

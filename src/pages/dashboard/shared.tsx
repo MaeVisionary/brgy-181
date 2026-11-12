@@ -31,7 +31,7 @@ export function DashHeader({ subtitle, actions, overview, actionInGreeting }: { 
       <GreetingCard subtitle={subtitle} profileTo="/account" action={actionInGreeting ? actions : undefined} />
       {overview && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-display text-[20px] font-extrabold text-navy-900">{overview}</h2>
+          <h2 className="font-display text-[length:calc(20px*var(--fs))] font-extrabold text-navy-900">{overview}</h2>
           {!actionInGreeting && actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>
       )}
@@ -42,7 +42,7 @@ export function DashHeader({ subtitle, actions, overview, actionInGreeting }: { 
 /** "View All >" link used in every panel header. */
 export function ViewAll({ to, label = 'View All' }: { to: string; label?: string }) {
   return (
-    <Link to={to} className="inline-flex min-h-8 shrink-0 items-center gap-0.5 text-[14.5px] font-semibold text-info hover:underline">
+    <Link to={to} className="inline-flex min-h-11 shrink-0 items-center gap-0.5 text-[length:calc(15.5px*var(--fs))] font-semibold text-info hover:underline">
       {label} <ChevronRight className="size-4" />
     </Link>
   )
@@ -51,7 +51,7 @@ export function ViewAll({ to, label = 'View All' }: { to: string; label?: string
 /** Empty container note: tells the user there is nothing here yet. */
 export function EmptyNote({ children }: { children: ReactNode }) {
   return (
-    <p className="flex items-center gap-2 px-5 py-6 text-[15px] text-ink-muted">
+    <p className="flex items-center gap-2 px-5 py-6 text-[length:calc(15px*var(--fs))] text-ink-muted">
       <Inbox className="size-4 shrink-0 text-ink-subtle" /> {children}
     </p>
   )
@@ -81,7 +81,7 @@ export function PopulationCards({ compact }: { compact?: boolean }) {
         {items.map(([label, v]) => (
           <div key={label}>
             <dt className="label-caps">{label}</dt>
-            <dd className="mt-1 font-display text-[24px] leading-none font-extrabold text-navy-900">{v ?? '–'}</dd>
+            <dd className="mt-1.5 font-display text-[length:calc(30px*var(--fs))] leading-none font-extrabold text-navy-900">{v ?? '–'}</dd>
           </div>
         ))}
       </dl>
@@ -128,8 +128,8 @@ export function Row({ to, title, meta, right }: { to: string; title: ReactNode; 
   return (
     <Link to={to} className="flex items-center gap-3 px-5 py-3 hover:bg-sky-50">
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] font-semibold text-navy-900">{title}</span>
-        {meta && <span className="block truncate text-[14px] text-ink-muted">{meta}</span>}
+        <span className="block truncate text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{title}</span>
+        {meta && <span className="block truncate text-[length:calc(14.5px*var(--fs))] text-ink-muted">{meta}</span>}
       </span>
       {right}
     </Link>
@@ -186,16 +186,16 @@ export function PopulationByStreet() {
       <Card className="overflow-hidden">
         <div className="flex items-center gap-3 bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5">
           <BarChart3 className="size-5 shrink-0" />
-          <h2 className="font-display text-[17px] font-bold">Population by street</h2>
-          <span className="rounded-full bg-surface px-2 py-0.5 text-[13.5px] font-semibold">{year}</span>
+          <h2 className="font-display text-[length:calc(19px*var(--fs))] font-bold">Population by street</h2>
+          <span className="rounded-full bg-surface px-2 py-0.5 text-[length:calc(13.5px*var(--fs))] font-semibold">{year}</span>
         </div>
         <div className="flex flex-col gap-3 px-5 py-3.5 md:flex-row md:items-center md:justify-between">
-          <label className="flex w-full items-center gap-2 text-[15px] font-semibold text-navy-900 md:w-auto">
+          <label className="flex w-full items-center gap-2 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 md:w-auto">
             <span className="shrink-0">Street</span>
             <select
               value={street}
               onChange={(e) => setStreet(e.target.value)}
-              className="h-10 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15px] font-semibold text-navy-900 focus:border-navy-600 focus:outline-none md:w-[240px]"
+              className="h-10 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 focus:border-navy-600 focus:outline-none md:w-[240px]"
             >
               <option value="">All streets</option>
               {AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
@@ -218,7 +218,7 @@ export function PopulationByStreet() {
           {items.map(([label, v]) => (
             <div key={label}>
               <dt className="label-caps">{label}</dt>
-              <dd className="mt-1 font-display text-[24px] leading-none font-extrabold text-navy-900">{v ?? '–'}</dd>
+              <dd className="mt-1.5 font-display text-[length:calc(30px*var(--fs))] leading-none font-extrabold text-navy-900">{v ?? '–'}</dd>
             </div>
           ))}
         </dl>

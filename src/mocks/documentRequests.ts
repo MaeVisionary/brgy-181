@@ -43,7 +43,7 @@ const ev = (status: DocumentStatus, daysAgo: number, hour: number, byUserId: str
 const RES = 'usr-res'
 const SEC = 'usr-sec'
 const CHAIR = 'usr-chair'
-const STAFF = 'usr-staff'
+const STAFF = 'usr-sec'
 
 function make(
   typeId: DocumentTypeId,
@@ -126,7 +126,7 @@ export const mockDocumentRequests: DocumentRequest[] = [
     ev('under_review', 0, 9, SEC, 'secretary', 'Start review'),
   ], { partner2Name: 'Rafael Domingo Navarro', partner2Age: '34', houseStreet: '631 Benita St.', duration: '4', sinceFrom: '2022' }),
   make('no-partner', SAMPLE_IDS.angelicaBautista, 'processing', [
-    ev('under_review', 0, 10, STAFF, 'staff', 'Encoded at the Barangay Hall (assisted)'),
+    ev('under_review', 0, 10, STAFF, 'secretary', 'Encoded at the Barangay Hall (assisted)'),
     ev('processing', 0, 11, SEC, 'secretary', 'Mark as verified'),
   ], { childName: 'Angelo Torres Bautista' }, { assistedBy: STAFF }),
   make('business-clearance', SAMPLE_IDS.mariaValdez, 'submitted', [ev('submitted', 0, 7, 'resident', 'resident', 'Submitted online')], {

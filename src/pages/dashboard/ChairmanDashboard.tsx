@@ -45,7 +45,7 @@ export function ChairmanDashboard() {
         <Stat label="Upcoming hearings" value={hearings?.length ?? null} to="/hearings" />
       </section>
 
-      <section className="mt-4 grid gap-4 xl:grid-cols-2">
+      <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <ListPanel
           dark
           title="Routed to you for approval"
@@ -74,7 +74,7 @@ export function ChairmanDashboard() {
         />
       </section>
 
-      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <ListPanel
           title="Katarungang Pambarangay cases"
           subtitle="Open cases and the 15-day mediation period"
@@ -99,7 +99,7 @@ export function ChairmanDashboard() {
           ) : (
             <ul className="space-y-2.5">
               {resolved.map((c) => (
-                <li key={c.id} className="text-[15px]">
+                <li key={c.id} className="text-[length:calc(15px*var(--fs))]">
                   <span className="font-semibold text-navy-900">{c.caseNo} · {c.title}</span>
                   <span className="block text-ink-muted">{c.outcome!.summary}</span>
                 </li>

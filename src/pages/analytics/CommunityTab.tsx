@@ -1,3 +1,4 @@
+import { RowList } from '@/components/ui/RowList'
 import { useMemo, useState } from 'react'
 import { AreaChart } from '@/components/charts/AreaChart'
 import { Panel } from '@/components/ui/Panel'
@@ -48,7 +49,7 @@ export function CommunityTab() {
               onClick={() => pick(a.area)}
               aria-pressed={selected.includes(a.area)}
               className={cn(
-                'bmis-press rounded-full border px-3.5 py-1.5 text-[15px] font-semibold',
+                'bmis-press rounded-full border px-3.5 py-1.5 text-[length:calc(15px*var(--fs))] font-semibold',
                 selected.includes(a.area) ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-sky-50',
               )}
             >
@@ -56,7 +57,7 @@ export function CommunityTab() {
             </button>
           ))}
           {selected.length > 0 && (
-            <button type="button" onClick={() => setSelected([])} className="px-2 text-[14.5px] font-semibold text-info hover:underline">
+            <button type="button" onClick={() => setSelected([])} className="px-2 text-[length:calc(14.5px*var(--fs))] font-semibold text-info hover:underline">
               Clear
             </button>
           )}
@@ -77,12 +78,13 @@ export function CommunityTab() {
         </div>
       </section>
 
-      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Panel title="Residents and Households by Area">
           {areas ? <AreaChart data={areas} /> : <div className="h-[244px] animate-pulse rounded bg-surface-muted" />}
         </Panel>
         <Panel title="Vulnerable Sectors by Area" bodyClassName="px-0 py-0">
-          <table className="w-full text-[15px]">
+          <RowList rows={(areas ?? []).map((a) => ({ key: a.area, title: a.area, subtitle: `Senior ${a.seniorCitizens} · PWD ${a.pwds} · Solo parent ${a.soloParents} · 4Ps ${a.fourPsMembers}` }))} />
+          <table className="hidden w-full text-[length:calc(15px*var(--fs))] md:table">
             <thead>
               <tr className="bg-surface-muted text-left">
                 {['Area', 'Senior', 'PWD', 'Solo P.', '4Ps'].map((h) => <th key={h} className="label-caps px-3 py-2.5 first:pl-5">{h}</th>)}

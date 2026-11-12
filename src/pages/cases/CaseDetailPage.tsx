@@ -14,7 +14,7 @@ import { mockDocumentRequests } from '@/mocks/documentRequests'
 import { userById } from '@/mocks/users'
 import { ROLES } from '@/config/permissions'
 import { ServiceError } from '@/services/mockApi'
-import { STAGE_LABEL, STAGE_TONE, addInternalNote, applyStep, getCase, mediationDay, recordHearing, reschedule, sendReminder, stepsFor, type CaseStep } from '@/services/caseService'
+import { STAGE_LABEL, STAGE_TONE, addInternalNote, assignCase, assignableKagawads, applyStep, getCase, mediationDay, recordHearing, reschedule, sendReminder, stepsFor, type CaseStep } from '@/services/caseService'
 import type { CaseStage, KPCase } from '@/types/case'
 import { NotFound } from '@/pages/system/NotFound'
 import { AvailabilityRow, CaseDocuments } from './CaseParts'
@@ -65,7 +65,7 @@ export function CaseDetailPage() {
       <BackLink fallbackTo="/cases" fallbackLabel="Cases" />
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <p className="flex flex-wrap items-center gap-x-2 text-[14.5px] text-ink-muted">
+          <p className="flex flex-wrap items-center gap-x-2 text-[length:calc(14.5px*var(--fs))] text-ink-muted">
             <span className="font-semibold text-navy-900">{c.caseNo}</span>
             {c.blotterNo && <><span aria-hidden>·</span><span>Blotter {c.blotterNo}</span></>}
             <span aria-hidden>·</span>
@@ -73,11 +73,11 @@ export function CaseDetailPage() {
             <span aria-hidden>·</span>
             <span>{c.filedVia === 'online' ? 'Online' : 'Walk-in'}</span>
           </p>
-          <h1 className="mt-1 font-display text-[26px] leading-tight font-extrabold text-navy-900 sm:text-[30px]">{c.title}</h1>
-          <p className="mt-0.5 text-[16px] text-ink-nav">{c.nature}</p>
+          <h1 className="mt-1 font-display text-[length:calc(26px*var(--fs))] leading-tight font-extrabold text-navy-900 sm:text-[length:calc(30px*var(--fs))]">{c.title}</h1>
+          <p className="mt-0.5 text-[length:calc(16px*var(--fs))] text-ink-nav">{c.nature}</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[14px] text-ink-muted">Current stage</span>
+          <span className="text-[length:calc(14px*var(--fs))] text-ink-muted">Current stage</span>
           <Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>
         </div>
       </div>
@@ -93,36 +93,36 @@ export function CaseDetailPage() {
               <li key={s} className="relative z-10 flex w-[11%] flex-col items-center text-center">
                 <span
                   className={cn(
-                    'grid size-6 place-items-center rounded-full border-2 text-[13px] font-bold',
+                    'grid size-6 place-items-center rounded-full border-2 text-[length:calc(13px*var(--fs))] font-bold',
                     current ? 'border-navy-900 bg-navy-900 text-white' : done ? 'border-navy-900 bg-sky-100 text-navy-900' : 'border-line bg-surface text-ink-subtle',
                   )}
                 >
                   {done ? <Check className="size-3.5" strokeWidth={3} /> : i + 1}
                 </span>
-                <span className={cn('mt-1.5 text-[13.5px] leading-tight font-semibold', current ? 'text-navy-900' : done ? 'text-navy-900' : 'text-ink-subtle')}>{STAGE_LABEL[s]}</span>
+                <span className={cn('mt-1.5 text-[length:calc(13.5px*var(--fs))] leading-tight font-semibold', current ? 'text-navy-900' : done ? 'text-navy-900' : 'text-ink-subtle')}>{STAGE_LABEL[s]}</span>
               </li>
             )
           })}
         </ol>
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="space-y-4">
           {md && (
             <Card className={cn('px-5 py-4', md.overdue ? 'border-danger' : '')}>
               <p className="label-caps">Mediation under the Barangay Chairman</p>
-              <p className="mt-1 font-display text-[22px] font-extrabold text-navy-900">Day {md.day} of {md.total}</p>
+              <p className="mt-1 font-display text-[length:calc(22px*var(--fs))] font-extrabold text-navy-900">Day {md.day} of {md.total}</p>
               <div className="mt-2 h-2 rounded-full bg-surface-muted"><div className={cn('h-2 rounded-full', md.overdue ? 'bg-danger' : 'bg-navy-900')} style={{ width: `${Math.min(100, (md.day / md.total) * 100)}%` }} /></div>
-              {md.overdue && <p className="mt-2 text-[14.5px] text-danger-ink">The 15-day period has ended. Record a settlement or refer the case to the Lupon.</p>}
+              {md.overdue && <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">The 15-day period has ended. Record a settlement or refer the case to the Lupon.</p>}
             </Card>
           )}
           <Panel title="Parties">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {(['complainants', 'respondents'] as const).map((side) => (
                 <div key={side} className="rounded-md border border-line bg-surface px-4 py-3">
                   <p className="label-caps mb-1.5">{side === 'complainants' ? 'Complainant' : 'Respondent'}</p>
                   {c[side].map((p) => (
-                    <div key={p.name} className="text-[15px]">
+                    <div key={p.name} className="text-[length:calc(15px*var(--fs))]">
                       {p.residentId && can('residents.view') ? <Link to={`/residents/${p.residentId}`} className="font-semibold text-navy-900 hover:underline">{p.name}</Link> : <span className="font-semibold text-navy-900">{p.name}</span>}
                       <span className="block text-ink-muted">{p.address}</span>
                       {p.contactNo && <span className="block text-ink-muted">{p.contactNo}</span>}
@@ -133,15 +133,15 @@ export function CaseDetailPage() {
             </div>
             <div className="mt-3 rounded-md border border-line border-l-4 border-l-navy-600 bg-sky-50 px-4 py-3">
               <p className="label-caps mb-1 flex items-center gap-1.5"><Lock className="size-3.5" /> Complaint details (confidential)</p>
-              <p className="text-[15.5px] text-navy-900">{c.details}</p>
+              <p className="text-[length:calc(15.5px*var(--fs))] text-navy-900">{c.details}</p>
             </div>
             {c.outcome && (
-              <div className="mt-4 rounded-md bg-success-tint px-3 py-2 text-[15px] text-navy-900"><strong className="capitalize">{c.outcome.type.replace('_', ' ')}:</strong> {c.outcome.summary}</div>
+              <div className="mt-4 rounded-md bg-success-tint px-3 py-2 text-[length:calc(15px*var(--fs))] text-navy-900"><strong className="capitalize">{c.outcome.type.replace('_', ' ')}:</strong> {c.outcome.summary}</div>
             )}
           </Panel>
 
           <Panel title="Hearings and mediation sessions" bodyClassName="px-0 py-0">
-            {c.hearings.length === 0 ? <p className="px-5 py-5 text-[15px] text-ink-muted">No hearing scheduled yet.</p> : (
+            {c.hearings.length === 0 ? <p className="px-5 py-5 text-[length:calc(15px*var(--fs))] text-ink-muted">No hearing scheduled yet.</p> : (
               <ul>{[...c.hearings].sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt)).map((h) => <HearingRow key={h.id} caseId={c.id} h={h} manage={manage} onChange={refresh} />)}</ul>
             )}
           </Panel>
@@ -151,14 +151,14 @@ export function CaseDetailPage() {
 
         <div className="space-y-4">
           <Panel title="Next step" subtitle={`Stage: ${STAGE_LABEL[c.stage]}`}>
-            {steps.length === 0 ? <p className="text-[14.5px] text-ink-muted">No actions available.</p> : step ? (
+            {steps.length === 0 ? <p className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">No actions available.</p> : step ? (
               <div className="space-y-3">
-                <p className="text-[15px] font-semibold text-navy-900">{step.label}</p>
+                <p className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{step.label}</p>
                 {step.schedule && (
-                  <label className="block"><span className="mb-1 block text-[14px] font-semibold text-navy-900">Hearing date and time *</span><TextInput type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></label>
+                  <label className="block"><span className="mb-1 block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">Hearing date and time *</span><TextInput type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></label>
                 )}
-                {step.remarks && <label className="block"><span className="mb-1 block text-[14px] font-semibold text-navy-900">{step.outcome === 'settled' ? 'Settlement terms' : 'Note'} {step.remarks === 'required' && '*'}</span><TextArea value={remarks} onChange={(e) => setRemarks(e.target.value)} /></label>}
-                {err && <p className="text-[14px] text-danger-ink">{err}</p>}
+                {step.remarks && <label className="block"><span className="mb-1 block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">{step.outcome === 'settled' ? 'Settlement terms' : 'Note'} {step.remarks === 'required' && '*'}</span><TextArea value={remarks} onChange={(e) => setRemarks(e.target.value)} /></label>}
+                {err && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
                 <div className="flex gap-2"><Button onClick={run}>Confirm</Button><Button variant="ghost" onClick={() => { setStep(null); setErr(null) }}>Back</Button></div>
               </div>
             ) : (
@@ -166,22 +166,22 @@ export function CaseDetailPage() {
             )}
           </Panel>
 
-          {can('cases.manage') && (
-            <Panel title="Internal notes" subtitle="Visible only to case personnel">
-              {c.internalNotes.length === 0 && <p className="text-[14.5px] text-ink-muted">No notes.</p>}
-              <ul className="space-y-1.5">{c.internalNotes.map((n, i) => <li key={i} className="rounded-md bg-surface-muted px-3 py-2 text-[14.5px] text-navy-900">{n}</li>)}</ul>
+          {can('cases.manage') && <AssignPanel c={c} actor={actor} onChange={refresh} />}
+          {(can('cases.manage') || c.assignedTo?.includes(actor.user.id)) && (
+            <Panel title="Internal notes">
+              {c.internalNotes.length === 0 && <p className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">No notes.</p>}
+              <ul className="space-y-1.5">{c.internalNotes.map((n, i) => <li key={i} className="rounded-md bg-surface-muted px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-navy-900">{n}</li>)}</ul>
               <div className="mt-3 flex gap-2"><TextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a note" /><Button size="md" variant="secondary" disabled={!note.trim()} onClick={async () => { refresh(await addInternalNote(c.id, note, actor)); setNote('') }}>Add</Button></div>
             </Panel>
           )}
-          {!can('cases.manage') && <p className="flex items-center gap-2 text-[14px] text-ink-muted"><Lock className="size-3.5" /> Internal notes are hidden for your role.</p>}
 
           <Panel title="Case history">
             <ol className="space-y-3">
               {[...c.history].reverse().map((h, i) => (
                 <li key={i} className="border-l-2 border-line-soft pl-3">
-                  <p className="text-[14.5px] font-semibold text-navy-900">{h.action}</p>
-                  <p className="text-[13.5px] text-ink-muted">{formatDateTime(h.at)} · {userById(h.byUserId)?.fullName ?? 'Resident'} ({ROLES[h.byRole].name})</p>
-                  {h.remarks && <p className="mt-1 rounded-md bg-surface-muted px-2.5 py-1.5 text-[14.5px] text-navy-900">{h.remarks}</p>}
+                  <p className="text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">{h.action}</p>
+                  <p className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">{formatDateTime(h.at)} · {userById(h.byUserId)?.fullName ?? 'Resident'} ({ROLES[h.byRole].name})</p>
+                  {h.remarks && <p className="mt-1 rounded-md bg-surface-muted px-2.5 py-1.5 text-[length:calc(14.5px*var(--fs))] text-navy-900">{h.remarks}</p>}
                 </li>
               ))}
             </ol>
@@ -203,19 +203,19 @@ function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase
     <li className="border-b border-line-soft px-5 py-3 last:border-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span>
-          <span className="block text-[15.5px] font-semibold text-navy-900">{formatDateTime(h.scheduledAt)}</span>
-          <span className="block text-[14px] text-ink-muted">{kind} · {h.place}</span>
+          <span className="block text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{formatDateTime(h.scheduledAt)}</span>
+          <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{kind} · {h.place}</span>
         </span>
         <span className="flex items-center gap-2">
           <Badge tone={h.status === 'held' ? 'neutral' : h.status === 'scheduled' ? 'info' : 'warning'}>{h.status === 'held' ? 'Held' : h.status === 'scheduled' ? 'Scheduled' : h.status === 'rescheduled' ? 'Rescheduled' : 'Cancelled'}</Badge>
-          {h.remindersSentAt.length > 0 && <span className="text-[13.5px] text-ink-muted">Reminder sent {formatDate(h.remindersSentAt[h.remindersSentAt.length - 1])}</span>}
+          {h.remindersSentAt.length > 0 && <span className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">Reminder sent {formatDate(h.remindersSentAt[h.remindersSentAt.length - 1])}</span>}
         </span>
       </div>
       <div className="mt-3 rounded-md border border-line px-3 py-2">
         <p className="label-caps mb-1.5">Parties called{h.status === 'held' ? ' · attendance' : ''}</p>
-        <ul className="grid gap-1.5 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
           {h.attendance.map((a) => (
-            <li key={a.name} className="flex items-center gap-2 text-[14.5px] text-navy-900">
+            <li key={a.name} className="flex items-center gap-2 text-[length:calc(14.5px*var(--fs))] text-navy-900">
               {a.present === true ? <Check className="size-3.5 shrink-0 text-success" /> : a.present === false ? <X className="size-3.5 shrink-0 text-danger" /> : <span className="size-1.5 shrink-0 rounded-full bg-ink-subtle" />}
               <span className="font-semibold">{a.name}</span>
               <span className="text-ink-muted capitalize">{a.side}</span>
@@ -224,7 +224,7 @@ function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase
         </ul>
       </div>
       {h.status === 'scheduled' && <AvailabilityRow caseId={caseId} h={h} manage={manage} onChange={onChange} />}
-      {h.notes && <p className="mt-2 text-[14.5px] text-ink-muted">{h.notes}</p>}
+      {h.notes && <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-ink-muted">{h.notes}</p>}
       {manage && h.status === 'scheduled' && mode === 'none' && (
         <div className="mt-2 flex flex-wrap gap-2">
           <Button size="sm" variant="secondary" onClick={() => setMode('attendance')}>Record attendance</Button>
@@ -235,10 +235,10 @@ function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase
       {mode === 'attendance' && (
         <div className="mt-3 space-y-2 rounded-md border border-line p-3">
           {h.attendance.map((a, i) => (
-            <label key={a.name} className="flex items-center justify-between gap-3 text-[15px] text-navy-900">
+            <label key={a.name} className="flex items-center justify-between gap-3 text-[length:calc(15px*var(--fs))] text-navy-900">
               {a.name}
               <span className="flex gap-1">
-                {[true, false].map((v) => <button key={String(v)} type="button" onClick={() => setAtt((s) => s.map((x, j) => (j === i ? v : x)))} className={cn('rounded-md border px-2.5 py-1 text-[14px] font-semibold', att[i] === v ? 'border-navy-900 bg-navy-900 text-white' : 'border-line')}>{v ? 'Present' : 'Absent'}</button>)}
+                {[true, false].map((v) => <button key={String(v)} type="button" onClick={() => setAtt((s) => s.map((x, j) => (j === i ? v : x)))} className={cn('rounded-md border px-2.5 py-1 text-[length:calc(14px*var(--fs))] font-semibold', att[i] === v ? 'border-navy-900 bg-navy-900 text-white' : 'border-line')}>{v ? 'Present' : 'Absent'}</button>)}
               </span>
             </label>
           ))}
@@ -254,5 +254,36 @@ function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase
         </div>
       )}
     </li>
+  )
+}
+
+/** Assign Kagawads to help with a complaint (case personnel only). */
+function AssignPanel({ c, actor, onChange }: { c: KPCase; actor: NonNullable<ReturnType<typeof useDocActor>>; onChange: (c: KPCase) => void }) {
+  const people = assignableKagawads()
+  const [err, setErr] = useState<string | null>(null)
+  const toggle = async (id: string, on: boolean) => {
+    setErr(null)
+    try {
+      const cur = c.assignedTo ?? []
+      onChange(await assignCase(c.id, on ? [...cur, id] : cur.filter((x) => x !== id), actor))
+    } catch (e) {
+      setErr(e instanceof ServiceError ? e.message : 'Not saved.')
+    }
+  }
+  if (!people.length) return null
+  return (
+    <Panel title="Assigned Kagawads">
+      <ul className="space-y-1">
+        {people.map((u) => (
+          <li key={u.id}>
+            <label className="flex min-h-10 items-center gap-2.5 text-[length:calc(15px*var(--fs))] text-navy-900">
+              <input type="checkbox" className="size-4 accent-[#002132]" checked={!!c.assignedTo?.includes(u.id)} onChange={(e) => toggle(u.id, e.target.checked)} />
+              {u.fullName}
+            </label>
+          </li>
+        ))}
+      </ul>
+      {err && <p className="mt-2 text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
+    </Panel>
   )
 }

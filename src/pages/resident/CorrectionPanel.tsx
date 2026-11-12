@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Paperclip } from '@/icons'
+import { FileField } from '@/components/ui/FileField'
+import { attachUploads, type StoredFile } from '@/services/fileStore'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/Button'
 import { FieldLabel, Select, TextArea, TextInput } from '@/components/ui/Field'
@@ -25,15 +26,11 @@ const BASIS: { id: CorrectionBasis; label: string }[] = [
   { id: 'household', label: 'Household update' },
 ]
 
-function FilePick({ file, onFile, onsite, onOnsite, label }: { file: File | null; onFile: (f: File) => void; onsite: boolean; onOnsite: (v: boolean) => void; label: string }) {
+function FilePick({ file, onFile, onsite, onOnsite, category, ownerResidentId }: { file: StoredFile | null; onFile: (f: StoredFile | null) => void; onsite: boolean; onOnsite: (v: boolean) => void; category: 'proof' | 'authorization'; ownerResidentId?: string }) {
   return (
     <div>
-      <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line bg-surface px-3 py-2 text-[15px] text-navy-900 hover:border-navy-600 hover:bg-sky-50">
-        <Paperclip className="size-4 shrink-0 text-ink-muted" />
-        <span className="min-w-0 flex-1 truncate">{file ? file.name : label}</span>
-        <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) { onFile(f); onOnsite(false) } }} />
-      </label>
-      <label className="mt-2 flex items-center gap-2 text-[14.5px] text-navy-900">
+      {!onsite && <FileField category={category} ownerResidentId={ownerResidentId} value={file} onChange={(f) => { onFile(f); if (f) onOnsite(false) }} />}
+      <label className="mt-2 flex items-center gap-2 text-[length:calc(14.5px*var(--fs))] text-navy-900">
         <input type="checkbox" className="size-4 accent-[#002132]" checked={onsite} disabled={!!file} onChange={(e) => onOnsite(e.target.checked)} />
         I'll bring the original to the Barangay Hall
       </label>
@@ -51,10 +48,10 @@ export function CorrectionPanel({ onSent }: { onSent: () => void }) {
   const [value, setValue] = useState('')
   const [name, setName] = useState({ first: '', middle: '', last: '', suffix: '' })
   const [reason, setReason] = useState('')
-  const [proof, setProof] = useState<File | null>(null)
+  const [proof, setProof] = useState<StoredFile | null>(null)
   const [proofOnsite, setProofOnsite] = useState(false)
   const [authKind, setAuthKind] = useState('')
-  const [auth, setAuth] = useState<File | null>(null)
+  const [auth, setAuth] = useState<StoredFile | null>(null)
   const [authOnsite, setAuthOnsite] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
@@ -86,11 +83,12 @@ export function CorrectionPanel({ onSent }: { onSent: () => void }) {
         field,
         requestedValue: requested,
         reason,
-        proof: needsProof ? { fileName: proof?.name, url: proof ? URL.createObjectURL(proof) : undefined, bringOnsite: proofOnsite && !proof } : undefined,
+        proof: needsProof ? { fileName: proof?.originalName, fileId: proof?.id, bringOnsite: proofOnsite && !proof } : undefined,
         authorization: basis === 'dependent' || basis === 'representative'
-          ? { kind: basis === 'dependent' ? 'Parent or guardian' : authKind, fileName: auth?.name, url: auth ? URL.createObjectURL(auth) : undefined, bringOnsite: authOnsite && !auth }
+          ? { kind: basis === 'dependent' ? 'Parent or guardian' : authKind, fileName: auth?.originalName, fileId: auth?.id, bringOnsite: authOnsite && !auth }
           : undefined,
       }, user!)
+      attachUploads([proof?.id, auth?.id].filter((x): x is string => !!x), `correction-${Date.now().toString(36)}`)
       reset()
       setMsg({ ok: true, text: 'Sent for review. You will be notified of the decision.' })
       onSent()
@@ -106,7 +104,7 @@ export function CorrectionPanel({ onSent }: { onSent: () => void }) {
       <div className="space-y-4">
         <div role="radiogroup" aria-label="Who is this for" className="grid grid-cols-2 gap-2">
           {options.map((b) => (
-            <button key={b.id} type="button" role="radio" aria-checked={basis === b.id} onClick={() => pickBasis(b.id)} className={cn('min-h-11 rounded-[var(--radius-control)] border px-3 py-2 text-left text-[14.5px] font-semibold', basis === b.id ? 'border-navy-900 bg-sky-100 text-navy-900' : 'border-line text-ink-nav hover:bg-surface-muted')}>
+            <button key={b.id} type="button" role="radio" aria-checked={basis === b.id} onClick={() => pickBasis(b.id)} className={cn('min-h-11 rounded-[var(--radius-control)] border px-3 py-2 text-left text-[length:calc(14.5px*var(--fs))] font-semibold', basis === b.id ? 'border-navy-900 bg-sky-100 text-navy-900' : 'border-line text-ink-nav hover:bg-surface-muted')}>
               {b.label}
             </button>
           ))}
@@ -123,9 +121,9 @@ export function CorrectionPanel({ onSent }: { onSent: () => void }) {
 
         {basis === 'dependent' && (
           <div>
-            <p className="mb-1 text-[14.5px] font-semibold text-navy-900">Proof you are the parent or guardian</p>
-            <p className="mb-2 text-[14px] text-ink-muted">{GUARDIAN_PROOF}</p>
-            <FilePick file={auth} onFile={setAuth} onsite={authOnsite} onOnsite={setAuthOnsite} label="Attach a photo or PDF" />
+            <p className="mb-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">Proof you are the parent or guardian</p>
+            <p className="mb-2 text-[length:calc(14px*var(--fs))] text-ink-muted">{GUARDIAN_PROOF}</p>
+            <FilePick category="authorization" ownerResidentId={targetId} file={auth} onFile={setAuth} onsite={authOnsite} onOnsite={setAuthOnsite} />
           </div>
         )}
         {basis === 'representative' && (
@@ -136,7 +134,7 @@ export function CorrectionPanel({ onSent }: { onSent: () => void }) {
                 {REPRESENTATION_KINDS.map((k) => <option key={k}>{k}</option>)}
               </Select>
             </FieldLabel>
-            <FilePick file={auth} onFile={setAuth} onsite={authOnsite} onOnsite={setAuthOnsite} label="Attach the authorization" />
+            <FilePick category="authorization" ownerResidentId={targetId} file={auth} onFile={setAuth} onsite={authOnsite} onOnsite={setAuthOnsite} />
           </div>
         )}
 
@@ -145,7 +143,7 @@ export function CorrectionPanel({ onSent }: { onSent: () => void }) {
         </FieldLabel>
 
         {field === 'Full name' ? (
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <FieldLabel label="First name" required><TextInput value={name.first} onChange={(e) => setName((n) => ({ ...n, first: e.target.value }))} /></FieldLabel>
             <FieldLabel label="Middle name"><TextInput value={name.middle} onChange={(e) => setName((n) => ({ ...n, middle: e.target.value }))} /></FieldLabel>
             <FieldLabel label="Last name" required><TextInput value={name.last} onChange={(e) => setName((n) => ({ ...n, last: e.target.value }))} /></FieldLabel>
@@ -169,14 +167,14 @@ export function CorrectionPanel({ onSent }: { onSent: () => void }) {
 
         {needsProof && (
           <div>
-            <p className="mb-1 text-[14.5px] font-semibold text-navy-900">Proof</p>
-            <p className="mb-2 text-[14px] text-ink-muted">{needsProof}</p>
-            <FilePick file={proof} onFile={setProof} onsite={proofOnsite} onOnsite={setProofOnsite} label="Attach a photo or PDF" />
+            <p className="mb-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">Proof</p>
+            <p className="mb-2 text-[length:calc(14px*var(--fs))] text-ink-muted">{needsProof}</p>
+            <FilePick category="proof" ownerResidentId={targetId} file={proof} onFile={setProof} onsite={proofOnsite} onOnsite={setProofOnsite} />
           </div>
         )}
 
         <FieldLabel label="Reason" required><TextArea className="min-h-[60px]" value={reason} onChange={(e) => setReason(e.target.value)} /></FieldLabel>
-        {msg && <p role="status" className={`rounded-md px-3 py-2 text-[14.5px] ${msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink'}`}>{msg.text}</p>}
+        {msg && <p role="status" className={`rounded-md px-3 py-2 text-[length:calc(14.5px*var(--fs))] ${msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink'}`}>{msg.text}</p>}
         <Button onClick={submit} loading={busy}>Submit request</Button>
       </div>
     </Panel>

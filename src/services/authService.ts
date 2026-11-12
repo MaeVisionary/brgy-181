@@ -48,7 +48,7 @@ export async function signIn(input: SignInInput): Promise<{ user: User; session:
     const expected = cred?.hash ?? testAccount.passwordHash
     if (!(await passwordMatches(testAccount.credentialKey, input.password, expected))) fail()
     clearFailures(lockKey)
-    const role = input.roles.includes('staff') ? 'staff' : input.roles[0]
+    const role = input.roles[0]
     const user = testUserFor(role, testAccount)
     return mockRequest(() => ({ user, session: createSession(user.id, !!cred?.mustChange) }))
   }

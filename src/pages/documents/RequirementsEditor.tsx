@@ -39,9 +39,9 @@ export function RequirementsEditor({ typeId, onSaved }: { typeId: DocumentTypeId
       </div>
       {!editing ? (
         items.length ? (
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-[15px] text-navy-900">{items.map((l) => <li key={l}>{l}</li>)}</ul>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-[length:calc(15px*var(--fs))] text-navy-900">{items.map((l) => <li key={l}>{l}</li>)}</ul>
         ) : (
-          <p className="mt-2 text-[15px] text-ink-muted">Not specified yet.</p>
+          <p className="mt-2 text-[length:calc(15px*var(--fs))] text-ink-muted">Not specified yet.</p>
         )
       ) : (
         <div className="mt-3 space-y-2">
@@ -63,7 +63,7 @@ export function RequirementsEditor({ typeId, onSaved }: { typeId: DocumentTypeId
               </Button>
             )}
           </div>
-          {error && <p role="alert" className="text-[14.5px] text-danger-ink">{error}</p>}
+          {error && <p role="alert" className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
         </div>
       )}
     </div>

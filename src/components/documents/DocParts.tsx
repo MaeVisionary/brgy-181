@@ -32,21 +32,21 @@ export function ProgressTracker({ req }: { req: DocumentRequest }) {
             {i < wf.path.length - 1 && <span className={cn('absolute top-5 left-[9px] h-[calc(100%-12px)] w-px', i < currentIdx ? 'bg-navy-900' : 'bg-line')} />}
             <span
               className={cn(
-                'relative z-10 grid size-[19px] shrink-0 place-items-center rounded-full border text-[12px]',
+                'relative z-10 grid size-[19px] shrink-0 place-items-center rounded-full border text-[length:calc(12px*var(--fs))]',
                 done ? 'border-navy-900 bg-navy-900 text-white' : current ? (side ? 'border-warning bg-warning-tint' : 'border-navy-900 bg-sky-100') : 'border-line bg-surface',
               )}
             >
               {done && <Check className="size-3" strokeWidth={3} />}
             </span>
-            <span className={cn('pt-px text-[14.5px]', current ? 'font-semibold text-navy-900' : done ? 'text-navy-900' : 'text-ink-muted')}>
+            <span className={cn('pt-px text-[length:calc(14.5px*var(--fs))]', current ? 'font-semibold text-navy-900' : done ? 'text-navy-900' : 'text-ink-muted')}>
               {statusLabel(s, wf.id)}
-              {current && side && !ended && <span className="block text-[13.5px] font-medium text-warning">Now: {statusLabel(req.status, wf.id)}</span>}
+              {current && side && !ended && <span className="block text-[length:calc(13.5px*var(--fs))] font-medium text-warning">Now: {statusLabel(req.status, wf.id)}</span>}
             </span>
           </li>
         )
       })}
       {ended && (
-        <li className="mt-2 text-[14.5px] font-semibold text-danger-ink">{statusLabel(req.status, wf.id)}</li>
+        <li className="mt-2 text-[length:calc(14.5px*var(--fs))] font-semibold text-danger-ink">{statusLabel(req.status, wf.id)}</li>
       )}
     </ol>
   )
@@ -61,11 +61,11 @@ export function HistoryList({ events, showRemarks = true }: { events: StatusEven
         const remarksVisible = typeof showRemarks === 'function' ? showRemarks(e) : showRemarks
         return (
           <li key={i} className="border-l-2 border-line-soft pl-3">
-            <p className="text-[14.5px] font-semibold text-navy-900">{e.action}</p>
-            <p className="text-[13.5px] text-ink-muted">
+            <p className="text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">{e.action}</p>
+            <p className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">
               {formatDateTime(e.at)} · {userName(e.byUserId)} ({ROLES[e.byRole].name})
             </p>
-            {e.remarks && remarksVisible && <p className="mt-1 rounded-md bg-surface-muted px-2.5 py-1.5 text-[14.5px] text-navy-900">{e.remarks}</p>}
+            {e.remarks && remarksVisible && <p className="mt-1 rounded-md bg-surface-muted px-2.5 py-1.5 text-[length:calc(14.5px*var(--fs))] text-navy-900">{e.remarks}</p>}
           </li>
         )
       })}
@@ -104,13 +104,13 @@ export function FieldInput({
     const arr = Array.isArray(value) ? value : []
     return (
       <fieldset className="sm:col-span-2">
-        <legend className="mb-1.5 text-[14.5px] font-semibold text-navy-900">
+        <legend className="mb-1.5 text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">
           {label}
           {field.required && <span className="text-danger-ink"> *</span>}
         </legend>
         <div className={cn('grid gap-1.5 rounded-[var(--radius-control)] border p-3 sm:grid-cols-2', invalid ? 'border-danger' : 'border-line')}>
           {field.options!.map((o) => (
-            <label key={o} className="flex items-center gap-2 text-[15px] text-navy-900">
+            <label key={o} className="flex items-center gap-2 text-[length:calc(15px*var(--fs))] text-navy-900">
               <input
                 type="checkbox"
                 className="size-4 accent-[#002132]"
@@ -127,7 +127,7 @@ export function FieldInput({
   }
   if (field.kind === 'check') {
     return (
-      <label className="flex items-center gap-2 text-[15px] font-medium text-navy-900 sm:col-span-2">
+      <label className="flex items-center gap-2 text-[length:calc(15px*var(--fs))] font-medium text-navy-900 sm:col-span-2">
         <input type="checkbox" className="size-4 accent-[#002132]" checked={value === true} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
         {label}
       </label>
@@ -183,7 +183,7 @@ export function WorkflowSteps({ workflow, req }: { workflow: WorkflowId; req?: D
               {i > 0 && <span aria-hidden className={cn('absolute top-4 right-1/2 h-0.5 w-full -translate-y-1/2', lineOn ? 'bg-navy-900' : 'bg-line')} />}
               <span
                 className={cn(
-                  'relative z-10 mx-auto grid size-8 place-items-center rounded-full border-2 text-[14px] font-bold',
+                  'relative z-10 mx-auto grid size-8 place-items-center rounded-full border-2 text-[length:calc(14px*var(--fs))] font-bold',
                   state === 'done' && 'border-navy-900 bg-navy-900 text-white',
                   state === 'current' && (side ? 'border-warning bg-surface text-warning' : 'border-navy-900 bg-sky-100 text-navy-900'),
                   state === 'step' && 'border-navy-900 bg-surface text-navy-900',
@@ -192,17 +192,17 @@ export function WorkflowSteps({ workflow, req }: { workflow: WorkflowId; req?: D
               >
                 {state === 'done' ? <Check className="size-4" strokeWidth={3} /> : i + 1}
               </span>
-              <span className={cn('mt-2 block px-1 text-[13.5px] leading-snug', state === 'current' ? 'font-bold text-navy-900' : state === 'upcoming' ? 'text-ink-muted' : 'font-semibold text-navy-900')}>
+              <span className={cn('mt-2 block px-1 text-[length:calc(13.5px*var(--fs))] leading-snug', state === 'current' ? 'font-bold text-navy-900' : state === 'upcoming' ? 'text-ink-muted' : 'font-semibold text-navy-900')}>
                 {statusLabel(s, wf.id)}
               </span>
               {state === 'current' && (
-                <span className={cn('block text-[12.5px] font-semibold', side ? 'text-warning' : 'text-info')}>{side && !stopped ? `Now: ${statusLabel(req!.status, wf.id)}` : 'In progress'}</span>
+                <span className={cn('block text-[length:calc(12.5px*var(--fs))] font-semibold', side ? 'text-warning' : 'text-info')}>{side && !stopped ? `Now: ${statusLabel(req!.status, wf.id)}` : 'In progress'}</span>
               )}
             </li>
           )
         })}
       </ol>
-      {stopped && <p className="mt-2 text-[14.5px] font-semibold text-danger-ink">Stopped: {statusLabel(req!.status, wf.id)}</p>}
+      {stopped && <p className="mt-2 text-[length:calc(14.5px*var(--fs))] font-semibold text-danger-ink">Stopped: {statusLabel(req!.status, wf.id)}</p>}
     </div>
   )
 }

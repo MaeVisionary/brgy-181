@@ -53,19 +53,13 @@ export const mockUsers: User[] = [
     roleId: 'system_admin', email: 'admin@brgy181.test', status: 'active', lastLoginAt: isoDaysAgo(0, 7),
   },
   {
-    id: 'usr-staff', username: 'frontdesk', fullName: 'Authorized Personnel', position: 'Other authorized personnel (configurable)',
-    roleId: 'staff', email: 'frontdesk@brgy181.test', status: 'active', lastLoginAt: isoDaysAgo(1, 9),
-    // Example configuration: assists walk-in residents with document requests.
-    extraPermissions: ['residents.search', 'residents.view', 'documents.view', 'documents.create'],
-  },
-  {
     id: 'usr-res', username: 'maria.dizon', fullName: 'Maria Clara Dizon', position: 'Resident',
     roleId: 'resident', email: 'maria.dizon@example.test', status: 'active', residentId: DEMO_RESIDENT_ID,
     lastLoginAt: isoDaysAgo(3, 19),
   },
   {
     id: 'usr-inactive', username: 'former.clerk', fullName: 'Deactivated account', position: 'Former personnel',
-    roleId: 'staff', email: 'former@brgy181.test', status: 'inactive',
+    roleId: 'secretary', email: 'former@brgy181.test', status: 'inactive',
   },
 ]
 

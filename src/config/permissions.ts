@@ -52,14 +52,6 @@ export const ROLES: Record<RoleId, Role> = {
     portalLabel: 'Personnel Portal',
     description: 'Records fees paid for documents (official receipt) and views collection reports.',
   },
-  staff: {
-    id: 'staff',
-    name: 'Authorized Personnel',
-    portal: 'personnel',
-    portalLabel: 'Personnel Portal',
-    description:
-      'Additional staff. Base access is minimal; the System Administrator grants extra permissions per account.',
-  },
   resident: {
     id: 'resident',
     name: 'Resident',
@@ -86,7 +78,7 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
 
   // Study §1.5: Kagawads may access community population summaries and reports
   // related to their responsibilities. Further access is granted per account.
-  kagawad: ['analytics.view', 'reports.view'],
+  kagawad: ['analytics.view', 'reports.view', 'cases.assigned'],
 
 
   secretary: [
@@ -126,20 +118,18 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
   // Fees for documents such as the Business Clearance are paid to the Treasurer.
   treasurer: ['documents.view', 'documents.payment', 'reports.view'],
 
-  // Base set only; real access comes from each account's extraPermissions.
-  staff: [],
 
   resident: ['self.profile', 'self.documents', 'self.complaints', 'self.borrowing', 'self.change_requests'],
 }
 
 /** Roles whose permissions the System Administrator can change in Roles and Permissions. */
-export const EDITABLE_ROLES: RoleId[] = ['chairman', 'secretary', 'kagawad', 'property_custodian', 'treasurer', 'staff']
+export const EDITABLE_ROLES: RoleId[] = ['chairman', 'secretary', 'kagawad', 'property_custodian', 'treasurer']
 
 /** Permission groups shown in the role manager (system and self-service permissions are not role-editable). */
 export const PERMISSION_GROUPS: { id: string; name: string; permissions: Permission[] }[] = [
   { id: 'residents', name: 'Resident records', permissions: ['residents.view', 'residents.search', 'residents.import', 'residents.create', 'residents.update', 'residents.verify', 'residents.approve', 'residents.reject', 'residents.lookup_borrower'] },
   { id: 'documents', name: 'Document requests', permissions: ['documents.view', 'documents.create', 'documents.process', 'documents.inspect', 'documents.approve', 'documents.reject', 'documents.release', 'documents.payment'] },
-  { id: 'cases', name: 'Complaints, cases and hearings', permissions: ['complaints.view', 'complaints.create', 'complaints.update', 'cases.view', 'cases.manage', 'cases.decide', 'hearings.view', 'hearings.manage'] },
+  { id: 'cases', name: 'Complaints, cases and hearings', permissions: ['complaints.view', 'complaints.create', 'complaints.update', 'cases.view', 'cases.manage', 'cases.decide', 'cases.assigned', 'hearings.view', 'hearings.manage'] },
   { id: 'equipment', name: 'Property and equipment', permissions: ['inventory.view', 'inventory.manage', 'borrowing.approve', 'borrowing.release'] },
   { id: 'reports', name: 'Reports and analytics', permissions: ['analytics.view', 'reports.view', 'reports.export'] },
 ]
@@ -168,7 +158,7 @@ export function writeRolePermissions(role: RoleId, list: Permission[]) {
   window.dispatchEvent(new Event('bmis:roles-changed'))
 }
 
-/** Permissions the System Administrator may grant to "Authorized Personnel" accounts. */
+/** Permissions the System Administrator may add to a barangay official's account for an assigned duty. */
 export const GRANTABLE_STAFF_PERMISSIONS: readonly Permission[] = [
   'residents.view',
   'residents.search',
@@ -188,7 +178,7 @@ export const GRANTABLE_STAFF_PERMISSIONS: readonly Permission[] = [
 ]
 
 /** Every barangay official account can receive these per account (residents and the administrator cannot). */
-export const GRANTABLE_ROLES: readonly string[] = ['chairman', 'secretary', 'kagawad', 'property_custodian', 'treasurer', 'staff']
+export const GRANTABLE_ROLES: readonly string[] = ['chairman', 'secretary', 'kagawad', 'property_custodian', 'treasurer']
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   'residents.view': 'View resident records',
@@ -214,6 +204,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'cases.view': 'View case summaries',
   'cases.manage': 'Create and manage cases and blotter records',
   'cases.decide': 'Assess complaints, record settlement or Lupon referral',
+  'cases.assigned': 'Work on complaints assigned to them (view and add notes)',
   'hearings.view': 'View hearing schedules',
   'hearings.manage': 'Schedule hearings and record attendance',
   'inventory.view': 'View equipment inventory',

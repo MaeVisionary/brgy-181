@@ -31,18 +31,18 @@ export function NotificationMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}
         aria-expanded={open}
-        className="relative grid size-9 place-items-center rounded-[var(--radius-control)] border border-line bg-surface text-navy-900 hover:bg-surface-muted"
+        className="relative grid size-11 place-items-center rounded-full text-navy-900 hover:bg-surface-muted"
       >
-        <Bell className="size-[18px]" strokeWidth={1.75} />
+        <Bell className="size-[22px]" strokeWidth={1.75} />
         {unread > 0 && <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-danger ring-2 ring-surface" />}
       </button>
 
       {open && (
         <div className="absolute right-0 z-40 mt-2 w-[min(400px,calc(100vw-24px))] overflow-hidden rounded-xl border border-line bg-canvas shadow-[0_12px_32px_rgba(0,33,50,0.14)]">
           <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2">
-            <p className="font-display text-[16px] font-bold text-navy-900">Notifications</p>
+            <p className="font-display text-[length:calc(16px*var(--fs))] font-bold text-navy-900">Notifications</p>
             {unread > 0 && (
-              <button type="button" onClick={markAllRead} className="text-[14px] font-semibold text-info hover:underline">
+              <button type="button" onClick={markAllRead} className="text-[length:calc(14px*var(--fs))] font-semibold text-info hover:underline">
                 Mark all as read
               </button>
             )}
@@ -53,7 +53,7 @@ export function NotificationMenu() {
           <Link
             to="/notifications"
             onClick={() => setOpen(false)}
-            className="flex items-center justify-center gap-1 border-t border-line-soft bg-surface px-4 py-3 text-[14.5px] font-semibold text-info hover:bg-surface-muted"
+            className="flex items-center justify-center gap-1 border-t border-line-soft bg-surface px-4 py-3 text-[length:calc(14.5px*var(--fs))] font-semibold text-info hover:bg-surface-muted"
           >
             View All Notifications <ChevronRight className="size-4" />
           </Link>

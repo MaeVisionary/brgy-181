@@ -56,9 +56,9 @@ export function NewComplaintPage() {
       <PageHeader title="File a report" />
       <div className="space-y-4">
         <Panel title="What are you reporting?">
-          <div role="radiogroup" aria-label="Report type" className="grid gap-2 sm:grid-cols-3">
+          <div role="radiogroup" aria-label="Report type" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {COMPLAINT_CATEGORIES.map((c) => (
-              <button key={c} type="button" role="radio" aria-checked={category === c} onClick={() => { setCategory(c); setErr(null) }} className={cn('min-h-12 rounded-[var(--radius-control)] border px-3.5 py-2.5 text-left text-[15px] font-semibold', category === c ? 'border-navy-900 bg-sky-100 text-navy-900' : 'border-line text-navy-900 hover:bg-sky-50')}>
+              <button key={c} type="button" role="radio" aria-checked={category === c} onClick={() => { setCategory(c); setErr(null) }} className={cn('min-h-12 rounded-[var(--radius-control)] border px-3.5 py-2.5 text-left text-[length:calc(15px*var(--fs))] font-semibold', category === c ? 'border-navy-900 bg-sky-100 text-navy-900' : 'border-line text-navy-900 hover:bg-sky-50')}>
                 {c}
               </button>
             ))}
@@ -70,18 +70,18 @@ export function NewComplaintPage() {
             <div className="space-y-3">
               <FieldLabel label="Subject" required><TextInput value={nature} onChange={(e) => setNature(e.target.value)} placeholder={category === 'Community concern' ? 'e.g. Broken streetlight' : 'e.g. Unpaid loan'} /></FieldLabel>
               {category === 'Complaint against a person' && (
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <FieldLabel label="Person you are complaining about" required><TextInput value={who.name} onChange={(e) => setWho((w) => ({ ...w, name: e.target.value }))} /></FieldLabel>
                   <FieldLabel label="Their address, if known"><TextInput value={who.address} onChange={(e) => setWho((w) => ({ ...w, address: e.target.value }))} /></FieldLabel>
                 </div>
               )}
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <FieldLabel label="Date"><TextInput type="date" max={new Date().toISOString().slice(0, 10)} value={date} onChange={(e) => setDate(e.target.value)} /></FieldLabel>
                 <FieldLabel label="Place"><TextInput value={place} onChange={(e) => setPlace(e.target.value)} /></FieldLabel>
               </div>
               <FieldLabel label="What happened" required><TextArea className="min-h-[120px]" value={details} onChange={(e) => setDetails(e.target.value)} /></FieldLabel>
-              {me && <p className="text-[14px] text-ink-muted">Filed as {residentFullName(me)} · {me.houseNo} {me.street}</p>}
-              {err && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">{err}</p>}
+              {me && <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">Filed as {residentFullName(me)} · {me.houseNo} {me.street}</p>}
+              {err && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
               <div className="flex gap-2">
                 <Button onClick={submit} loading={busy} disabled={busy}>Submit report</Button>
                 <Button variant="ghost" onClick={() => navigate('/my/complaints')} disabled={busy}>Cancel</Button>

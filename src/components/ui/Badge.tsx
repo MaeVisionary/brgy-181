@@ -21,5 +21,5 @@ const tones: Record<BadgeTone, string> = {
 
 /** Status shown as a small tinted label (no dot). `dot` is kept for compatibility. */
 export function Badge({ tone = 'neutral', children, className }: { tone?: BadgeTone; children: ReactNode; className?: string; dot?: boolean }) {
-  return <span className={cn('inline-flex h-6 items-center rounded px-1.5 text-[12.5px] font-semibold whitespace-nowrap', tones[tone], className)}>{children}</span>
+  return <span className={cn('inline-flex h-6 items-center rounded px-1.5 text-[length:calc(12.5px*var(--fs))] font-semibold whitespace-nowrap', tones[tone], className)}>{children}</span>
 }

@@ -39,9 +39,9 @@ export function InventoryPage() {
       {adding && <AddForm categories={categories} onDone={() => { setAdding(false); setTick((t) => t + 1) }} actor={actor} />}
       <Card className="overflow-hidden">
         {/* Desktop and tablet */}
-        <table className="hidden w-full text-[15px] md:table">
+        <table className="hidden w-full text-[length:calc(15px*var(--fs))] md:table">
           <thead>
-            <tr className="border-b border-line text-left text-[13px] font-semibold text-ink-nav">
+            <tr className="border-b border-line text-left text-[length:calc(13px*var(--fs))] font-semibold text-ink-nav">
               <th className="px-5 py-2.5">Equipment</th>
               <th className="px-3 py-2.5 text-right">Total</th>
               <th className="px-3 py-2.5 text-right">Available</th>
@@ -57,12 +57,12 @@ export function InventoryPage() {
                 <tr key={e.id} onClick={() => setOpenId(e.id)} className="cursor-pointer border-t border-line-soft first:border-t-0 hover:bg-sky-50/60">
                   <td className="px-5 py-3">
                     <button type="button" onClick={() => setOpenId(e.id)} className="text-left font-semibold text-navy-900 hover:underline">{e.name}</button>
-                    {e.location && <span className="block text-[13.5px] text-ink-muted">{e.location}</span>}
+                    {e.location && <span className="block text-[length:calc(13.5px*var(--fs))] text-ink-muted">{e.location}</span>}
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums text-navy-900">{e.totalQty}</td>
                   <td className="px-3 py-3 text-right font-semibold tabular-nums text-navy-900">{st.available}</td>
                   <td className="px-3 py-3 text-right tabular-nums text-navy-900">{st.borrowed}</td>
-                  <td className="px-3 py-3 text-[14px]"><Attention e={e} overdue={st.overdue} /></td>
+                  <td className="px-3 py-3 text-[length:calc(14px*var(--fs))]"><Attention e={e} overdue={st.overdue} /></td>
                   <td className="px-3 py-3 text-ink-subtle"><ChevronRight className="size-4" /></td>
                 </tr>
               )
@@ -80,7 +80,7 @@ export function InventoryPage() {
                 <button type="button" onClick={() => setOpenId(e.id)} className="flex min-h-[60px] w-full items-center gap-3 px-4 py-3 text-left active:bg-surface-muted">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold text-navy-900">{e.name}</span>
-                    <span className="block text-[14px] text-ink-muted">{e.totalQty} total · {st.available} available</span>
+                    <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{e.totalQty} total · {st.available} available</span>
                   </span>
                   {flag && <span aria-label="Needs attention" className="size-2 shrink-0 rounded-full bg-danger" />}
                   <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
@@ -91,7 +91,7 @@ export function InventoryPage() {
         </ul>
       </Card>
       {(items ?? []).some((e) => e.history.length > 0) && <Panel className="mt-4" title="Inventory history">
-        <ul className="space-y-1.5 text-[14.5px]">
+        <ul className="space-y-1.5 text-[length:calc(14.5px*var(--fs))]">
           {(items ?? []).flatMap((e) => e.history.map((h) => ({ e, h }))).sort((a, b) => b.h.at.localeCompare(a.h.at)).slice(0, 12).map(({ e, h }, i) => (
             <li key={i} className="text-navy-900"><span className="text-ink-muted">{formatShortDate(h.at)}</span> · <strong>{e.name}</strong>: {h.action}{h.detail ? ` (${h.detail})` : ''}</li>
           ))}
@@ -138,24 +138,24 @@ function Detail({ e, manage, canBorrowing, onEdit }: { e: Equipment; manage: boo
   return (
     <div>
       <div className="flex items-baseline gap-6">
-        <p><span className="block font-display text-[34px] leading-none font-extrabold text-navy-900 tabular-nums">{st.available}</span><span className="text-[14px] text-ink-muted">Available</span></p>
-        <p><span className="block font-display text-[34px] leading-none font-extrabold text-ink-nav tabular-nums">{e.totalQty}</span><span className="text-[14px] text-ink-muted">Total</span></p>
+        <p><span className="block font-display text-[length:calc(34px*var(--fs))] leading-none font-extrabold text-navy-900 tabular-nums">{st.available}</span><span className="text-[length:calc(14px*var(--fs))] text-ink-muted">Available</span></p>
+        <p><span className="block font-display text-[length:calc(34px*var(--fs))] leading-none font-extrabold text-ink-nav tabular-nums">{e.totalQty}</span><span className="text-[length:calc(14px*var(--fs))] text-ink-muted">Total</span></p>
       </div>
       {balance < 0 && (
-        <p role="alert" className="mt-3 rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">Counts don't add up: {-balance} more {-balance === 1 ? 'unit is' : 'units are'} out or set aside than on hand.</p>
+        <p role="alert" className="mt-3 rounded-md bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">Counts don't add up: {-balance} more {-balance === 1 ? 'unit is' : 'units are'} out or set aside than on hand.</p>
       )}
       <dl className="mt-4 divide-y divide-line-soft border-y border-line-soft">
         {rows.map(([label, n, cls]) => (
-          <div key={label} className="flex items-center justify-between py-2.5 text-[15px]">
+          <div key={label} className="flex items-center justify-between py-2.5 text-[length:calc(15px*var(--fs))]">
             <dt className="text-navy-900">{label}</dt>
             <dd className={cn('tabular-nums', cls ?? (n ? 'text-navy-900' : 'text-ink-subtle'))}>{n}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-3 text-[14px] text-ink-muted">{[e.refNo, e.category, e.location].filter(Boolean).join(' · ')}</p>
-      {e.description && <p className="text-[14px] text-ink-muted">{e.description}</p>}
+      <p className="mt-3 text-[length:calc(14px*var(--fs))] text-ink-muted">{[e.refNo, e.category, e.location].filter(Boolean).join(' · ')}</p>
+      {e.description && <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">{e.description}</p>}
       {e.history.length > 0 && (
-        <details className="mt-3 text-[14.5px]">
+        <details className="mt-3 text-[length:calc(14.5px*var(--fs))]">
           <summary className="cursor-pointer font-semibold text-navy-900">History</summary>
           <ul className="mt-2 space-y-1">
             {[...e.history].sort((a, b) => b.at.localeCompare(a.at)).map((h, i) => (
@@ -187,7 +187,7 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="relative max-h-[88dvh] w-full overflow-y-auto rounded-t-2xl bg-surface px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl md:max-w-[480px] md:rounded-2xl md:pt-5">
         <span aria-hidden className="mx-auto mb-3 block h-1.5 w-10 rounded-full bg-line md:hidden" />
         <div className="mb-4 flex items-start justify-between gap-3">
-          <h2 className="font-display text-[20px] font-bold text-navy-900">{title}</h2>
+          <h2 className="font-display text-[length:calc(20px*var(--fs))] font-bold text-navy-900">{title}</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="-mt-1 -mr-2 grid size-10 place-items-center rounded-full text-ink-nav hover:bg-surface-muted"><X className="size-5" /></button>
         </div>
         {children}
@@ -205,7 +205,7 @@ function AddForm({ onDone, actor, categories }: { onDone: () => void; actor: Non
   const [err, setErr] = useState<string | null>(null)
   return (
     <Panel className="mb-4" title="Add equipment" subtitle="Type a new category to add a kind of equipment residents can borrow.">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <FieldLabel label="Name" required><TextInput value={name} onChange={(e) => setName(e.target.value)} /></FieldLabel>
         <FieldLabel label="Category" required hint="Choose one or type a new category.">
           <TextInput list="equipment-categories" value={category} onChange={(e) => setCategory(e.target.value)} />
@@ -215,7 +215,7 @@ function AddForm({ onDone, actor, categories }: { onDone: () => void; actor: Non
         <FieldLabel label="Where it is kept"><TextInput value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Barangay Hall storage" /></FieldLabel>
       </div>
       <CategoryList categories={categories} />
-      {err && <p className="mt-2 text-[14.5px] text-danger-ink">{err}</p>}
+      {err && <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
       <div className="mt-3 flex gap-2">
         <Button onClick={async () => { try { if (!category.trim()) throw new ServiceError('category', 'Enter a category.'); await addEquipment({ name, category: category.trim(), description, totalQty: Number(qty), location: location.trim() || undefined }, actor); onDone() } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Failed.') } }}>Save</Button>
         <Button variant="secondary" onClick={onDone}>Cancel</Button>
@@ -250,7 +250,7 @@ function EditForm({ e, actor, onDone, categories }: { e: Equipment; actor: NonNu
   }
   return (
     <div className="rounded-[var(--radius-control)] border border-line bg-surface p-3">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <FieldLabel label="Name" required><TextInput value={v.name} onChange={(ev) => set('name', ev.target.value)} /></FieldLabel>
         <FieldLabel label="Category" required><TextInput list="equipment-categories" value={v.category} onChange={(ev) => set('category', ev.target.value)} /></FieldLabel>
         <FieldLabel label="Description"><TextInput value={v.description} onChange={(ev) => set('description', ev.target.value)} /></FieldLabel>
@@ -261,7 +261,7 @@ function EditForm({ e, actor, onDone, categories }: { e: Equipment; actor: NonNu
         <FieldLabel label="Under maintenance"><TextInput inputMode="numeric" value={v.maintenanceQty} onChange={num('maintenanceQty')} /></FieldLabel>
       </div>
       <CategoryList categories={categories} />
-      {err && <p role="alert" className="mt-2 text-[14.5px] text-danger-ink">{err}</p>}
+      {err && <p role="alert" className="mt-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
       <div className="mt-3 flex justify-end gap-2">
         <Button size="sm" variant="secondary" onClick={onDone}>Cancel</Button>
         <Button size="sm" onClick={save}>Save</Button>

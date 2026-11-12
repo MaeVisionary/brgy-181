@@ -10,6 +10,9 @@ import './index.css'
 import App from './App'
 import { AuthProvider } from './auth/AuthContext'
 import { AnalyticsProvider } from './analytics/AnalyticsContext'
+import { applyTextSize, readTextSize } from './components/layout/TextSizeControl'
+
+applyTextSize(readTextSize())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

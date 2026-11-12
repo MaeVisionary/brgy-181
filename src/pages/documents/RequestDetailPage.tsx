@@ -87,10 +87,10 @@ export function RequestDetailPage() {
         <WorkflowSteps workflow={type.workflow} req={req} />
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-4">
           {req.assisted && (
-            <p className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-2.5 text-[14.5px] text-navy-900">
+            <p className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-2.5 text-[length:calc(14.5px*var(--fs))] text-navy-900">
               <strong>Walk-in (assisted service).</strong> Encoded by {encodedBy?.fullName ?? 'staff'} on {formatDateTime(req.assisted.at)}.
             </p>
           )}
@@ -107,12 +107,12 @@ export function RequestDetailPage() {
             }
             footer={
               missing.length > 0 ? (
-                <p className="flex items-start gap-2 text-[14.5px] text-danger-ink">
+                <p className="flex items-start gap-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">
                   <AlertTriangle className="mt-px size-4 shrink-0" />
                   Missing before it can move forward: {missing.map((f) => (f.group ? `${f.group}: ${f.label}` : f.label)).join(', ')}
                 </p>
               ) : savedAt && !dirty ? (
-                <p className="text-[14.5px] text-success">Saved {formatDateTime(savedAt)}.</p>
+                <p className="text-[length:calc(14.5px*var(--fs))] text-success">Saved {formatDateTime(savedAt)}.</p>
               ) : undefined
             }
           >
@@ -120,7 +120,7 @@ export function RequestDetailPage() {
               {groupFields(visibleFields).map(([group, fields]) => (
                 <section key={group || 'main'}>
                   {group && <p className="label-caps mb-2">{group}</p>}
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {fields.map((f) => (
                       <FieldInput
                         key={f.key}
@@ -136,10 +136,10 @@ export function RequestDetailPage() {
               ))}
               {systemFields.length > 0 && (
                 <section>
-                  <dl className="grid gap-2 text-[15px] sm:grid-cols-2">
+                  <dl className="grid grid-cols-1 gap-2 text-[length:calc(15px*var(--fs))] sm:grid-cols-2">
                     {systemFields.map((f) => (
                       <div key={f.key} className="rounded-[var(--radius-control)] bg-surface-muted px-3 py-2">
-                        <dt className="text-[13.5px] text-ink-muted">{f.label}</dt>
+                        <dt className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">{f.label}</dt>
                         <dd className="font-semibold text-navy-900">{(values[f.key] as string) || <span className="font-normal text-ink-muted">–</span>}</dd>
                       </div>
                     ))}
@@ -156,7 +156,7 @@ export function RequestDetailPage() {
                   const state = req.requirements[r.label]
                   return (
                     <li key={r.label} className="flex items-center justify-between gap-3">
-                      <label className="flex items-center gap-2 text-[15px] text-navy-900">
+                      <label className="flex items-center gap-2 text-[length:calc(15px*var(--fs))] text-navy-900">
                         <input
                           type="checkbox"
                           className="size-4 accent-[#002132]"
@@ -166,7 +166,7 @@ export function RequestDetailPage() {
                         />
                         {r.label}
                       </label>
-                      <span className="text-[13.5px] text-ink-muted">{state?.note ?? (req.assisted ? 'Presented at the Hall?' : 'Uploaded online')}</span>
+                      <span className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">{state?.note ?? (req.assisted ? 'Presented at the Hall?' : 'Uploaded online')}</span>
                     </li>
                   )
                 })}
@@ -177,10 +177,10 @@ export function RequestDetailPage() {
           {['summon', 'incident-record', 'blotter-report'].includes(req.typeId) && actor.permissions.has('cases.manage') && (
             <Panel title="Blotter and case">
               {req.caseId ? (
-                <p className="text-[15px] text-navy-900">Recorded in the blotter. <Link to={`/cases/${req.caseId}`} className="font-semibold text-info hover:underline">Open the case</Link></p>
+                <p className="text-[length:calc(15px*var(--fs))] text-navy-900">Recorded in the blotter. <Link to={`/cases/${req.caseId}`} className="font-semibold text-info hover:underline">Open the case</Link></p>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-[15px] text-navy-900">Not yet in the blotter. Record it to open a case and schedule hearings.</p>
+                  <p className="text-[length:calc(15px*var(--fs))] text-navy-900">Not yet in the blotter. Record it to open a case and schedule hearings.</p>
                   <ButtonLink to={`/cases/new?from=${req.id}`}>Record in blotter</ButtonLink>
                 </div>
               )}
@@ -197,9 +197,9 @@ export function RequestDetailPage() {
             <Panel title="Messages from the requester">
               <ul className="space-y-2">
                 {req.messages.map((m) => (
-                  <li key={m.id} className="rounded-md bg-surface-muted px-3 py-2 text-[14.5px] text-navy-900">
+                  <li key={m.id} className="rounded-md bg-surface-muted px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-navy-900">
                     {m.text}
-                    <span className="mt-0.5 block text-[13px] text-ink-muted">{formatDateTime(m.at)}</span>
+                    <span className="mt-0.5 block text-[length:calc(13px*var(--fs))] text-ink-muted">{formatDateTime(m.at)}</span>
                   </li>
                 ))}
               </ul>
@@ -207,8 +207,8 @@ export function RequestDetailPage() {
           )}
           {req.approvedBy && (
             <Panel title="Approval">
-              <p className="text-[15px] text-navy-900">Approved by <strong>{mockUsers.find((u) => u.id === req.approvedBy)?.fullName}</strong></p>
-              <p className="text-[14px] text-ink-muted">{formatDateTime(req.approvedAt!)}</p>
+              <p className="text-[length:calc(15px*var(--fs))] text-navy-900">Approved by <strong>{mockUsers.find((u) => u.id === req.approvedBy)?.fullName}</strong></p>
+              <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">{formatDateTime(req.approvedAt!)}</p>
             </Panel>
           )}
           <Panel title="History">
@@ -231,13 +231,13 @@ function ProcessingTimePanel({ req, actor, onChange }: { req: DocumentRequest; a
   const canExtend = !req.extension && actor.permissions.has('documents.process') && req.status !== 'ready_for_pickup'
   return (
     <Panel title="Processing time">
-      <p className="text-[15px] text-navy-900">Expected by <strong>{formatDate(date + 'T12:00:00+08:00')}</strong></p>
-      <p className="text-[14px] text-ink-muted">{req.extension ? `Extended: ${req.extension.reason}` : `${est.days} working days${est.fromCharter ? '' : ' (RA 11032 maximum)'}`}</p>
+      <p className="text-[length:calc(15px*var(--fs))] text-navy-900">Expected by <strong>{formatDate(date + 'T12:00:00+08:00')}</strong></p>
+      <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">{req.extension ? `Extended: ${req.extension.reason}` : `${est.days} working days${est.fromCharter ? '' : ' (RA 11032 maximum)'}`}</p>
       {canExtend && !open && <Button className="mt-3" size="sm" variant="secondary" onClick={() => setOpen(true)}>Extend once</Button>}
       {open && (
         <div className="mt-3 space-y-2">
           <TextArea className="min-h-[64px]" aria-label="Reason for the extension" placeholder="Reason the resident will read" value={reason} onChange={(e) => setReason(e.target.value)} />
-          {err && <p className="text-[14px] text-danger-ink">{err}</p>}
+          {err && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
           <div className="flex gap-2">
             <Button size="sm" onClick={async () => { try { onChange(await extendProcessing(req.id, reason, actor)); setOpen(false) } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Failed.') } }}>Extend and notify</Button>
             <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>

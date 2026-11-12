@@ -11,7 +11,6 @@ export type RoleId =
   | 'kagawad'
   | 'property_custodian'
   | 'treasurer'
-  | 'staff'
   | 'resident'
 
 /** Which portal (shell + navigation set) a role uses. */
@@ -46,6 +45,7 @@ export type Permission =
   | 'cases.view'
   | 'cases.manage'
   | 'cases.decide'
+  | 'cases.assigned'
   | 'hearings.view'
   | 'hearings.manage'
   // Inventory (Module 7)
@@ -94,7 +94,7 @@ export interface User {
   residentId?: string
   /**
    * Extra permissions granted to this account on top of its role.
-   * Used for "Other Authorized Personnel", whose access is configured per person.
+   * Extra permissions an administrator adds to an official for an assigned duty.
    */
   extraPermissions?: Permission[]
   lastLoginAt?: string

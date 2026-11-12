@@ -36,7 +36,7 @@ export function HearingCalendar({ cases }: { cases: KPCase[] }) {
       }
       bodyClassName="px-2 py-2 sm:px-4 sm:py-3"
     >
-      <div className="grid grid-cols-7 text-center text-[13px] font-semibold text-ink-muted">
+      <div className="grid grid-cols-7 text-center text-[length:calc(13px*var(--fs))] font-semibold text-ink-muted">
         {DAYS.map((d) => <div key={d} className="py-1">{d}</div>)}
       </div>
       <div className="grid grid-cols-7 gap-px overflow-hidden rounded-md border border-line bg-line">
@@ -45,14 +45,14 @@ export function HearingCalendar({ cases }: { cases: KPCase[] }) {
           const inMonth = d.getMonth() === month.getMonth()
           return (
             <div key={d.toISOString()} className={cn('min-h-[64px] bg-surface p-1 sm:min-h-[84px] sm:p-1.5', !inMonth && 'bg-surface-muted/70')}>
-              <p className={cn('text-[13px] font-semibold', ymd(d) === todayKey ? 'inline-grid size-6 place-items-center rounded-full bg-navy-900 text-white' : inMonth ? 'text-navy-900' : 'text-ink-subtle')}>{d.getDate()}</p>
+              <p className={cn('text-[length:calc(13px*var(--fs))] font-semibold', ymd(d) === todayKey ? 'inline-grid size-6 place-items-center rounded-full bg-navy-900 text-white' : inMonth ? 'text-navy-900' : 'text-ink-subtle')}>{d.getDate()}</p>
               <ul className="mt-0.5 space-y-0.5">
                 {list.map(({ c, h }) => (
                   <li key={h.id}>
                     <Link
                       to={`/cases/${c.id}`}
                       title={`${c.caseNo} · ${c.title}`}
-                      className={cn('block truncate rounded px-1 py-0.5 text-[12px] font-semibold sm:text-[12.5px]', h.status === 'held' ? 'bg-surface-muted text-ink-nav' : 'bg-sky-100 text-navy-900 hover:bg-bar')}
+                      className={cn('block truncate rounded px-1 py-0.5 text-[length:calc(12px*var(--fs))] font-semibold sm:text-[length:calc(12.5px*var(--fs))]', h.status === 'held' ? 'bg-surface-muted text-ink-nav' : 'bg-sky-100 text-navy-900 hover:bg-bar')}
                     >
                       {new Date(h.scheduledAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })} {c.caseNo}
                     </Link>

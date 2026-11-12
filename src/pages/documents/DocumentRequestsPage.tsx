@@ -2,7 +2,9 @@ import { FilePlus2, Search, Inbox } from '@/icons'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import { StatusBadge } from '@/components/documents/DocParts'
+import { Badge } from '@/components/ui/Badge'
+import { RowList } from '@/components/ui/RowList'
+import { listStatus } from '@/documents/listStatus'
 import { ButtonLink } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Select, TextInput } from '@/components/ui/Field'
@@ -14,7 +16,6 @@ import { STATUS_META, TERMINAL } from '@/documents/workflows'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 import { cn } from '@/lib/cn'
-import { formatDateTime } from '@/lib/format'
 import { availableTransitions, listRequests } from '@/services/documentService'
 import type { DocumentRequest, DocumentStatus } from '@/types/document'
 
@@ -97,13 +98,13 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
                   tab === id ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-surface-muted',
                 )}
               >
-                <span className={cn('block text-[14px] sm:text-[14.5px]', tab === id ? 'text-white/80' : 'text-ink-nav')}>{label}</span>
-                <span className="font-display text-[22px] leading-tight font-extrabold">{counts[id]}</span>
+                <span className={cn('block text-[length:calc(14px*var(--fs))] sm:text-[length:calc(14.5px*var(--fs))]', tab === id ? 'text-white/80' : 'text-ink-nav')}>{label}</span>
+                <span className="font-display text-[length:calc(22px*var(--fs))] leading-tight font-extrabold">{counts[id]}</span>
               </button>
             ))}
           </div>
         )}
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" />
             <TextInput value={q} onChange={(e) => { setQ(e.target.value); paged.setPage(0) }} placeholder="Search reference no. or name" className="h-11 pl-9" aria-label="Search requests" />
@@ -139,55 +140,30 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
             <EmptyState icon={<Inbox className="size-5" />} title="No requests here" body={tab === 'action' && !approvalsOnly ? 'Nothing is waiting on you right now.' : approvalsOnly ? 'Nothing is waiting for your decision.' : 'Try another filter.'} />
           ) : (
             <>
-              <table className="hidden w-full text-[15px] xl:table">
+              <table className="hidden w-full text-[length:calc(16px*var(--fs))] md:table">
                 <thead>
-                  <tr className="bg-surface-muted text-left">
-                    <th className="label-caps px-4 py-2.5">Reference</th>
-                    <th className="label-caps px-3 py-2.5">Document</th>
-                    <th className="label-caps px-3 py-2.5">Requester</th>
-                    <th className="label-caps px-3 py-2.5">Status</th>
-                    <th className="label-caps px-4 py-2.5">Last update</th>
+                  <tr className="border-b border-line text-left text-[length:calc(14px*var(--fs))] font-semibold text-ink-nav">
+                    <th className="px-5 py-3">Request</th>
+                    <th className="px-4 py-3">Applicant</th>
+                    <th className="w-[180px] px-5 py-3"><span className="sr-only">Status</span></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paged.slice.map((r) => (
-                    <tr key={r.id} onClick={() => navigate(`/documents/${r.id}`)} className="cursor-pointer border-t border-line-soft hover:bg-sky-50">
-                      <td className="px-4 py-2.5">
-                        <Link
-                          to={`/documents/${r.id}`}
-                          className="inline-flex h-9 items-center rounded-[var(--radius-control)] border border-line bg-surface px-3 font-semibold whitespace-nowrap text-navy-900 hover:border-navy-600"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {r.referenceNo}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-2.5 text-navy-900">{getDocumentType(r.typeId).name}</td>
-                      <td className="px-3 py-2.5">
-                        <span className="block text-navy-900">{r.requesterName}</span>
-                        {r.assisted && <span className="block text-[13.5px] text-ink-muted">Walk-in</span>}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <StatusBadge status={r.status} typeId={r.typeId} />
-                      </td>
-                      <td className="px-4 py-2.5 text-ink-nav">{formatDateTime(r.updatedAt)}</td>
-                    </tr>
-                  ))}
+                  {paged.slice.map((r) => {
+                    const st = actor ? listStatus(r, actor) : null
+                    return (
+                      <tr key={r.id} onClick={() => navigate(`/documents/${r.id}`)} className="cursor-pointer border-t border-line-soft first:border-t-0 hover:bg-sky-50">
+                        <td className="px-5 py-3.5">
+                          <Link to={`/documents/${r.id}`} onClick={(e) => e.stopPropagation()} className="font-semibold text-navy-900 hover:underline">{getDocumentType(r.typeId).name}</Link>
+                        </td>
+                        <td className="px-4 py-3.5 text-navy-900">{r.requesterName}</td>
+                        <td className="px-5 py-3.5 text-right">{st && <Badge tone={st.tone}>{st.label}</Badge>}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
-              <ul className="divide-y divide-line-soft xl:hidden">
-                {paged.slice.map((r) => (
-                  <li key={r.id}>
-                    <Link to={`/documents/${r.id}`} className="block px-4 py-3 active:bg-sky-50">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-navy-900">{r.referenceNo}</span>
-                        <StatusBadge status={r.status} typeId={r.typeId} />
-                      </span>
-                      <span className="block text-[15px] text-navy-900">{getDocumentType(r.typeId).name}</span>
-                      <span className="block text-[14px] text-ink-muted">{r.requesterName}{r.assisted ? ' · Walk-in' : ''} · {formatDateTime(r.updatedAt)}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <RowList rows={paged.slice.map((r) => { const st = actor ? listStatus(r, actor) : null; return { key: r.id, to: `/documents/${r.id}`, title: getDocumentType(r.typeId).name, subtitle: r.requesterName, trailing: st ? <Badge tone={st.tone}>{st.label}</Badge> : undefined } })} />
               <Pagination page={paged.page} pages={paged.pages} total={paged.total} size={paged.size} onPage={paged.setPage} noun="requests" />
             </>
           )}

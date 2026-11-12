@@ -24,8 +24,14 @@ export interface DocActor {
 
 const isOwner = (req: DocumentRequest, actor: DocActor) => !!req.residentId && req.residentId === actor.user.residentId
 
+/** Collections-only accounts (Treasurer): fee-bearing documents only, nothing else. */
+const feeOnly = (actor: DocActor) =>
+  actor.permissions.has('documents.payment') && !actor.permissions.has('documents.process') && !actor.permissions.has('documents.approve') && !actor.permissions.has('documents.create')
+
 function canSee(req: DocumentRequest, actor: DocActor) {
-  return actor.permissions.has('documents.view') || isOwner(req, actor)
+  if (isOwner(req, actor)) return true
+  if (!actor.permissions.has('documents.view')) return false
+  return !feeOnly(actor) || !!getDocumentType(req.typeId).fee
 }
 
 /** Steps the actor may take now (pure; used by the UI and re-checked on submit). */

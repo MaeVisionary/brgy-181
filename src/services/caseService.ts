@@ -74,12 +74,15 @@ export const CASE_STEPS: CaseStep[] = [
 const isParty = (c: KPCase, u: User) => !!u.residentId && [...c.complainants, ...c.respondents].some((p) => p.residentId === u.residentId)
 const isComplainant = (c: KPCase, u: User) => !!u.residentId && c.complainants.some((p) => p.residentId === u.residentId)
 
+const isAssigned = (c: KPCase, a: CaseActor) => a.permissions.has('cases.assigned') && !!c.assignedTo?.includes(a.user.id)
+
 function canSee(c: KPCase, a: CaseActor) {
-  return a.permissions.has('cases.view') || a.permissions.has('cases.manage') || isComplainant(c, a.user)
+  return a.permissions.has('cases.view') || a.permissions.has('cases.manage') || isAssigned(c, a) || isComplainant(c, a.user)
 }
 
 /** Residents only see their own submission: no internal notes, no other party's contact details. */
 function redactForResident(c: KPCase, a: CaseActor): KPCase {
+  if (isAssigned(c, a)) return c
   if (a.permissions.has('cases.view') || a.permissions.has('cases.manage')) {
     return a.permissions.has('cases.manage') ? c : { ...c, internalNotes: [] }
   }
@@ -276,8 +279,9 @@ export function addInternalNote(id: string, note: string, a: CaseActor): Promise
   return mockRequest(() => {
     const c = mockCases.find((x) => x.id === id)
     if (!c) throw new ServiceError('not_found', 'Case not found.')
-    if (!a.permissions.has('cases.manage')) throw new ServiceError('forbidden', 'Not allowed.')
-    c.internalNotes.push(`${new Date().toLocaleDateString('en-PH')}: ${note.trim()}`)
+    if (!a.permissions.has('cases.manage') && !isAssigned(c, a)) throw new ServiceError('forbidden', 'Not allowed.')
+    if (!note.trim()) throw new ServiceError('note', 'Write the note first.')
+    c.internalNotes.push(`${new Date().toLocaleDateString('en-PH')} · ${a.user.fullName}: ${note.trim()}`)
     return c
   })
 }
@@ -423,6 +427,28 @@ export function submitComplaint(input: ResidentComplaintInput, a: CaseActor, me:
     const staff = mockUsers.filter((u) => u.status === 'active' && (ROLE_PERMISSIONS[u.roleId]?.includes('cases.manage') || u.extraPermissions?.includes('cases.manage'))).map((u) => u.id)
     notify(staff, 'New complaint filed', `${c.caseNo} · ${input.category}`, `/cases/${c.id}`, 'complaint')
     notify([a.user.id], 'Complaint received', `${c.caseNo} · the barangay will review it.`, `/my/complaints/${c.id}`, 'complaint')
+    return c
+  })
+}
+
+/** Kagawads who can be assigned to a complaint. */
+export function assignableKagawads() {
+  return mockUsers.filter((u) => u.status === 'active' && (ROLE_PERMISSIONS[u.roleId]?.includes('cases.assigned') || u.extraPermissions?.includes('cases.assigned')))
+}
+
+/** Case personnel assign Kagawads; each newly assigned Kagawad is notified. */
+export function assignCase(id: string, userIds: string[], a: CaseActor): Promise<KPCase> {
+  return mockRequest(() => {
+    if (!a.permissions.has('cases.manage')) throw new ServiceError('forbidden', 'Only case personnel can assign Kagawads.')
+    const c = mockCases.find((x) => x.id === id)
+    if (!c) throw new ServiceError('not_found', 'Case not found.')
+    const valid = new Set(assignableKagawads().map((u) => u.id))
+    const next = [...new Set(userIds)].filter((u) => valid.has(u))
+    const added = next.filter((u) => !c.assignedTo?.includes(u))
+    c.assignedTo = next
+    const now = new Date().toISOString()
+    c.history.push({ at: now, byUserId: a.user.id, byRole: a.user.roleId, action: next.length ? `Assigned to ${next.map((u) => mockUsers.find((x) => x.id === u)?.fullName).join(', ')}` : 'Assignment removed', stage: c.stage })
+    if (added.length) notify(added, `Complaint assigned to you: ${c.caseNo}`, `${c.nature}`, `/cases/${c.id}`, 'complaint')
     return c
   })
 }

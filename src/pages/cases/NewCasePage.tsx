@@ -67,7 +67,7 @@ export function NewCasePage() {
         title="New blotter entry"
         subtitle={src ? `From ${getDocumentType(src.typeId).name} ${src.referenceNo}. Check the details, then record it.` : 'Record a complaint received at the Barangay Hall. A blotter number and case number are given automatically.'}
       />
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Panel title="Complainant">
           <div className="grid gap-3">
             <FieldLabel label="Full name" required><TextInput value={f.complainantName} onChange={set('complainantName')} /></FieldLabel>
@@ -82,7 +82,7 @@ export function NewCasePage() {
           </div>
         </Panel>
         <Panel title="Complaint" className="xl:col-span-2">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FieldLabel label="Nature of the complaint" required><TextInput value={f.nature} onChange={set('nature')} placeholder="e.g. Unpaid debt, noise, boundary dispute" /></FieldLabel>
             <FieldLabel label="Received"><Select value={f.filedVia} onChange={set('filedVia')}><option value="walk_in">At the Barangay Hall</option><option value="online">Online</option></Select></FieldLabel>
             <FieldLabel label="Date of incident"><TextInput type="date" max={new Date().toISOString().slice(0, 10)} value={f.incidentDate} onChange={set('incidentDate')} /></FieldLabel>
@@ -91,7 +91,7 @@ export function NewCasePage() {
               <FieldLabel label="What happened" required><TextArea className="min-h-[120px]" value={f.details} onChange={set('details')} /></FieldLabel>
             </div>
           </div>
-          {error && <p role="alert" className="mt-3 rounded-md bg-danger-tint px-3 py-2 text-[15px] text-danger-ink">{error}</p>}
+          {error && <p role="alert" className="mt-3 rounded-md bg-danger-tint px-3 py-2 text-[length:calc(15px*var(--fs))] text-danger-ink">{error}</p>}
           <div className="mt-4 flex flex-wrap gap-2">
             <Button onClick={submit} loading={busy}>Record in blotter</Button>
             <Button variant="secondary" onClick={() => navigate(-1)}>Cancel</Button>
