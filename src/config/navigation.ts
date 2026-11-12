@@ -25,7 +25,7 @@ import {
   UserRound,
   Users,
   type LucideIcon,
-} from 'lucide-react'
+} from '@/icons'
 import type { Permission, Portal } from '@/types/auth'
 
 /**

@@ -1,4 +1,4 @@
-import { Check, CheckCircle2, ChevronRight, Copy, Info, KeyRound, Minus, Search } from 'lucide-react'
+import { BarChart3, Boxes, Check, CheckCircle2, ChevronRight, Copy, FileText, Gavel, Info, KeyRound, Search, Users } from '@/icons'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/Button'
@@ -9,13 +9,14 @@ import { Pagination, usePaged } from '@/components/ui/Pagination'
 import { StatusLabel } from '@/components/ui/StatusLabel'
 import { APP_CONFIG } from '@/config/app'
 import { BORROWING, KP, OFFICIALS } from '@/config/barangay'
-import { GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS, PERMISSION_LABELS, ROLES, ROLE_PERMISSIONS } from '@/config/permissions'
+import { EDITABLE_ROLES, GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS, PERMISSION_GROUPS, PERMISSION_LABELS, ROLES, ROLE_PERMISSIONS } from '@/config/permissions'
 import { formatDateTime, initials } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { listAudit } from '@/services/auditService'
 import { ServiceError } from '@/services/mockApi'
 import { verifyOwnPassword } from '@/services/authService'
-import { ASSIGNABLE_ROLES, listUsers, resetPassword, setDisplayName, setExtraPermissions, setRole, setStatus } from '@/services/userService'
+import { ASSIGNABLE_ROLES, listUsers, resetPassword, setDisplayName, setExtraPermissions, setRole, setRolePermission, setStatus } from '@/services/userService'
+import { Toggle } from '@/components/ui/Toggle'
 import { getCredential, listResetRequests, type ResetRequest } from '@/services/credentialStore'
 import { TEST_ACCOUNTS, testAccountByKey, testUserFor } from '@/config/testAccount'
 import { accountTypeBySlug } from '@/config/accountTypes'
@@ -74,7 +75,7 @@ export function UsersPage() {
             <Button size="sm" variant="secondary" icon={<Copy className="size-3.5" />} onClick={() => navigator.clipboard?.writeText(issued.password)}>Copy</Button>
             <Button size="sm" variant="ghost" onClick={() => setIssued(null)}>Done</Button>
           </div>
-          <p className="mt-2 text-[14px] text-ink-muted">Shown once. Give it to the account holder in person; they must choose a new password when they sign in.</p>
+          <p className="mt-2 text-[14px] text-ink-muted">Shown only once.</p>
         </Card>
       )}
       {pending.length > 0 && (
@@ -189,9 +190,7 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
             <span className="mb-1 block text-[14px] font-semibold text-navy-900">Display name</span>
             <span className="flex gap-2"><TextInput value={name} onChange={(e) => setName(e.target.value)} /><Button size="md" variant="secondary" onClick={() => run(() => setDisplayName(u.id, name, me))}>Save</Button></span>
           </label>
-        ) : (
-          <p className="text-[14.5px] text-ink-muted">This is an official's account; the name comes from the barangay's records.</p>
-        )}
+        ) : null}
       </div>
       {ASSIGNABLE_ROLES.includes(u.roleId) && (
         <label className="block max-w-md border-t border-line pt-4">
@@ -207,15 +206,20 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
       {GRANTABLE_ROLES.includes(u.roleId) ? (
         <div className="border-t border-line pt-4">
           <p className="text-[14.5px] font-semibold text-navy-900">Additional permissions for this account</p>
-          <p className="mb-2 text-[14px] text-ink-muted">On top of what the {ROLES[u.roleId].name} role already allows.</p>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="divide-y divide-line-soft overflow-hidden rounded-[var(--radius-control)] border border-line bg-surface">
             {GRANTABLE_STAFF_PERMISSIONS.map((p) => (
-              <label key={p} className="flex min-h-10 items-center gap-2.5 rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-[14.5px] text-navy-900 hover:border-navy-600">
-                <input type="checkbox" className="size-4 shrink-0 accent-[#002132]" checked={perms.has(p)} onChange={(e) => setPerms((s) => { const n = new Set(s); if (e.target.checked) n.add(p); else n.delete(p); return n })} />
-                {PERMISSION_LABELS[p]}
-              </label>
+              <li key={p} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                <span className="text-[15px] text-navy-900">{PERMISSION_LABELS[p]}</span>
+                <Toggle
+                  showState
+                  offTone="danger"
+                  checked={perms.has(p)}
+                  label={PERMISSION_LABELS[p]}
+                  onChange={(next) => setPerms((s) => { const n = new Set(s); if (next) n.add(p); else n.delete(p); return n })}
+                />
+              </li>
             ))}
-          </div>
+          </ul>
           {confirming ? (
             <div className="mt-3 flex flex-col gap-2 rounded-[var(--radius-control)] border border-warning/40 bg-warning-tint/60 p-3 sm:flex-row sm:items-end sm:justify-end">
               <label className="block flex-1 sm:max-w-xs">
@@ -234,41 +238,68 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
             </div>
           )}
         </div>
-      ) : (
-        <p className="border-t border-line pt-3 text-[14.5px] text-ink-muted">Permissions for this account come from its role ({ROLES[u.roleId].name}). See Roles and Permissions.</p>
-      )}
+      ) : null}
     </div>
   )
 }
 
 /** Read-only matrix of the proposed permissions per role (docs/PERMISSION_MATRIX.md). */
 export function RolesPage() {
-  const roles = Object.keys(ROLES) as RoleId[]
-  const perms = Object.keys(PERMISSION_LABELS) as Permission[]
+  const { user } = useAuth()
+  const [, setTick] = useState(0)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  useEffect(() => {
+    const on = () => setTick((t) => t + 1)
+    window.addEventListener('bmis:roles-changed', on)
+    return () => window.removeEventListener('bmis:roles-changed', on)
+  }, [])
+  const toggle = async (r: RoleId, p: Permission, next: boolean) => {
+    setMsg(null)
+    try {
+      await setRolePermission(r, p, next, user!)
+      setMsg({ ok: true, text: `${ROLES[r].name}: "${PERMISSION_LABELS[p]}" ${next ? 'enabled' : 'disabled'}.` })
+    } catch (e) {
+      setMsg({ ok: false, text: e instanceof ServiceError ? e.message : 'Could not save.' })
+    }
+  }
+  const icons: Record<string, React.ReactNode> = {
+    residents: <Users className="size-[18px]" />,
+    documents: <FileText className="size-[18px]" />,
+    cases: <Gavel className="size-[18px]" />,
+    equipment: <Boxes className="size-[18px]" />,
+    reports: <BarChart3 className="size-[18px]" />,
+  }
   return (
     <>
-      <PageHeader title="Roles and Permissions" subtitle="What each role can do. Extra permissions for a barangay official's account are set in User Accounts → Manage Account." />
-      <p className="mb-2 text-[14px] text-ink-muted lg:hidden">Swipe sideways to see every role.</p>
+      <PageHeader title="Roles and Permissions" />
+      {msg && <p role="status" className={cn('mb-3 rounded-[var(--radius-control)] px-4 py-2.5 text-[14.5px]', msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{msg.text}</p>}
       <Card className="overflow-x-auto">
-        <table className="w-full min-w-[900px] text-[14.5px]">
+        <table className="w-full min-w-[960px] text-[15px]">
           <thead>
-            <tr className="bg-surface-muted text-left">
-              <th className="label-caps px-4 py-2.5">Permission</th>
-              {roles.map((r) => <th key={r} className="label-caps px-2 py-2.5 text-center">{ROLES[r].name}</th>)}
+            <tr className="border-b border-line text-left">
+              <th className="px-5 py-3 text-[14px] font-semibold text-ink-nav">Actions</th>
+              {EDITABLE_ROLES.map((r) => <th key={r} className="w-[118px] px-2 py-3 text-center text-[14px] font-semibold text-navy-900">{ROLES[r].name.replace('Barangay ', '')}</th>)}
             </tr>
           </thead>
-          <tbody>
-            {perms.map((p) => (
-              <tr key={p} className="border-t border-line-soft">
-                <td className="px-4 py-1.5 text-navy-900">{PERMISSION_LABELS[p]}</td>
-                {roles.map((r) => (
-                  <td key={r} className="px-2 py-1.5 text-center">
-                    {ROLE_PERMISSIONS[r].includes(p) ? <Check className="mx-auto size-4 text-success" /> : GRANTABLE_ROLES.includes(r) && GRANTABLE_STAFF_PERMISSIONS.includes(p) ? <span className="text-[13px] font-semibold text-info">per account</span> : <Minus className="mx-auto size-3.5 text-line" />}
-                  </td>
-                ))}
+          {PERMISSION_GROUPS.map((g) => (
+            <tbody key={g.id}>
+              <tr className="bg-surface-muted">
+                <th colSpan={EDITABLE_ROLES.length + 1} className="px-5 py-2.5 text-left">
+                  <span className="flex items-center gap-2.5 text-[15px] font-bold text-navy-900">{icons[g.id]}{g.name}</span>
+                </th>
               </tr>
-            ))}
-          </tbody>
+              {g.permissions.map((p) => (
+                <tr key={p} className="border-t border-line-soft">
+                  <td className="px-5 py-3 text-navy-900">{PERMISSION_LABELS[p]}</td>
+                  {EDITABLE_ROLES.map((r) => (
+                    <td key={r} className="px-2 py-3 text-center">
+                      <Toggle size="sm" checked={ROLE_PERMISSIONS[r].includes(p)} onChange={(next) => void toggle(r, p, next)} label={`${ROLES[r].name}: ${PERMISSION_LABELS[p]}`} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          ))}
         </table>
       </Card>
     </>

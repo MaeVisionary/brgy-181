@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import { Check } from '@/icons'
 import { Badge } from '@/components/ui/Badge'
 import { FieldLabel, Select, TextArea, TextInput } from '@/components/ui/Field'
 import { STATUS_META, TERMINAL, WORKFLOWS, statusLabel } from '@/documents/workflows'

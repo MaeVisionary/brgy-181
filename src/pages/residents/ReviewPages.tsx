@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleHelp, Paperclip, XCircle } from 'lucide-react'
+import { CheckCircle2, CircleHelp, Paperclip, XCircle } from '@/icons'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -191,7 +191,6 @@ export function ChangeRequestsPage() {
           </button>
         ))}
       </div>
-      {tab === 'decided' && <p className="mb-3 text-[14.5px] text-ink-muted">Approved and rejected requests stay here for {DECIDED_VISIBLE_DAYS} days. They remain in each resident's record history.</p>}
       <div className="space-y-3">
         {items && shown.length === 0 && (
           <Card className="px-5 py-6 text-[15px] text-ink-muted">{tab === 'review' ? 'No requests waiting for review.' : `No requests decided in the last ${DECIDED_VISIBLE_DAYS} days.`}</Card>

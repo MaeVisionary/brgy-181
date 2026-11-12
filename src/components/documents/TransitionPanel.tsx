@@ -1,4 +1,4 @@
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle } from '@/icons'
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { TextArea } from '@/components/ui/Field'
@@ -69,7 +69,6 @@ export function TransitionPanel({
       ) : picked ? (
         <div className="space-y-3">
           <p className="text-[15px] font-semibold text-navy-900">{picked.label}</p>
-          {picked.hint && <p className="text-[14px] text-ink-muted">{picked.hint}</p>}
           {picked.to === 'needs_info' && !ownerView && (
             <fieldset>
               <legend className="mb-1.5 text-[14px] font-semibold text-navy-900">What should the requester send? <span className="text-danger-ink">*</span></legend>

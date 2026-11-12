@@ -1,4 +1,4 @@
-import { ChevronRight, PackagePlus } from 'lucide-react'
+import { ChevronRight, PackagePlus } from '@/icons'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { Panel } from '@/components/ui/Panel'

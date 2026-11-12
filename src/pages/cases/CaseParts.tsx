@@ -1,4 +1,4 @@
-import { Check, Printer } from 'lucide-react'
+import { Check, Printer } from '@/icons'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '@/components/documents/DocParts'
@@ -83,7 +83,7 @@ export function CaseDocuments({ c, docs, onPrepared }: { c: KPCase; docs: Docume
       )}
       {msg && <p role="status" className={cn('border-b border-line-soft px-5 py-2.5 text-[14.5px]', msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{msg.text}</p>}
       {docs.length === 0 ? (
-        <p className="px-5 py-4 text-[15px] text-ink-muted">No summons or notice yet. They are prepared from Document Requests and linked to this case.</p>
+        <p className="px-5 py-4 text-[15px] text-ink-muted">No summons or notice yet.</p>
       ) : (
         <ul>{docs.map((d) => <ServedDoc key={d.id} d={d} />)}</ul>
       )}
@@ -98,7 +98,7 @@ export function CaseDocuments({ c, docs, onPrepared }: { c: KPCase; docs: Docume
             ))}
           </div>
         ) : (
-          <p className="text-[14.5px] text-ink-muted">Available after a hearing is held or an outcome is recorded.</p>
+          <p className="text-[14.5px] text-ink-muted">None yet.</p>
         )}
       </div>
     </Panel>

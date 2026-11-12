@@ -1,4 +1,4 @@
-import { AlertTriangle, Eye, Save } from 'lucide-react'
+import { AlertTriangle, Eye, Save } from '@/icons'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
@@ -147,7 +147,7 @@ export function RequestDetailPage() {
           </Panel>
 
           {type.requirements.length > 0 && (
-            <Panel keepSubtitle title="Requirements" subtitle="Tick each one after checking the original.">
+            <Panel title="Requirements" subtitle="Tick each one after checking the original.">
               <ul className="space-y-2">
                 {type.requirements.map((r) => {
                   const state = req.requirements[r.label]

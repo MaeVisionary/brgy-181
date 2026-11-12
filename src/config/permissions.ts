@@ -132,6 +132,42 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
   resident: ['self.profile', 'self.documents', 'self.complaints', 'self.borrowing', 'self.change_requests'],
 }
 
+/** Roles whose permissions the System Administrator can change in Roles and Permissions. */
+export const EDITABLE_ROLES: RoleId[] = ['chairman', 'secretary', 'kagawad', 'property_custodian', 'treasurer', 'staff']
+
+/** Permission groups shown in the role manager (system and self-service permissions are not role-editable). */
+export const PERMISSION_GROUPS: { id: string; name: string; permissions: Permission[] }[] = [
+  { id: 'residents', name: 'Resident records', permissions: ['residents.view', 'residents.search', 'residents.import', 'residents.create', 'residents.update', 'residents.verify', 'residents.approve', 'residents.reject', 'residents.lookup_borrower'] },
+  { id: 'documents', name: 'Document requests', permissions: ['documents.view', 'documents.create', 'documents.process', 'documents.inspect', 'documents.approve', 'documents.reject', 'documents.release', 'documents.payment'] },
+  { id: 'cases', name: 'Complaints, cases and hearings', permissions: ['complaints.view', 'complaints.create', 'complaints.update', 'cases.view', 'cases.manage', 'cases.decide', 'hearings.view', 'hearings.manage'] },
+  { id: 'equipment', name: 'Property and equipment', permissions: ['inventory.view', 'inventory.manage', 'borrowing.approve', 'borrowing.release'] },
+  { id: 'reports', name: 'Reports and analytics', permissions: ['analytics.view', 'reports.view', 'reports.export'] },
+]
+
+const ROLE_OVERRIDES_KEY = 'bmis.rolePermissions'
+
+/** Saved changes from the role manager (prototype: this device; backend: a roles table). */
+;(function applyRoleOverrides() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ROLE_OVERRIDES_KEY) ?? '{}') as Partial<Record<RoleId, Permission[]>>
+    for (const r of EDITABLE_ROLES) if (Array.isArray(saved[r])) (ROLE_PERMISSIONS as Record<RoleId, Permission[]>)[r] = saved[r]!
+  } catch {
+    /* no saved changes */
+  }
+})()
+
+export function writeRolePermissions(role: RoleId, list: Permission[]) {
+  ;(ROLE_PERMISSIONS as Record<RoleId, Permission[]>)[role] = list
+  try {
+    const saved = JSON.parse(localStorage.getItem(ROLE_OVERRIDES_KEY) ?? '{}')
+    saved[role] = list
+    localStorage.setItem(ROLE_OVERRIDES_KEY, JSON.stringify(saved))
+  } catch {
+    /* storage unavailable: change lasts until reload */
+  }
+  window.dispatchEvent(new Event('bmis:roles-changed'))
+}
+
 /** Permissions the System Administrator may grant to "Authorized Personnel" accounts. */
 export const GRANTABLE_STAFF_PERMISSIONS: readonly Permission[] = [
   'residents.view',

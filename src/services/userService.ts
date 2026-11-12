@@ -1,4 +1,4 @@
-import { GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS } from '@/config/permissions'
+import { EDITABLE_ROLES, GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS, PERMISSION_GROUPS, ROLES, ROLE_PERMISSIONS, writeRolePermissions } from '@/config/permissions'
 import { mockUsers } from '@/mocks/users'
 import type { Permission, RoleId, User } from '@/types/auth'
 import { audit } from './auditService'
@@ -82,5 +82,19 @@ export function setRole(id: string, roleId: RoleId, by: User): Promise<User> {
     u.roleId = roleId
     audit(by, 'Changed account role', 'Roles and permissions', `${u.username}: ${before} to ${roleId}`)
     return u
+  })
+}
+
+/** Turns one permission on or off for a role (System Administrator only). */
+export function setRolePermission(roleId: RoleId, permission: Permission, on: boolean, by: User): Promise<void> {
+  return mockRequest(() => {
+    requireAdmin(by)
+    if (!EDITABLE_ROLES.includes(roleId)) throw new ServiceError('locked', 'This role cannot be changed here.')
+    if (!PERMISSION_GROUPS.some((g) => g.permissions.includes(permission))) throw new ServiceError('locked', 'This permission cannot be changed here.')
+    const current = new Set(ROLE_PERMISSIONS[roleId])
+    if (on) current.add(permission)
+    else current.delete(permission)
+    writeRolePermissions(roleId, [...current])
+    audit(by, `${on ? 'Enabled' : 'Disabled'} permission for ${ROLES[roleId].name}`, 'Roles and permissions', permission)
   })
 }

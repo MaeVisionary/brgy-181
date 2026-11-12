@@ -1,4 +1,4 @@
-import { Hammer } from 'lucide-react'
+import { Hammer } from '@/icons'
 import { ButtonLink } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'

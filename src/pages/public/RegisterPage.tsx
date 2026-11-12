@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeft, Camera, CheckCircle2, CircleHelp, Eye, EyeOff, IdCard, Loader2, ShieldCheck, Upload, UserRound, XCircle } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Camera, CheckCircle2, CircleHelp, Eye, EyeOff, IdCard, Loader2, ShieldCheck, Upload, UserRound, XCircle } from '@/icons'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAnalytics } from '@/analytics/AnalyticsContext'
 import { BarangaySeal } from '@/components/layout/BarangaySeal'

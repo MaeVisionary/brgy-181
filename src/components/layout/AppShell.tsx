@@ -1,4 +1,4 @@
-import { Menu, X } from 'lucide-react'
+import { Menu, X } from '@/icons'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { APP_CONFIG } from '@/config/app'
 import { Outlet, useLocation } from 'react-router-dom'

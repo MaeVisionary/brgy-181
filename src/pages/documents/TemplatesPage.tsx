@@ -1,4 +1,4 @@
-import { Download, FileText, RotateCcw, Trash2, Upload } from 'lucide-react'
+import { Download, FileText, RotateCcw, Trash2, Upload } from '@/icons'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'

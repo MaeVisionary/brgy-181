@@ -1,4 +1,4 @@
-import { Download, FilterX, Lock, Search } from 'lucide-react'
+import { Download, FilterX, Lock, Search } from '@/icons'
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { useAnalytics } from '@/analytics/AnalyticsContext'
@@ -35,7 +35,7 @@ import { StatCard } from '@/components/ui/StatCard'
 import { BARANGAY } from '@/config/barangay'
 import { audit } from '@/services/auditService'
 import { DataSource } from './DataSource'
-import { FileSpreadsheet } from 'lucide-react'
+import { FileSpreadsheet } from '@/icons'
 
 const PAGE = 25
 

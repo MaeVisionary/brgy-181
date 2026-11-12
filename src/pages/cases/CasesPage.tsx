@@ -1,4 +1,4 @@
-import { CalendarCheck2, CalendarClock, Gavel, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { CalendarCheck2, CalendarClock, Gavel, Plus, RotateCcw, Trash2 } from '@/icons'
 import { HearingCalendar } from './HearingCalendar'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -110,11 +110,6 @@ export function CasesPage() {
           </table>
         </div>
       </Card>
-      {canRemove && (
-        <p className="mt-2 text-[14px] text-ink-muted">
-          Closed cases can be removed from this list to keep it short. The case record is kept, as Katarungang Pambarangay records must be preserved, and can be restored anytime.
-        </p>
-      )}
     </>
   )
 }

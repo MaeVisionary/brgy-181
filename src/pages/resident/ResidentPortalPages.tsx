@@ -1,4 +1,4 @@
-import { Paperclip, Plus } from 'lucide-react'
+import { Paperclip, Plus } from '@/icons'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'

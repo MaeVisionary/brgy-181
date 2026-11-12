@@ -1,4 +1,4 @@
-import { Bell, ChevronRight } from 'lucide-react'
+import { Bell, ChevronRight } from '@/icons'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'

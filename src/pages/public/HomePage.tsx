@@ -1,4 +1,4 @@
-import { ArrowRight, Building2, ClipboardList, FileText, Gavel, LogIn, MapPin, Package, UserCheck, UserPlus } from 'lucide-react'
+import { ArrowRight, Building2, ClipboardList, FileText, Gavel, LogIn, MapPin, Package, UserCheck, UserPlus } from '@/icons'
 import { BarangaySeal } from '@/components/layout/BarangaySeal'
 import { BARANGAY, BARANGAY_CONTACT, CHAIRMAN, SECRETARY, officialByPosition } from '@/config/barangay'
 import { cn } from '@/lib/cn'

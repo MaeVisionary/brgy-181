@@ -1,4 +1,4 @@
-import { Database } from 'lucide-react'
+import { Database } from '@/icons'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Panel'
 import { useAnalytics } from '@/analytics/AnalyticsContext'

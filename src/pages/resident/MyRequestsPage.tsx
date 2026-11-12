@@ -1,4 +1,4 @@
-import { ChevronRight, FilePlus2, FileText } from 'lucide-react'
+import { ChevronRight, FilePlus2, FileText } from '@/icons'
 import { Link } from 'react-router-dom'
 import { StatusLabel } from '@/components/ui/StatusLabel'
 import { documentStatusForResident } from '@/lib/residentStatus'

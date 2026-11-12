@@ -1,4 +1,4 @@
-import { Building2, Gavel, Landmark, Package, Wallet, ShieldCheck, UserRound, Users, type LucideIcon } from 'lucide-react'
+import { Building2, Gavel, Landmark, Package, Wallet, ShieldCheck, UserRound, Users, type LucideIcon } from '@/icons'
 import type { RoleId } from '@/types/auth'
 
 /** Account types offered on the portal's selection screen. */

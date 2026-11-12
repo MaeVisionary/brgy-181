@@ -1,4 +1,4 @@
-import { Download, FileClock, FileSpreadsheet, FileText, Lock, Trash2, Upload } from 'lucide-react'
+import { Download, FileClock, FileSpreadsheet, FileText, Lock, Trash2, Upload } from '@/icons'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -190,10 +190,9 @@ export function ReportsPage() {
                       ))}
                     </tbody>
                   </table>
-                  {output.rows.length > 200 && <p className="px-3 py-2 text-[14px] text-ink-muted">Preview shows 200 of {output.rows.length} rows. Exports include all rows.</p>}
+                  {output.rows.length > 200 && <p className="px-3 py-2 text-[14px] text-ink-muted">Showing 200 of {output.rows.length} rows.</p>}
                 </div>
               )}
-              {!canExport && <p className="mt-3 text-[14px] text-ink-muted">Your account can view but not export reports.</p>}
             </>
           ) : null}
         </Panel>

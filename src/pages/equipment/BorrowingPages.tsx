@@ -1,4 +1,4 @@
-import { BellRing, Plus } from 'lucide-react'
+import { BellRing, Plus } from '@/icons'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
@@ -162,7 +162,6 @@ export function BorrowingDetailPage() {
           )}
           {b.status === 'approved' && can('borrowing.release') && (
             <div className="space-y-3">
-              <p className="text-[14.5px] text-ink-muted">Confirm the borrowing details with the resident at the Barangay Hall, then release. The due date is set to {BORROWING.periodDays} days from today.</p>
               <FieldLabel label="Condition on release"><TextInput value={condition} onChange={(e) => setCondition(e.target.value)} /></FieldLabel>
               <Button onClick={() => act(() => actOnBorrowing(b.id, 'release', actor, { condition }))}>Record release</Button>
             </div>

@@ -1,4 +1,4 @@
-import { ChevronRight, Home, Search, Users } from 'lucide-react'
+import { ChevronRight, Home, Search, Users } from '@/icons'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'

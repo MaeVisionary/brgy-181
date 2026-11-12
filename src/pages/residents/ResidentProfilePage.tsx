@@ -1,4 +1,4 @@
-import { Home } from 'lucide-react'
+import { Home } from '@/icons'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'

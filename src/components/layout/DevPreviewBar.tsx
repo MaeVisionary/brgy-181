@@ -1,4 +1,4 @@
-import { Code2 } from 'lucide-react'
+import { Code2 } from '@/icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { ROLES } from '@/config/permissions'

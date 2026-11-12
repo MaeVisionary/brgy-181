@@ -1,4 +1,4 @@
-import { Boxes, Info, Users } from 'lucide-react'
+import { Boxes, Info, Users } from '@/icons'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { GreetingCard } from '@/components/ui/GreetingCard'

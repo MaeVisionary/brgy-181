@@ -1,4 +1,4 @@
-import { BellRing, Check, Lock, X } from 'lucide-react'
+import { BellRing, Check, Lock, X } from '@/icons'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
@@ -141,7 +141,7 @@ export function CaseDetailPage() {
           </Panel>
 
           <Panel title="Hearings and mediation sessions" bodyClassName="px-0 py-0">
-            {c.hearings.length === 0 ? <p className="px-5 py-5 text-[15px] text-ink-muted">No hearing scheduled yet. Scheduling happens when the Barangay Chairman assesses the complaint.</p> : (
+            {c.hearings.length === 0 ? <p className="px-5 py-5 text-[15px] text-ink-muted">No hearing scheduled yet.</p> : (
               <ul>{[...c.hearings].sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt)).map((h) => <HearingRow key={h.id} caseId={c.id} h={h} manage={manage} onChange={refresh} />)}</ul>
             )}
           </Panel>
@@ -151,10 +151,9 @@ export function CaseDetailPage() {
 
         <div className="space-y-4">
           <Panel title="Next step" subtitle={`Stage: ${STAGE_LABEL[c.stage]}`}>
-            {steps.length === 0 ? <p className="text-[14.5px] text-ink-muted">No step is available to your role at this stage.</p> : step ? (
+            {steps.length === 0 ? <p className="text-[14.5px] text-ink-muted">No actions available.</p> : step ? (
               <div className="space-y-3">
                 <p className="text-[15px] font-semibold text-navy-900">{step.label}</p>
-                {step.hint && <p className="text-[14px] text-ink-muted">{step.hint}</p>}
                 {step.schedule && (
                   <label className="block"><span className="mb-1 block text-[14px] font-semibold text-navy-900">Hearing date and time *</span><TextInput type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></label>
                 )}

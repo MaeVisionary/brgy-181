@@ -1,3 +1,19 @@
+# BMIS Patch Notes: Role manager, toggles, new icons, no instructions (12 November 2026)
+
+- **Roles and Permissions** (System Administrator): editable manager. Roles are columns (Chairman, Secretary,
+  Kagawad, Property Custodian, Treasurer, Authorized Personnel); permissions are grouped (Resident records,
+  Document requests, Complaints/cases/hearings, Property and equipment, Reports and analytics). Each cell is an
+  on/off toggle; changes apply immediately and are written to the activity log.
+  Prototype: saved on this device. Backend: a roles/permissions table.
+- **Manage Account → extra permissions**: each permission is a row with an Enabled / Disabled toggle (saved with password confirmation as before).
+- **Icons**: replaced the generic Lucide outline set with Phosphor Icons (MIT): duotone for navigation, sections,
+  tiles and states; bold for small controls. All icons come from one file, `src/icons/index.tsx`. No brand logos
+  are used because BMIS represents no third-party services.
+- **No instruction text**: removed step hints shown when choosing an action, instruction subtitles, and notes
+  such as "Closed cases can be removed…". Empty states are short ("No hearing scheduled yet.").
+
+---
+
 # BMIS Patch Notes: Second test account, smaller corners (12 November 2026)
 
 - Test accounts: a second team test account is supported (same "Viewing as" level switcher, own password).

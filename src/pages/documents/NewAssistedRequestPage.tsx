@@ -1,4 +1,4 @@
-import { ArrowLeft, Search, UserRound, X } from 'lucide-react'
+import { ArrowLeft, Search, UserRound, X } from '@/icons'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -153,11 +153,11 @@ export function NewAssistedRequestPage() {
                 </ul>
               )}
               {q.trim().length >= 2 && results.length === 0 && (
-                <p className="mt-2 text-[14.5px] text-ink-muted">No resident found. They may need to be added to the master list first.</p>
+                <p className="mt-2 text-[14.5px] text-ink-muted">No resident found.</p>
               )}
             </div>
           ) : (
-            <p className="text-[14.5px] text-ink-muted">Your account cannot search residents. Ask the System Administrator for access.</p>
+            <p className="text-[14.5px] text-ink-muted">Resident search is not available for your account.</p>
           )}
         </Panel>
 

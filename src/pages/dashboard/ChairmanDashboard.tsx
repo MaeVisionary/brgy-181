@@ -1,4 +1,4 @@
-import { CalendarClock, Gavel } from 'lucide-react'
+import { CalendarClock, Gavel } from '@/icons'
 import { StatusBadge } from '@/components/documents/DocParts'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'

@@ -1,4 +1,4 @@
-import { FilePlus2, Search, Inbox } from 'lucide-react'
+import { FilePlus2, Search, Inbox } from '@/icons'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'

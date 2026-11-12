@@ -1,4 +1,4 @@
-import { Printer } from 'lucide-react'
+import { Printer } from '@/icons'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams } from 'react-router-dom'

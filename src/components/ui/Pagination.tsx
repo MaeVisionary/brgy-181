@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from '@/icons'
 import { useEffect, useState } from 'react'
 
 /** Rows per page on desktop tables (Figma v3: "up to 10 rows drawn per page"). */

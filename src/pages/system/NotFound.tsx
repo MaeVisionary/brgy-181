@@ -1,4 +1,4 @@
-import { SearchX } from 'lucide-react'
+import { SearchX } from '@/icons'
 import { ButtonLink } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Card } from '@/components/ui/Panel'

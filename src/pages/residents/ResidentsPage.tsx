@@ -1,4 +1,4 @@
-import { ArrowDownUp, Search, Upload } from 'lucide-react'
+import { ArrowDownUp, Search, Upload } from '@/icons'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'

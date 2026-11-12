@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from '@/icons'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Panel } from '@/components/ui/Panel'

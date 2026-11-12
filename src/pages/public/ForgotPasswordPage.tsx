@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, KeyRound } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, KeyRound } from '@/icons'
 import { useState, type FormEvent } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'

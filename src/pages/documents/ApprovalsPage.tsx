@@ -1,4 +1,4 @@
-import { CheckCircle2, ChevronDown, FileText, Inbox, Paperclip } from 'lucide-react'
+import { CheckCircle2, ChevronDown, FileText, Inbox, Paperclip } from '@/icons'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '@/components/documents/DocParts'
@@ -179,12 +179,11 @@ function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: Doc
                 {t.label}
               </Button>
             ))}
-            {actions.length === 0 && <p className="text-[15px] text-ink-muted">No decision is available to your account for this request.</p>}
+            {actions.length === 0 && <p className="text-[15px] text-ink-muted">No actions available.</p>}
           </div>
         ) : (
           <div className="space-y-3">
             <p className="text-[16px] font-semibold text-navy-900">{picked.label}: {type.name} for {req.requesterName}?</p>
-            {picked.hint && <p className="text-[14.5px] text-ink-nav">{picked.hint}</p>}
             <label className="block">
               <span className="mb-1 block text-[14.5px] font-semibold text-navy-900">
                 Remarks {picked.remarks === 'required' ? <span className="text-danger-ink">* (required)</span> : <span className="font-normal text-ink-muted">(optional)</span>}

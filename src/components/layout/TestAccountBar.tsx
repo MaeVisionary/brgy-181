@@ -1,4 +1,4 @@
-import { FlaskConical } from 'lucide-react'
+import { FlaskConical } from '@/icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { ROLES } from '@/config/permissions'

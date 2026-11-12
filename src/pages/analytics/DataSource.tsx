@@ -1,4 +1,4 @@
-import { AlertTriangle, FileSpreadsheet, Info, Upload, XCircle } from 'lucide-react'
+import { AlertTriangle, FileSpreadsheet, Info, Upload, XCircle } from '@/icons'
 import { useRef } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { useAnalytics } from '@/analytics/AnalyticsContext'

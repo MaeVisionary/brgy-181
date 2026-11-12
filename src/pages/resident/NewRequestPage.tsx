@@ -1,4 +1,4 @@
-import { ArrowLeft, Building2, Paperclip } from 'lucide-react'
+import { ArrowLeft, Building2, Paperclip } from '@/icons'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -141,7 +141,7 @@ export function NewRequestPage() {
             </Panel>
 
             {type.requirements.length > 0 && (
-              <Panel keepSubtitle title="Requirements" subtitle="Attach a clear photo or PDF of each requirement.">
+              <Panel title="Requirements" subtitle="Attach a clear photo or PDF of each requirement.">
                 <ul className="grid gap-3 md:grid-cols-2">
                   {type.requirements.map((r) => (
                     <li key={r.label}>

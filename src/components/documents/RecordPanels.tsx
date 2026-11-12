@@ -1,4 +1,4 @@
-import { ClipboardCheck, Receipt } from 'lucide-react'
+import { ClipboardCheck, Receipt } from '@/icons'
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { FieldLabel, TextArea, TextInput } from '@/components/ui/Field'
@@ -39,7 +39,7 @@ export function VerificationPanel({ req, actor, onChange }: { req: DocumentReque
   }
 
   return (
-    <Panel keepSubtitle title={def.title} subtitle={def.help} icon={<ClipboardCheck className="size-5" />}>
+    <Panel title={def.title} subtitle={def.help} icon={<ClipboardCheck className="size-5" />}>
       {v ? (
         <div className={v.result === 'confirmed' ? 'rounded-[var(--radius-control)] bg-success-tint px-4 py-3' : 'rounded-[var(--radius-control)] bg-danger-tint px-4 py-3'}>
           <p className="text-[15px] font-semibold text-navy-900">{v.result === 'confirmed' ? 'Confirmed' : 'Not confirmed'} · checked {formatDate(v.checkedOn)}</p>
@@ -47,7 +47,7 @@ export function VerificationPanel({ req, actor, onChange }: { req: DocumentReque
           <p className="mt-1 text-[13.5px] text-ink-muted">Recorded by {nameOf(v.byUserId)} · {formatDateTime(v.at)}</p>
         </div>
       ) : (
-        <p className="text-[15px] text-warning">Not recorded yet. The Secretary can approve only after it is recorded as confirmed.</p>
+        <p className="text-[15px] text-warning">Not recorded yet.</p>
       )}
       {open && (
         <div className="mt-4 space-y-3 border-t border-line-soft pt-4">
@@ -108,7 +108,7 @@ export function PaymentPanel({ req, actor, onChange }: { req: DocumentRequest; a
           <p className="text-[13.5px] text-ink-muted">Recorded by {nameOf(p.byUserId)} · {formatDateTime(p.at)}</p>
         </div>
       ) : (
-        <p className="text-[15px] text-warning">Not paid yet. The fee is paid to the Barangay Treasurer.</p>
+        <p className="text-[15px] text-warning">Not paid yet.</p>
       )}
       {canRecord && (
         <div className="mt-4 space-y-3 border-t border-line-soft pt-4">

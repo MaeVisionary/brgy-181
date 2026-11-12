@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet, FileText } from 'lucide-react'
+import { Download, FileSpreadsheet, FileText } from '@/icons'
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { exportExcel, exportPdf, type ReportOutput } from '@/analytics/exporters'
@@ -8,7 +8,7 @@ import { Card, Panel } from '@/components/ui/Panel'
 import { BARANGAY } from '@/config/barangay'
 import { ROLES } from '@/config/permissions'
 import { getDocumentType } from '@/documents/catalog'
-import { STATUS_META, statusLabel } from '@/documents/workflows'
+import { statusLabel } from '@/documents/workflows'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 import { cn } from '@/lib/cn'
@@ -182,7 +182,6 @@ export function ServiceReports() {
     if (kind === 'pdf') exportPdf(output)
     else await exportExcel(output)
   }
-  const statuses = Object.keys(STATUS_META).length
 
   return (
     <div className="mt-4 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
@@ -246,7 +245,6 @@ export function ServiceReports() {
             )}
             {output.rows.length > 50 && <p className="mt-2 text-[14px] text-ink-muted">Showing 50 of {output.rows.length} rows. Export to see all.</p>}
             {output.note && <p className="mt-2 text-[14px] text-ink-muted">{output.note}</p>}
-            <p className="mt-2 text-[13.5px] text-ink-subtle">Counted from the records stored in the system ({statuses} document statuses tracked).</p>
           </>
         )}
       </Panel>

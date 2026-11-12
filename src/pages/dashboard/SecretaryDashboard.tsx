@@ -1,4 +1,4 @@
-import { BarChart3, CalendarClock, FileText, Gavel, ShieldCheck, UserRoundPen } from 'lucide-react'
+import { BarChart3, CalendarClock, FileText, Gavel, ShieldCheck, UserRoundPen } from '@/icons'
 import { StatusBadge } from '@/components/documents/DocParts'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'

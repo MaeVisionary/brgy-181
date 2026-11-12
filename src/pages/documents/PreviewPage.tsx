@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowLeft, CheckCircle2, Printer } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, CheckCircle2, Printer } from '@/icons'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { StatusBadge } from '@/components/documents/DocParts'

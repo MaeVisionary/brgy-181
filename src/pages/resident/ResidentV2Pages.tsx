@@ -1,4 +1,4 @@
-import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Inbox, Info, Mail, MapPin, MessageSquareWarning, Package, Paperclip, Phone, ReceiptText, XCircle } from 'lucide-react'
+import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Inbox, Info, Mail, MapPin, MessageSquareWarning, Package, Paperclip, Phone, ReceiptText, XCircle } from '@/icons'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'

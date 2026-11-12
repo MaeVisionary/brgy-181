@@ -1,4 +1,4 @@
-import { Bell } from 'lucide-react'
+import { Bell } from '@/icons'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/Button'

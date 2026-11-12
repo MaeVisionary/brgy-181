@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Eye, EyeOff } from '@/icons'
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'

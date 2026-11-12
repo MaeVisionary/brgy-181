@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, ChevronRight } from '@/icons'
 import { useState } from 'react'
 import { BarangaySeal } from '@/components/layout/BarangaySeal'
 import { ACCOUNT_TYPES } from '@/config/accountTypes'

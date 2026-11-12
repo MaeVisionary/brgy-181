@@ -1,4 +1,4 @@
-import { CheckCircle2, Eye, EyeOff, ShieldAlert } from 'lucide-react'
+import { CheckCircle2, Eye, EyeOff, ShieldAlert } from '@/icons'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'

@@ -1,4 +1,4 @@
-import { Check, ChevronRight, LifeBuoy } from 'lucide-react'
+import { Check, ChevronRight, LifeBuoy } from '@/icons'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BackLink as SmartBack } from '@/components/ui/BackLink'
