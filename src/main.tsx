@@ -11,10 +11,12 @@ import App from './App'
 import { AuthProvider } from './auth/AuthContext'
 import { AnalyticsProvider } from './analytics/AnalyticsContext'
 import { applyTextSize, readTextSize } from './components/layout/TextSizeControl'
+import { seedDemoData } from './demo/seedDemo'
 
 applyTextSize(readTextSize())
 
-createRoot(document.getElementById('root')!).render(
+// Demo data first (synthetic, connected records for every role), then the app.
+seedDemoData().catch(() => undefined).finally(() => createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
       <AuthProvider>
@@ -24,4 +26,4 @@ createRoot(document.getElementById('root')!).render(
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
-)
+))

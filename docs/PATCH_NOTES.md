@@ -1,6 +1,13 @@
 # BMIS Patch Notes: Report formats, notifications, analytics and cleanup (12 November 2026)
 
-## 2026-11-12 (latest): Purpose-based appointments, document pickup and processing time
+## 2026-11-12 (latest): Demo data, wording sweep and final audit report
+
+- Demo data (src/demo/seedDemo.ts): connected, synthetic records for every role, created through the real services so each one shows for the sender and the receiver with its notifications and activity log: a complaint with mediation and an assigned Kagawad, three community concerns (one assigned with a note, one resolved), visits for today and tomorrow (Secretary, Punong Barangay, Property Custodian), an equipment borrowing with a booked pickup, an office closure, a verified ID on file, two access-change requests and security log entries. Two demo resident accounts (Daniel Garcia, Lourdes Santos) were added so the residents' side can be previewed.
+- Demo records are recreated each start (dates follow today), marked "demo" on the device and removed before reseeding; one tab seeds at a time. System Settings > Demo data has "Reset demo data" (confirmed; keeps settings, holidays and passwords). No real personal data; no real e-mail or SMS.
+- Wording: settings labels made distinct ("Barangay consultation (Punong Barangay)", "Mediation or dispute: first visit", "Mediation hearing", "Conciliation hearing", "Time to Check Each Original Document"); "1 file" instead of "1 files". No user-facing "staff" wording remains.
+- docs/FINAL_AUDIT_REPORT.md: status of all 1,228 requirements (710 done, 286 partial, 97 need the server, 45 not built, 35 need a barangay decision, 55 superseded), the most important gaps, contradictions, decisions needed, deployment readiness and the role/permission matrix. Full table: docs/REQUIREMENTS_STATUS.md.
+
+## 2026-11-12: Purpose-based appointments, document pickup and processing time
 
 Appointments
 - "General assistance" is removed. Book a visit now starts with the purpose: Barangay consultation (Punong Barangay), Community concern (Barangay Secretary), Mediation or dispute (Punong Barangay), Follow-up on my complaint (Punong Barangay; must name one of the resident's own complaints). Each needs a reason from a fixed list, a short description (15 to 500 characters, with a note not to include ID numbers or medical details), a mobile number and a chosen day and time; then a review screen. Field errors appear under each field; the same rules run in the service.

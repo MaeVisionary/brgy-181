@@ -124,7 +124,7 @@ export function SchedulingRulesPanel() {
           </div>
         </Section>
 
-        <Section title="Processing Time">
+        <Section title="Time to Check Each Original Document">
           <ul className="grid grid-cols-1 gap-x-8 md:grid-cols-2">
             {Object.entries(r.documentMinutes).map(([doc, m]) => (
               <li key={doc} className="flex items-center gap-3 border-b border-line-soft py-3">

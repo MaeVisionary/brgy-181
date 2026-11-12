@@ -1,6 +1,7 @@
 import { StepUpDialog } from '@/components/ui/StepUpDialog'
 import { ServiceStandardsPanel } from './ServiceStandardsPanel'
 import { StoragePanel } from './StoragePanel'
+import { DemoDataPanel } from './DemoDataPanel'
 import { SchedulingRulesPanel } from './SchedulingRulesPanel'
 import { BorrowingPolicyPanel } from './BorrowingPolicyPanel'
 import { BarChart3, Boxes, Check, FileText, Gavel, Info, KeyRound, Users } from '@/icons'
@@ -354,6 +355,7 @@ export function SettingsPage() {
       <SchedulingRulesPanel />
       <BorrowingPolicyPanel />
       <StoragePanel />
+      <DemoDataPanel />
     </>
   )
 }

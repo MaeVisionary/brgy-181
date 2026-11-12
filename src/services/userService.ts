@@ -164,6 +164,20 @@ const writeRequests = (list: AccessRequest[]) => localStorage.setItem(REQ_KEY, J
 
 /** Who may act as the second person (policy). */
 export const canApproveAccess = (u: User) => u.status === 'active' && (u.roleId === 'system_admin' || u.roleId === 'chairman')
+/**
+ * DEMO DATA ONLY (src/demo/seedDemo.ts): files an access-change REQUEST without the
+ * initiator's password step, so the approval queue has an example. Nothing changes
+ * until a second person approves it with their own password.
+ */
+export function demoAccessRequest(userId: string, perms: Permission[], reason: string, by: User): AccessRequest {
+  const u = mockUsers.find((x) => x.id === userId)
+  if (!u || !GRANTABLE_ROLES.includes(u.roleId)) throw new ServiceError('invalid', 'Not a grantable account.')
+  const before = u.extraPermissions ?? []
+  const next = [...new Set([...before, ...perms])].filter((p) => GRANTABLE_STAFF_PERMISSIONS.includes(p)).sort()
+  const rows: AccessRequest['rows'] = GRANTABLE_STAFF_PERMISSIONS.filter((p) => before.includes(p) !== next.includes(p)).map((p) => [PERMISSION_LABELS[p], before.includes(p), next.includes(p)])
+  return createRequest('account-permissions', { id: userId, perms: next }, rows, [u.id], `Access for ${u.fullName}`, reason, by)
+}
+
 const approvers = (except: string[]) => mockUsers.filter((u) => canApproveAccess(u) && !except.includes(u.id)).map((u) => u.id)
 
 function expireStale(list: AccessRequest[]): AccessRequest[] {

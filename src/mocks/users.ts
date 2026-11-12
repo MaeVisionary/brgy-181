@@ -1,7 +1,7 @@
 import { OFFICIALS } from '@/config/barangay'
 import { accountNumber, personnelNumber } from '@/lib/ids'
 import type { RoleId, User } from '@/types/auth'
-import { DEMO_RESIDENT_ID } from './residents'
+import { DEMO_RESIDENT_ID, SAMPLE_IDS } from './residents'
 import { isoDaysAgo } from './random'
 
 /**
@@ -55,6 +55,17 @@ export const mockUsers: User[] = [
     id: 'usr-res', username: 'maria.dizon', fullName: 'Maria Clara Dizon', position: 'Resident',
     roleId: 'resident', email: 'maria.dizon@example.test', status: 'active', residentId: DEMO_RESIDENT_ID,
     lastLoginAt: isoDaysAgo(3, 19),
+  },
+  // Demo resident accounts (synthetic people from the sample resident list), so records they send can be seen from both sides.
+  {
+    id: 'usr-res-daniel', username: 'daniel.garcia', fullName: 'Daniel Garcia', position: 'Resident',
+    roleId: 'resident', email: 'daniel.garcia@example.test', status: 'active', residentId: SAMPLE_IDS.danielGarcia,
+    lastLoginAt: isoDaysAgo(1, 8),
+  },
+  {
+    id: 'usr-res-lourdes', username: 'lourdes.santos', fullName: 'Lourdes Santos', position: 'Resident',
+    roleId: 'resident', email: 'lourdes.santos@example.test', status: 'active', residentId: SAMPLE_IDS.lourdesSantos,
+    lastLoginAt: isoDaysAgo(2, 17),
   },
   {
     id: 'usr-inactive', username: 'former.clerk', fullName: 'Deactivated account', position: 'Former personnel',
