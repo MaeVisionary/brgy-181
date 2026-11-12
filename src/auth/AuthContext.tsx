@@ -3,6 +3,7 @@ import { APP_CONFIG } from '@/config/app'
 import { ROLES, ROLE_PERMISSIONS } from '@/config/permissions'
 import { testAccountOf } from '@/config/testAccount'
 import { createSession, findUser, signIn as signInRequest, type SignInInput } from '@/services/authService'
+import { audit } from '@/services/auditService'
 import type { Permission, Role, RoleId, Session, User } from '@/types/auth'
 
 /**
@@ -11,6 +12,7 @@ import type { Permission, Role, RoleId, Session, User } from '@/types/auth'
  */
 
 const STORAGE_KEY = 'bmis.session'
+export const EXPIRED_KEY = 'bmis.sessionExpired'
 
 export interface AuthContextValue {
   user: User | null
@@ -78,12 +80,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(next)
   }, [])
 
+  // Expiry: signed out after the idle period; the sign-in page explains why.
   useEffect(() => {
     if (!session) return
     const ms = new Date(session.expiresAt).getTime() - Date.now()
-    const timer = setTimeout(() => start(null, false), Math.max(ms, 0))
+    const timer = setTimeout(() => {
+      const u = findUser(session.userId)
+      if (u) audit(u, 'Session expired', 'Security')
+      try { sessionStorage.setItem(EXPIRED_KEY, '1') } catch { /* ignore */ }
+      start(null, false)
+    }, Math.max(ms, 0))
     return () => clearTimeout(timer)
   }, [session, start])
+
+  // Activity keeps the session alive (checked at most once a minute), so working users are never interrupted.
+  useEffect(() => {
+    if (!session) return
+    let last = 0
+    const touch = () => {
+      const now = Date.now()
+      if (now - last < 60_000) return
+      last = now
+      const next = { ...session, expiresAt: new Date(now + APP_CONFIG.sessionMinutes * 60_000).toISOString() }
+      start(next, remember)
+    }
+    const events = ['pointerdown', 'keydown', 'scroll'] as const
+    events.forEach((e) => window.addEventListener(e, touch, { passive: true, capture: true }))
+    return () => events.forEach((e) => window.removeEventListener(e, touch, { capture: true }))
+  }, [session, remember, start])
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -96,7 +120,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         start(result.session, input.remember)
         return { user: result.user, mustChangePassword: !!result.session.mustChangePassword }
       },
-      logout: () => start(null, false),
+      logout: () => {
+        if (user) audit(user, 'Signed out', 'Security')
+        start(null, false)
+        try {
+          // Drop per-session navigation history so Back cannot reopen protected pages.
+          for (const k of Object.keys(sessionStorage)) if (k.startsWith('bmis.') && k !== EXPIRED_KEY) sessionStorage.removeItem(k)
+        } catch { /* ignore */ }
+        window.location.replace(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/portal`)
+      },
       passwordChanged: () => session && start({ ...session, mustChangePassword: false }, remember),
       switchTestLevel: (role) => {
         const account = testAccountOf(session?.userId)

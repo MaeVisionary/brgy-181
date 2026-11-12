@@ -1,5 +1,16 @@
 # BMIS Patch Notes: Report formats, notifications, analytics and cleanup (12 November 2026)
 
+## 2026-11-12 (later): Security, accessibility, phones, uploads, registrations
+
+- Roles: only System Administrator, Chairman, Secretary, Kagawad, Treasurer, Property Custodian and Resident. "Authorized Personnel" removed (role, login, seed account). Treasurer sees fee documents only. Kagawads see complaints assigned to them by case personnel.
+- Log out asks for confirmation; signing out clears the session and returns to the sign-in page. Sessions end after 30 minutes without activity (activity keeps them alive) and the sign-in page says why.
+- Role and permission changes: staged, reviewed as a before/after table, need a reason and the administrator's password. The confirmation is bound to that exact change, expires in 5 minutes, allows 5 attempts and works once. Nobody can change their own role or access. Affected accounts are notified and every step is in the activity log.
+- One-time codes (OTP) are not implemented: they must be generated and checked on a server (e.g. Supabase Auth MFA). Password re-entry is the step-up until then.
+- Registrations: full application view, ID with masked number (reveal is logged), checks shown as Passed / Needs review / Failed / Not checked (missing checks never count as passed), in-person visit request with a generated email, visit record, then decision. No email service is connected, so emails are recorded as "not sent" and the screen says so.
+- Text size: Aa control (Small / Default / Large) scales all text; larger default on phones.
+- Phones: bottom bar with More sheet; record tables become tappable lists; no sideways scrolling at 320 px.
+- Uploads: PDF, JPG, PNG only (checked by content); photos resized and location data removed; limits in src/config/uploads.ts; duplicates stored once; unsubmitted uploads removed after 24 hours; Supabase schema and policies in docs/supabase/documents.sql (not connected).
+
 ## 2026-11-12: Simplification, resident profile reuse, complaints workflow
 
 - Reports: Official Forms / Regular Reports as name, agency, download. Analytics and service reports use short names, compact figures, collapsible report details, and a selector on phones.

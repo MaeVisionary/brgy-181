@@ -1,3 +1,4 @@
+import { StepUpDialog } from '@/components/ui/StepUpDialog'
 import { ServiceStandardsPanel } from './ServiceStandardsPanel'
 import { StoragePanel } from './StoragePanel'
 import { BarChart3, Boxes, Check, CheckCircle2, ChevronRight, Copy, FileText, Gavel, Info, KeyRound, Search, Users } from '@/icons'
@@ -16,8 +17,7 @@ import { formatDateTime, initials } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { listAudit } from '@/services/auditService'
 import { ServiceError } from '@/services/mockApi'
-import { verifyOwnPassword } from '@/services/authService'
-import { ASSIGNABLE_ROLES, listUsers, resetPassword, setDisplayName, setExtraPermissions, setRole, setRolePermission, setStatus } from '@/services/userService'
+import { ASSIGNABLE_ROLES, listUsers, resetPassword, setDisplayName, setExtraPermissions, setRole, setRolePermissions, type RoleChange, setStatus } from '@/services/userService'
 import { Toggle } from '@/components/ui/Toggle'
 import { getCredential, listResetRequests, type ResetRequest } from '@/services/credentialStore'
 import { TEST_ACCOUNTS, testAccountByKey, testUserFor } from '@/config/testAccount'
@@ -164,22 +164,12 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
   const [name, setName] = useState(u.fullName)
   const [role, setRoleValue] = useState<RoleId>(u.roleId)
   const [perms, setPerms] = useState<Set<Permission>>(new Set(u.extraPermissions ?? []))
-  const [confirming, setConfirming] = useState(false)
-  const [password, setPassword] = useState('')
-  const [pwError, setPwError] = useState<string | null>(null)
-  const renamable = ['property_custodian', 'system_admin', 'staff'].includes(u.roleId)
-  const changed = [...perms].sort().join() !== [...(u.extraPermissions ?? [])].sort().join()
-  const save = async () => {
-    setPwError(null)
-    if (!(await verifyOwnPassword(me, password))) {
-      setPwError('That is not your current password.')
-      return
-    }
-    await run(() => setExtraPermissions(u.id, [...perms], me))
-    setConfirming(false)
-    setPassword('')
-    onSaved(`Permissions saved for ${u.fullName}.`)
-  }
+  const [review, setReview] = useState<null | 'perms' | 'role'>(null)
+  const renamable = ['property_custodian', 'system_admin'].includes(u.roleId)
+  const before = new Set(u.extraPermissions ?? [])
+  const nextPerms = [...perms].filter((p) => GRANTABLE_STAFF_PERMISSIONS.includes(p)).sort()
+  const changed = nextPerms.join() !== [...before].sort().join()
+  const self = u.id === me.id
   return (
     <div className="mt-3 space-y-4 rounded-[var(--radius-control)] bg-surface-muted p-4">
       <div className="space-y-3">
@@ -201,7 +191,7 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
             <Select value={role} onChange={(e) => setRoleValue(e.target.value as RoleId)}>
               {ASSIGNABLE_ROLES.map((r) => <option key={r} value={r}>{ROLES[r].name}</option>)}
             </Select>
-            <Button size="md" variant="secondary" disabled={role === u.roleId} onClick={async () => { await run(() => setRole(u.id, role, me)); onSaved(`${u.fullName} is now ${ROLES[role].name}.`) }}>Save</Button>
+            <Button size="md" variant="secondary" disabled={role === u.roleId || self} onClick={() => setReview('role')}>Review</Button>
           </span>
         </label>
       )}
@@ -222,26 +212,53 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
               </li>
             ))}
           </ul>
-          {confirming ? (
-            <div className="mt-3 flex flex-col gap-2 rounded-[var(--radius-control)] border border-warning/40 bg-warning-tint/60 p-3 sm:flex-row sm:items-end sm:justify-end">
-              <label className="block flex-1 sm:max-w-xs">
-                <span className="mb-1 block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">Enter your password to confirm <span className="text-danger-ink">*</span></span>
-                <TextInput type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
-              </label>
-              <div className="flex gap-2">
-                <Button variant="ghost" onClick={() => { setConfirming(false); setPassword(''); setPwError(null) }}>Cancel</Button>
-                <Button disabled={!password} onClick={save}>Confirm and save</Button>
-              </div>
-              {pwError && <p role="alert" className="text-[length:calc(14px*var(--fs))] text-danger-ink sm:basis-full sm:text-right">{pwError}</p>}
-            </div>
-          ) : (
-            <div className="mt-3 flex justify-end">
-              <Button disabled={!changed} onClick={() => setConfirming(true)}>Save permissions</Button>
-            </div>
-          )}
+          <div className="mt-3 flex justify-end">
+            <Button disabled={!changed || self} onClick={() => setReview('perms')}>Review changes</Button>
+          </div>
         </div>
       ) : null}
+      {review === 'perms' && (
+        <StepUpDialog
+          title="Review permission changes"
+          action="account-permissions"
+          payload={{ id: u.id, perms: nextPerms }}
+          onCancel={() => setReview(null)}
+          onApply={async (reason, challengeId) => { await setExtraPermissions(u.id, [...perms], me, reason, challengeId); setReview(null); onSaved(`Access updated for ${u.fullName}. They have been notified.`) }}
+        >
+          <p className="text-[length:calc(15.5px*var(--fs))] text-navy-900">{u.fullName} · {ROLES[u.roleId].name}</p>
+          <ChangeTable rows={GRANTABLE_STAFF_PERMISSIONS.filter((p) => before.has(p) !== perms.has(p)).map((p) => [PERMISSION_LABELS[p], before.has(p), perms.has(p)])} />
+        </StepUpDialog>
+      )}
+      {review === 'role' && (
+        <StepUpDialog
+          title="Change role?"
+          action="account-role"
+          payload={{ id: u.id, roleId: role }}
+          onCancel={() => setReview(null)}
+          onApply={async (reason, challengeId) => { await setRole(u.id, role, me, reason, challengeId); setReview(null); onSaved(`${u.fullName} is now ${ROLES[role].name}. They have been notified.`) }}
+        >
+          <p className="text-[length:calc(15.5px*var(--fs))] text-navy-900">{u.fullName}: <strong>{ROLES[u.roleId].name}</strong> → <strong>{ROLES[role].name}</strong></p>
+        </StepUpDialog>
+      )}
     </div>
+  )
+}
+
+/** Before / after table for permission changes; added in green, removed in red. */
+function ChangeTable({ rows }: { rows: [string, boolean, boolean][] }) {
+  return (
+    <table className="mt-3 w-full text-[length:calc(15px*var(--fs))]">
+      <thead><tr className="border-b border-line text-left text-[length:calc(14px*var(--fs))] text-ink-nav"><th className="py-2 pr-2 font-semibold">Permission</th><th className="px-2 py-2 font-semibold">Before</th><th className="py-2 pl-2 font-semibold">After</th></tr></thead>
+      <tbody>
+        {rows.map(([label, b, a]) => (
+          <tr key={label} className="border-b border-line-soft">
+            <td className="py-2 pr-2 text-navy-900">{label}</td>
+            <td className="px-2 py-2 text-ink-nav">{b ? 'Yes' : 'No'}</td>
+            <td className={`py-2 pl-2 font-semibold ${a ? 'text-success' : 'text-danger-ink'}`}>{a ? 'Yes (added)' : 'No (removed)'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }
 
@@ -256,15 +273,22 @@ export function RolesPage() {
     window.addEventListener('bmis:roles-changed', on)
     return () => window.removeEventListener('bmis:roles-changed', on)
   }, [])
+  // Changes are staged here, reviewed, then applied together with a reason and password.
+  const [staged, setStaged] = useState<Record<string, boolean>>({})
+  const [reviewing, setReviewing] = useState(false)
+  const keyOf = (r: RoleId, p: Permission) => `${r}|${p}`
+  const isOn = (r: RoleId, p: Permission) => staged[keyOf(r, p)] ?? ROLE_PERMISSIONS[r].includes(p)
   const toggle = async (r: RoleId, p: Permission, next: boolean) => {
     setMsg(null)
-    try {
-      await setRolePermission(r, p, next, user!)
-      setMsg({ ok: true, text: `${ROLES[r].name}: "${PERMISSION_LABELS[p]}" ${next ? 'enabled' : 'disabled'}.` })
-    } catch (e) {
-      setMsg({ ok: false, text: e instanceof ServiceError ? e.message : 'Could not save.' })
-    }
+    setStaged((s) => {
+      const k = keyOf(r, p)
+      const n = { ...s }
+      if (next === ROLE_PERMISSIONS[r].includes(p)) delete n[k]
+      else n[k] = next
+      return n
+    })
   }
+  const changes: RoleChange[] = Object.entries(staged).map(([k, on]) => { const [roleId, permission] = k.split('|'); return { roleId: roleId as RoleId, permission: permission as Permission, on } }).sort((a, b) => (a.roleId + a.permission).localeCompare(b.roleId + b.permission))
   const icons: Record<string, React.ReactNode> = {
     residents: <Users className="size-[18px]" />,
     documents: <FileText className="size-[18px]" />,
@@ -275,6 +299,26 @@ export function RolesPage() {
   return (
     <>
       <PageHeader title="Roles and Permissions" />
+      {changes.length > 0 && (
+        <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3 shadow-sm">
+          <span className="text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{changes.length} change{changes.length > 1 ? 's' : ''} not saved</span>
+          <span className="flex gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setStaged({})}>Discard</Button>
+            <Button size="sm" onClick={() => setReviewing(true)}>Review changes</Button>
+          </span>
+        </div>
+      )}
+      {reviewing && (
+        <StepUpDialog
+          title="Review permission changes"
+          action="role-permissions"
+          payload={{ changes }}
+          onCancel={() => setReviewing(false)}
+          onApply={async (reason, challengeId) => { await setRolePermissions(changes, reason, challengeId, user!); setStaged({}); setReviewing(false); setMsg({ ok: true, text: 'Permissions updated. Affected accounts have been notified.' }) }}
+        >
+          <ChangeTable rows={changes.map((c) => [`${ROLES[c.roleId].name}: ${PERMISSION_LABELS[c.permission]}`, !c.on, c.on])} />
+        </StepUpDialog>
+      )}
       {msg && <p role="status" className={cn('mb-3 rounded-[var(--radius-control)] px-4 py-2.5 text-[length:calc(14.5px*var(--fs))]', msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{msg.text}</p>}
       <Card className="md:hidden">
         <label className="block border-b border-line-soft px-4 py-3">
@@ -290,7 +334,7 @@ export function RolesPage() {
               {g.permissions.map((p) => (
                 <li key={p} className="flex min-h-[52px] items-center justify-between gap-3 px-4 py-2">
                   <span className="text-[length:calc(15px*var(--fs))] text-navy-900">{PERMISSION_LABELS[p]}</span>
-                  <Toggle size="sm" checked={ROLE_PERMISSIONS[phoneRole].includes(p)} onChange={(next) => void toggle(phoneRole, p, next)} label={`${ROLES[phoneRole].name}: ${PERMISSION_LABELS[p]}`} />
+                  <Toggle size="sm" checked={isOn(phoneRole, p)} onChange={(next) => void toggle(phoneRole, p, next)} label={`${ROLES[phoneRole].name}: ${PERMISSION_LABELS[p]}`} />
                 </li>
               ))}
             </ul>
@@ -317,7 +361,7 @@ export function RolesPage() {
                   <td className="px-5 py-3 text-navy-900">{PERMISSION_LABELS[p]}</td>
                   {EDITABLE_ROLES.map((r) => (
                     <td key={r} className="px-2 py-3 text-center">
-                      <Toggle size="sm" checked={ROLE_PERMISSIONS[r].includes(p)} onChange={(next) => void toggle(r, p, next)} label={`${ROLES[r].name}: ${PERMISSION_LABELS[p]}`} />
+                      <Toggle size="sm" checked={isOn(r, p)} onChange={(next) => void toggle(r, p, next)} label={`${ROLES[r].name}: ${PERMISSION_LABELS[p]}`} />
                     </td>
                   ))}
                 </tr>

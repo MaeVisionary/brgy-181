@@ -5,6 +5,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { NAVIGATION, type NavGroup, type NavLeaf } from '@/config/navigation'
 import { cn } from '@/lib/cn'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { initials } from '@/lib/format'
 
 const itemBase =
@@ -48,6 +49,7 @@ function FlatNav({
   foldable?: boolean
 }) {
   const { pathname } = useLocation()
+  const [confirmOut, setConfirmOut] = useState(false)
   const [folded, setFolded] = useState<Record<string, boolean>>(() => {
     try {
       return JSON.parse(localStorage.getItem('bmis.nav.folded') ?? '{}') as Record<string, boolean>
@@ -80,6 +82,11 @@ function FlatNav({
   }
   return (
     <nav aria-label="Main" className="flex h-full flex-col bg-surface">
+      {confirmOut && (
+        <ConfirmDialog title="Log out?" confirmLabel="Log Out" destructive onCancel={() => setConfirmOut(false)} onConfirm={logout}>
+          Are you sure you want to log out of your account?
+        </ConfirmDialog>
+      )}
       <div className={cn('flex-1 overflow-y-auto pt-4', collapsed ? 'px-2' : 'px-3')}>
         {sections.map((sec, i) => (
           <div key={sec.label ?? i} className={i > 0 ? 'mt-4' : undefined}>
@@ -137,7 +144,7 @@ function FlatNav({
                 <span className="block truncate text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900">{user.fullName}</span>
                 <span className="block truncate text-[length:calc(13px*var(--fs))] text-ink-muted">{user.position}</span>
               </span>
-              <button type="button" onClick={logout} aria-label="Sign out" title="Sign out" className="grid size-9 place-items-center rounded-md text-ink-nav hover:bg-surface hover:text-navy-900">
+              <button type="button" onClick={() => setConfirmOut(true)} aria-label="Log out" title="Log out" className="grid size-11 place-items-center rounded-md text-ink-nav hover:bg-surface hover:text-navy-900">
                 <LogOut className="size-4" />
               </button>
             </>

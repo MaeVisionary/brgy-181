@@ -4,6 +4,8 @@ import type { Permission, RoleId, User } from '@/types/auth'
 import { audit } from './auditService'
 import { clearFailures, hashPassword, resolveResetRequests, setCredential, temporaryPassword } from './credentialStore'
 import { ServiceError, mockRequest } from './mockApi'
+import { consumeChallenge } from './stepUp'
+import { mockNotifications } from '@/mocks/notifications'
 
 /** Account administration (FR3). Simulated in memory; the backend must enforce it. */
 
@@ -56,14 +58,32 @@ export async function resetPassword(target: { credentialKey: string; identifiers
   return temp
 }
 
-export function setExtraPermissions(id: string, perms: Permission[], by: User): Promise<User> {
+function notifyAccounts(userIds: string[], title: string, body: string) {
+  const now = new Date().toISOString()
+  for (const userId of new Set(userIds)) mockNotifications.push({ id: `ntf-${Math.random().toString(36).slice(2, 9)}`, userId, category: 'system', title, body, createdAt: now, read: false, link: '/account' })
+  window.dispatchEvent(new Event('bmis:notifications-changed'))
+}
+
+const needReason = (reason: string) => {
+  if (reason.trim().length < 5) throw new ServiceError('reason', 'Give the reason for this change.')
+}
+
+export function setExtraPermissions(id: string, perms: Permission[], by: User, reason: string, challengeId: string | undefined): Promise<User> {
   return mockRequest(() => {
     requireAdmin(by)
     const u = mockUsers.find((x) => x.id === id)
     if (!u) throw new ServiceError('not_found', 'Account not found.')
+    if (u.id === by.id) throw new ServiceError('self', 'You cannot change your own access.')
     if (!GRANTABLE_ROLES.includes(u.roleId)) throw new ServiceError('invalid', 'Permissions are set per role for this account.')
-    u.extraPermissions = perms.filter((p) => GRANTABLE_STAFF_PERMISSIONS.includes(p))
-    audit(by, 'Changed account permissions', 'Roles and permissions', `${u.username}: ${u.extraPermissions.join(', ') || 'none'}`)
+    needReason(reason)
+    const next = perms.filter((p) => GRANTABLE_STAFF_PERMISSIONS.includes(p)).sort()
+    consumeChallenge(challengeId, by, 'account-permissions', { id, perms: next })
+    const before = u.extraPermissions ?? []
+    u.extraPermissions = next
+    const added = next.filter((p) => !before.includes(p))
+    const removed = before.filter((p) => !next.includes(p))
+    audit(by, 'Changed account permissions', 'Roles and permissions', `${u.username}: +[${added.join(', ')}] -[${removed.join(', ')}] · reason: ${reason.trim()}`)
+    notifyAccounts([u.id], 'Your account access was updated', `${added.length} added, ${removed.length} removed by the System Administrator. Contact the Barangay Hall if you did not expect this.`)
     return u
   })
 }
@@ -71,30 +91,49 @@ export function setExtraPermissions(id: string, perms: Permission[], by: User): 
 /** Personnel positions the administrator may assign (elected officials keep their role). */
 export const ASSIGNABLE_ROLES: RoleId[] = ['property_custodian', 'treasurer']
 
-export function setRole(id: string, roleId: RoleId, by: User): Promise<User> {
+export function setRole(id: string, roleId: RoleId, by: User, reason: string, challengeId: string | undefined): Promise<User> {
   return mockRequest(() => {
     requireAdmin(by)
     const u = mockUsers.find((x) => x.id === id)
     if (!u) throw new ServiceError('not_found', 'Account not found.')
+    if (u.id === by.id) throw new ServiceError('self', 'You cannot change your own role.')
     if (!ASSIGNABLE_ROLES.includes(u.roleId) || !ASSIGNABLE_ROLES.includes(roleId)) throw new ServiceError('official', 'Only personnel positions can be reassigned here.')
     if (u.roleId === roleId) return u
+    needReason(reason)
+    consumeChallenge(challengeId, by, 'account-role', { id, roleId })
     const before = u.roleId
     u.roleId = roleId
-    audit(by, 'Changed account role', 'Roles and permissions', `${u.username}: ${before} to ${roleId}`)
+    audit(by, 'Changed account role', 'Roles and permissions', `${u.username}: ${ROLES[before].name} to ${ROLES[roleId].name} · reason: ${reason.trim()}`)
+    notifyAccounts([u.id], 'Your role was changed', `${ROLES[before].name} → ${ROLES[roleId].name}, by the System Administrator. Contact the Barangay Hall if you did not expect this.`)
     return u
   })
 }
 
-/** Turns one permission on or off for a role (System Administrator only). */
-export function setRolePermission(roleId: RoleId, permission: Permission, on: boolean, by: User): Promise<void> {
+export interface RoleChange {
+  roleId: RoleId
+  permission: Permission
+  on: boolean
+}
+
+/** Applies a reviewed set of role permission changes (System Administrator, confirmed with password). */
+export function setRolePermissions(changes: RoleChange[], reason: string, challengeId: string | undefined, by: User): Promise<void> {
   return mockRequest(() => {
     requireAdmin(by)
-    if (!EDITABLE_ROLES.includes(roleId)) throw new ServiceError('locked', 'This role cannot be changed here.')
-    if (!PERMISSION_GROUPS.some((g) => g.permissions.includes(permission))) throw new ServiceError('locked', 'This permission cannot be changed here.')
-    const current = new Set(ROLE_PERMISSIONS[roleId])
-    if (on) current.add(permission)
-    else current.delete(permission)
-    writeRolePermissions(roleId, [...current])
-    audit(by, `${on ? 'Enabled' : 'Disabled'} permission for ${ROLES[roleId].name}`, 'Roles and permissions', permission)
+    if (!changes.length) throw new ServiceError('empty', 'Nothing to change.')
+    for (const c of changes) {
+      if (!EDITABLE_ROLES.includes(c.roleId)) throw new ServiceError('locked', 'This role cannot be changed here.')
+      if (!PERMISSION_GROUPS.some((g) => g.permissions.includes(c.permission))) throw new ServiceError('locked', 'This permission cannot be changed here.')
+    }
+    needReason(reason)
+    consumeChallenge(challengeId, by, 'role-permissions', { changes })
+    const byRole = new Map<RoleId, RoleChange[]>()
+    for (const c of changes) byRole.set(c.roleId, [...(byRole.get(c.roleId) ?? []), c])
+    for (const [roleId, list] of byRole) {
+      const current = new Set(ROLE_PERMISSIONS[roleId])
+      for (const c of list) (c.on ? current.add(c.permission) : current.delete(c.permission))
+      writeRolePermissions(roleId, [...current])
+      audit(by, `Changed permissions for ${ROLES[roleId].name}`, 'Roles and permissions', `${list.map((c) => `${c.on ? '+' : '-'}${c.permission}`).join(', ')} · reason: ${reason.trim()}`)
+      notifyAccounts(mockUsers.filter((u) => u.roleId === roleId && u.status === 'active').map((u) => u.id), 'Your account access was updated', `${list.filter((c) => c.on).length} added, ${list.filter((c) => !c.on).length} removed for ${ROLES[roleId].name}. Contact the Barangay Hall if you did not expect this.`)
+    }
   })
 }

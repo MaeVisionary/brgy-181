@@ -1,3 +1,5 @@
+import { EXPIRED_KEY } from '@/auth/AuthContext'
+import { APP_CONFIG } from '@/config/app'
 import { ArrowLeft, ChevronRight } from '@/icons'
 import { useState } from 'react'
 import { BarangaySeal } from '@/components/layout/BarangaySeal'
@@ -10,6 +12,16 @@ import { PublicLayout } from './PublicLayout'
 export function PortalPage() {
   const go = useSmoothNavigate()
   const [picked, setPicked] = useState<string | null>(null)
+  // Shown once after an automatic sign-out for inactivity.
+  const [expired] = useState(() => {
+    try {
+      const v = sessionStorage.getItem(EXPIRED_KEY) === '1'
+      sessionStorage.removeItem(EXPIRED_KEY)
+      return v
+    } catch {
+      return false
+    }
+  })
 
   const choose = (slug: string) => {
     if (picked) return
@@ -24,6 +36,7 @@ export function PortalPage() {
         <button type="button" onClick={() => go('/', 'back')} className="bmis-press mb-5 inline-flex min-h-9 items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
           <ArrowLeft className="size-4" /> Back to home
         </button>
+        {expired && <p role="status" className="mb-4 rounded-[var(--radius-control)] bg-sky-100 px-4 py-3 text-[length:calc(16px*var(--fs))] text-navy-900">You were signed out after {APP_CONFIG.sessionMinutes} minutes without activity. Please sign in again.</p>}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:items-stretch">
           <aside className="bmis-rise relative flex flex-col items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-navy-900 to-navy-800 px-6 py-10 text-center text-white md:py-14">
             <img aria-hidden alt="" src={`${import.meta.env.BASE_URL}seal.png`} className="pointer-events-none absolute -right-20 -bottom-24 w-[320px] max-w-none opacity-[0.07] grayscale select-none" />
