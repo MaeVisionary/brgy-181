@@ -6,19 +6,29 @@ import { RECURRING_REPORTS } from '@/config/barangay'
 import { getDocumentType } from '@/documents/catalog'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
+import { useAuth } from '@/auth/useAuth'
 import { formatDateTime } from '@/lib/format'
 import { STAGE_LABEL, STAGE_TONE, listCases, upcomingHearings } from '@/services/caseService'
 import { availableTransitions, listRequests } from '@/services/documentService'
-import { getResidentQueueCounts } from '@/services/residentService'
+import { getResidentQueueCounts, listChangeRequests } from '@/services/residentService'
+import { listRegistrations } from '@/services/registrationService'
+import { listAppointments } from '@/services/appointmentService'
+import { listReviewQueue } from '@/services/concernService'
+import { estimateFor } from '@/services/serviceStandardService'
 import { Link } from 'react-router-dom'
 import { DashHeader, EmptyNote, ListPanel, Row, Stat, ViewAll } from './shared'
 
 /** Ana Manila Salvador: day-to-day administration of records, documents, complaints and reports. */
 export function SecretaryDashboard() {
   const actor = useDocActor()!
+  const { user } = useAuth()
   const docs = useAsync(() => listRequests(actor), [actor]).data
   const cases = useAsync(() => listCases(actor), [actor]).data
   const q = useAsync(getResidentQueueCounts).data
+  const regs = useAsync(listRegistrations).data
+  const crs = useAsync(listChangeRequests).data
+  const appts = useAsync(() => (user ? listAppointments(user) : Promise.resolve([])), [user]).data
+  const concernReview = useAsync(() => (user ? listReviewQueue(user) : Promise.resolve([])).catch(() => []), [user]).data
 
   const myQueue = docs?.filter((d) => availableTransitions(d, actor).some((t) => t.by !== 'owner' && !t.label.startsWith('Cancel'))) ?? null
   const isCase = (id: string) => getDocumentType(id as never).category === 'case'
@@ -33,6 +43,23 @@ export function SecretaryDashboard() {
   const openCount = docs?.filter((d) => !['released', 'served', 'forwarded', 'rejected', 'cancelled'].includes(d.status)).length ?? null
   const weekAgo = Date.now() - 7 * 86_400_000
   const doneThisWeek = docs?.filter((d) => d.history.some((h) => ['released', 'served', 'forwarded'].includes(h.status) && new Date(h.at).getTime() >= weekAgo)).length ?? null
+
+  // Work split by who has to act next, so the Secretary sees only her own pile first.
+  const loaded = docs && regs && crs && appts && concernReview
+  const today = new Date().toISOString().slice(0, 10)
+  const openDoc = (d: { status: string }) => !['released', 'served', 'forwarded', 'rejected', 'cancelled'].includes(d.status)
+  const byWho = loaded
+    ? {
+        mine: (myQueue?.length ?? 0) + regs.filter((r) => r.status === 'manual_review' && !(r.inPerson && !r.inPerson.completedAt)).length
+          + crs.filter((c) => c.status === 'pending').length + concernReview.length,
+        auto: crs.filter((c) => c.decidedBy === 'system' && c.decidedAt && new Date(c.decidedAt).getTime() >= weekAgo).length
+          + regs.filter((r) => r.status === 'auto_approved' && new Date(r.submittedAt).getTime() >= weekAgo).length,
+        resident: docs.filter((d) => d.status === 'needs_info').length + regs.filter((r) => r.status === 'manual_review' && r.inPerson && !r.inPerson.completedAt).length
+          + appts.filter((a) => a.status === 'scheduled' || a.status === 'reschedule_requested').length,
+        chairman: docs.filter((d) => d.status === 'pending_approval').length,
+        late: docs.filter((d) => { if (!openDoc(d)) return false; const e = estimateFor(d); return !!e && (e.extended?.newDate ?? e.expectedBy) < today }).length,
+      }
+    : null
 
   return (
     <>
@@ -49,6 +76,24 @@ export function SecretaryDashboard() {
         <Stat label="Forwarded to Chairman" value={awaitingChairman} to="/documents" />
         <Stat label="Completed" value={completed} to="/documents" />
       </section>
+
+      <Panel className="mt-4" title="Who needs to act" bodyClassName="px-0 py-0">
+        <dl className="grid grid-cols-2 divide-line-soft sm:grid-cols-5 sm:divide-x">
+          {([
+            ['Needs my attention', byWho?.mine, 'Waiting on you', 'text-navy-900'],
+            ['Past expected date', byWho?.late, 'Exceptions', byWho?.late ? 'text-danger' : 'text-navy-900'],
+            ['Waiting for resident', byWho?.resident, 'Reply, visit or confirmation', 'text-navy-900'],
+            ['Waiting for Chairman', byWho?.chairman, 'Approval or signature', 'text-navy-900'],
+            ['Done automatically', byWho?.auto, 'Last 7 days', 'text-success'],
+          ] as const).map(([label, n, hint, tone]) => (
+            <div key={label} className="flex flex-col gap-1 border-b border-line-soft px-4 py-4 sm:border-b-0">
+              <dt className="text-[length:calc(15px*var(--fs))] leading-snug font-semibold text-ink-nav">{label}</dt>
+              <dd className={`font-display text-[length:calc(30px*var(--fs))] leading-none font-extrabold tabular-nums ${tone}`}>{n ?? '–'}</dd>
+              <dd className="text-[length:calc(13.5px*var(--fs))] text-ink-muted">{hint}</dd>
+            </div>
+          ))}
+        </dl>
+      </Panel>
 
       <Panel className="mt-4" title="Needs attention" bodyClassName="px-0 py-0">
         <ul className="divide-y divide-line-soft">

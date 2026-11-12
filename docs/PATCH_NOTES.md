@@ -344,3 +344,8 @@ Plain tags (sector tags such as PWD or 4Ps, "2 families", attendance counts) hav
   now ask for the holding-ID photo when needed. Decide which one the paper keeps.
 - Automatic approval: the paper matches **name, birthdate and address**; the portal
   matches name and birthdate. Address matching can be added.
+
+## Automation: contact numbers, name formatting, Secretary queue (2026-11-11)
+- Contact number corrections are refused when the number already belongs to another resident (checked when submitted and again just before saving; spaces and dashes ignored, stored without them). Database-level uniqueness and the one-time code to the new number still need the backend.
+- Full name corrections that change only spacing or capital letters (same letters) are applied automatically and audited. Any spelling change still goes to the Secretary.
+- Secretary dashboard: new "Who needs to act" panel. It shows five counts: Needs my attention, Past expected date (exceptions), Waiting for resident, Waiting for Chairman, and Done automatically (last 7 days).

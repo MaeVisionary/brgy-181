@@ -276,6 +276,12 @@ function correctionChecks(input: CorrectionInput, res: Resident, me: Resident): 
   checks.push({ name: 'Format', result: fmt ? 'passed' : 'failed', note: fmt ? undefined : input.field === 'Contact number' ? 'Use an 11-digit mobile number starting with 09.' : 'Check the value.' })
   const pending = mockChangeRequests.some((c) => c.residentId === res.id && c.field === input.field && c.status === 'pending')
   checks.push({ name: 'No pending request for this field', result: pending ? 'failed' : 'passed', note: pending ? 'There is already a pending request for this.' : undefined })
+  if (input.field === 'Contact number') {
+    // One number per resident record (re-checked again just before saving).
+    const n = v.replace(/[\s-]/g, '')
+    const taken = mockResidents.some((r) => r.id !== res.id && (r.contactNo ?? '').replace(/[\s-]/g, '') === n)
+    checks.push({ name: 'Number not used by another resident', result: taken ? 'failed' : 'passed', note: taken ? 'This contact number is already registered to another resident. Please check the number and try again.' : undefined })
+  }
   if (input.field === 'Full name' || input.field === 'Birthdate') {
     const [first, , last] = input.field === 'Full name' ? v.split('|') : [res.firstName, '', res.lastName]
     const birth = input.field === 'Birthdate' ? v : res.birthDate
@@ -350,17 +356,23 @@ export function submitCorrection(input: CorrectionInput, by: User): Promise<Resi
     const failed = checks.find((c) => c.result === 'failed' && c.name !== 'Supporting document')
     if (failed) throw new ServiceError('check', failed.note ?? `${failed.name} check failed.`)
     cr.checks = checks
-    const policy = CORRECTION_POLICY[field] ?? 'review'
-    const clean = basis === 'self' && !checks.some((c) => c.result === 'needs_review' && c.name !== 'One-time code to the new number')
+    const sameLetters = (x: string) => x.replace(/[|\s]+/g, ' ').trim().toLowerCase()
+    const formattingOnly = field === 'Full name' && sameLetters(cr.requestedValue) === sameLetters([res.firstName, res.middleName ?? '', res.lastName, res.suffix ?? ''].join('|'))
+    if (formattingOnly) checks.push({ name: 'Only spacing or capital letters change', result: 'passed' })
+    const policy = formattingOnly ? 'auto' : CORRECTION_POLICY[field] ?? 'review'
+    const clean = basis === 'self' && !checks.some((c) => c.result === 'needs_review' && c.name !== 'One-time code to the new number' && !(formattingOnly && c.name === 'Supporting document'))
     if (basis !== 'household' && policy !== 'review' && clean) {
       const now = new Date().toISOString()
+      if (field === 'Contact number' && mockResidents.some((r) => r.id !== res.id && (r.contactNo ?? '').replace(/[\s-]/g, '') === cr.requestedValue.replace(/[\s-]/g, '')))
+        throw new ServiceError('taken', 'This contact number is already registered to another resident. Please check the number and try again.')
+      if (field === 'Contact number') cr.requestedValue = cr.requestedValue.replace(/[\s-]/g, '')
       FIELD_SETTERS[field]?.(res, cr.requestedValue)
       res.updatedAt = now
       cr.status = 'approved'
       cr.decidedBy = 'system'
       cr.decidedAt = now
       cr.route = 'auto'
-      cr.decisionNote = field === 'Contact number' ? 'Updated automatically. Number not verified (no SMS service yet).' : policy === 'self_reported' ? 'Updated automatically as self-reported information.' : 'Updated automatically.'
+      cr.decisionNote = formattingOnly ? 'Spelling kept; spacing or capital letters corrected automatically.' : field === 'Contact number' ? 'Updated automatically. Number not verified (no SMS service yet).' : policy === 'self_reported' ? 'Updated automatically as self-reported information.' : 'Updated automatically.'
       mockChangeRequests.unshift(cr)
       audit(by, `Correction applied automatically: ${field}`, 'Residents', `${res.id}: "${cr.originalValue}" → "${displayRequestedValue(field, cr.requestedValue)}"`)
       notifyUserOfResident(me.id, 'Your record was updated', `${field} · ${cr.decisionNote}`, '/my/profile')
