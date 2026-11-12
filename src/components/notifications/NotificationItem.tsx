@@ -2,7 +2,7 @@ import { SealWatermark } from '@/components/layout/SealWatermark'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Bell, CalendarClock, CheckCircle2, FileText, MessageSquareWarning, Package, Receipt, UserCheck, UserRoundPen, X } from '@/icons'
+import { AlertTriangle, Bell, CalendarClock, CheckCircle2, FileText, MegaphoneIcon as Megaphone, MessageSquareWarning, Package, Receipt, UserCheck, UserRoundPen, X } from '@/icons'
 import { TONE as T } from '@/icons/tones'
 import { cn } from '@/lib/cn'
 import type { AppNotification, NotificationCategory } from '@/types/activity'
@@ -18,6 +18,7 @@ const TONE: Record<NotificationCategory, string> = {
   borrowing: T.orange,
   overdue: T.red,
   system: T.gray,
+  announcement: T.blue,
 }
 
 const ICON: Record<NotificationCategory, ReactNode> = {
@@ -31,6 +32,7 @@ const ICON: Record<NotificationCategory, ReactNode> = {
   borrowing: <Package className="size-4" />,
   overdue: <AlertTriangle className="size-4" />,
   system: <Bell className="size-4" />,
+  announcement: <Megaphone className="size-4" />,
 }
 
 function actionLabel(link?: string) {

@@ -127,7 +127,7 @@ export const DEFAULT_RULES: SchedulingRules = {
   services: {
     document_claim: { label: 'Document claiming', minutes: 10, buffer: 5, step: 15, roles: ['secretary'], maxPerDay: 0, cancelHours: 2, reminders: ['1d', 'day', '1h'], residentBookable: false, staffConfirms: false },
     correction_verification: { label: 'Original document verification', minutes: 15, buffer: 5, step: 15, roles: ['secretary'], maxPerDay: 0, cancelHours: 2, reminders: ['3d', '1d', 'day', '1h'], residentBookable: false, staffConfirms: false },
-    complaint_consult: { label: 'Complaint initial interview', minutes: 30, buffer: 10, step: 30, roles: ['secretary'], maxPerDay: 4, cancelHours: 24, reminders: ['3d', '1d', 'day', '1h'], residentBookable: false, staffConfirms: false },
+    complaint_consult: { label: 'Complaint consultation (Punong Barangay)', minutes: 30, buffer: 10, step: 30, roles: ['chairman'], maxPerDay: 4, cancelHours: 24, reminders: ['3d', '1d', 'day', '1h'], residentBookable: false, staffConfirms: false },
     equipment_pickup: { label: 'Equipment release', minutes: 15, buffer: 5, step: 15, roles: ['property_custodian'], maxPerDay: 0, cancelHours: 2, reminders: ['1d', 'day', '1h'], residentBookable: false, staffConfirms: false },
     equipment_return: { label: 'Equipment return and inspection', minutes: 15, buffer: 5, step: 15, roles: ['property_custodian'], maxPerDay: 0, cancelHours: 2, reminders: ['1d', 'day'], residentBookable: false, staffConfirms: false },
     chairman_consult: { label: 'Consultation with the Punong Barangay', minutes: 20, buffer: 10, step: 30, roles: ['chairman'], maxPerDay: 4, cancelHours: 24, reminders: ['1d', 'day', '1h'], residentBookable: true, staffConfirms: true },

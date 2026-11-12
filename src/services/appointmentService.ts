@@ -70,7 +70,7 @@ export interface AppointmentType {
 export const APPOINTMENT_TYPES: Record<AppointmentKind, AppointmentType> = {
   correction_verification: { label: 'In-person verification', permission: 'residents.approve', lengthFrom: 'documents', residentMayMove: true, staffLink: () => '/residents/change-requests', residentLink: () => '/my/profile' },
   document_claim: { label: 'Document claiming', permission: 'documents.release', lengthFrom: 'service', residentMayMove: true, staffLink: (id) => `/documents/${id}`, residentLink: (id) => `/my/documents/${id}` },
-  complaint_consult: { label: 'Complaint interview', permission: 'cases.manage', sensitive: true, lengthFrom: 'service', residentMayMove: false, staffLink: (id) => `/cases/${id}`, residentLink: (id) => `/my/complaints/${id}` },
+  complaint_consult: { label: 'Complaint consultation', permission: 'cases.manage', sensitive: true, lengthFrom: 'service', residentMayMove: false, staffLink: (id) => `/cases/${id}`, residentLink: (id) => `/my/complaints/${id}` },
   equipment_pickup: { label: 'Equipment pickup', permission: 'borrowing.release', lengthFrom: 'service', residentMayMove: true, staffLink: (id) => `/borrowing/${id}`, residentLink: (id) => `/my/borrowing/${id}` },
   equipment_return: { label: 'Equipment return', permission: 'borrowing.release', lengthFrom: 'service', residentMayMove: true, staffLink: (id) => `/borrowing/${id}`, residentLink: (id) => `/my/borrowing/${id}` },
   chairman_consult: { label: 'Consultation with the Punong Barangay', lengthFrom: 'service', residentMayMove: true, sensitive: true, staffLink: () => '/appointments', residentLink: () => '/my/appointments' },
@@ -349,15 +349,20 @@ export function scheduleForCorrection(changeRequestId: string, i: ScheduleInput,
   })
 }
 
-/** Authorized case staff ask a complainant to come in for a consultation (never a hearing). */
+/**
+ * Consultation with the Punong Barangay about a complaint (never a hearing).
+ * The Chairman holds it; the Secretary may set it up for the Chairman. Only a
+ * case already forwarded to the Chairman can have one.
+ */
 export function scheduleConsultation(caseId: string, i: { reason: string; documents: string[]; date: string; time: string; assignedTo: string; instructions?: string }, by: User): Promise<Appointment> {
   return mockRequest(() => {
-    if (!can(by, 'cases.manage')) throw new ServiceError('forbidden', 'You cannot schedule complaint consultations.')
+    if (!can(by, 'cases.manage') && !can(by, 'cases.decide')) throw new ServiceError('forbidden', 'You cannot schedule complaint consultations.')
     const c = mockCases.find((x) => x.id === caseId)
     if (!c) throw new ServiceError('not_found', 'Case not found.')
     const party = c.complainants.find((p) => p.residentId)
     const userId = party ? mockUsers.find((u) => u.residentId === party.residentId && u.status === 'active')?.id : undefined
     if (!party || !userId) throw new ServiceError('no_account', 'The complainant has no portal account. Contact them by phone.')
+    if (['filed', 'under_review'].includes(c.stage)) throw new ServiceError('stage', 'Forward the case to the Punong Barangay first.')
     if (i.reason.trim().length < 5) throw new ServiceError('reason', 'Say why the complainant should come in.')
     const list = load()
     if (list.some((a) => a.kind === 'complaint_consult' && a.subjectId === caseId && isOpen(a))) throw new ServiceError('exists', 'A consultation is already open for this case.')
@@ -375,6 +380,7 @@ export function scheduleConsultation(caseId: string, i: { reason: string; docume
     save([...list, a])
     audit(by, `Complaint consultation scheduled ${a.ref}`, 'Cases', c.caseNo)
     later(a, 'Please come to the Barangay Hall', 'scheduled')
+    if (a.assignedTo !== by.id) notify([a.assignedTo], 'Consultation added to your calendar', `${c.caseNo} · ${a.date} ${formatTime(a.time)}`, `/appointments/${a.id}`)
     return a
   })
 }
@@ -509,6 +515,8 @@ export const recordVerification = (id: string, result: 'verified' | 'not_verifie
 export const completeAppointment = (id: string, notes: string, by: User) => mutate(id, by, (a) => {
   requireHandler(by, a)
   if (a.kind === 'correction_verification') throw new ServiceError('kind', 'Record the verification result instead.')
+  // Outcomes of consultations are recorded by the official who holds them (the Punong Barangay), not by support staff.
+  if (a.kind !== 'general_assist' && !serviceRule(a.kind)?.roles.includes(by.roleId)) throw new ServiceError('forbidden', 'Only the Punong Barangay records the outcome of this consultation.')
   if (!['complaint_consult', 'chairman_consult', 'general_assist'].includes(a.kind)) throw new ServiceError('kind', 'Finish this in the request itself (release or hand-over); the appointment then closes automatically.')
   if (!a.checkedInAt) throw new ServiceError('state', 'Check the resident in first.')
   if (notes.trim().length < 5) throw new ServiceError('notes', 'Write what happened and the next step.')

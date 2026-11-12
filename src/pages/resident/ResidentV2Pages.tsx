@@ -28,6 +28,8 @@ import { estimateFor, standardFor } from '@/services/serviceStandardService'
 import { applyTransition, availableTransitions, getRequest } from '@/services/documentService'
 import { STAGE_ORDER, actOnBorrowing, borrowingStage, fmtDue, getBorrowing, runBorrowingJobs } from '@/services/equipmentService'
 import { appointmentFor, formatTime } from '@/services/appointmentService'
+import { listPublished } from '@/services/announcementService'
+import { AnnouncementRows } from '@/pages/announcements/AnnouncementPages'
 import { ServiceError } from '@/services/mockApi'
 import { listMyTransactions, type Transaction, type TransactionKind } from '@/services/transactionService'
 import type { KPCase } from '@/types/case'
@@ -37,27 +39,6 @@ import { itemsText } from '@/pages/equipment/BorrowingPages'
 import { NotFound } from '@/pages/system/NotFound'
 import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, Progress, Section, TitleBar, TransactionList, Updates, needsYou, stepsFrom } from './parts'
 
-/** Example announcements showing the format barangay posts will take. */
-const ANNOUNCEMENTS = [
-  {
-    kind: 'Public advisory',
-    date: '2026-11-06',
-    title: 'Free anti-rabies vaccination for dogs and cats',
-    body: 'Bring your pets to the Barangay 181 Hall on Saturday, 14 November, 8:00 AM to 12:00 NN. Pets must be at least three months old. Bring their previous vaccination card if they have one.',
-  },
-  {
-    kind: 'Office schedule',
-    date: '2026-11-04',
-    title: 'Barangay Hall closed on 30 November (Bonifacio Day)',
-    body: 'The Barangay Hall will be closed in observance of Bonifacio Day. Online requests submitted on that day will be processed on the next working day.',
-  },
-  {
-    kind: 'Community activity',
-    date: '2026-11-01',
-    title: 'Linis Barangay: community clean-up drive',
-    body: 'Join the clean-up on Sunday, 22 November, 6:00 AM, starting at Asa St. corner Apog St. Bring gloves and a sack; drinking water will be provided. Open to all residents.',
-  },
-]
 
 // ── Home ─────────────────────────────────────────────────────────────
 
@@ -116,9 +97,7 @@ export function ResidentHome() {
         </DarkHeadCard>
 
         <DarkHeadCard title="Barangay Announcements" to="/my/announcements">
-          <ul className="divide-y divide-line-soft">
-            {ANNOUNCEMENTS.map((a) => <AnnouncementItem key={a.title} a={a} />)}
-          </ul>
+          <HomeAnnouncements />
         </DarkHeadCard>
       </div>
 
@@ -161,18 +140,6 @@ function StatusDot({ status }: { status: ResidentStatus }) {
   return <StatusLabelInline status={status} />
 }
 import { StatusLabel as StatusLabelInline } from '@/components/ui/StatusLabel'
-
-function AnnouncementItem({ a, full }: { a: (typeof ANNOUNCEMENTS)[number]; full?: boolean }) {
-  return (
-    <li className={cn('px-5 py-4', full && 'sm:px-6')}>
-      <p className="text-[length:calc(13px*var(--fs))] font-semibold tracking-[0.06em] text-navy-600 uppercase">
-        {a.kind} <span className="font-normal tracking-normal text-ink-muted normal-case">· Published {formatDate(a.date)}</span>
-      </p>
-      <p className="mt-1 font-display text-[length:calc(17px*var(--fs))] font-bold text-navy-900">{a.title}</p>
-      <p className="text-[length:calc(15px*var(--fs))] text-ink-nav">{a.body}</p>
-    </li>
-  )
-}
 
 function NeedAssistance() {
   const C = BARANGAY_CONTACT
@@ -685,23 +652,6 @@ export function ContactPage() {
   )
 }
 
-export function AnnouncementsPage() {
-  return (
-    <>
-      <BackLink to="/dashboard">Back to Home</BackLink>
-      <PageHeader title="Barangay Announcements" subtitle="Advisories, office schedules and community activities from Barangay 181." />
-      <Card className="max-w-3xl">
-        <ul className="divide-y divide-line-soft">
-          {ANNOUNCEMENTS.map((a) => <AnnouncementItem key={a.title} a={a} full />)}
-        </ul>
-      </Card>
-      <p className="mt-3 max-w-3xl text-[length:calc(14px*var(--fs))] text-ink-muted">
-        Barangay personnel cannot post announcements in the system yet, so the items above are sample content showing how announcements will appear.
-      </p>
-    </>
-  )
-}
-
 /**
  * Reply to "Request more information": attach each item the Secretary asked for,
  * then send. The request goes back to the Secretary's review.
@@ -752,4 +702,13 @@ function ReplyForm({ req, step, actor, onDone }: { req: DocumentRequest; step: T
       </div>
     </Section>
   )
+}
+
+/** Home: the three newest published announcements (titles only; details open on their own page). */
+function HomeAnnouncements() {
+  const { user } = useAuth()
+  const items = useAsync(() => (user ? listPublished(user) : Promise.resolve([])), [user]).data
+  if (!items) return <div className="h-24 animate-pulse" />
+  if (!items.length) return <p className="px-5 py-4 text-[length:calc(16px*var(--fs))] text-ink-muted">No announcements right now.</p>
+  return <AnnouncementRows items={items.slice(0, 3)} />
 }

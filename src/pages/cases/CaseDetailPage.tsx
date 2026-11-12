@@ -170,7 +170,7 @@ export function CaseDetailPage() {
           </Panel>
 
           {can('cases.manage') && <AssignPanel c={c} actor={actor} onChange={refresh} />}
-          {can('cases.manage') && <ConsultationPanel caseId={c.id} />}
+          {(can('cases.manage') || can('cases.decide')) && !['filed', 'under_review', 'closed'].includes(c.stage) && <ConsultationPanel caseId={c.id} />}
           {(can('cases.manage') || c.assignedTo?.includes(actor.user.id)) && (
             <Panel title="Internal notes">
               {c.internalNotes.length === 0 && <p className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">No notes.</p>}

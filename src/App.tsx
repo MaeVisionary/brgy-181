@@ -1,3 +1,4 @@
+import { AnnouncementAdminPage, AnnouncementEditorPage, AnnouncementsAdminPage, ResidentAnnouncementPage, ResidentAnnouncementsPage } from '@/pages/announcements/AnnouncementPages'
 import { AppointmentDetailPage, AppointmentsPage, BookVisitPage, MyAppointmentPage, MyAppointmentsPage } from '@/pages/appointments/AppointmentPages'
 import { ConcernIssuePage, ConcernsPage, MyConcernPage } from '@/pages/concerns/ConcernPages'
 import { SecurityPage } from '@/pages/admin/SecurityPage'
@@ -35,7 +36,7 @@ import { MyBorrowingPage, NewBorrowingPage, MyComplaintsPage, MyProfilePage } fr
 import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage'
 import { ReportsPage } from '@/pages/analytics/ReportsPage'
 import { NotificationsPage } from '@/pages/NotificationsPage'
-import { AnnouncementsPage, BorrowingDetailsPage, ComplaintDetailsPage, ContactPage, DocumentDetailsPage, MyTransactionsPage } from '@/pages/resident/ResidentV2Pages'
+import { BorrowingDetailsPage, ComplaintDetailsPage, ContactPage, DocumentDetailsPage, MyTransactionsPage } from '@/pages/resident/ResidentV2Pages'
 import { MyRequestsPage } from '@/pages/resident/MyRequestsPage'
 import { NewRequestPage } from '@/pages/resident/NewRequestPage'
 import { RequestFormPage } from '@/pages/resident/RequestFormPage'
@@ -129,7 +130,12 @@ export default function App() {
           <Route path="/my/borrowing/:id" element={guard(['self.borrowing'], 'resident', <BorrowingDetailsPage />)} />
           <Route path="/my/transactions" element={guard(['self.documents', 'self.complaints', 'self.borrowing'], 'resident', <MyTransactionsPage />)} />
           <Route path="/my/contact" element={guard([], 'resident', <ContactPage />)} />
-          <Route path="/my/announcements" element={guard([], 'resident', <AnnouncementsPage />)} />
+          <Route path="/my/announcements" element={guard([], 'resident', <ResidentAnnouncementsPage />)} />
+          <Route path="/my/announcements/:id" element={guard([], 'resident', <ResidentAnnouncementPage />)} />
+          <Route path="/announcements" element={guard(['announcements.manage', 'announcements.approve'], 'personnel', <AnnouncementsAdminPage />)} />
+          <Route path="/announcements/new" element={guard(['announcements.manage'], 'personnel', <AnnouncementEditorPage />)} />
+          <Route path="/announcements/:id" element={guard(['announcements.manage', 'announcements.approve'], 'personnel', <AnnouncementAdminPage />)} />
+          <Route path="/announcements/:id/edit" element={guard(['announcements.manage'], 'personnel', <AnnouncementEditorPage />)} />
           <Route path="/my/profile" element={guard(['self.profile'], 'resident', <MyProfilePage />)} />
 
           {/* Analytics and reports */}

@@ -402,3 +402,14 @@ Plain tags (sector tags such as PWD or 4Ps, "2 families", attendance counts) hav
 - Hearing history: a compact entry (date and time, type and place, one status, one outcome line) with "View details" for attendance, notes and reminders. Attendance can be Present, Absent or Excused, and is final once saved. Actions match the status, and saving or moving a hearing asks for confirmation.
 - One timeline for every history: cases, document requests, appointments, borrowing, concerns, and the resident Updates. Newest first, with a thin line, markers for important events, and details on tap.
 - Back fix: a page that replaces another (for example a finished form) no longer leaves the form as the "previous page".
+
+## Announcements with Chairman approval; consultations belong to the Punong Barangay (2026-11-12)
+- New Announcements module. The Secretary writes (title, category, one-sentence summary, full text; date, time and place for activities; effective dates and hours for office schedules; what to bring; contact; audience; important flag; publish now or on a set date; end of display). Actions: Save Draft, Preview (exactly what residents will see) and Submit for Approval.
+- The Punong Barangay reviews in the same place: Approve (with confirmation), Request revision (with a note the Secretary sees) or Reject (with a reason). Self-approval is blocked. Approval publishes now or at the chosen time. Residents are notified once, and important ones also get an email record (no email service is connected, so none is sent).
+- Editing an approved or published announcement creates a proposed change. Residents keep seeing the current version until the Chairman approves the change. Cancelling a published one tells residents. Expired ones archive themselves.
+- Tabs: All, Drafts, Pending approval, Approved, Published, Archived. The Chairman starts on Pending approval.
+- Residents: a simple list (title, category · date, an "Important" marker, an unread dot) and a detail page with the Barangay 181 seal and name, the category, title, date, the text, then When, Where, What to bring and Questions, shown only when filled. The faint seal sits only in the heading, never behind text or buttons. The home page shows the three newest.
+- Permissions: announcements.manage (Secretary) and announcements.approve (Chairman). The System Administrator cannot approve. Tested: drafts are hidden from residents; residents and the Secretary cannot approve.
+- The three earlier sample announcements are kept as published samples.
+- Complaint consultations are now always held by, and on the calendar of, the Punong Barangay. The Secretary can book one for the Chairman (the Chairman is notified) but cannot record its outcome. A consultation can only be set up after the case has been forwarded to the Chairman.
+- docs/supabase/announcements.sql: tables, no-self-approval check, a published-only view for residents, RLS. Not applied.

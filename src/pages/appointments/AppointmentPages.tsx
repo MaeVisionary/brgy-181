@@ -736,7 +736,8 @@ export function ConsultationPanel({ caseId }: { caseId: string }) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
-  const [slot, setSlot] = useState({ date: '', staff: user?.id ?? '', time: '' })
+  // Always held by the Punong Barangay; the Secretary may book it on the Chairman's calendar.
+  const [slot, setSlot] = useState({ date: '', staff: staffFor('complaint_consult')[0] ?? '', time: '' })
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const existing = appointmentFor('complaint_consult', caseId)
@@ -747,7 +748,7 @@ export function ConsultationPanel({ caseId }: { caseId: string }) {
     try { await scheduleConsultation(caseId, { reason, documents: ['Valid government-issued ID', 'Any photos or papers about the complaint'], date: slot.date, time: slot.time, assignedTo: slot.staff }, user); setOpen(false); setMsg({ ok: true, text: 'Scheduled. The complainant was told and asked to confirm.' }) } catch (e) { setMsg({ ok: false, text: errText(e) }) } finally { setBusy(false) }
   }
   return (
-    <Panel title="Consultation">
+    <Panel title="Consultation with the Punong Barangay">
       <div className="space-y-3">
         {msg && <Note ok={msg.ok}>{msg.text}</Note>}
         {existing && isOpen(existing) ? (
@@ -762,7 +763,7 @@ export function ConsultationPanel({ caseId }: { caseId: string }) {
             <StaffSlotPicker kind="complaint_consult" minutes={minutes} value={slot} onChange={setSlot} />
             <div className="flex flex-wrap gap-2"><Button size="sm" loading={busy} disabled={!slot.time || reason.trim().length < 5} onClick={save}>Schedule and notify</Button><Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></div>
           </>
-        ) : <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Ask the complainant to come in</Button>}
+        ) : <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Schedule a consultation</Button>}
       </div>
     </Panel>
   )

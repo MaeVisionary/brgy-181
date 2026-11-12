@@ -11,6 +11,7 @@ export type NotificationCategory =
   | 'payment'
   | 'overdue'
   | 'system'
+  | 'announcement'
 
 export interface AppNotification {
   id: string
