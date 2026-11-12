@@ -1,3 +1,11 @@
+# BMIS Patch Notes: Less subtext (12 November 2026)
+
+- Page titles and dashboard greetings no longer show a description line under them.
+- Removed descriptive notes under sections (stage explanations, calendar legend, "showing your most recent…", policy reminders, intro lines).
+- Kept only text that helps someone act: password rules, what to attach, import warnings, empty-state messages, the one-time password notice.
+
+---
+
 # BMIS Patch Notes: Open layout, no boxed cards (12 November 2026)
 
 Design only. The boxed-card look (borders, rounded corners and tinted title bars around

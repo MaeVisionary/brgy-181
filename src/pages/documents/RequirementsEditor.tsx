@@ -45,7 +45,6 @@ export function RequirementsEditor({ typeId, onSaved }: { typeId: DocumentTypeId
         )
       ) : (
         <div className="mt-3 space-y-2">
-          <p className="text-[14px] text-ink-muted">List what the barangay asks for. Residents see this list on the request form.</p>
           {items.map((l, i) => (
             <div key={i} className="flex gap-2">
               <TextInput aria-label={`Requirement ${i + 1}`} value={l} onChange={(e) => setItems((a) => a.map((x, j) => (j === i ? e.target.value : x)))} />

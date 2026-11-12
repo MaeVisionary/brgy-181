@@ -119,7 +119,7 @@ export function NewRequestPage() {
 
         {type && (
           <>
-            <Panel keepSubtitle title="Your details" subtitle="Filled in from your resident record. If something is wrong, request a correction from your profile instead of changing it here.">
+            <Panel title="Your details" subtitle="Filled in from your resident record. If something is wrong, request a correction from your profile instead of changing it here.">
               <div className="space-y-5">
                 {groupFields(fields).map(([group, fs]) => (
                   <section key={group || 'main'}>

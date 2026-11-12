@@ -39,7 +39,7 @@ export function CommunityTab() {
   return (
     <>
 
-      <Panel keepSubtitle title="1. Select the affected areas" subtitle="For example, the streets reached by flooding during a typhoon. No areas selected = whole barangay.">
+      <Panel title="1. Select the affected areas" subtitle="For example, the streets reached by flooding during a typhoon. No areas selected = whole barangay.">
         <div className="flex flex-wrap gap-2">
           {(areas ?? []).map((a) => (
             <button

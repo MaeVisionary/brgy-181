@@ -87,7 +87,7 @@ export function ReportsPage() {
     <>
       <PageHeader title="Barangay Reports" subtitle="Recurring reports for government offices and internal analytics reports." />
 
-      <Panel keepSubtitle title="Official reports" subtitle="Each office's required format. Upload the file the office provides; reports follow it once it is here.">
+      <Panel title="Official reports" subtitle="Each office's required format. Upload the file the office provides; reports follow it once it is here.">
         {templateMsg && <p role="status" className={cn('mb-3 rounded-md px-3 py-2 text-[14.5px]', templateMsg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{templateMsg.text}</p>}
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {REPORT_CATEGORIES.map((c) => (

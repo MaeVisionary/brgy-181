@@ -144,7 +144,6 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-[19px] font-bold text-navy-900">Import Master List</h2>
-          <p className="text-[14.5px] text-ink-muted">Upload the census-based master list file. Possible duplicates are compared by full name, birthdate and address and wait for your review.</p>
         </div>
         <Button variant="ghost" onClick={onClose}>Close</Button>
       </div>
@@ -163,7 +162,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
 
       {rows.length > 0 && done === null && (
         <>
-          <Panel keepSubtitle title="1. Column mapping" subtitle="Matched automatically where the column names are recognized. Adjust if needed.">
+          <Panel title="1. Column mapping" subtitle="Matched automatically where the column names are recognized. Adjust if needed.">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {TARGETS.map((t) => (
                 <label key={t.key} className="block">

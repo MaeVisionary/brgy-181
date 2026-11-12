@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { TextArea, TextInput } from '@/components/ui/Field'
 import { Card, Panel } from '@/components/ui/Panel'
-import { KP } from '@/config/barangay'
 import { useDocActor } from '@/hooks/useDocActor'
 import { cn } from '@/lib/cn'
 import { formatDate, formatDateTime } from '@/lib/format'
@@ -105,7 +104,6 @@ export function CaseDetailPage() {
             )
           })}
         </ol>
-        <p className="mt-3 text-[14px] text-ink-muted">Not every case goes through every stage. Mediation under the Barangay Chairman: up to {KP.chairmanMediationDays} days. Lupon (Pangkat) conciliation: {KP.luponMediationDays} days, extendable by {KP.luponExtensionDays}.</p>
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
@@ -170,7 +168,7 @@ export function CaseDetailPage() {
           </Panel>
 
           {can('cases.manage') && (
-            <Panel keepSubtitle title="Internal notes" subtitle="Visible only to case personnel">
+            <Panel title="Internal notes" subtitle="Visible only to case personnel">
               {c.internalNotes.length === 0 && <p className="text-[14.5px] text-ink-muted">No notes.</p>}
               <ul className="space-y-1.5">{c.internalNotes.map((n, i) => <li key={i} className="rounded-md bg-surface-muted px-3 py-2 text-[14.5px] text-navy-900">{n}</li>)}</ul>
               <div className="mt-3 flex gap-2"><TextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a note" /><Button size="md" variant="secondary" disabled={!note.trim()} onClick={async () => { refresh(await addInternalNote(c.id, note, actor)); setNote('') }}>Add</Button></div>

@@ -80,7 +80,7 @@ function AddForm({ onDone, actor, categories }: { onDone: () => void; actor: Non
   const [location, setLocation] = useState('')
   const [err, setErr] = useState<string | null>(null)
   return (
-    <Panel className="mb-4" keepSubtitle title="Add equipment" subtitle="Type a new category to add a kind of equipment residents can borrow.">
+    <Panel className="mb-4" title="Add equipment" subtitle="Type a new category to add a kind of equipment residents can borrow.">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <FieldLabel label="Name" required><TextInput value={name} onChange={(e) => setName(e.target.value)} /></FieldLabel>
         <FieldLabel label="Category" required hint="Choose one or type a new category.">

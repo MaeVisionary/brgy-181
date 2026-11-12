@@ -82,7 +82,6 @@ export function ResidentHome() {
       </section>
 
       <h2 className="font-display text-[19px] font-bold text-navy-900">How can we help you today?</h2>
-      <p className="text-[15px] text-ink-muted">Choose a service to get started.</p>
       <div className="mt-3 grid gap-3 md:grid-cols-3">
         {actions.map(({ to, icon: Icon, title, body }) => (
           <Link key={title} to={to} className="group flex min-h-[72px] items-center gap-3 border-t-2 border-navy-900 py-3">
@@ -107,7 +106,6 @@ export function ResidentHome() {
               <ul className="divide-y divide-line-soft">
                 {recent.map((t) => <ActivityRow key={`${t.kind}-${t.id}`} t={t} />)}
               </ul>
-              <p className="border-t border-line-soft px-5 py-3 text-[14px] text-ink-muted">Showing your most recent transactions. Select one to see its details.</p>
             </>
           )}
         </DarkHeadCard>
@@ -181,7 +179,6 @@ function NeedAssistance() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-[19px] font-bold text-navy-900">Need Assistance?</h2>
-          <p className="text-[15px] text-ink-muted">Our personnel are here to help with the portal and barangay services.</p>
         </div>
         <Link to="/my/contact" className="inline-flex h-11 shrink-0 items-center justify-center gap-1 self-start rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[15px] font-semibold text-navy-900 hover:bg-surface-muted sm:self-center">
           View contact information <ChevronRight className="size-4" />
@@ -641,7 +638,6 @@ export function ContactPage() {
           <p className="flex items-center gap-2 text-[16px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
           <p className="mt-2 text-[15.5px] font-semibold text-navy-900">{BARANGAY_CONTACT.hall}</p>
           <p className="text-[15px] text-navy-900">{BARANGAY_CONTACT.address}</p>
-          <p className="mt-2 text-[14.5px] text-ink-muted">You may visit in person for help with requests and other services.</p>
         </Card>
         <Card className="px-5 py-4">
           <p className="flex items-center gap-2 text-[16px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
@@ -655,7 +651,6 @@ export function ContactPage() {
           <p className="flex items-center gap-2 text-[16px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
           <p className="mt-2 text-[15.5px] font-semibold text-navy-900">{BARANGAY_CONTACT.officeHours}</p>
           <p className="text-[15px] text-navy-900">{BARANGAY_CONTACT.saturdayHours}</p>
-          <p className="mt-2 text-[14.5px] text-ink-muted">Schedule changes, such as holiday closures, are posted in Barangay Announcements.</p>
         </Card>
       </div>
       <Card className="mt-4 max-w-3xl px-5 py-4">

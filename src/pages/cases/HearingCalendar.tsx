@@ -63,7 +63,6 @@ export function HearingCalendar({ cases }: { cases: KPCase[] }) {
           )
         })}
       </div>
-      <p className="mt-2 px-1 text-[13.5px] text-ink-muted">Blue: scheduled. Grey: held. Select a hearing to open its case.</p>
     </Panel>
   )
 }

@@ -136,7 +136,6 @@ export function BorrowingDetailPage() {
             </table>
             {b.conditionOnRelease && <p className="mt-3 text-[14.5px] text-ink-muted">Condition on release: {b.conditionOnRelease}</p>}
             {b.returnNotes && <p className="mt-1 text-[14.5px] text-navy-900">Return notes: {b.returnNotes}</p>}
-            <p className="mt-3 text-[14px] text-ink-muted">Damaged or missing items are handled according to Barangay policy. No fines are computed by the system.</p>
           </Panel>
           <Panel title="History">
             <ol className="space-y-3">

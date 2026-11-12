@@ -128,7 +128,6 @@ export function RegistrationsPage() {
                     <ul className="mt-1 list-disc space-y-1 pl-5 text-navy-900">
                       {ev.reasons.map((x) => <li key={x}>{x}</li>)}
                     </ul>
-                    <p className="mt-3 text-ink-muted">Compare the selfie with the ID photo and the details with the barangay records. If unsure, ask the applicant to visit the Barangay Hall with the original ID.</p>
                   </div>
                 </div>
               )}

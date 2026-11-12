@@ -106,12 +106,11 @@ export function MyProfilePage() {
                   ))}
                 </tbody>
               </table>
-              <p className="border-t border-line-soft px-5 py-2.5 text-[14px] text-ink-muted">To correct a family member\u2019s name, birthdate or relationship, choose them under Request a correction.</p>
             </Panel>
           )}
         </div>
         <div className="space-y-4">
-          <Panel keepSubtitle title="Request a correction" subtitle="The Barangay Secretary reviews it before the official record changes.">
+          <Panel title="Request a correction" subtitle="The Barangay Secretary reviews it before the official record changes.">
             <div className="space-y-3">
               <FieldLabel label="Whose record">
                 <Select value={who.id} onChange={(e) => { setWhoId(e.target.value === me.id ? '' : e.target.value); setMsg(null) }}>

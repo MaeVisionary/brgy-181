@@ -96,7 +96,6 @@ export function NewCasePage() {
             <Button onClick={submit} loading={busy}>Record in blotter</Button>
             <Button variant="secondary" onClick={() => navigate(-1)}>Cancel</Button>
           </div>
-          <p className="mt-2 text-[14px] text-ink-muted">Complaint details are confidential: only case personnel and the complainant can see them.</p>
         </Panel>
       </div>
     </>
