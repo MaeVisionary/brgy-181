@@ -36,7 +36,7 @@ export { formatTime } from './schedulingService'
  * docs/supabase/scheduling.sql).
  */
 
-export type AppointmentKind = 'correction_verification' | 'document_claim' | 'complaint_consult' | 'equipment_pickup' | 'equipment_return' | 'chairman_consult' | 'community_concern' | 'mediation_inquiry'
+export type AppointmentKind = 'correction_verification' | 'document_claim' | 'complaint_consult' | 'equipment_pickup' | 'equipment_return' | 'chairman_consult' | 'community_concern' | 'mediation_inquiry' | 'identity_verification'
 export type AppointmentStatus = 'awaiting_schedule' | 'pending_confirmation' | 'confirmed' | 'reschedule_requested' | 'rescheduled' | 'completed' | 'cancelled' | 'no_show'
 
 export const APPOINTMENT_STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -79,6 +79,7 @@ export const APPOINTMENT_TYPES: Record<AppointmentKind, AppointmentType> = {
   chairman_consult: { label: 'Barangay consultation (Punong Barangay)', lengthFrom: 'service', residentMayMove: true, sensitive: true, staffLink: () => '/appointments', residentLink: () => '/my/appointments' },
   community_concern: { label: 'Community concern', lengthFrom: 'service', residentMayMove: true, staffLink: () => '/appointments', residentLink: () => '/my/appointments' },
   mediation_inquiry: { label: 'Mediation or dispute', lengthFrom: 'service', residentMayMove: false, sensitive: true, staffLink: () => '/appointments', residentLink: () => '/my/appointments' },
+  identity_verification: { label: 'Identity verification', permission: 'residents.verify', lengthFrom: 'service', residentMayMove: false, sensitive: true, staffLink: (id) => `/residents/registrations/${id}`, residentLink: () => '/register/status' },
 }
 
 /**
@@ -673,6 +674,45 @@ export function bookedOutsideHours(r: { officeStart: string; officeEnd: string; 
 export const bookableServices = (): AppointmentKind[] => PURPOSES.map((p) => p.kind)
 
 /** Resident asks for a visit; they then pick a time from the free ones. */
+/**
+ * Identity verification visit for a registration without a valid ID. Set by the
+ * Barangay Secretary for a chosen officer, date and time (or moved if one exists).
+ * The applicant has no active account yet, so they are told by e-mail and on the
+ * registration status page; the officer gets the visit on their calendar.
+ */
+export function scheduleIdentityVisit(registrationId: string, refNo: string, applicantName: string, i: { date: string; time: string; staffId: string; instructions: string }, by: User): Promise<Appointment> {
+  return mockRequest(() => {
+    if (!mayHandle(by, 'identity_verification')) throw new ServiceError('forbidden', 'You cannot schedule identity verification visits.')
+    if (!i.date || !i.time) throw new ServiceError('when', 'Choose the date and time.')
+    const kind: AppointmentKind = 'identity_verification'
+    const minutes = lengthOf(kind, [])
+    checkStaff(kind, i.staffId)
+    const list = load()
+    const existing = list.find((a) => a.kind === kind && a.subjectId === registrationId && isOpen(a))
+    assertFree(i.date, i.time, i.staffId, minutes, existing?.id, kind)
+    const now = new Date().toISOString()
+    if (existing) {
+      const from = `${existing.date} ${formatTime(existing.time)}`
+      Object.assign(existing, { date: i.date, time: i.time, assignedTo: i.staffId, instructions: i.instructions.trim() || undefined, status: 'confirmed', remindersSent: [] })
+      existing.history.push({ at: now, byUserId: by.id, action: `Moved from ${from} to ${i.date} ${formatTime(i.time)}` })
+      save(list)
+      if (existing.assignedTo !== by.id) notify([existing.assignedTo], 'Identity verification moved', `${existing.ref} · ${applicantName} · ${i.date} ${formatTime(i.time)}`, `/appointments/${existing.id}`)
+      return existing
+    }
+    const a: Appointment = {
+      id: `apt-${Date.now().toString(36)}`, ref: makeRef(list), kind, subjectId: registrationId, subjectRef: refNo, title: `Identity verification: ${applicantName}`,
+      reason: 'Verify identity and residency (registration without a valid ID)', documents: ['Any supporting documents you have (birth certificate, school or company ID)', `Your registration reference number (${refNo})`],
+      date: i.date, time: i.time, durationMin: minutes, durationEstimate: minutes, assignedTo: i.staffId, instructions: i.instructions.trim() || undefined,
+      status: 'confirmed', staffConfirmed: true, bookedAt: now, remindersSent: [], createdAt: now,
+      history: [{ at: now, byUserId: by.id, action: `Scheduled for ${i.date} ${formatTime(i.time)}` }],
+    }
+    save([...list, a])
+    audit(by, `Identity verification scheduled ${a.ref}`, 'Residents', refNo)
+    if (i.staffId !== by.id) notify([i.staffId], 'Identity verification assigned to you', `${a.ref} · ${applicantName} · ${i.date} ${formatTime(i.time)}`, `/appointments/${a.id}`)
+    return a
+  })
+}
+
 export interface PurposeVisitInput { kind: AppointmentKind; reason: string; description: string; caseId?: string; contactNo: string; date: string; time: string }
 
 /** The resident's own complaints (as complainant or respondent). */

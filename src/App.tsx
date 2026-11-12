@@ -14,6 +14,7 @@ import { PortalPage } from '@/pages/public/PortalPage'
 import { RoleLoginPage } from '@/pages/public/RoleLoginPage'
 import { ForgotPasswordPage } from '@/pages/public/ForgotPasswordPage'
 import { RegisterPage } from '@/pages/public/RegisterPage'
+import { RegistrationStatusPage } from '@/pages/public/RegistrationStatusPage'
 import { AccountPage } from '@/pages/AccountPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { DocumentRequestsPage } from '@/pages/documents/DocumentRequestsPage'
@@ -68,6 +69,7 @@ export default function App() {
       <Route path="/login/:role" element={<RoleLoginPage />} />
       <Route path="/forgot-password/:role" element={<ForgotPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/register/status" element={<RegistrationStatusPage />} />
       {DevPreviewPage && <Route path="/preview" element={<Suspense fallback={null}><DevPreviewPage /></Suspense>} />}
 
       <Route element={<RequireAuth />}>

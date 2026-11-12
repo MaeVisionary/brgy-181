@@ -17,7 +17,9 @@ import { useSmoothNavigate } from '@/lib/transition'
 import { AREAS } from '@/mocks/residents'
 import { passwordProblem } from '@/services/credentialStore'
 import { ServiceError } from '@/services/mockApi'
-import { MIN_AGE, ageOn, identifierTaken, matchRecord, submitRegistration } from '@/services/registrationService'
+import { ALT_STATUS_LABEL, MIN_AGE, ageOn, altErrors, identifierTaken, matchRecord, submitRegistration } from '@/services/registrationService'
+import { useSteps } from '@/hooks/useSteps'
+import { AltVerificationStep, EMPTY_ALT, type AltForm } from './AltVerificationStep'
 import type { CheckResult, CivilStatus, ResidentRegistration, Sex } from '@/types/resident'
 import { PublicLayout } from './PublicLayout'
 
@@ -31,7 +33,12 @@ const field =
   'h-12 w-full rounded-lg border border-line bg-surface px-4 text-[length:calc(17px*var(--fs))] text-navy-900 placeholder:text-ink-subtle transition-[border-color,box-shadow] duration-200 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none aria-[invalid=true]:border-danger'
 
 
-const STEPS = ['Privacy', 'Your details', 'Valid ID', 'Face check', 'Account'] as const
+type StepKey = 'privacy' | 'details' | 'identity' | 'face' | 'account'
+const STEP_LABEL: Record<StepKey, string> = { privacy: 'Privacy', details: 'Your details', identity: 'Identity', face: 'Face check', account: 'Account' }
+const STEP_NO: Record<StepKey, number> = { privacy: 0, details: 1, identity: 2, face: 3, account: 4 }
+const WITH_ID: StepKey[] = ['privacy', 'details', 'identity', 'face', 'account']
+// Without a valid ID there is no ID photo to compare a selfie with, so the face check is left out on purpose.
+const WITHOUT_ID: StepKey[] = ['privacy', 'details', 'identity', 'account']
 
 interface Details {
   firstName: string
@@ -88,7 +95,14 @@ function detailErrors(d: Details): Partial<Record<keyof Details, string>> {
 export function RegisterPage() {
   const go = useSmoothNavigate()
   const { dataset } = useAnalytics()
-  const [step, setStep] = useState(0)
+  // One step controller (src/hooks/useSteps): an ordered list of steps; Next/Back move exactly one.
+  const [idPath, setIdPath] = useState<'' | 'id' | 'alt'>('')
+  const seq = idPath === 'alt' ? WITHOUT_ID : WITH_ID
+  const steps = useSteps(seq)
+  const [phase, setPhase] = useState<'form' | 'processing' | 'done'>('form')
+  const step = phase === 'processing' ? 5 : phase === 'done' ? 6 : STEP_NO[steps.current]
+  const [alt, setAlt] = useState<AltForm>(EMPTY_ALT)
+  const altErrs = altErrors(alt)
   const [consent, setConsent] = useState(false)
   const [d, setD] = useState<Details>(EMPTY)
   const [touched, setTouched] = useState(false)
@@ -122,21 +136,23 @@ export function RegisterPage() {
 
   // Auto-saved progress on this device (24 hours). Only the details typed in the form:
   // never the ID number, ID photo, selfie, face data or password.
-  const draftValue = useMemo(() => ({ step: Math.min(step, 4), consent, d, idType, idExpiry, username }), [step, consent, d, idType, idExpiry, username])
+  // Supporting documents (files) are not saved either; the choices are.
+  const draftValue = useMemo(() => ({ step: Math.min(step, 4), consent, d, idType, idExpiry, username, idPath, alt: { ...alt, documents: [] as AltForm['documents'], endorsement: { ...alt.endorsement, document: undefined } } }), [step, consent, d, idType, idExpiry, username, idPath, alt])
   const draft = useDraft('registration', draftValue, { owner: 'guest', ttlHours: DRAFT_TTL.registration, enabled: step < 5, isEmpty: (v) => !hasContent(v.d) })
   const [resumeNote, setResumeNote] = useState('')
   const resumeDraft = () => {
     const v = draft.resume()
     if (!v) return
     setConsent(v.consent); setD({ ...EMPTY, ...v.d }); setIdType(v.idType ?? ''); setIdExpiry(v.idExpiry ?? ''); setUsername(v.username ?? '')
-    // The ID photo and face check are never saved, so those steps start again.
+    setIdPath(v.idPath ?? ''); if (v.alt) setAlt({ ...EMPTY_ALT, ...v.alt })
+    // The ID photo, documents and face check are never saved, so the identity step starts again.
     const to = Math.min(v.step ?? 0, 2)
-    if ((v.step ?? 0) >= 2) setResumeNote('For your security, your ID number, ID photo and face check were not saved. Please add them again.')
-    setStep(to)
+    if ((v.step ?? 0) >= 2) setResumeNote(v.idPath === 'alt' ? 'For your privacy, documents you attached were not saved. Please add them again.' : 'For your security, your ID number, ID photo and face check were not saved. Please add them again.')
+    steps.goTo((['privacy', 'details', 'identity'] as StepKey[])[to])
   }
   const discardDraftAndReset = () => {
     draft.startOver()
-    setConsent(false); setD(EMPTY); setIdType(''); setIdNumber(''); setIdExpiry(''); setUsername(''); setResumeNote(''); setStep(0)
+    setConsent(false); setD(EMPTY); setIdType(''); setIdNumber(''); setIdExpiry(''); setUsername(''); setResumeNote(''); setIdPath(''); setAlt(EMPTY_ALT); steps.goTo('privacy')
   }
 
   const set = <K extends keyof Details>(k: K, v: Details[K]) => setD((p) => ({ ...p, [k]: v }))
@@ -195,48 +211,53 @@ export function RegisterPage() {
   const stepProblems =
     step === 0 ? (consent ? 0 : 1)
     : step === 1 ? Object.keys(errs).length
-    : step === 2 ? [!idType, idNumber.trim().length < 4, !!expiryError, !idImage].filter(Boolean).length + (idFace === 'checking' ? 1 : 0)
+    : step === 2 ? (!idPath ? 1 : idPath === 'alt' ? Object.keys(altErrs).length : [!idType, idNumber.trim().length < 4, !!expiryError, !idImage].filter(Boolean).length + (idFace === 'checking' ? 1 : 0))
     : step === 3 ? (selfie ? 0 : 1)
     : step === 4 ? Object.keys(accountErrs).length
     : 0
 
-  // Step changes go to an exact step number (never "current + 1" from a stale render), and repeat taps
-  // are ignored until the new step has been shown for a moment. Before this, a quick double tap ran
-  // "+1" twice with the previous step's check and skipped a step (e.g. Privacy straight to Valid ID).
-  const stepLock = useRef(false)
-  const goToStep = (to: number) => {
-    if (stepLock.current) return
-    stepLock.current = true
-    setStep(Math.max(0, Math.min(4, to)))
-  }
-  useEffect(() => {
-    const t = window.setTimeout(() => { stepLock.current = false }, 450)
-    return () => window.clearTimeout(t)
-  }, [step])
-
   const next = () => {
-    if (busy || stepLock.current) return
+    if (busy || steps.locked()) return
     setTouched(true)
+    // Only the current step is checked; with a problem the page stays here and points at it.
     if (stepProblems > 0) {
       focusFirstInvalid(sectionRef.current)
       return
     }
-    if (step === 4) {
+    if (steps.isLast) {
       setBusy(true)
       void submit().finally(() => setBusy(false))
       return
     }
-    if (step === 1 && !username) setUsername(d.email.trim().toLowerCase())
-    goToStep(step + 1)
+    if (steps.current === 'details' && !username) setUsername(d.email.trim().toLowerCase())
+    steps.next()
   }
 
   // ── Processing ─────────────────────────────────────────────────────
   const [progress, setProgress] = useState<{ ocr?: CheckResult; face?: CheckResult; record?: CheckResult; saving?: boolean }>({})
   const submit = async () => {
-    setStep(5)
+    setPhase('processing')
     setSubmitError(null)
     setProgress({})
     try {
+      if (idPath === 'alt') {
+        const record = matchRecord({ firstName: d.firstName.trim(), lastName: d.lastName.trim(), birthDate: d.birthDate }, dataset?.records)
+        setProgress({ record: record.result, saving: true })
+        const en = alt.endorsement
+        const reg = await submitRegistration({
+          applicant: applicantOf(),
+          username: username.trim(),
+          password,
+          alt: { documents: alt.documents, noDocuments: alt.noDocuments, inPersonRequested: alt.inPersonRequested, endorsement: en.name.trim() ? { ...en, contactNo: en.contactNo?.replace(/[\s-]/g, '') || undefined } : undefined },
+          checks: { ocr: 'inconclusive', faceMatch: 'inconclusive', liveness: 'inconclusive' },
+          record,
+          clientRequestId: draft.draftId,
+        })
+        setResult(reg)
+        draft.clear()
+        setPhase('done')
+        return
+      }
       const text = (await ocrText.current) ?? ''
       const ocr = checkIdText(text, { firstName: d.firstName, lastName: d.lastName, idNumber, birthDate: d.birthDate, expiry: expiryNeeded ? idExpiry : undefined })
       setProgress((p) => ({ ...p, ocr: ocr.result }))
@@ -255,7 +276,22 @@ export function RegisterPage() {
 
       const [idSmall, selfieSmall] = await Promise.all([shrink(idImage!, 720), shrink(selfie!.image, 420)])
       const reg = await submitRegistration({
-        applicant: {
+        applicant: applicantOf(),
+        username: username.trim(),
+        password,
+        evidence: { idType, idNumber: idNumber.trim(), idExpiry: expiryNeeded ? idExpiry : undefined, idImage: idSmall, selfieImage: selfieSmall, faceSimilarity, ocrFound: ocr.found },
+        checks: { ocr: ocr.result, faceMatch, liveness: selfie!.live ? 'passed' : 'inconclusive' },
+        record,
+        clientRequestId: draft.draftId,
+      })
+      setResult(reg)
+      draft.clear()
+      setPhase('done')
+    } catch (e) {
+      setSubmitError(e instanceof ServiceError ? e.message : 'Your registration could not be saved because of a problem on our side. Your details are kept. Please press Try again. If it keeps happening, register at the Barangay Hall.')
+    }
+  }
+  const applicantOf = () => ({
           firstName: d.firstName.trim(),
           middleName: d.middleName.trim() || undefined,
           lastName: d.lastName.trim(),
@@ -274,21 +310,7 @@ export function RegisterPage() {
           pwd: d.pwd,
           soloParent: d.soloParent,
           fourPs: d.fourPs,
-        },
-        username: username.trim(),
-        password,
-        evidence: { idType, idNumber: idNumber.trim(), idExpiry: expiryNeeded ? idExpiry : undefined, idImage: idSmall, selfieImage: selfieSmall, faceSimilarity, ocrFound: ocr.found },
-        checks: { ocr: ocr.result, faceMatch, liveness: selfie!.live ? 'passed' : 'inconclusive' },
-        record,
-        clientRequestId: draft.draftId,
-      })
-      setResult(reg)
-      draft.clear()
-      setStep(6)
-    } catch (e) {
-      setSubmitError(e instanceof ServiceError ? e.message : 'Your registration could not be saved because of a problem on our side. Your details are kept. Please press Try again. If it keeps happening, register at the Barangay Hall.')
-    }
-  }
+  })
 
   return (
     <PublicLayout minimal>
@@ -298,7 +320,7 @@ export function RegisterPage() {
         {step < 5 && (
           <button
             type="button"
-            onClick={() => (step === 0 ? go('/login/resident', 'back') : goToStep(step - 1))}
+            onClick={() => (steps.isFirst ? go('/login/resident', 'back') : steps.back())}
             className="bmis-press -ml-1 inline-flex min-h-11 items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900"
           >
             <ArrowLeft className="size-4" /> {step === 0 ? 'Back to sign in' : 'Back'}
@@ -316,15 +338,15 @@ export function RegisterPage() {
         {draft.recovered && step < 5 && (
           <div className="mt-4"><DraftRecoveryCard savedAt={draft.recovered.savedAt} onContinue={resumeDraft} onStartOver={discardDraftAndReset} note="Saved on this device. Your ID photo and face check are never saved and will be asked again." /></div>
         )}
-        {step < 5 && <Stepper step={step} />}
+        {step < 5 && <Stepper labels={seq.map((k) => STEP_LABEL[k])} index={steps.index} />}
         {resumeNote && step === 2 && <Status tone="info" icon={<CircleHelp className="size-4" />}>{resumeNote}</Status>}
 
-        <section key={step} ref={sectionRef} className="bmis-rise mt-4 rounded-md border border-line bg-surface p-4 sm:mt-6 sm:rounded-lg sm:p-8">
+        <section key={steps.current} ref={sectionRef} className="bmis-rise mt-4 rounded-md border border-line bg-surface p-4 sm:mt-6 sm:rounded-lg sm:p-8">
           {step === 0 && (
             <>
               <StepTitle icon={<ShieldCheck />} title="Before you start" sub="It takes about 5 minutes." />
               <ul className="mt-5 space-y-2.5 text-[length:calc(16px*var(--fs))] text-navy-900">
-                <Li>One valid government-issued ID (we'll ask for a clear photo of the front).</Li>
+                <Li>A valid government-issued ID. No valid ID? You can still register with other documents, someone who can vouch for you, or an in-person visit.</Li>
                 <Li>A phone or computer with a camera for a short live selfie check.</Li>
                 <Li>You must be a resident of Barangay 181 and at least {MIN_AGE} years old.</Li>
               </ul>
@@ -400,7 +422,19 @@ export function RegisterPage() {
 
           {step === 2 && (
             <>
-              <StepTitle icon={<IdCard />} title="Valid ID" sub="Take a clear photo of the front of your ID. Make sure your photo, name and ID number can be read." />
+              <StepTitle icon={<IdCard />} title="Your identity" sub="Do you have a valid government-issued ID?" />
+              <div role="radiogroup" aria-label="Valid ID" className="mt-5 grid auto-rows-fr grid-cols-1 gap-3 sm:grid-cols-2">
+                {([['id', 'I have a valid government-issued ID', 'Upload a photo of it and take a live selfie.'], ['alt', "I don't have a valid government-issued ID", 'Register with other documents, someone who can vouch for you, or an in-person visit.']] as const).map(([k, t, sub]) => (
+                  <button key={k} type="button" role="radio" aria-checked={idPath === k} onClick={() => setIdPath(k)} data-invalid={touched && !idPath ? 'true' : undefined}
+                    className={cn('flex h-full min-h-[88px] flex-col items-start justify-center rounded-lg border-2 px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-600', idPath === k ? 'border-navy-900 bg-sky-50' : 'border-line bg-surface hover:border-navy-600')}>
+                    <span className="text-[length:calc(17px*var(--fs))] font-bold text-navy-900">{t}</span>
+                    <span className="mt-0.5 text-[length:calc(15px*var(--fs))] text-ink-nav">{sub}</span>
+                  </button>
+                ))}
+              </div>
+              {touched && !idPath && <p data-invalid="true" tabIndex={-1} className="mt-2 text-[length:calc(15px*var(--fs))] text-danger-ink">Please choose one.</p>}
+              {idPath === 'alt' && <AltVerificationStep value={alt} onChange={setAlt} errors={altErrs} touched={touched} />}
+              {idPath === 'id' && (<>
               <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <F label="Type of ID" error={touched && !idType ? MSG.choose('the type of ID you will use') : undefined}>
                   <select className={field} value={idType} onChange={(e) => setIdType(e.target.value)} aria-invalid={touched && !idType}>
@@ -442,6 +476,7 @@ export function RegisterPage() {
                 {touched && !idImage && <p data-invalid="true" tabIndex={-1} className="mt-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">Please add a photo of the front of your ID. Tap “Take a photo” or “Upload from files”.</p>}
                 {touched && idImage && idFace === 'checking' && <ErrorText>Please wait a moment. We are still checking your ID photo.</ErrorText>}
               </div>
+              </>)}
             </>
           )}
 
@@ -481,7 +516,7 @@ export function RegisterPage() {
               <div className="mt-6 rounded-lg bg-surface-muted p-4 text-[length:calc(15px*var(--fs))] text-navy-900">
                 <p className="font-semibold">Review</p>
                 <p className="mt-1 text-ink-muted">
-                  {[d.firstName, d.middleName, d.lastName, d.suffix].filter(Boolean).join(' ')} · born {d.birthDate} · {d.houseNo} {street} · {idType}
+                  {[d.firstName, d.middleName, d.lastName, d.suffix].filter(Boolean).join(' ')} · born {d.birthDate} · {d.houseNo} {street} · {idPath === 'alt' ? `No valid ID: ${[alt.documents.length ? `${alt.documents.length} document(s)` : 'no documents', alt.endorsement.name.trim() && `endorsed by ${alt.endorsement.name.trim()}`, alt.inPersonRequested && 'in-person verification requested'].filter(Boolean).join(', ')}` : idType}
                 </p>
               </div>
             </>
@@ -491,16 +526,16 @@ export function RegisterPage() {
             <>
               <StepTitle icon={<ShieldCheck />} title="Verifying your registration" sub="Please keep this page open. Reading the ID can take up to a minute." />
               <ul className="mt-6 space-y-3">
-                <Progress label="Reading your ID" v={progress.ocr} />
-                <Progress label="Comparing your face with your ID" v={progress.face} active={!!progress.ocr} />
-                <Progress label="Checking the barangay records" v={progress.record} active={!!progress.face} />
+                {idPath !== 'alt' && <Progress label="Reading your ID" v={progress.ocr} />}
+                {idPath !== 'alt' && <Progress label="Comparing your face with your ID" v={progress.face} active={!!progress.ocr} />}
+                <Progress label="Checking the barangay records" v={progress.record} active={idPath === 'alt' || !!progress.face} />
                 <Progress label="Saving your registration" v={result ? 'passed' : undefined} active={!!progress.saving} />
               </ul>
               {submitError && (
                 <>
                   <Status tone="danger" icon={<AlertCircle className="size-4" />}>{submitError}</Status>
                   <div className="mt-4 flex gap-2">
-                    <Button onClick={() => setStep(4)} variant="secondary">Back</Button>
+                    <Button onClick={() => setPhase('form')} variant="secondary">Back</Button>
                     <Button onClick={() => void submit()}>Try again</Button>
                   </div>
                 </>
@@ -515,6 +550,13 @@ export function RegisterPage() {
                   <span className="mx-auto grid size-16 place-items-center rounded-full bg-success-tint text-success"><CheckCircle2 className="size-9" /></span>
                   <h2 className="mt-4 font-display text-[length:calc(24px*var(--fs))] font-extrabold text-navy-900">You're verified!</h2>
                   <p className="mx-auto mt-2 max-w-md text-[length:calc(16px*var(--fs))] text-ink-muted">Your identity and residency were confirmed. Your account is ready.</p>
+                </>
+              ) : result.alt ? (
+                <>
+                  <span className="mx-auto grid size-16 place-items-center rounded-full bg-sky-100 text-info"><ShieldCheck className="size-9" /></span>
+                  <h2 className="mt-4 font-display text-[length:calc(24px*var(--fs))] font-extrabold text-navy-900">Registration submitted</h2>
+                  <p className="mx-auto mt-2 max-w-md text-[length:calc(16px*var(--fs))] text-ink-nav">Status: <strong className="text-navy-900">{ALT_STATUS_LABEL[result.alt.status]}</strong>. The Barangay Secretary will check your identity and residency{result.alt.inPersonRequested ? ' and contact you to set a visit to the Barangay Hall' : ''}. Keep your reference number. You can check your status and answer any request on the registration status page.</p>
+                  <div className="mt-4"><Button variant="secondary" onClick={() => go('/register/status', 'forward')}>Check registration status</Button></div>
                 </>
               ) : (
                 <>
@@ -826,16 +868,20 @@ function StepList({ steps, idx }: { steps: { k: string; label: string }[]; idx: 
 
 // ── Small parts ────────────────────────────────────────────────────────
 
-function Stepper({ step }: { step: number }) {
+/** Progress bar driven by the same step list as Next/Back, so it always matches the step shown. */
+function Stepper({ labels, index }: { labels: string[]; index: number }) {
   return (
-    <ol className="mt-6 grid grid-cols-5 gap-1.5" aria-label="Registration steps">
-      {STEPS.map((s, i) => (
-        <li key={s} aria-current={i === step ? 'step' : undefined}>
-          <span className={cn('block h-1.5 rounded-full transition-colors duration-300', i <= step ? 'bg-navy-900' : 'bg-line')} />
-          <span className={cn('mt-1.5 hidden text-[length:calc(13.5px*var(--fs))] font-semibold sm:block', i === step ? 'text-navy-900' : 'text-ink-subtle')}>{s}</span>
-        </li>
-      ))}
-    </ol>
+    <div className="mt-6">
+      <p className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 sm:hidden">Step {index + 1} of {labels.length}: {labels[index]}</p>
+      <ol className="mt-1.5 grid gap-1.5 sm:mt-0" style={{ gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))` }} aria-label="Registration steps">
+        {labels.map((s, i) => (
+          <li key={s} aria-current={i === index ? 'step' : undefined}>
+            <span className={cn('block h-1.5 rounded-full transition-colors duration-300', i <= index ? 'bg-navy-900' : 'bg-line')} />
+            <span className={cn('mt-1.5 hidden text-[length:calc(14px*var(--fs))] font-semibold sm:block', i === index ? 'text-navy-900' : 'text-ink-nav')}>{s}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
   )
 }
 

@@ -124,6 +124,8 @@ export interface ResidentRegistration {
   inPerson?: InPersonVerification
   /** Everything that happened to the registration after it was submitted (who, when, what). */
   history?: { at: string; by: string; action: string; note?: string }[]
+  /** Registered without a valid government-issued ID: alternative identity verification (never approved automatically). */
+  alt?: AltVerification
   /**
    * A problem reported on an already approved registration. The approval is never
    * changed silently: the Secretary reports, the Punong Barangay decides (no change,
@@ -202,4 +204,34 @@ export interface ResidentChangeRequest {
   decidedBy?: string
   decidedAt?: string
   decisionNote?: string
+}
+
+// ── Alternative identity verification (no valid government-issued ID) ──
+
+export type AltStatus =
+  | 'pending'              // Pending Alternative Verification
+  | 'document_review'      // For Document Review
+  | 'in_person_required'   // In-Person Verification Required
+  | 'scheduled'            // Verification Scheduled
+  | 'under_verification'   // Under Verification
+  | 'needs_more'           // Needs Additional Requirements
+  | 'verified'             // Verified (identity and residency both documented)
+  | 'rejected'             // Rejected
+
+export interface AltDocument { id: string; category: string; fileName: string; dataUrl: string; kind: 'image' | 'pdf'; submittedAt: string; inResponseTo?: string }
+
+/** One item of the verification checklist; done only through a recorded verification action. */
+export interface AltCheck { done: boolean; method?: string; evidence?: string; note?: string; by?: string; at?: string }
+export type AltCheckKey = 'personal' | 'evidence' | 'identity' | 'residency' | 'community' | 'in_person'
+
+export interface AltVerification {
+  status: AltStatus
+  documents: AltDocument[]
+  noDocuments: boolean
+  endorsement?: { name: string; relationship: string; source?: string; contactNo?: string; purok?: string; document?: AltDocument }
+  inPersonRequested: boolean
+  checklist: Partial<Record<AltCheckKey, AltCheck>>
+  requests: { id: string; at: string; by: string; items: string; explanation: string; instructions: string; deadline?: string; response?: { at: string; note: string; documentIds: string[] } }[]
+  schedule?: { date: string; time: string; location: string; staffId: string; instructions: string; appointmentId?: string; setBy: string; setAt: string }
+  decision?: { result: 'verified' | 'rejected'; identityMethod?: string; residencyMethod?: string; evidenceReviewed: string; date: string; by: string; remarks: string; reasonCategory?: string }
 }

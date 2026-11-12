@@ -55,7 +55,7 @@ export interface ServiceRule {
   /** The assigned official confirms before it is final. */
   staffConfirms: boolean
 }
-export type ServiceKey = 'correction_verification' | 'document_claim' | 'complaint_consult' | 'equipment_pickup' | 'equipment_return' | 'chairman_consult' | 'community_concern' | 'mediation_inquiry' | 'mediation' | 'conciliation'
+export type ServiceKey = 'correction_verification' | 'document_claim' | 'complaint_consult' | 'equipment_pickup' | 'equipment_return' | 'chairman_consult' | 'community_concern' | 'mediation_inquiry' | 'identity_verification' | 'mediation' | 'conciliation'
 
 export interface SchedulingRules {
   /** 24-hour "HH:MM", Manila time. */
@@ -134,6 +134,7 @@ export const DEFAULT_RULES: SchedulingRules = {
     chairman_consult: { label: 'Barangay consultation (Punong Barangay)', minutes: 20, buffer: 10, step: 30, roles: ['chairman'], maxPerDay: 4, cancelHours: 24, reminders: ['1d', 'day', '1h'], residentBookable: true, staffConfirms: true },
     community_concern: { label: 'Community concern', minutes: 20, buffer: 5, step: 15, roles: ['secretary'], maxPerDay: 6, cancelHours: 2, reminders: ['1d', 'day', '1h'], residentBookable: true, staffConfirms: false },
     mediation_inquiry: { label: 'Mediation or dispute: first visit (Punong Barangay)', minutes: 30, buffer: 10, step: 30, roles: ['chairman'], maxPerDay: 3, cancelHours: 24, reminders: ['3d', '1d', 'day', '1h'], residentBookable: true, staffConfirms: true },
+    identity_verification: { label: 'Identity verification (registration without a valid ID)', minutes: 30, buffer: 10, step: 30, roles: ['secretary'], maxPerDay: 6, cancelHours: 2, reminders: ['1d', 'day', '1h'], residentBookable: false, staffConfirms: false },
     mediation: { label: 'Mediation hearing (Punong Barangay)', minutes: 60, buffer: 15, step: 30, roles: ['chairman'], maxPerDay: 3, cancelHours: 48, reminders: ['7d', '3d', '1d', 'day', '1h'], residentBookable: false, staffConfirms: true },
     conciliation: { label: 'Conciliation hearing (Pangkat)', minutes: 60, buffer: 15, step: 30, roles: [], maxPerDay: 3, cancelHours: 48, reminders: ['7d', '3d', '1d', 'day', '1h'], residentBookable: false, staffConfirms: true },
   },
@@ -147,7 +148,7 @@ export const SERVICE_KEYS = Object.keys(DEFAULT_RULES.services) as ServiceKey[]
 export const serviceRule = (k: string, r = schedulingRules()): ServiceRule | undefined => r.services[k as ServiceKey]
 
 const KEY = 'bmis.schedulingRules'
-const SERVICE_KEYS_RAW: ServiceKey[] = ['document_claim', 'correction_verification', 'complaint_consult', 'equipment_pickup', 'equipment_return', 'chairman_consult', 'community_concern', 'mediation_inquiry', 'mediation', 'conciliation']
+const SERVICE_KEYS_RAW: ServiceKey[] = ['document_claim', 'correction_verification', 'complaint_consult', 'equipment_pickup', 'equipment_return', 'chairman_consult', 'community_concern', 'mediation_inquiry', 'identity_verification', 'mediation', 'conciliation']
 export function schedulingRules(): SchedulingRules {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<SchedulingRules> | null

@@ -624,7 +624,7 @@ export function AppointmentDetailPage() {
   const booked = ['pending_confirmation', 'confirmed', 'rescheduled'].includes(a.status)
   const type = APPOINTMENT_TYPES[a.kind]
   const isVerify = a.kind === 'correction_verification'
-  const handledElsewhere = a.kind === 'document_claim' || a.kind.startsWith('equipment')
+  const handledElsewhere = a.kind === 'document_claim' || a.kind === 'identity_verification' || a.kind.startsWith('equipment')
   return (
     <>
       <BackLink to="/appointments">Appointments</BackLink>

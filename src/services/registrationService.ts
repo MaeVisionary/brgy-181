@@ -2,7 +2,9 @@ import type { SeniorRecord } from '@/analytics/seniorTypes'
 import { mockRegistrations, mockResidents } from '@/mocks/residents'
 import { mockUsers } from '@/mocks/users'
 import type { Permission, User } from '@/types/auth'
-import type { CheckResult, RegistrationEvidence, Resident, ResidentRegistration } from '@/types/resident'
+import type { AltCheckKey, AltStatus, AltVerification, CheckResult, RegistrationEvidence, Resident, ResidentRegistration } from '@/types/resident'
+import { verificationPolicy } from './verificationPolicy'
+import { scheduleIdentityVisit } from './appointmentService'
 import { audit } from './auditService'
 import { hashPassword, passwordProblem, setCredential } from './credentialStore'
 import { ServiceError, mockRequest } from './mockApi'
@@ -157,7 +159,10 @@ export interface RegistrationInput {
   applicant: ResidentRegistration['applicant'] & { email: string }
   username: string
   password: string
-  evidence: Omit<RegistrationEvidence, 'reasons' | 'recordSource'>
+  /** Valid government ID path. Absent when the applicant has no valid ID (see `alt`). */
+  evidence?: Omit<RegistrationEvidence, 'reasons' | 'recordSource'>
+  /** No valid government ID: supporting documents, endorsement, in-person request. Never approved automatically. */
+  alt?: AltSubmission
   checks: { ocr: CheckResult; faceMatch: CheckResult; liveness: CheckResult }
   record: RecordMatch
   /** The registration draft's id: a retry with the same id returns the first result instead of a second registration. */
@@ -168,7 +173,7 @@ export interface RegistrationInput {
  * Server-side check of a registration (the same rules as the form). Returns
  * one message per field that needs correcting; empty when everything is valid.
  */
-export function registrationErrors(input: Pick<RegistrationInput, 'applicant' | 'username' | 'password' | 'evidence'>): Errors {
+export function registrationErrors(input: Pick<RegistrationInput, 'applicant' | 'username' | 'password' | 'evidence' | 'alt'>): Errors {
   const a = input.applicant
   const e: Errors = {}
   const year = new Date().getFullYear()
@@ -190,6 +195,7 @@ export function registrationErrors(input: Pick<RegistrationInput, 'applicant' | 
   if (!input.username?.trim() || !/^[a-z0-9._@-]{4,}$/i.test(input.username.trim())) e.username = 'Please use at least 4 characters for your username: letters, numbers, dots, dashes or @.'
   const pw = passwordProblem(input.password ?? '')
   if (pw) e.password = pw
+  if (input.alt) return { ...e, ...altErrors(input.alt) }
   if (!input.evidence?.idType) e.idType = MSG.choose('the type of ID you used')
   if (!input.evidence?.idNumber || input.evidence.idNumber.trim().length < 4) e.idNumber = 'Please enter the ID number printed on your card.'
   if (!input.evidence?.idImage) e.idImage = 'Please add a photo of your ID.'
@@ -213,16 +219,19 @@ export async function submitRegistration(input: RegistrationInput): Promise<Resi
   const { ocr, faceMatch, liveness } = input.checks
   const record = input.record
   if (record.result !== 'passed') reasons.push(record.note)
-  if (ocr !== 'passed') reasons.push('The name on the ID could not be read clearly or did not match the name entered.')
-  if (input.evidence.faceSimilarity === undefined) reasons.push('No clear face was found on the ID photo or the selfie, so the faces could not be compared.')
+  if (input.alt) reasons.push('Registered without a valid government ID: alternative verification is needed.')
+  else if (ocr !== 'passed') reasons.push('The name on the ID could not be read clearly or did not match the name entered.')
+  if (input.alt || !input.evidence) { /* no ID photo or selfie to compare */ }
+  else if (input.evidence.faceSimilarity === undefined) reasons.push('No clear face was found on the ID photo or the selfie, so the faces could not be compared.')
   else if (faceMatch === 'failed') reasons.push('The selfie does not look like the photo on the ID.')
   else if (faceMatch === 'inconclusive') reasons.push('The face comparison was not certain.')
-  if (liveness !== 'passed') reasons.push('The live selfie check was not completed (a photo was uploaded instead).')
+  if (!input.alt && liveness !== 'passed') reasons.push('The live selfie check was not completed (a photo was uploaded instead).')
   // One verified account per resident.
   if (record.residentId && mockUsers.some((u) => u.residentId === record.residentId && u.status === 'active')) {
     reasons.push('This resident already has an active online account.')
   }
-  const auto = reasons.length === 0
+  // Without a valid ID a person always decides: never approved automatically.
+  const auto = reasons.length === 0 && !input.alt
 
   const n = mockRegistrations.length + 1
   const id = `reg-self-${Date.now().toString(36)}`
@@ -246,7 +255,8 @@ export async function submitRegistration(input: RegistrationInput): Promise<Resi
     verification: { ocr, masterListMatch: record.result, faceMatch, liveness },
     status: auto ? 'auto_approved' : 'manual_review',
     privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
-    evidence: { ...input.evidence, recordSource: record.source, reasons },
+    evidence: input.evidence ? { ...input.evidence, recordSource: record.source, reasons } : undefined,
+    alt: input.alt ? newAlt(input.alt) : undefined,
     accountUserId: userId,
   }
 
@@ -263,8 +273,9 @@ export async function submitRegistration(input: RegistrationInput): Promise<Resi
     reg.history = [
       { at: reg.submittedAt, by: userId, action: 'Registration submitted online' },
       ...(input.evidence ? [{ at: reg.submittedAt, by: userId, action: 'ID photo and selfie uploaded' }] : []),
+      ...(input.alt ? [{ at: reg.submittedAt, by: userId, action: 'No valid government ID: alternative verification requested', note: altSummary(input.alt) }] : []),
       { at: reg.submittedAt, by: 'system', action: 'Automated checks completed', note: checksNote({ ocr, faceMatch, liveness, masterListMatch: record.result }) },
-      auto ? { at: reg.submittedAt, by: 'system', action: 'Approved automatically: every check passed' } : { at: reg.submittedAt, by: 'system', action: 'Sent for manual verification', note: reasons.join('; ') || undefined },
+      auto ? { at: reg.submittedAt, by: 'system', action: 'Approved automatically: every check passed' } : { at: reg.submittedAt, by: 'system', action: input.alt ? 'Sent for alternative verification' : 'Sent for manual verification', note: reasons.join('; ') || undefined },
     ]
     if (auto) linkResident(reg)
     try {
@@ -275,7 +286,11 @@ export async function submitRegistration(input: RegistrationInput): Promise<Resi
       throw e
     }
     setCredential(userId, { hash, mustChange: false, updatedAt: new Date().toISOString() })
-    audit(user, auto ? 'Registration auto-approved' : 'Registration submitted for manual verification', 'Residents', reg.referenceNo)
+    audit(user, auto ? 'Registration auto-approved' : input.alt ? 'Registration submitted without a valid ID (alternative verification)' : 'Registration submitted for manual verification', 'Residents', reg.referenceNo)
+    if (reg.alt) {
+      notifyStaff(verifiers(), 'Registration without a valid ID', `${reg.referenceNo}: ${a.firstName} ${a.lastName} · ${altSummary(input.alt!)}`, reg)
+      void tellApplicant(reg, 'We received your registration', `Your registration was received. Because you registered without a valid government ID, the Barangay Secretary will verify your identity and residency${reg.alt.inPersonRequested ? ' and contact you to set a visit to the Barangay Hall' : ''}. Status: ${ALT_STATUS_LABEL[reg.alt.status]}.`)
+    }
     remember(onceKey, reg.id)
     return reg
   })
@@ -408,6 +423,8 @@ export function decideRegistration(id: string, decision: 'approved' | 'rejected'
     if (!(ROLE_PERMISSIONS[by.roleId]?.includes('residents.approve') || by.extraPermissions?.includes('residents.approve'))) throw new ServiceError('forbidden', 'You cannot decide registrations.')
     if (reg.status !== 'manual_review') throw new ServiceError('decided', 'This registration was already decided.')
     if (decision === 'rejected' && !note.trim()) throw new ServiceError('note', 'Add the reason for rejecting.')
+    if (reg.alt && decision === 'approved' && reg.alt.status !== 'verified') throw new ServiceError('alt', 'Complete the alternative verification (identity and residency) before approving.')
+    if (reg.alt && decision === 'rejected') throw new ServiceError('alt', 'Use "Reject" in the alternative verification, with the reason.')
     reg.status = decision
     reg.decidedBy = by.id
     reg.decidedAt = new Date().toISOString()
@@ -426,6 +443,8 @@ export function decideRegistration(id: string, decision: 'approved' | 'rejected'
 export function pendingAccountMessage(userId: string): string | null {
   const reg = mockRegistrations.find((r) => r.accountUserId === userId)
   if (!reg) return null
+  if (reg.status === 'manual_review' && reg.alt)
+    return `Status: ${ALT_STATUS_LABEL[reg.alt.status]}. Your registration (${reg.referenceNo}) is being verified. Check the registration status page with your reference number and birth date for what to do next.`
   if (reg.status === 'manual_review' && reg.inPerson && !reg.inPerson.completedAt)
     return `Please visit the ${BARANGAY_CONTACT.hall} to complete your registration (${reg.referenceNo}). Reason: ${reg.inPerson.reason} Please bring: ${reg.inPerson.bring}.`
   if (reg.status === 'manual_review')
@@ -531,3 +550,222 @@ export function completeInPerson(id: string, v: { inspected: string; notes: stri
     return reg
   })
 }
+
+// ── Alternative identity verification (no valid government ID) ───────
+
+export const ALT_STATUS_LABEL: Record<AltStatus, string> = {
+  pending: 'Pending alternative verification',
+  document_review: 'For document review',
+  in_person_required: 'In-person verification required',
+  scheduled: 'Verification scheduled',
+  under_verification: 'Under verification',
+  needs_more: 'Needs additional requirements',
+  verified: 'Verified',
+  rejected: 'Rejected',
+}
+export const ALT_CHECKS: { key: AltCheckKey; label: string }[] = [
+  { key: 'personal', label: 'Name and personal information reviewed' },
+  { key: 'evidence', label: 'Supporting evidence reviewed' },
+  { key: 'identity', label: 'Identity verified (the applicant is who they say)' },
+  { key: 'residency', label: 'Residency verified (lives in Barangay 181)' },
+  { key: 'community', label: 'Household or community verification' },
+  { key: 'in_person', label: 'In-person verification completed' },
+]
+/** Legitimate reasons to reject. Having no government ID is never one of them. */
+export const ALT_REJECT_REASONS = [
+  'Not a resident of Barangay 181',
+  'Identity could not be established after verification',
+  'False or inconsistent information',
+  'Duplicate registration (already registered)',
+  'No response to the requested requirements by the deadline',
+] as const
+
+export interface AltSubmission {
+  documents: { category: string; fileName: string; dataUrl: string; kind: 'image' | 'pdf' }[]
+  noDocuments: boolean
+  endorsement?: { name: string; relationship: string; source?: string; contactNo?: string; purok?: string; document?: { fileName: string; dataUrl: string; kind: 'image' | 'pdf' } }
+  inPersonRequested: boolean
+}
+const MAX_DOC_CHARS = 2_200_000 // about 1.6 MB of file per document
+
+/** Problems with the "no valid ID" section (empty when it can be submitted). */
+export function altErrors(alt: AltSubmission): Record<string, string> {
+  const e: Record<string, string> = {}
+  const pol = verificationPolicy()
+  if (!alt.noDocuments && !alt.documents.length) e.documents = 'Add at least one supporting document, or tick "I don\'t have any supporting documents".'
+  for (const d of alt.documents) {
+    if (!pol.documentCategories.includes(d.category)) e.documents = 'Choose the type of each document from the list.'
+    if (!d.dataUrl || d.dataUrl.length > MAX_DOC_CHARS) e.documents = `"${d.fileName}" is too large. Please use a photo or PDF smaller than 1.5 MB.`
+  }
+  const en = alt.endorsement
+  if (en && (en.name.trim() || en.relationship.trim())) {
+    if (en.name.trim().length < 3) e.endorser = 'Please enter the full name of the person who can vouch for you.'
+    if (en.relationship.trim().length < 3) e.endorserRole = 'Please say how they know you, or their position (for example "Purok 3 leader").'
+    if (en.contactNo && !/^09\d{9}$/.test(en.contactNo.replace(/[\s-]/g, ''))) e.endorserContact = 'Please enter an 11-digit mobile number starting with 09, or leave it empty.'
+  }
+  const hasEndorsement = !!en && en.name.trim().length >= 3 && en.relationship.trim().length >= 3
+  if (alt.noDocuments && !hasEndorsement && !alt.inPersonRequested) e.choice = 'With no documents, please name someone who can vouch for you, or request in-person verification (or both).'
+  if (pol.inPersonWhen === 'always' && !alt.inPersonRequested) e.choice = 'Please request in-person verification. Barangay 181 checks every registration without a valid ID in person.'
+  if (pol.inPersonWhen === 'no_documents' && alt.noDocuments && !alt.inPersonRequested) e.choice = 'Without documents, please request in-person verification at the Barangay Hall.'
+  return e
+}
+
+const verifiers = () => mockUsers.filter((u) => u.status === 'active' && canVerify(u)).map((u) => u.id)
+const notifyStaff = (ids: string[], title: string, body: string, reg: ResidentRegistration) => {
+  const now = new Date().toISOString()
+  for (const userId of new Set(ids)) mockNotifications.push({ id: `ntf-${Math.random().toString(36).slice(2, 9)}`, userId, category: 'registration', title, body, createdAt: now, read: false, link: `/residents/registrations/${reg.id}` })
+}
+/** The applicant has no active account yet: e-mail (simulated here) plus the in-app notice they see once approved. Never includes documents. */
+async function tellApplicant(reg: ResidentRegistration, subject: string, body: string) {
+  const to = reg.applicant.email
+  if (to) await sendEmail({ to, subject: `${subject} (${reg.referenceNo})`, body: `${body}\n\nCheck your registration: ${location.origin}${import.meta.env.BASE_URL}register/status (reference ${reg.referenceNo} and your birth date).\n\nBarangay 181`, ref: reg.referenceNo })
+  if (reg.accountUserId) mockNotifications.push({ id: `ntf-${Math.random().toString(36).slice(2, 9)}`, userId: reg.accountUserId, category: 'registration', title: subject, body: `${reg.referenceNo}: ${body}`, createdAt: new Date().toISOString(), read: false })
+}
+const altOf = (id: string, by: User) => {
+  if (!canVerify(by)) throw new ServiceError('forbidden', 'You cannot review registrations.')
+  const reg = mockRegistrations.find((r) => r.id === id)
+  if (!reg?.alt) throw new ServiceError('not_found', 'This registration has no alternative verification.')
+  if (reg.alt.status === 'verified' || reg.alt.status === 'rejected') throw new ServiceError('closed', 'Verification is already finished for this registration.')
+  return { reg, alt: reg.alt }
+}
+
+/** Record one verification finding. A checklist item is marked done only through this, with how it was verified. */
+export function altRecordCheck(id: string, key: AltCheckKey, f: { method: string; evidence: string; note?: string }, by: User): Promise<ResidentRegistration> {
+  return mockRequest(() => {
+    const { reg, alt } = altOf(id, by)
+    if (f.method.trim().length < 3 || f.evidence.trim().length < 5) throw new ServiceError('evidence', 'Say how it was verified and what evidence you reviewed.')
+    alt.checklist[key] = { done: true, method: f.method.trim(), evidence: f.evidence.trim(), note: f.note?.trim() || undefined, by: by.id, at: new Date().toISOString() }
+    if (alt.status !== 'scheduled' && alt.status !== 'in_person_required') alt.status = 'under_verification'
+    if (key === 'in_person' && (alt.status === 'scheduled' || alt.status === 'in_person_required')) alt.status = 'under_verification'
+    log(reg, by.id, `Checked: ${ALT_CHECKS.find((c) => c.key === key)!.label}`, `${f.method.trim()} · ${f.evidence.trim()}`)
+    persist()
+    audit(by, 'Recorded a verification finding', 'Residents', reg.referenceNo)
+    return reg
+  })
+}
+
+/** Ask the applicant for something specific, with how to send it and (optionally) by when. */
+export async function altRequestMore(id: string, r: { items: string; explanation: string; instructions: string; deadline?: string }, by: User): Promise<ResidentRegistration> {
+  const { reg, alt } = altOf(id, by)
+  if (r.items.trim().length < 3 || r.explanation.trim().length < 5 || r.instructions.trim().length < 5) throw new ServiceError('request', 'Say exactly what is missing, why it is needed and how to send it.')
+  const now = new Date().toISOString()
+  alt.requests.push({ id: `rq-${Date.now().toString(36)}`, at: now, by: by.id, items: r.items.trim(), explanation: r.explanation.trim(), instructions: r.instructions.trim(), deadline: r.deadline || undefined })
+  alt.status = 'needs_more'
+  log(reg, by.id, 'Additional requirements requested', `${r.items.trim()}${r.deadline ? ` · by ${r.deadline}` : ''}`)
+  persist()
+  audit(by, 'Requested additional requirements', 'Residents', reg.referenceNo)
+  await tellApplicant(reg, 'More information needed for your registration', `Please send: ${r.items.trim()}. Why: ${r.explanation.trim()} How: ${r.instructions.trim()}${r.deadline ? ` Please send it by ${r.deadline}.` : ''}`)
+  return reg
+}
+
+/** Schedule (or move) the in-person identity verification. Shows on the officer's calendar; the applicant is told by e-mail and on the status page. */
+export async function altSchedule(id: string, s: { date: string; time: string; staffId: string; instructions: string }, by: User): Promise<ResidentRegistration> {
+  const { reg, alt } = altOf(id, by)
+  const name = [reg.applicant.firstName, reg.applicant.lastName].join(' ')
+  const appt = await scheduleIdentityVisit(reg.id, reg.referenceNo, name, s, by)
+  const moved = !!alt.schedule
+  alt.schedule = { date: s.date, time: s.time, location: `${BARANGAY_CONTACT.hall}, ${BARANGAY_CONTACT.address}`, staffId: s.staffId, instructions: s.instructions.trim(), appointmentId: appt.id, setBy: by.id, setAt: new Date().toISOString() }
+  alt.status = 'scheduled'
+  log(reg, by.id, moved ? 'In-person verification moved' : 'In-person verification scheduled', `${s.date} ${s.time} · ${mockUsers.find((u) => u.id === s.staffId)?.fullName ?? ''}`)
+  persist()
+  await tellApplicant(reg, moved ? 'Your verification visit was moved' : 'Your verification visit is scheduled', `Please come to the ${BARANGAY_CONTACT.hall} on ${s.date} at ${s.time}. ${s.instructions.trim()} Bring any documents you have.`)
+  return reg
+}
+
+/** Mark verified: identity and residency must each be recorded first; method, evidence, date, personnel and remarks are kept. */
+export async function altMarkVerified(id: string, d: { evidenceReviewed: string; remarks: string }, by: User): Promise<ResidentRegistration> {
+  const { reg, alt } = altOf(id, by)
+  if (!alt.checklist.identity?.done || !alt.checklist.residency?.done) throw new ServiceError('checks', 'Record how identity and residency were verified before marking this registration verified.')
+  if (alt.inPersonRequested && !alt.checklist.in_person?.done) throw new ServiceError('checks', 'The applicant asked for in-person verification: record it first.')
+  if (d.evidenceReviewed.trim().length < 5 || d.remarks.trim().length < 5) throw new ServiceError('remarks', 'Describe the evidence reviewed and your findings.')
+  const now = new Date().toISOString()
+  alt.decision = { result: 'verified', identityMethod: alt.checklist.identity.method, residencyMethod: alt.checklist.residency.method, evidenceReviewed: d.evidenceReviewed.trim(), date: now, by: by.id, remarks: d.remarks.trim() }
+  alt.status = 'verified'
+  log(reg, by.id, 'Verified (alternative verification)', d.remarks.trim())
+  persist()
+  audit(by, 'Alternative verification completed', 'Residents', reg.referenceNo)
+  await tellApplicant(reg, 'Your identity was verified', 'Your registration will now be approved by the Barangay Secretary. You will be told when you can sign in.')
+  return reg
+}
+
+/** Reject with a legitimate reason (never for lacking a government ID). The applicant may register again or ask for reconsideration. */
+export async function altReject(id: string, d: { reason: (typeof ALT_REJECT_REASONS)[number]; remarks: string }, by: User): Promise<ResidentRegistration> {
+  const { reg, alt } = altOf(id, by)
+  if (!(ROLE_PERMISSIONS[by.roleId]?.includes('residents.reject') || by.extraPermissions?.includes('residents.reject'))) throw new ServiceError('forbidden', 'You cannot reject registrations.')
+  if (!ALT_REJECT_REASONS.includes(d.reason)) throw new ServiceError('reason', 'Choose the reason for rejecting.')
+  if (d.remarks.trim().length < 10) throw new ServiceError('remarks', 'Describe what was found (at least 10 characters).')
+  const now = new Date().toISOString()
+  alt.decision = { result: 'rejected', evidenceReviewed: d.remarks.trim(), date: now, by: by.id, remarks: d.remarks.trim(), reasonCategory: d.reason }
+  alt.status = 'rejected'
+  reg.status = 'rejected'; reg.decidedBy = by.id; reg.decidedAt = now; reg.decisionNote = `${d.reason}. ${d.remarks.trim()}`
+  log(reg, by.id, 'Rejected', reg.decisionNote)
+  persist()
+  audit(by, 'Registration rejected (alternative verification)', 'Residents', reg.referenceNo)
+  await tellApplicant(reg, 'Your registration was not approved', `Reason: ${reg.decisionNote} If something was incomplete or wrong, you can register again with corrected information or visit the ${BARANGAY_CONTACT.hall} to ask for reconsideration.`)
+  return reg
+}
+
+/** Public status page: the applicant identifies the registration by reference number and birth date. Only their own registration's status is shown. */
+const tries = new Map<string, number[]>()
+function findOwn(ref: string, birthDate: string) {
+  const key = ref.trim().toUpperCase()
+  const now = Date.now()
+  const recent = (tries.get(key) ?? []).filter((t) => now - t < 15 * 60_000)
+  if (recent.length >= 5) throw new ServiceError('limit', 'Too many tries. Please wait 15 minutes, or call the Barangay Hall.')
+  const reg = mockRegistrations.find((r) => r.referenceNo.toUpperCase() === key && r.applicant.birthDate === birthDate)
+  if (!reg) { tries.set(key, [...recent, now]); throw new ServiceError('not_found', 'We could not find a registration with that reference number and birth date. Please check both and try again.') }
+  return reg
+}
+export interface RegistrationStatusView {
+  referenceNo: string; name: string; submittedAt: string; status: string; approved: boolean; rejected: boolean; reason?: string
+  alt?: { status: AltStatus; label: string; requests: AltVerification['requests']; schedule?: { date: string; time: string; location: string; instructions: string } }
+  visit?: { reason: string; bring: string; date?: string; time?: string }
+}
+export function lookupRegistration(ref: string, birthDate: string): Promise<RegistrationStatusView> {
+  return mockRequest(() => {
+    const r = findOwn(ref, birthDate)
+    return {
+      referenceNo: r.referenceNo, name: r.applicant.firstName, submittedAt: r.submittedAt,
+      status: r.status === 'manual_review' ? (r.alt ? ALT_STATUS_LABEL[r.alt.status] : 'Being reviewed') : r.status === 'rejected' ? 'Not approved' : 'Approved',
+      approved: r.status === 'approved' || r.status === 'auto_approved', rejected: r.status === 'rejected', reason: r.status === 'rejected' ? r.decisionNote : undefined,
+      alt: r.alt ? { status: r.alt.status, label: ALT_STATUS_LABEL[r.alt.status], requests: r.alt.requests, schedule: r.alt.schedule && { date: r.alt.schedule.date, time: r.alt.schedule.time, location: r.alt.schedule.location, instructions: r.alt.schedule.instructions } } : undefined,
+      visit: r.inPerson && !r.inPerson.completedAt ? { reason: r.inPerson.reason, bring: r.inPerson.bring, date: r.inPerson.date, time: r.inPerson.time } : undefined,
+    }
+  })
+}
+/** The applicant answers a request: a note and any documents. Goes back to document review; the Secretary is notified. */
+export function respondToRequest(ref: string, birthDate: string, requestId: string, note: string, docs: AltSubmission['documents']): Promise<RegistrationStatusView> {
+  return mockRequest(() => {
+    const reg = findOwn(ref, birthDate)
+    const alt = reg.alt
+    const rq = alt?.requests.find((x) => x.id === requestId)
+    if (!alt || !rq) throw new ServiceError('not_found', 'This request was not found.')
+    if (rq.response) throw new ServiceError('done', 'You already answered this request. The Barangay Secretary will review it.')
+    if (alt.status === 'verified' || alt.status === 'rejected') throw new ServiceError('closed', 'Verification is already finished.')
+    if (note.trim().length < 3 && !docs.length) throw new ServiceError('empty', 'Add a short note or a document.')
+    for (const d of docs) if (!d.dataUrl || d.dataUrl.length > MAX_DOC_CHARS) throw new ServiceError('size', `"${d.fileName}" is too large. Please use a photo or PDF smaller than 1.5 MB.`)
+    const now = new Date().toISOString()
+    const added = docs.map((d, i) => ({ ...d, id: `doc-${Date.now().toString(36)}${i}`, submittedAt: now, inResponseTo: rq.id }))
+    alt.documents.push(...added)
+    rq.response = { at: now, note: note.trim(), documentIds: added.map((d) => d.id) }
+    alt.status = 'document_review'
+    log(reg, reg.accountUserId ?? 'applicant', 'Applicant sent the requested information', `${note.trim()}${added.length ? ` · ${added.length} document(s)` : ''}`)
+    persist()
+    notifyStaff(verifiers(), 'Applicant answered your request', `${reg.referenceNo}: ${rq.items}`, reg)
+    return null
+  }).then(() => lookupRegistration(ref, birthDate))
+}
+
+function newAlt(a: AltSubmission): AltVerification {
+  const now = new Date().toISOString()
+  const pol = verificationPolicy()
+  const documents = a.documents.map((d, i) => ({ ...d, id: `doc-${Date.now().toString(36)}${i}`, submittedAt: now }))
+  const needsVisit = a.inPersonRequested || pol.inPersonWhen === 'always' || (pol.inPersonWhen === 'no_documents' && a.noDocuments)
+  return {
+    status: documents.length ? 'document_review' : needsVisit ? 'in_person_required' : 'pending',
+    documents, noDocuments: a.noDocuments,
+    endorsement: a.endorsement && a.endorsement.name.trim() ? { ...a.endorsement, name: a.endorsement.name.trim(), relationship: a.endorsement.relationship.trim(), document: a.endorsement.document ? { ...a.endorsement.document, id: `doc-${Date.now().toString(36)}e`, category: 'Endorsement', submittedAt: now } : undefined } : undefined,
+    inPersonRequested: a.inPersonRequested, checklist: {}, requests: [],
+  }
+}
+const altSummary = (a: AltSubmission) => [a.documents.length ? `${a.documents.length} document(s): ${a.documents.map((d) => d.category).join(', ')}` : 'no documents', a.endorsement?.name.trim() ? `endorsed by ${a.endorsement.name.trim()}` : '', a.inPersonRequested ? 'in-person verification requested' : ''].filter(Boolean).join(' · ')

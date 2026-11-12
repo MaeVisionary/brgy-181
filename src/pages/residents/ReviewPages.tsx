@@ -18,7 +18,7 @@ import { Timeline } from '@/components/ui/Timeline'
 import { BackLink } from '@/components/ui/BackLink'
 import { userById } from '@/mocks/users'
 import { ServiceError } from '@/services/mockApi'
-import { IN_PERSON_REASONS, completeInPerson, decideRegistration, decideRegistrationReport, getRegistration, inPersonEmail, listRegistrations, registrationTimeline, reportRegistration, requestInPerson, resendInPersonEmail } from '@/services/registrationService'
+import { ALT_STATUS_LABEL, IN_PERSON_REASONS, completeInPerson, decideRegistration, decideRegistrationReport, getRegistration, inPersonEmail, listRegistrations, registrationTimeline, reportRegistration, requestInPerson, resendInPersonEmail } from '@/services/registrationService'
 import { decideId, listPendingIds, type IdDocument } from '@/services/identityService'
 import { fileMeta, openFile } from '@/services/fileStore'
 import { APPOINTMENT_STATUS_LABEL, appointmentForRequest, formatTime } from '@/services/appointmentService'
@@ -27,6 +27,8 @@ import { PROOF_REQUIRED, decideChangeRequest, displayRequestedValue, listChangeR
 import type { ResidentChangeRequest, ResidentRegistration } from '@/types/resident'
 import { fullName } from './common'
 import { VerificationSummary, verificationOf } from './VerificationSummary'
+import { ALT_TONE, AltActions, AltChecklist, AltEvidence, altMethod, altNextAction } from './AltVerificationPanel'
+import { VerificationPolicyPanel } from './VerificationPolicyPanel'
 import { useStickyState } from '@/hooks/useStickyState'
 import { ActionStack } from '@/components/ui/ActionStack'
 
@@ -129,6 +131,7 @@ function IdNumber({ value, refNo }: { value: string; refNo: string }) {
 export function registrationLabel(r: ResidentRegistration): { label: string; tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral' } {
   if (r.report?.status === 'open') return { label: 'Reported for review', tone: 'warning' }
   if (r.report?.status === 'suspended') return { label: 'Account suspended', tone: 'danger' }
+  if (r.status === 'manual_review' && r.alt) return { label: ALT_STATUS_LABEL[r.alt.status], tone: ALT_TONE[r.alt.status] }
   if (r.status === 'manual_review') return r.inPerson && !r.inPerson.completedAt ? { label: 'Visit requested', tone: 'info' } : { label: 'To review', tone: 'warning' }
   if (r.status === 'rejected') return { label: 'Rejected', tone: 'danger' }
   return { label: 'Approved', tone: 'success' }
@@ -145,7 +148,8 @@ function RegistrationRow({ r }: { r: ResidentRegistration }) {
       <Link to={`/residents/registrations/${r.id}`} className="flex min-h-[72px] items-center gap-3 px-4 py-3 transition-colors hover:bg-sky-50 active:bg-sky-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-navy-600 sm:px-5">
         <span className="min-w-0 flex-1">
           <span className="block text-[length:calc(17px*var(--fs))] leading-snug font-semibold break-words text-navy-900">{nameOf(r)}</span>
-          <span className="block text-[length:calc(15px*var(--fs))] text-ink-nav">{r.referenceNo} · {formatShortDate(r.submittedAt)}{r.status !== 'manual_review' ? ` · ${r.status === 'auto_approved' ? 'Automatic' : 'Manual review'}` : ''}</span>
+          <span className="block text-[length:calc(15px*var(--fs))] text-ink-nav">{r.referenceNo} · {formatShortDate(r.submittedAt)}{r.alt ? ` · ${altMethod(r)}` : r.status !== 'manual_review' ? ` · ${r.status === 'auto_approved' ? 'Automatic' : 'Manual review'}` : ''}</span>
+          {r.alt && r.status === 'manual_review' && <span className="block text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">Next: {altNextAction(r)}</span>}
           <span className="mt-1 inline-flex sm:hidden"><Badge tone={st.tone}>{st.label}</Badge></span>
         </span>
         <span className="hidden sm:inline-flex"><Badge tone={st.tone}>{st.label}</Badge></span>
@@ -223,7 +227,9 @@ export function RegistrationDetailPage() {
             <VerificationSummary r={r} />
           </Block>
 
-          <Block title="Submitted ID and photos">
+          {r.alt && <AltEvidence r={r} />}
+          {r.alt && <AltChecklist r={r} onChange={load} />}
+          {!r.alt && <Block title="Submitted ID and photos">
             {ev ? (
               <>
                 <dl className={dl}>
@@ -235,8 +241,8 @@ export function RegistrationDetailPage() {
                 <ProtectedImages r={r} />
               </>
             ) : <p className="text-[length:calc(15.5px*var(--fs))] text-ink-nav">No ID or selfie was submitted online (registered at the Barangay Hall or before online checks).</p>}
-            {dups.length > 0 && <p className="mt-3 rounded-[var(--radius-control)] bg-warning-tint px-3 py-2 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">Possible duplicate: {dups.map((d) => `${fullName(d.resident)} (${d.resident.residentNo}, ${d.reasons.join(', ').toLowerCase()})`).join('; ')}. Check before approving.</p>}
-          </Block>
+            {dups.length > 0 && !r.alt && <p className="mt-3 rounded-[var(--radius-control)] bg-warning-tint px-3 py-2 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">Possible duplicate: {dups.map((d) => `${fullName(d.resident)} (${d.resident.residentNo}, ${d.reasons.join(', ').toLowerCase()})`).join('; ')}. Check before approving.</p>}
+          </Block>}
 
           {visit && (
             <Block title="In-person visit">
@@ -280,6 +286,8 @@ export function RegistrationDetailPage() {
             </dl>
           </Block>
 
+          {r.alt && dups.length > 0 && <p className="rounded-[var(--radius-control)] bg-warning-tint px-3 py-2 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">Possible duplicate: {dups.map((d) => `${fullName(d.resident)} (${d.resident.residentNo}, ${d.reasons.join(', ').toLowerCase()})`).join('; ')}.</p>}
+          {r.alt && <AltActions r={r} onChange={load} />}
           <ActionsBlock r={r} canDecide={canDecide} canReport={canReport} canOverride={canOverride} waitingVisit={waitingVisit} mode={mode} setMode={setMode} onChange={load} />
 
           <Block title="Activity history">
@@ -338,7 +346,12 @@ function ActionsBlock({ r, canDecide, canReport, canOverride, waitingVisit, mode
   } as const
 
   let body: ReactNode = null
-  if (r.status === 'manual_review') {
+  if (r.status === 'manual_review' && r.alt) {
+    // Registrations without a valid ID: approval only after the alternative verification is marked verified.
+    body = r.alt.status === 'verified'
+      ? <ActionStack><Button size="sm" disabled={!canDecide} onClick={async () => { try { await decideRegistration(r.id, 'approved', `Alternative verification: ${r.alt!.decision?.remarks ?? ''}`, user!); onChange() } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Not saved.') } }}>Approve registration</Button></ActionStack>
+      : <p className="text-[length:calc(15.5px*var(--fs))] text-navy-900">Finish the verification first (see Verification actions). The registration can be approved once identity and residency are verified.</p>
+  } else if (r.status === 'manual_review') {
     body = mode === 'visit' ? <VisitForm r={r} onCancel={() => setMode(null)} onDone={() => { setMode(null); onChange() }} />
       : mode === 'visited' ? <VisitedForm r={r} onCancel={() => setMode(null)} onDone={() => { setMode(null); onChange() }} />
       : (
@@ -510,15 +523,17 @@ function VisitedForm({ r, onCancel, onDone }: { r: ResidentRegistration; onCance
 /** FR10: registrations that did not pass every check wait for the Secretary's manual verification. */
 export function RegistrationsPage() {
   const [items, setItems] = useState<ResidentRegistration[] | null>(null)
-  const [tab, setTab] = useStickyState<'review' | 'visit' | 'decided'>('tab', 'review')
+  const [tab, setTab] = useStickyState<'review' | 'visit' | 'alt' | 'decided'>('tab', 'review')
   const load = () => listRegistrations().then((x) => setItems([...x]))
   useEffect(() => {
     load()
   }, [])
   const open = items?.filter((r) => r.status === 'manual_review') ?? []
   const groups = {
-    review: open.filter((r) => !r.inPerson || r.inPerson.completedAt),
-    visit: open.filter((r) => r.inPerson && !r.inPerson.completedAt),
+    review: open.filter((r) => !r.alt && (!r.inPerson || r.inPerson.completedAt)),
+    visit: open.filter((r) => !r.alt && r.inPerson && !r.inPerson.completedAt),
+    // Registrations without a valid ID: open ones first, then finished ones (every row opens).
+    alt: [...open.filter((r) => r.alt), ...(items?.filter((r) => r.alt && r.status !== 'manual_review') ?? [])],
     decided: items?.filter((r) => r.status !== 'manual_review') ?? [],
   }
   const shown = groups[tab]
@@ -526,7 +541,7 @@ export function RegistrationsPage() {
     <>
       <PageHeader title="Resident Registrations" />
       <div role="tablist" aria-label="Registrations" className="mb-3 flex flex-wrap gap-2">
-        {([['review', 'To review'], ['visit', 'Visit requested'], ['decided', 'Decided']] as const).map(([k, label]) => (
+        {([['review', 'To review'], ['visit', 'Visit requested'], ['alt', 'Alternative verification'], ['decided', 'Decided']] as const).map(([k, label]) => (
           <button key={k} role="tab" type="button" aria-selected={tab === k} onClick={() => setTab(k)} className={tab === k ? 'inline-flex h-11 items-center gap-1.5 rounded-full bg-navy-900 px-4 text-[length:calc(15.5px*var(--fs))] font-semibold text-white' : 'inline-flex h-11 items-center gap-1.5 rounded-full border border-line bg-surface px-4 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted'}>
             {label} <span className={tab === k ? 'text-white/75' : 'text-ink-muted'}>{groups[k].length}</span>
           </button>
@@ -537,6 +552,7 @@ export function RegistrationsPage() {
       ) : (
         <Card className="overflow-hidden"><ul className="divide-y divide-line-soft">{shown.map((r) => <RegistrationRow key={r.id} r={r} />)}</ul></Card>
       )}
+      <VerificationPolicyPanel />
       <IdUpdates />
     </>
   )
