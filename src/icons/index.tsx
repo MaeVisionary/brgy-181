@@ -28,6 +28,7 @@ import {
   CaretLeft,
   CaretRight,
   ChartBar,
+  ChatCircleText,
   ChartPieSlice,
   Check as PhCheck,
   CheckCircle,
@@ -185,7 +186,8 @@ export const BarChart3 = mark(ChartBar)
 export const BookOpenCheck = mark(BookOpenText)
 export const ClipboardList = mark(ClipboardText)
 export const ClipboardCheck = mark(ListChecks)
-export const MessageSquareWarning = mark(Megaphone)
+/** Residents' concerns and reports (a speech bubble), so it is not mistaken for Announcements (megaphone). */
+export const MessageSquareWarning = mark(ChatCircleText)
 export const MegaphoneIcon = mark(Megaphone)
 export const Bell = mark(PhBell)
 export const BellRing = mark(BellRinging)

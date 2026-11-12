@@ -26,7 +26,7 @@ function CouncilList({ highlight }: { highlight?: string }) {
     <li className={`flex items-center gap-3 rounded-[var(--radius-control)] px-3 py-2 ${highlight === name ? 'bg-sky-100' : ''}`}>
       <span className="grid size-8 shrink-0 place-items-center rounded-full bg-navy-900 text-[length:calc(13px*var(--fs))] font-semibold text-white">{initials(name)}</span>
       <span className="min-w-0">
-        <span className="block truncate text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{name}</span>
+        <span className="block text-[length:calc(15px*var(--fs))] leading-snug font-semibold break-words text-navy-900">{name}</span>
         <span className="block text-[length:calc(13.5px*var(--fs))] text-ink-muted">{position}</span>
       </span>
     </li>

@@ -85,9 +85,13 @@ export function SchedulingRulesPanel() {
         <Section title="Attendance and Reminders">
           <div className={grid}>
             <Field label="No-Show Grace Period" unit="minutes"><input type="number" min={0} className={control} value={r.noShowGraceMinutes} onChange={num('noShowGraceMinutes')} /></Field>
-            <label className="flex min-h-12 items-center gap-3 text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">
-              <input type="checkbox" className="size-5 accent-[#002132]" checked={reminders} onChange={(e) => setReminders(e.target.checked)} /> Enable Appointment Reminders
-            </label>
+            {/* Same label row and box height as the field beside it, so the two line up. */}
+            <div>
+              <span className="mb-1.5 block text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">Appointment Reminders</span>
+              <label className="flex h-12 cursor-pointer items-center gap-3 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(16px*var(--fs))] text-navy-900">
+                <input type="checkbox" className="size-5 shrink-0 accent-[#002132]" checked={reminders} onChange={(e) => setReminders(e.target.checked)} /> Send reminders before appointments
+              </label>
+            </div>
           </div>
         </Section>
 
@@ -183,9 +187,9 @@ export function SchedulingRulesPanel() {
                         <Field label="Per Person Per Day"><input type="number" min={0} className={control} value={sv.maxPerDay} onChange={(e) => set({ maxPerDay: Number(e.target.value) })} /></Field>
                         <Field label="Changes Allowed Until" unit="hours before"><input type="number" min={0} className={control} value={sv.cancelHours} onChange={(e) => set({ cancelHours: Number(e.target.value) })} /></Field>
                       </div>
-                      <div className="flex flex-wrap gap-x-5">
+                      <div className="grid grid-cols-1 gap-x-5 sm:grid-cols-2 lg:grid-cols-3">
                         {(Object.keys(REMINDER_LABEL) as ReminderKey[]).map((rk) => (
-                          <label key={rk} className="flex min-h-11 items-center gap-2 text-[length:calc(16px*var(--fs))] text-navy-900">
+                          <label key={rk} className="flex min-h-11 items-center gap-2.5 text-[length:calc(16px*var(--fs))] text-navy-900">
                             <input type="checkbox" className="size-5 accent-[#002132]" checked={sv.reminders.includes(rk)} onChange={(e) => set({ reminders: e.target.checked ? [...sv.reminders, rk] : sv.reminders.filter((x) => x !== rk) })} /> {REMINDER_LABEL[rk]}
                           </label>
                         ))}

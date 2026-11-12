@@ -20,6 +20,9 @@ import { ServiceReports } from './ServiceReports'
 import { BUILTIN_REPORT_TEMPLATES, builtInTemplateUrl } from '@/config/reportTemplates'
 import { ActionStack } from '@/components/ui/ActionStack'
 
+/** Reports already logged in this browser visit (see the effect below). */
+const loggedReports = new Set<string>()
+
 export function ReportsPage() {
   const { user, can } = useAuth()
   const { dataset, reportingDate, filters } = useAnalytics()
@@ -50,8 +53,12 @@ export function ReportsPage() {
   }, [dataset, reportingDate, filters, useFilters, def, locked, showPii, user])
 
   useEffect(() => {
-    if (output && user) audit(user, `Generated report: ${def.name}`, 'Reports')
-    // log once per report selection, not on every render
+    if (!output || !user) return
+    // Once per report and data source in this visit: reopening the page or re-rendering must not repeat the entry.
+    const key = `${user.id}|${reportId}|${dataset?.fileName ?? ''}`
+    if (loggedReports.has(key)) return
+    loggedReports.add(key)
+    audit(user, `Generated report: ${def.name}`, 'Reports')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reportId, dataset])
 

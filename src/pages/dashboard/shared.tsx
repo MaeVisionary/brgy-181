@@ -185,26 +185,27 @@ export function PopulationByStreet() {
   return (
     <div className="space-y-4">
       {/* Header: navy title bar, then one toolbar row (filter left, exports right). */}
-      <Card className="overflow-hidden">
+      {/* @container: the toolbar follows the width of this box, not the screen (it sits in a narrow column on some dashboards). */}
+      <Card className="@container overflow-hidden">
         <div className="flex items-center gap-3 bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5">
           <BarChart3 className="size-5 shrink-0" />
           <h2 className="font-display text-[length:calc(19px*var(--fs))] font-bold">Population by street</h2>
           <span className="rounded-full bg-surface px-2 py-0.5 text-[length:calc(13.5px*var(--fs))] font-semibold">{year}</span>
         </div>
-        <div className="flex flex-col gap-3 px-5 py-3.5 md:flex-row md:items-center md:justify-between">
-          <label className="flex w-full items-center gap-2 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 md:w-auto">
+        <div className="flex flex-col gap-3 px-5 py-3.5 @2xl:flex-row @2xl:items-center @2xl:justify-between">
+          <label className="flex w-full items-center gap-2 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 @2xl:w-auto">
             <span className="shrink-0">Street</span>
             <select
               value={street}
               onChange={(e) => setStreet(e.target.value)}
-              className="h-10 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 focus:border-navy-600 focus:outline-none md:w-[240px]"
+              className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 focus:border-navy-600 focus:outline-none @2xl:w-[240px]"
             >
               <option value="">All streets</option>
               {AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
             </select>
           </label>
           {canExport && (
-            <div className="grid grid-cols-2 gap-2 md:flex">
+            <div className="grid grid-cols-2 gap-2 @2xl:flex [&>button]:whitespace-nowrap">
               <Button variant="secondary" icon={<FileDown className="size-4" />} onClick={() => exportPdf(report())} disabled={!summary || !areas}>
                 Export PDF
               </Button>

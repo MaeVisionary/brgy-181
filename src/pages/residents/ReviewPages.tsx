@@ -30,7 +30,7 @@ import { VerificationSummary, verificationOf } from './VerificationSummary'
 import { ALT_TONE, AltActions, AltChecklist, AltEvidence, altMethod, altNextAction } from './AltVerificationPanel'
 import { VerificationPolicyPanel } from './VerificationPolicyPanel'
 import { useUrlFilter } from '@/hooks/useUrlFilter'
-import { ActionStack } from '@/components/ui/ActionStack'
+import { ActionDivider, ActionStack } from '@/components/ui/ActionStack'
 
 function CheckIcon({ v }: { v: 'passed' | 'failed' | 'inconclusive' }) {
   if (v === 'passed') return <CheckCircle2 className="icon-line w-4 text-success" />
@@ -63,9 +63,9 @@ function Decide({ onDecide, disabled, extra }: { onDecide: (d: 'approved' | 'rej
       <div className="w-full space-y-2">
         <TextArea autoFocus className="min-h-[64px]" aria-label="Reason for rejecting" placeholder="Reason for rejecting" value={note} onChange={(e) => setNote(e.target.value)} />
         {err && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
-        <ActionStack>
-          <Button size="sm" variant="danger" onClick={() => (note.trim() ? setConfirming(true) : setErr('Add the reason for rejecting.'))} loading={busy}>Reject</Button>
-          <Button size="sm" variant="secondary" onClick={() => { setRejecting(false); setErr(null) }} disabled={busy}>Cancel</Button>
+        <ActionStack layout="pair">
+          <Button variant="danger" onClick={() => (note.trim() ? setConfirming(true) : setErr('Add the reason for rejecting.'))} loading={busy}>Reject</Button>
+          <Button variant="secondary" onClick={() => { setRejecting(false); setErr(null) }} disabled={busy}>Cancel</Button>
         </ActionStack>
         {confirming && <ConfirmDialog title="Reject this?" confirmLabel="Reject" destructive onCancel={() => setConfirming(false)} onConfirm={() => run('rejected')}>The applicant will be told the reason.</ConfirmDialog>}
       </div>
@@ -73,10 +73,14 @@ function Decide({ onDecide, disabled, extra }: { onDecide: (d: 'approved' | 'rej
   }
   return (
     <div className="space-y-1">
-      <ActionStack>
+      {/* Side panel: Approve first, the supporting step under it, Reject on its own after a divider. */}
+      <ActionStack layout="panel">
+        <Button onClick={() => run('approved')} loading={busy} disabled={disabled}>Approve</Button>
         {extra}
-        <Button size="sm" onClick={() => run('approved')} loading={busy} disabled={disabled}>Approve</Button>
-        <Button size="sm" variant="secondary" onClick={() => setRejecting(true)} disabled={disabled || busy}>Reject</Button>
+      </ActionStack>
+      <ActionDivider />
+      <ActionStack layout="panel">
+        <Button variant="danger" onClick={() => setRejecting(true)} disabled={disabled || busy}>Reject</Button>
       </ActionStack>
       {err && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
     </div>
@@ -358,7 +362,7 @@ function ActionsBlock({ r, canDecide, canReport, canOverride, waitingVisit, mode
         <Decide
           disabled={!canDecide}
           onDecide={async (d, n) => { await decideRegistration(r.id, d, n, user!); onChange() }}
-          extra={waitingVisit ? <Button size="sm" variant="secondary" onClick={() => setMode('visited')}>Record visit</Button> : !r.inPerson && <Button size="sm" variant="secondary" onClick={() => setMode('visit')}>Request in-person visit</Button>}
+          extra={waitingVisit ? <Button variant="secondary" onClick={() => setMode('visited')}>Record visit</Button> : !r.inPerson && <Button variant="secondary" onClick={() => setMode('visit')}>Request in-person visit</Button>}
         />
       )
   } else if (approved && rep?.status === 'open') {
@@ -777,8 +781,7 @@ function CorrectionActions({ c, canDecide, onDecide, onChange }: { c: ResidentCh
         <ScheduleVisitForm changeRequestId={c.id} onCancel={() => setScheduling(false)} onDone={() => { setScheduling(false); onChange() }} />
       ) : (
         <>
-          <Decide disabled={!canDecide} onDecide={onDecide} />
-          {canDecide && !open && <Button size="sm" variant="secondary" onClick={() => setScheduling(true)}>Require in-person verification</Button>}
+          <Decide disabled={!canDecide} onDecide={onDecide} extra={canDecide && !open ? <Button variant="secondary" onClick={() => setScheduling(true)}>Require in-person verification</Button> : undefined} />
         </>
       )}
     </div>

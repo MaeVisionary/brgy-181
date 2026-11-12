@@ -177,10 +177,19 @@ function HolidayRow({ h, admin, onDone, onError }: { h: Holiday; admin: boolean;
       {edit && user && (
         <div className="mt-3 space-y-3 rounded-[var(--radius-control)] bg-surface-muted p-3">
           <p className="text-[length:calc(14.5px*var(--fs))] text-ink-nav">{h.type === 'local' ? 'Local holiday set by the barangay.' : 'Official national holiday: only the Barangay Hall\'s opening can be changed here, not the date or name.'}</p>
-          <ActionStack>
-            <Button size="sm" variant={h.hallClosed ? 'secondary' : 'primary'} onClick={() => saveHoliday({ ...h, hallClosed: true, hours: undefined }, user).then(() => { setEdit(false); onDone('Saved. Booked appointments on that day were flagged for a new time.') }).catch(onError)}>Hall closed</Button>
-            <Button size="sm" variant={!h.hallClosed ? 'secondary' : 'primary'} onClick={() => saveHoliday({ ...h, hallClosed: false, hours: undefined }, user).then(() => { setEdit(false); onDone('Saved: the hall is open on this day.') }).catch(onError)}>Hall open</Button>
-          </ActionStack>
+          {/* Two-option switch: the current setting is the filled one; choosing the other saves it. */}
+          <div role="radiogroup" aria-label="Barangay Hall on this day" className="flex w-full rounded-[var(--radius-control)] border border-line bg-surface p-1 sm:inline-flex sm:w-auto">
+            {([[true, 'Hall closed'], [false, 'Hall open']] as const).map(([closed, label]) => {
+              const on = closed ? h.hallClosed && !h.hours : !h.hallClosed && !h.hours
+              return (
+                <button key={label} type="button" role="radio" aria-checked={on} disabled={on}
+                  onClick={() => saveHoliday({ ...h, hallClosed: closed, hours: undefined }, user).then(() => { setEdit(false); onDone(closed ? 'Saved. Booked appointments on that day were flagged for a new time.' : 'Saved: the hall is open on this day.') }).catch(onError)}
+                  className={`h-10 flex-1 rounded-[calc(var(--radius-control)-3px)] px-5 text-[length:calc(15.5px*var(--fs))] font-semibold sm:flex-none ${on ? 'bg-navy-900 text-white' : 'text-navy-900 hover:bg-surface-muted'}`}>
+                  {label}
+                </button>
+              )
+            })}
+          </div>
           <div className="flex flex-wrap items-end gap-2">
             <label className="text-[length:calc(15px*var(--fs))] text-navy-900">Open from<input type="time" className={`${control} w-36`} value={hours.start} onChange={(e) => setHours({ ...hours, start: e.target.value })} /></label>
             <label className="text-[length:calc(15px*var(--fs))] text-navy-900">until<input type="time" className={`${control} w-36`} value={hours.end} onChange={(e) => setHours({ ...hours, end: e.target.value })} /></label>

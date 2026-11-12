@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { DraftIndicator, DraftRecoveryCard, useDraft } from '@/hooks/useDraft'
 import { focusFirstInvalid } from '@/lib/validation'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ChevronRight } from '@/icons'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { ChevronLeft, ChevronRight } from '@/icons'
 import { useAuth } from '@/auth/useAuth'
 import { Badge } from '@/components/ui/Badge'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { Button, ButtonLink, buttonClass } from '@/components/ui/Button'
+import { Button, ButtonLink, IconButton, buttonClass } from '@/components/ui/Button'
+import { cn } from '@/lib/cn'
 import { FieldLabel, Select, TextArea, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
@@ -470,7 +471,12 @@ export function AppointmentsPage() {
   const [items, setItems] = useState<NamedAppointment[] | null>(null)
   const [scope, setScope] = useStickyState<'mine' | 'team'>('scope', 'mine')
   const [range, setRange] = useStickyState<Range>('range', 'day')
-  const [day, setDay] = useStickyState('day', manilaToday())
+  // The shown day is in the address (?day=2026-11-20) so Back returns to it, but it is never remembered
+  // from an earlier visit: opening the Calendar from the menu always starts on today.
+  const [dayParams, setDayParams] = useSearchParams()
+  const rawDay = dayParams.get('day') ?? ''
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(rawDay) ? rawDay : manilaToday()
+  const setDay = (d: string) => setDayParams((prev) => { const n = new URLSearchParams(prev); if (d === manilaToday()) n.delete('day'); else n.set('day', d); return n }, { replace: true })
   const [kind, setKind] = useStickyState<'' | AppointmentKind | 'hearing'>('kind', '')
   const [staff, setStaff] = useStickyState('staff', '')
   useEffect(() => { runAppointmentJobs(); if (user) listAppointments(user).then(setItems).catch(() => setItems([])) }, [user])
@@ -495,44 +501,58 @@ export function AppointmentsPage() {
   for (const x of shown.sort((p, q) => (p.date + p.time).localeCompare(q.date + q.time))) byDay.set(x.date || 'No time yet', [...(byDay.get(x.date || 'No time yet') ?? []), x])
   const staffIds = [...new Set([...kinds.flatMap((k) => staffFor(k)), ...hearings.flatMap((h) => h.participants)])]
   const step = (n: number) => setDay(range === 'month' ? addMonths(day, n) : addDays(day, range === 'week' ? 7 * n : n))
-  const tab = (on: boolean) => `h-11 rounded-[var(--radius-control)] px-4 text-[length:calc(15.5px*var(--fs))] font-semibold ${on ? 'bg-navy-900 text-white' : 'border border-line bg-surface text-navy-900'}`
+  // Segmented control: one outlined group, the chosen option filled navy (equal widths on phones).
+  const seg = 'flex w-full rounded-[var(--radius-control)] border border-line bg-surface-muted p-1 sm:inline-flex sm:w-auto'
+  const segBtn = (on: boolean) => cn('h-10 flex-1 rounded-[calc(var(--radius-control)-3px)] px-4 text-[length:calc(15.5px*var(--fs))] font-semibold whitespace-nowrap sm:flex-none', on ? 'bg-navy-900 text-white shadow-sm' : 'text-navy-900 hover:bg-surface')
   const me = workload(user.id, day)
 
   return (
     <>
       <PageHeader title="Calendar" />
-      <div className="mb-3 flex flex-wrap gap-1.5" role="tablist" aria-label="Whose calendar">
-        <button role="tab" aria-selected={scope === 'mine'} className={tab(scope === 'mine')} onClick={() => setScope('mine')}>My calendar</button>
-        <button role="tab" aria-selected={scope === 'team'} className={tab(scope === 'team')} onClick={() => setScope('team')}>Team</button>
-      </div>
-      <div className="mb-3 flex flex-wrap items-center gap-1.5" role="tablist" aria-label="View">
-        {([['day', 'Day'], ['week', 'Week'], ['month', 'Month'], ['action', `Needs action (${action.length})`]] as const).map(([k, l]) => (
-          <button key={k} role="tab" aria-selected={range === k} onClick={() => setRange(k)} className={tab(range === k)}>{l}</button>
-        ))}
-      </div>
-      {range !== 'action' && (
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="secondary" aria-label="Previous" onClick={() => step(-1)}>‹</Button>
-          <p className="min-w-0 flex-1 text-center text-[length:calc(17px*var(--fs))] font-semibold text-navy-900 sm:flex-none sm:text-left">
-            {range === 'month' ? new Date(`${day}T12:00:00+08:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'Asia/Manila' }) : range === 'week' ? `${shortDate(from)} – ${shortDate(to)}` : day === t ? `Today · ${shortDate(day)}` : dateLong(day)}
-          </p>
-          <Button size="sm" variant="secondary" aria-label="Next" onClick={() => step(1)}>›</Button>
-          {day !== t && <Button size="sm" variant="ghost" onClick={() => setDay(t)}>Today</Button>}
+      {/* One toolbar: whose calendar and the view on top; the date and filters below. Phones: each group full width. */}
+      <Card className="mb-4 divide-y divide-line-soft">
+        <div className="flex flex-col gap-3 p-3 sm:p-4 md:flex-row md:items-center md:justify-between">
+          <div className={seg} role="tablist" aria-label="Whose calendar">
+            <button role="tab" aria-selected={scope === 'mine'} className={segBtn(scope === 'mine')} onClick={() => setScope('mine')}>My calendar</button>
+            <button role="tab" aria-selected={scope === 'team'} className={segBtn(scope === 'team')} onClick={() => setScope('team')}>Team</button>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className={seg} role="tablist" aria-label="View">
+              {([['day', 'Day'], ['week', 'Week'], ['month', 'Month']] as const).map(([k, l]) => (
+                <button key={k} role="tab" aria-selected={range === k} onClick={() => setRange(k)} className={segBtn(range === k)}>{l}</button>
+              ))}
+            </div>
+            <button type="button" aria-pressed={range === 'action'} onClick={() => setRange(range === 'action' ? 'day' : 'action')} className={cn('inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border px-4 text-[length:calc(15.5px*var(--fs))] font-semibold', range === 'action' ? 'border-navy-900 bg-navy-900 text-white' : action.length ? 'border-warning/60 bg-warning-tint text-navy-900' : 'border-line bg-surface text-navy-900')}>
+              Needs action <span className={cn('inline-grid min-w-6 place-items-center rounded-full px-1.5 text-[length:calc(13.5px*var(--fs))]', range === 'action' ? 'bg-white/20' : 'bg-surface')}>{action.length}</span>
+            </button>
+          </div>
         </div>
-      )}
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Select aria-label="Service" className="w-full sm:w-auto sm:min-w-[200px]" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
-          <option value="">All services</option>
-          {kinds.map((k) => <option key={k} value={k}>{APPOINTMENT_TYPES[k].label}</option>)}
-          {hearings.length > 0 && <option value="hearing">Hearings</option>}
-        </Select>
-        {scope === 'team' && (
-          <Select aria-label="Barangay Personnel" className="w-full sm:w-auto sm:min-w-[200px]" value={staff} onChange={(e) => setStaff(e.target.value)}>
-            <option value="">Everyone</option>
-            {staffIds.map((s) => <option key={s} value={s}>{staffName(s)}</option>)}
-          </Select>
+        {range !== 'action' && (
+          <div className="flex flex-col gap-3 p-3 sm:p-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <IconButton label="Previous" onClick={() => step(-1)}><ChevronLeft /></IconButton>
+              <p className="min-w-0 flex-1 text-center text-[length:calc(17px*var(--fs))] font-semibold text-navy-900 md:min-w-[220px]">
+                {range === 'month' ? new Date(`${day}T12:00:00+08:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'Asia/Manila' }) : range === 'week' ? `${shortDate(from)} – ${shortDate(to)}` : day === t ? `Today · ${shortDate(day)}` : dateLong(day)}
+              </p>
+              <IconButton label="Next" onClick={() => step(1)}><ChevronRight /></IconButton>
+              <Button size="sm" variant="secondary" disabled={day === t} onClick={() => setDay(t)}>Today</Button>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Select aria-label="Service" className="h-11 w-full sm:w-[220px]" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
+                <option value="">All services</option>
+                {kinds.map((k) => <option key={k} value={k}>{APPOINTMENT_TYPES[k].label}</option>)}
+                {hearings.length > 0 && <option value="hearing">Hearings</option>}
+              </Select>
+              {scope === 'team' && (
+                <Select aria-label="Barangay Personnel" className="h-11 w-full sm:w-[220px]" value={staff} onChange={(e) => setStaff(e.target.value)}>
+                  <option value="">Everyone</option>
+                  {staffIds.map((x) => <option key={x} value={x}>{staffName(x)}</option>)}
+                </Select>
+              )}
+            </div>
+          </div>
         )}
-      </div>
+      </Card>
       {scope === 'mine' && range === 'day' && me.openMinutes > 0 && (
         <p className="mb-3 text-[length:calc(16px*var(--fs))] text-ink-nav">{me.count} {me.count === 1 ? 'appointment' : 'appointments'} · about {Math.floor(me.freeMinutes / 60)} h {me.freeMinutes % 60} min free</p>
       )}

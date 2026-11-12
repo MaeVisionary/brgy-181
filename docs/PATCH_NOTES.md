@@ -1,6 +1,21 @@
 # BMIS Patch Notes: Report formats, notifications, analytics and cleanup (12 November 2026)
 
-## 2026-11-12 (latest): Scrolling and flicker fix, dashboard accuracy, button design standard, calendar
+## 2026-11-13 (latest): UI finalization notes
+
+From the UI FINALIZATION documents (each note checked against the current screens; several were already done in earlier updates):
+- Calendar (Barangay Personnel): one toolbar card. Whose calendar and the view (Day / Week / Month) are segmented switches, Needs action is a separate button with its count, the date navigator and service filter sit below. Phones: each group full width. The page now always opens on today (it used to reopen on the day viewed in an earlier visit); the shown day is kept in the address for Back.
+- Community Concerns has its own menu icon (speech bubble); Announcements keeps the megaphone.
+- Portal and sign-in pages: the seal sits on an even white circle drawn by the page, so its edge is round on every side.
+- System Settings: "Appointment Reminders" has the same label row and box height as the field beside it; reminder checkboxes line up in columns.
+- Account Settings (every account): "Show password" / "Hide password" and "Update Password" keep fixed widths; switching the label no longer moves the buttons.
+- Holidays: the Barangay Hall setting is a two-option switch that highlights the current setting (it showed the opposite option highlighted).
+- Registrations and Record Update Requests: Approve first, the supporting step (request or require an in-person visit) under it, Reject on its own after a divider, all the same width.
+- Dashboards in a narrow column (Kagawad): the population toolbar adapts to its box (street on one line, the two export buttons below); official names wrap instead of being cut off.
+- Activity log: viewing a report is logged once per report and data source in a visit (opening the Reports page repeatedly logged it again each time).
+
+Already in place (no change needed): no "Explore Services" button and full-width service cards on the landing page; contact details filled in on the resident home; proof required for civil status, educational attainment, employment and family relationship changes (upload, or bring the original to the Hall), shown to the Secretary with "View file" before approval; decided requests move to "Recently decided"; dashboard cards open filtered lists (Active / Inactive / role); Account Recovery no longer blinks and its actions are grouped; consistent panel headers; white Hearings cards; Analytics tabs without a scroll bar; organized Reports summary.
+
+## 2026-11-12: Scrolling and flicker fix, dashboard accuracy, button design standard, calendar
 
 Scrolling and flicker (root cause)
 - Signed in (especially with the test account), every scroll extended the session again: the once-a-minute guard was reset each time the session updated, so each scroll event wrote a new session. With the test account each new session also built a new user object, every page reloaded its data, lists blanked to a loading placeholder, the page height jumped and the scroll fired again. Result: pages such as Secretary > Document Requests flickered and could not be scrolled. Fixed in the sign-in context (guard kept in a ref, listeners added once per sign-in, user object keyed on the account id). Verified with the test account: 0 session writes and 0 redraws while scrolling; the list scrolls to the end on desktop and phone.

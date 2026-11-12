@@ -112,8 +112,9 @@ export function AccountPage() {
             )}
             {error && <p role="alert" className="rounded-md bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
             {done && <p className="flex items-center gap-2 rounded-md bg-success-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-navy-900"><CheckCircle2 className="size-4 text-success" /> Password updated.</p>}
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Button type="button" variant="secondary" icon={show ? <EyeOff className="size-4" /> : <Eye className="size-4" />} onClick={() => setShow((s) => !s)}>
+            {/* Fixed column widths: switching "Show password" / "Hide password" never moves or resizes the buttons. Phones: full width. */}
+            <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-[210px_210px]">
+              <Button type="button" variant="secondary" aria-pressed={show} icon={show ? <EyeOff className="size-4" /> : <Eye className="size-4" />} onClick={() => setShow((s) => !s)}>
                 {show ? 'Hide password' : 'Show password'}
               </Button>
               <Button type="submit" loading={busy} disabled={limited}>Update Password</Button>
