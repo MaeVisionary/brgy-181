@@ -1,10 +1,10 @@
-import { Download, FileSpreadsheet, FileText } from '@/icons'
+import { Download, FileSpreadsheet } from '@/icons'
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { exportExcel, exportPdf, type ReportOutput } from '@/analytics/exporters'
 import { Button } from '@/components/ui/Button'
 import { TextInput } from '@/components/ui/Field'
-import { Card, Panel } from '@/components/ui/Panel'
+import { Card } from '@/components/ui/Panel'
 import { BARANGAY } from '@/config/barangay'
 import { ROLES } from '@/config/permissions'
 import { getDocumentType } from '@/documents/catalog'
@@ -182,36 +182,39 @@ export function ServiceReports() {
   }
 
   return (
-    <div className="mt-4 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-      <Card className="h-fit overflow-hidden xl:sticky xl:top-0">
-        <h2 className="border-b border-sky-300 bg-bar px-4 py-3 font-display text-[16px] font-bold text-navy-900">Service reports</h2>
-        <ul>
+    <div className="mt-4 grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
+      <nav aria-label="Service reports" className="hidden h-fit xl:sticky xl:top-0 xl:block">
+        <h2 className="label-caps mb-2 px-3">Services</h2>
+        <ul className="space-y-0.5">
           {REPORTS.map((r) => (
-            <li key={r.id} className="border-b border-line-soft last:border-0">
-              <button type="button" onClick={() => setId(r.id)} className={cn('flex w-full items-start gap-2.5 px-4 py-3 text-left', r.id === id ? 'bg-sky-100' : 'hover:bg-sky-50')}>
-                <FileText className="mt-0.5 size-4 shrink-0 text-navy-900" />
-                <span className="text-[15px] font-semibold text-navy-900">{r.name}</span>
+            <li key={r.id}>
+              <button type="button" onClick={() => setId(r.id)} aria-current={r.id === id ? 'page' : undefined} className={cn('w-full truncate rounded-[var(--radius-control)] px-3 py-2 text-left text-[15px]', r.id === id ? 'bg-surface font-semibold text-navy-900 shadow-[0_0_0_1px_var(--color-line)]' : 'text-ink-nav hover:bg-surface/70 hover:text-navy-900')}>
+                {r.name}
               </button>
             </li>
           ))}
         </ul>
-      </Card>
-      <Panel
-        title={def.name}
-        actions={
-          output && can('reports.export') ? (
-            <>
+      </nav>
+      <Card className="min-w-0 px-5 py-4">
+        <label className="mb-3 block xl:hidden">
+          <span className="sr-only">Service report</span>
+          <select value={id} onChange={(e) => setId(e.target.value as typeof id)} className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15.5px] font-semibold text-navy-900">
+            {REPORTS.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+        </label>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <h2 className="min-w-0 font-display text-[20px] font-bold text-navy-900">{def.name}</h2>
+          {output && can('reports.export') && (
+            <div className="flex gap-2">
               <Button size="sm" variant="secondary" icon={<Download className="size-3.5" />} onClick={() => doExport('pdf')}>PDF</Button>
               <Button size="sm" variant="secondary" icon={<FileSpreadsheet className="size-3.5" />} onClick={() => doExport('xlsx')}>Excel</Button>
-            </>
-          ) : undefined
-        }
-      >
-        <p className="text-[15px] text-ink-nav">{def.description}</p>
+            </div>
+          )}
+        </div>
         {id !== 'equipment' && (
-          <div className="mt-3 flex flex-wrap items-end gap-3">
-            <label className="block text-[14.5px] font-semibold text-navy-900">From<TextInput className="mt-0.5 w-44" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /></label>
-            <label className="block text-[14.5px] font-semibold text-navy-900">To<TextInput className="mt-0.5 w-44" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></label>
+          <div className="mt-3 grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
+            <label className="block min-w-0 text-[14px] font-semibold text-ink-nav">From<TextInput className="mt-0.5 w-full sm:w-44" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /></label>
+            <label className="block min-w-0 text-[14px] font-semibold text-ink-nav">To<TextInput className="mt-0.5 w-full sm:w-44" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></label>
             {(from || to) && <Button size="sm" variant="ghost" onClick={() => { setFrom(''); setTo('') }}>Clear dates</Button>}
           </div>
         )}
@@ -219,20 +222,30 @@ export function ServiceReports() {
           <div className="mt-4 h-40 animate-pulse rounded bg-surface-muted" />
         ) : (
           <>
-            <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {output.summary.map(([k, v]) => (
-                <div key={k} className="rounded-md border border-line bg-surface px-3 py-2.5">
-                  <dt className="text-[14px] leading-snug text-ink-nav">{k}</dt>
-                  <dd className="mt-1 font-display text-[22px] leading-none font-extrabold tabular-nums text-navy-900">{v}</dd>
+            <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+              {output.summary.slice(0, 4).map(([k, v]) => (
+                <div key={k} className="min-w-0">
+                  <dd className="font-display text-[26px] leading-none font-extrabold tabular-nums text-navy-900">{v}</dd>
+                  <dt className="mt-1 text-[14px] leading-snug text-ink-nav">{k}</dt>
                 </div>
               ))}
             </dl>
+            {output.summary.length > 4 && (
+              <dl className="mt-4 grid gap-x-8 border-t border-line-soft pt-3 text-[14.5px] sm:grid-cols-2">
+                {output.summary.slice(4).map(([k, v]) => (
+                  <div key={k} className="flex items-baseline justify-between gap-3 border-b border-line-soft py-1.5">
+                    <dt className="text-ink-nav">{k}</dt>
+                    <dd className="font-semibold tabular-nums text-navy-900">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
             {output.rows.length === 0 ? (
-              <p className="mt-4 text-[15px] text-ink-muted">No records for this period, or none your account can view.</p>
+              <p className="mt-4 text-[15px] text-ink-muted">No records for this period.</p>
             ) : (
-              <div className="mt-4 overflow-x-auto rounded-md border border-line">
+              <div className="mt-4 overflow-x-auto rounded-md border border-line-soft">
                 <table className="w-full min-w-[640px] text-[14.5px]">
-                  <thead><tr className="bg-surface-muted text-left">{output.columns.map((c) => <th key={c} className="label-caps px-3 py-2">{c}</th>)}</tr></thead>
+                  <thead><tr className="bg-surface-muted text-left">{output.columns.map((c) => <th key={c} className="label-caps px-3 py-2 whitespace-nowrap">{c}</th>)}</tr></thead>
                   <tbody>
                     {output.rows.slice(0, 50).map((r, i) => (
                       <tr key={i} className="border-t border-line-soft">{r.map((v, j) => <td key={j} className="px-3 py-2 text-navy-900">{v}</td>)}</tr>
@@ -245,7 +258,7 @@ export function ServiceReports() {
             {output.note && <p className="mt-2 text-[14px] text-ink-muted">{output.note}</p>}
           </>
         )}
-      </Panel>
+      </Card>
     </div>
   )
 }

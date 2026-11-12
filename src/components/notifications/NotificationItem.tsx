@@ -1,10 +1,23 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Bell, CalendarClock, CheckCircle2, ChevronRight, FileText, MessageSquareWarning, Package, Receipt, UserCheck, UserRoundPen } from '@/icons'
+import { AlertTriangle, Bell, CalendarClock, CheckCircle2, FileText, MessageSquareWarning, Package, Receipt, UserCheck, UserRoundPen, X } from '@/icons'
+import { TONE as T } from '@/icons/tones'
 import { cn } from '@/lib/cn'
-import { formatDateTime } from '@/lib/format'
 import type { AppNotification, NotificationCategory } from '@/types/activity'
+
+const TONE: Record<NotificationCategory, string> = {
+  registration: T.green,
+  resident_change: T.blue,
+  document: T.blue,
+  approval: T.green,
+  payment: T.teal,
+  complaint: T.orange,
+  hearing: T.indigo,
+  borrowing: T.orange,
+  overdue: T.red,
+  system: T.gray,
+}
 
 const ICON: Record<NotificationCategory, ReactNode> = {
   registration: <UserCheck className="size-4" />,
@@ -18,8 +31,6 @@ const ICON: Record<NotificationCategory, ReactNode> = {
   overdue: <AlertTriangle className="size-4" />,
   system: <Bell className="size-4" />,
 }
-
-const REF = /\b(?:REG|KP|BRW|CLR|IND|BUS|CRT|SNG|NRC|COH|INC|SUM|NOH|BLT|RES|FTJ)-\d{4}-\d{3,4}\b/
 
 function actionLabel(link?: string) {
   if (!link) return null
@@ -57,7 +68,7 @@ export function groupByDay(items: AppNotification[]): [string, AppNotification[]
   return Object.entries(groups).filter(([, list]) => list.length > 0)
 }
 
-/** Compact card; tap to expand for details and actions (opening it marks it read). */
+/** Compact card: tap opens the related page (and marks it read); x dismisses. */
 export function NotificationItem({
   n,
   onRead,
@@ -71,52 +82,31 @@ export function NotificationItem({
 }) {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const reference = n.reference ?? (n.title + ' ' + n.body).match(REF)?.[0]
-  const action = actionLabel(n.link)
-  const toggle = () => {
-    if (!open && !n.read) onRead(n.id)
-    setOpen((o) => !o)
+  const activate = () => {
+    if (!n.read) onRead(n.id)
+    if (n.link) { onOpen?.(); navigate(n.link) }
+    else setOpen((o) => !o)
   }
   return (
-    <div className={cn('rounded-xl border bg-surface transition-shadow', open ? 'border-line shadow-[0_4px_16px_rgba(0,33,50,0.08)]' : 'border-line-soft hover:border-line')}>
-      <button type="button" onClick={toggle} aria-expanded={open} className="flex w-full items-start gap-3 px-3.5 py-3 text-left">
-        <span className={cn('mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg', n.category === 'overdue' ? 'bg-danger-tint text-danger' : 'bg-sky-100 text-navy-900')}>{ICON[n.category] ?? ICON.system}</span>
+    <div className="group relative rounded-xl bg-surface shadow-[0_1px_2px_rgba(0,33,50,0.06)] ring-1 ring-line-soft transition hover:ring-line">
+      <button type="button" onClick={activate} aria-label={actionLabel(n.link) ? `${n.title}. ${actionLabel(n.link)}` : n.title} className="flex w-full items-start gap-3 px-3.5 py-3 pr-10 text-left">
+        <span className={cn('relative mt-0.5 grid size-8 shrink-0 place-items-center rounded-[9px]', TONE[n.category] ?? TONE.system)}>
+          {ICON[n.category] ?? ICON.system}
+          {!n.read && <span aria-label="Unread" className="absolute -top-1 -left-1 size-2.5 rounded-full bg-info ring-2 ring-surface" />}
+        </span>
         <span className="min-w-0 flex-1">
-          <span className="flex items-baseline justify-between gap-2">
-            <span className={cn('truncate text-[15px] text-navy-900', n.read ? 'font-semibold' : 'font-bold')}>{n.title}</span>
+          <span className="flex items-baseline gap-2">
+            <span className={cn('min-w-0 truncate text-[15px] text-navy-900', n.read ? 'font-semibold' : 'font-bold')}>{n.title}</span>
             <span className="shrink-0 text-[12.5px] text-ink-muted">{shortTime(n.createdAt)}</span>
           </span>
           <span className={cn('block text-[14px] text-ink-nav', !open && 'truncate')}>{n.body}</span>
         </span>
-        {!n.read && <span aria-label="Unread" className="mt-2 size-2 shrink-0 rounded-full bg-info" />}
       </button>
-      <div className={cn('grid transition-[grid-template-rows] duration-200 ease-out', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
-        <div className="overflow-hidden">
-          <div className="border-t border-line-soft px-3.5 pt-2.5 pb-3 pl-[56px]">
-            <dl className="space-y-0.5 text-[13.5px]">
-              {reference && <div className="flex gap-2"><dt className="text-ink-muted">Reference</dt><dd className="font-semibold text-navy-900">{reference}</dd></div>}
-              {n.subject && <div className="flex gap-2"><dt className="text-ink-muted">Regarding</dt><dd className="text-navy-900">{n.subject}</dd></div>}
-              <div className="flex gap-2"><dt className="text-ink-muted">Received</dt><dd className="text-navy-900">{formatDateTime(n.createdAt)}</dd></div>
-            </dl>
-            <div className="mt-2.5 flex flex-wrap items-center gap-2">
-              {action && (
-                <button
-                  type="button"
-                  onClick={() => { onOpen?.(); navigate(n.link!) }}
-                  className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] bg-navy-900 px-3.5 text-[14px] font-semibold text-white hover:bg-navy-800"
-                >
-                  {action} <ChevronRight className="size-4" />
-                </button>
-              )}
-              {onDismiss && (
-                <button type="button" onClick={() => onDismiss(n.id)} className="inline-flex h-9 items-center rounded-[var(--radius-control)] px-3 text-[14px] font-semibold text-ink-nav hover:bg-surface-muted">
-                  Dismiss
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      {onDismiss && (
+        <button type="button" onClick={() => onDismiss(n.id)} aria-label={`Dismiss ${n.title}`} title="Dismiss" className="absolute top-1/2 right-1.5 grid size-8 -translate-y-1/2 place-items-center rounded-full text-ink-muted opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 hover:bg-surface-muted hover:text-navy-900 [@media(hover:none)]:opacity-100">
+          <X className="size-4" />
+        </button>
+      )}
     </div>
   )
 }

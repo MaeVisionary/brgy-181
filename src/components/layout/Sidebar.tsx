@@ -1,4 +1,5 @@
 import { ChevronRight, LogOut } from '@/icons'
+import { toneForPath } from '@/icons/tones'
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
@@ -116,7 +117,7 @@ function FlatNav({
                         active ? 'bg-sky-100 font-semibold text-navy-900' : 'text-ink-nav hover:bg-surface-muted hover:text-navy-900',
                       )}
                     >
-                      <Icon className="size-[18px] shrink-0" strokeWidth={1.75} />
+                      <span className={cn('grid size-7 shrink-0 place-items-center rounded-[7px]', toneForPath(g.path))}><Icon className="size-4" /></span>
                       {!collapsed && <span className="min-w-0 leading-snug">{g.label}</span>}
                     </NavLink>
                   </li>

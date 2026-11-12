@@ -1,20 +1,20 @@
-import { Download, FileClock, FileSpreadsheet, FileText, Lock, Trash2, Upload } from '@/icons'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Download, FileSpreadsheet, Lock, Upload } from '@/icons'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { useAnalytics } from '@/analytics/AnalyticsContext'
 import { FILTER_LABELS, applyFilters, deriveRows, type Filters } from '@/analytics/compute'
 import { exportExcel, exportPdf, type ReportOutput } from '@/analytics/exporters'
 import { SENIOR_REPORTS } from '@/analytics/reports'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
-import { BARANGAY, RECURRING_REPORTS, REPORT_CATEGORIES } from '@/config/barangay'
+import { BARANGAY } from '@/config/barangay'
 import { cn } from '@/lib/cn'
+import { formatShortDate } from '@/lib/format'
 import { audit } from '@/services/auditService'
 import { ServiceError } from '@/services/mockApi'
-import { deleteReportTemplate, listReportTemplates, saveReportTemplate, type ReportTemplate } from '@/services/reportTemplateService'
+import { listReportTemplates, saveReportTemplate, type ReportTemplate } from '@/services/reportTemplateService'
 import { downloadBlob } from '@/services/templateService'
 import { ServiceReports } from './ServiceReports'
 import { BUILTIN_REPORT_TEMPLATES, builtInTemplateUrl } from '@/config/reportTemplates'
@@ -71,11 +71,6 @@ export function ReportsPage() {
       setTemplateMsg({ ok: false, text: e instanceof ServiceError ? e.message : 'The file could not be uploaded.' })
     }
   }
-  const remove = async (id: string, label: string) => {
-    await deleteReportTemplate(id, label, user!)
-    setTemplates(await listReportTemplates())
-    setTemplateMsg({ ok: true, text: `${label}: template deleted.` })
-  }
 
   const doExport = async (kind: 'pdf' | 'xlsx') => {
     if (!output || !user) return
@@ -86,95 +81,88 @@ export function ReportsPage() {
 
   return (
     <>
-      <PageHeader title="Barangay Reports" subtitle="Recurring reports for government offices and internal analytics reports." />
+      <PageHeader title="Barangay Reports" />
 
-      <Panel title="Official reports" subtitle="Each office's required format. Upload the file the office provides; reports follow it once it is here.">
-        {templateMsg && <p role="status" className={cn('mb-3 rounded-md px-3 py-2 text-[14.5px]', templateMsg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{templateMsg.text}</p>}
-        <div className="divide-y divide-line-soft border-y border-line-soft">
-          {REPORT_CATEGORIES.map((c) => (
-            <TemplateSlot key={c.id} id={c.id} title={c.name} subtitle={c.full} template={templates[c.id]} canManage={canManageTemplates} onUpload={upload} onDelete={remove} />
-          ))}
-        </div>
-        <p className="label-caps mt-4 mb-2">Recurring reports</p>
-        <div className="divide-y divide-line-soft border-y border-line-soft">
-          {RECURRING_REPORTS.map((r) => (
-            <TemplateSlot
-              key={r.id}
-              id={`recurring-${r.id}`}
-              title={r.name}
-              subtitle={r.schedule.replace(/\s*\(format pending\)/i, '')}
-              template={templates[`recurring-${r.id}`]}
-              canManage={canManageTemplates}
-              onUpload={upload}
-              onDelete={remove}
-              
-              icon={<FileClock className="size-4" />}
-            />
-          ))}
-        </div>
-      </Panel>
+      {templateMsg && <p role="status" className={cn('mb-3 rounded-md px-3 py-2 text-[14.5px]', templateMsg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{templateMsg.text}</p>}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Panel title="Official Forms" bodyClassName="px-0 py-0">
+          <ul className="divide-y divide-line-soft">
+            {OFFICIAL_FORMS.map((r) => (
+              <ReportRow key={r.id} id={r.id} name={r.name} agency={r.agency} template={templates[r.id]} canManage={canManageTemplates} onUpload={upload} />
+            ))}
+          </ul>
+        </Panel>
+        <Panel title="Regular Reports" bodyClassName="px-0 py-0">
+          <ul className="divide-y divide-line-soft">
+            {REGULAR_REPORTS.map((r) => (
+              <ReportRow key={r.id} id={r.id} name={r.name} agency={r.agency} template={templates[r.id]} canManage={canManageTemplates} onUpload={upload} />
+            ))}
+          </ul>
+        </Panel>
+      </div>
 
       <ServiceReports />
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <Card className="h-fit overflow-hidden xl:sticky xl:top-0">
-          <h2 className="bg-bar border-b border-sky-300 text-navy-900 px-4 py-3 font-display text-[16px] font-bold">Internal analytics reports</h2>
-          <ul>
+      <div className="mt-4 grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
+        {/* Desktop: report list. Phones/tablets: a compact selector. */}
+        <nav aria-label="Analytics reports" className="hidden h-fit xl:sticky xl:top-0 xl:block">
+          <h2 className="label-caps mb-2 px-3">Analytics</h2>
+          <ul className="space-y-0.5">
             {SENIOR_REPORTS.map((r) => (
-              <li key={r.id} className="border-b border-line-soft last:border-0">
-                <button type="button" onClick={() => setReportId(r.id)} className={cn('flex w-full items-start gap-2.5 px-4 py-3 text-left', r.id === reportId ? 'bg-sky-100' : 'hover:bg-sky-50')}>
-                  <FileText className="mt-0.5 size-4 shrink-0 text-navy-900" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-semibold text-navy-900">{r.name}</span>
-                  </span>
-                  {r.pii && <Lock className="mt-0.5 size-3.5 shrink-0 text-ink-subtle" aria-label="Contains identifiable information" />}
+              <li key={r.id}>
+                <button type="button" onClick={() => setReportId(r.id)} aria-current={r.id === reportId ? 'page' : undefined} className={cn('flex w-full items-center gap-2 rounded-[var(--radius-control)] px-3 py-2 text-left text-[15px]', r.id === reportId ? 'bg-surface font-semibold text-navy-900 shadow-[0_0_0_1px_var(--color-line)]' : 'text-ink-nav hover:bg-surface/70 hover:text-navy-900')}>
+                  <span className="min-w-0 flex-1 truncate">{SHORT_NAME[r.id] ?? r.name}</span>
+                  {r.pii && <Lock className="size-3.5 shrink-0 text-ink-subtle" aria-label="Contains identifiable information" />}
                 </button>
               </li>
             ))}
           </ul>
-        </Card>
+        </nav>
 
-        <Panel
-          title={def.name}
-          subtitle={def.description}
-          actions={
-            output && canExport ? (
-              <>
+        <Card className="min-w-0 px-5 py-4">
+          <label className="mb-3 block xl:hidden">
+            <span className="sr-only">Report</span>
+            <select value={reportId} onChange={(e) => setReportId(e.target.value)} className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15.5px] font-semibold text-navy-900">
+              {SENIOR_REPORTS.map((r) => <option key={r.id} value={r.id}>{SHORT_NAME[r.id] ?? r.name}</option>)}
+            </select>
+          </label>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="font-display text-[20px] font-bold text-navy-900">{def.name}</h2>
+              {dataset && <p className="text-[14px] text-ink-muted">As of {formatShortDate(reportingDate.toISOString())}</p>}
+            </div>
+            {output && canExport && (
+              <div className="flex gap-2">
                 <Button size="sm" variant="secondary" icon={<Download className="size-3.5" />} onClick={() => doExport('pdf')}>PDF</Button>
                 <Button size="sm" variant="secondary" icon={<FileSpreadsheet className="size-3.5" />} onClick={() => doExport('xlsx')}>Excel</Button>
-              </>
-            ) : undefined
-          }
-        >
+              </div>
+            )}
+          </div>
+
           {!dataset ? (
-            <p className="text-[15px] text-ink-muted">
-              No senior citizen masterlist is loaded in this browser. <Link to="/analytics" className="font-semibold text-info hover:underline">Load it in Analytics</Link>.
+            <p className="mt-3 text-[15px] text-ink-muted">
+              No masterlist loaded. <Link to="/analytics" className="font-semibold text-info hover:underline">Load it in Analytics</Link>.
             </p>
           ) : locked ? (
-            <p className="flex items-center gap-2 text-[15px] text-ink-muted"><Lock className="size-4" /> Requires access to resident records.</p>
+            <p className="mt-3 flex items-center gap-2 text-[15px] text-ink-muted"><Lock className="size-4" /> Requires access to resident records.</p>
           ) : output ? (
             <>
-              <p className="mb-3 rounded-md bg-danger-tint px-3 py-2 text-[14px] font-semibold text-danger-ink">Internal analytics report: not an official government submission.</p>
-              <label className="mb-3 flex items-center gap-2 text-[14.5px] text-navy-900">
-                <input type="checkbox" className="size-4 accent-[#002132]" checked={useFilters} onChange={(e) => setUseFilters(e.target.checked)} />
-                Apply the filters currently set in Analytics
-              </label>
-              {/* Report details */}
-              <dl className="grid gap-px overflow-hidden rounded-md border border-line bg-line-soft text-[14.5px] sm:grid-cols-2 lg:grid-cols-3">
-                {output.meta.map(([k, v]) => (
-                  <div key={k} className="bg-surface px-3 py-2">
-                    <dt className="text-[13px] font-semibold tracking-[0.05em] text-ink-muted uppercase">{k}</dt>
-                    <dd className="mt-0.5 break-words text-navy-900">{v}</dd>
-                  </div>
-                ))}
-              </dl>
-              {/* Figures: an even grid across the full width */}
               {output.summary.length > 0 && (
-                <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
-                  {output.summary.map(([k, v]) => (
-                    <div key={k} className="rounded-md border border-line bg-surface px-3 py-2.5">
-                      <dt className="text-[14px] leading-snug text-ink-nav">{k}</dt>
-                      <dd className="mt-1 font-display text-[22px] leading-none font-extrabold tabular-nums text-navy-900">{v}</dd>
+                <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+                  {output.summary.slice(0, 4).map(([k, v]) => (
+                    <div key={k} className="min-w-0">
+                      <dd className="font-display text-[26px] leading-none font-extrabold tabular-nums text-navy-900">{v}</dd>
+                      <dt className="mt-1 text-[14px] leading-snug text-ink-nav">{k}</dt>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              {output.summary.length > 4 && (
+                <dl className="mt-4 grid gap-x-8 border-t border-line-soft pt-3 text-[14.5px] sm:grid-cols-2">
+                  {output.summary.slice(4).map(([k, v]) => (
+                    <div key={k} className="flex items-baseline justify-between gap-3 border-b border-line-soft py-1.5">
+                      <dt className="text-ink-nav">{k}</dt>
+                      <dd className="font-semibold tabular-nums text-navy-900">{v}</dd>
                     </div>
                   ))}
                 </dl>
@@ -183,7 +171,7 @@ export function ReportsPage() {
                 <div className="mt-4 max-h-[420px] overflow-auto rounded-md border border-line-soft">
                   <table className="w-full text-[14.5px]">
                     <thead className="sticky top-0 bg-surface-muted">
-                      <tr className="text-left">{output.columns.map((c) => <th key={c} className="label-caps px-3 py-2">{c}</th>)}</tr>
+                      <tr className="text-left">{output.columns.map((c) => <th key={c} className="label-caps px-3 py-2 whitespace-nowrap">{c}</th>)}</tr>
                     </thead>
                     <tbody>
                       {output.rows.slice(0, 200).map((r, i) => (
@@ -194,82 +182,82 @@ export function ReportsPage() {
                   {output.rows.length > 200 && <p className="px-3 py-2 text-[14px] text-ink-muted">Showing 200 of {output.rows.length} rows.</p>}
                 </div>
               )}
+              <details className="mt-4 text-[14px]">
+                <summary className="cursor-pointer font-semibold text-ink-nav hover:text-navy-900">Report details</summary>
+                <label className="mt-2 flex items-center gap-2 text-navy-900">
+                  <input type="checkbox" className="size-4 accent-[#002132]" checked={useFilters} onChange={(e) => setUseFilters(e.target.checked)} />
+                  Use Analytics filters
+                </label>
+                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+                  {output.meta.map(([k, v]) => (
+                    <Fragment key={k}><dt className="text-ink-muted">{k}</dt><dd className="break-words text-navy-900">{v}</dd></Fragment>
+                  ))}
+                </dl>
+              </details>
             </>
           ) : null}
-        </Panel>
+        </Card>
       </div>
     </>
   )
 }
 
-/** One report format: amber while missing (needs a file), green once uploaded. */
-function TemplateSlot({
-  id,
-  title,
-  subtitle,
-  template,
-  canManage,
-  onUpload,
-  onDelete,
-  note,
-  icon,
-}: {
+const SHORT_NAME: Record<string, string> = {
+  masterlist: 'Masterlist',
+  summary: 'Population',
+  age: 'Age Distribution',
+  gender: 'Gender',
+  address: 'Address',
+  osca: 'OSCA Registration',
+  status: 'Senior Citizen Status',
+  bedridden: 'Bedridden Residents',
+  quality: 'Data Quality',
+}
+
+const OFFICIAL_FORMS = [
+  { id: 'dilg', name: 'BOIS Form', agency: 'DILG' },
+  { id: 'osca', name: 'Senior Citizen Social Pension Transmittal', agency: 'OSCA' },
+  { id: 'madao', name: 'BADAC Monthly Report Transmittal', agency: 'MADAO' },
+  { id: 'bureau', name: 'Monthly Accomplishment Report', agency: 'Barangay Bureau' },
+]
+const REGULAR_REPORTS = [
+  { id: 'recurring-cleanup', name: 'Clean-up Activities Report', agency: 'DILG' },
+  { id: 'recurring-senior-masterlist', name: 'Senior Citizen Masterlist', agency: 'OSCA' },
+  { id: 'recurring-kp', name: 'Katarungang Pambarangay Report', agency: 'Lupon' },
+  { id: 'recurring-personnel', name: 'Barangay Personnel Report', agency: 'DILG' },
+]
+
+/** One report: name, agency, download (an uploaded file replaces the bundled one). */
+function ReportRow({ id, name, agency, template, canManage, onUpload }: {
   id: string
-  title: string
-  subtitle: string
+  name: string
+  agency: string
   template?: ReportTemplate
   canManage: boolean
   onUpload: (id: string, label: string, file: File) => void
-  onDelete: (id: string, label: string) => void
-  note?: string
-  icon?: React.ReactNode
 }) {
   const input = useRef<HTMLInputElement>(null)
-  const [confirm, setConfirm] = useState(false)
-  const builtIn = !template ? BUILTIN_REPORT_TEMPLATES[id] : undefined
+  const builtIn = BUILTIN_REPORT_TEMPLATES[id]
+  const btn = 'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface w-10 sm:w-auto sm:px-3.5 text-[14.5px] font-semibold whitespace-nowrap text-navy-900 hover:bg-surface-muted'
   return (
-    <div className="grid gap-2 py-3 md:grid-cols-[minmax(0,1fr)_170px_auto] md:items-center md:gap-4">
-      <div className="min-w-0">
-        <p className="flex items-center gap-1.5 font-display text-[16.5px] font-extrabold text-navy-900">{icon}{title} {subtitle !== title && <span className="font-sans text-[14px] font-normal text-ink-muted">{subtitle}</span>}</p>
-        {template && (
-          <p className="truncate text-[14px] text-ink-nav" title={template.fileName}>
-            {template.fileName} · {template.uploadedBy} · {new Date(template.uploadedAt).toLocaleDateString('en-PH', { day: '2-digit', month: 'short', year: 'numeric' })}
-          </p>
-        )}
-        {builtIn && <p className="truncate text-[14px] text-ink-nav" title={builtIn.fileName}>{builtIn.fileName}</p>}
-        {!template && !builtIn && note && <p className="text-[14px] text-ink-nav">{note}</p>}
-      </div>
-      <Badge tone={template ? 'success' : builtIn ? (builtIn.kind === 'official' ? 'success' : 'info') : 'warning'}>
-        {template ? 'Template uploaded' : builtIn ? (builtIn.kind === 'official' ? 'Official file' : 'Prepared format') : 'Awaiting official file'}
-      </Badge>
-      <div className="flex flex-wrap gap-2 md:justify-end">
-        {template && (
-          <Button size="sm" variant="secondary" icon={<Download className="size-3.5" />} onClick={() => downloadBlob(template.blob, template.fileName)}>
-            Download
-          </Button>
-        )}
-        {builtIn && (
-          <a href={builtInTemplateUrl(builtIn)} download={builtIn.fileName} className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface px-3.5 text-[14.5px] font-semibold whitespace-nowrap text-navy-900 hover:bg-surface-muted">
-            <Download className="size-3.5" /> Download
-          </a>
-        )}
-        {canManage && (
-          <>
-            <input ref={input} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(id, title, f); e.target.value = '' }} />
-            <Button size="sm" variant={template || builtIn ? 'secondary' : 'primary'} icon={<Upload className="size-3.5" />} onClick={() => input.current?.click()}>
-              {template || builtIn ? 'Replace' : 'Upload template'}
-            </Button>
-            {template && (confirm ? (
-              <>
-                <Button size="sm" variant="danger" onClick={() => { onDelete(id, title); setConfirm(false) }}>Yes, delete</Button>
-                <Button size="sm" variant="ghost" onClick={() => setConfirm(false)}>Cancel</Button>
-              </>
-            ) : (
-              <Button size="sm" variant="danger" icon={<Trash2 className="size-3.5" />} onClick={() => setConfirm(true)}>Delete</Button>
-            ))}
-          </>
-        )}
-      </div>
-    </div>
+    <li className="flex items-center gap-3 px-5 py-3">
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-navy-900">{name}</span>
+        <span className="block text-[14px] text-ink-muted">{agency}</span>
+      </span>
+      {template ? (
+        <button type="button" className={btn} aria-label={`Download ${name}`} onClick={() => downloadBlob(template.blob, template.fileName)}><Download className="size-4" /><span className="hidden sm:inline">Download</span></button>
+      ) : builtIn ? (
+        <a className={btn} href={builtInTemplateUrl(builtIn)} download={builtIn.fileName} aria-label={`Download ${name}`}><Download className="size-4" /><span className="hidden sm:inline">Download</span></a>
+      ) : null}
+      {canManage && (
+        <>
+          <input ref={input} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(id, name, f); e.target.value = '' }} />
+          <button type="button" onClick={() => input.current?.click()} aria-label={`Replace ${name} file`} title="Replace file" className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-control)] text-ink-nav hover:bg-surface-muted hover:text-navy-900">
+            <Upload className="size-4" />
+          </button>
+        </>
+      )}
+    </li>
   )
 }

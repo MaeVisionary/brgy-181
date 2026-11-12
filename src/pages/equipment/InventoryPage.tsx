@@ -1,15 +1,16 @@
-import { Pencil, Plus } from '@/icons'
-import { Fragment, useState } from 'react'
+import { ChevronRight, Pencil, Plus, X } from '@/icons'
+import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { useAuth } from '@/auth/useAuth'
-import { Button } from '@/components/ui/Button'
+import { Button, ButtonLink } from '@/components/ui/Button'
 import { FieldLabel, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
 import { BORROWING } from '@/config/barangay'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
-import { formatDateTime } from '@/lib/format'
+import { formatShortDate } from '@/lib/format'
 import { addEquipment, equipmentStatus, listEquipment, updateEquipment } from '@/services/equipmentService'
 import { ServiceError } from '@/services/mockApi'
 import type { Equipment, EquipmentCategory } from '@/types/equipment'
@@ -21,94 +22,177 @@ export function InventoryPage() {
   const [tick, setTick] = useState(0)
   const items = useAsync(listEquipment, [tick]).data
   const [adding, setAdding] = useState(false)
-  const [editing, setEditing] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
   const manage = can('inventory.manage')
+  const canBorrowing = can('borrowing.approve') || can('borrowing.release')
   const categories = [...new Set([...BORROWING.documentedEquipment, ...(items ?? []).map((e) => e.category)])]
+  const selected = items?.find((e) => e.id === openId)
+  const close = () => { setOpenId(null); setEditing(false) }
 
   return (
     <>
       <PageHeader
-        title="Property and Equipment Records"
-        subtitle={`Barangay equipment lent to residents: ${BORROWING.documentedEquipment.join(', ').toLowerCase()}.`}
-        actions={manage && <Button icon={<Plus className="size-4" />} onClick={() => setAdding((a) => !a)}>Add equipment</Button>}
+        title="Property and Equipment"
+        actions={manage && <Button icon={<Plus className="size-4" />} onClick={() => setAdding((a) => !a)}>Add</Button>}
       />
       {adding && <AddForm categories={categories} onDone={() => { setAdding(false); setTick((t) => t + 1) }} actor={actor} />}
       <Card className="overflow-hidden">
-        {/* Desktop and tablet: compact table */}
+        {/* Desktop and tablet */}
         <table className="hidden w-full text-[15px] md:table">
           <thead>
-            <tr className="border-b border-line bg-surface-muted/70 text-left text-[13px] font-semibold text-ink-nav">
-              <th className="px-4 py-2">Equipment</th>
-              <th className="px-3 py-2">Category</th>
-              <th className="px-3 py-2 text-right">Total</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2 text-right">Damaged</th>
-              <th className="px-3 py-2 text-right">Missing</th>
-              {manage && <th className="w-16 px-4 py-2 text-right"><span className="sr-only">Actions</span></th>}
+            <tr className="border-b border-line text-left text-[13px] font-semibold text-ink-nav">
+              <th className="px-5 py-2.5">Equipment</th>
+              <th className="px-3 py-2.5 text-right">Total</th>
+              <th className="px-3 py-2.5 text-right">Available</th>
+              <th className="px-3 py-2.5 text-right">Borrowed</th>
+              <th className="px-3 py-2.5">Attention</th>
+              <th className="w-10 px-3 py-2.5"><span className="sr-only">Open</span></th>
             </tr>
           </thead>
           <tbody>
-            {(items ?? []).map((e) => (
-              <Fragment key={e.id}>
-                <tr className={cn('border-t border-line-soft align-middle transition-colors first:border-t-0 hover:bg-sky-50/60', editing === e.id && 'bg-sky-50')}>
-                  <td className="px-4 py-2.5">
-                    <span className="block font-semibold text-navy-900">{e.name}</span>
-                    <span className="block text-[13.5px] leading-snug text-ink-muted"><span className="whitespace-nowrap text-ink-nav">{e.refNo}</span> · {e.description}{e.location ? ` · ${e.location}` : ''}</span>
+            {(items ?? []).map((e) => {
+              const st = equipmentStatus(e)
+              return (
+                <tr key={e.id} onClick={() => setOpenId(e.id)} className="cursor-pointer border-t border-line-soft first:border-t-0 hover:bg-sky-50/60">
+                  <td className="px-5 py-3">
+                    <button type="button" onClick={() => setOpenId(e.id)} className="text-left font-semibold text-navy-900 hover:underline">{e.name}</button>
+                    {e.location && <span className="block text-[13.5px] text-ink-muted">{e.location}</span>}
                   </td>
-                  <td className="px-3 py-2.5 text-[14.5px] text-ink-nav">{e.category}</td>
-                  <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-navy-900">{e.totalQty}</td>
-                  <td className="px-3 py-2.5"><StatusBadges e={e} /></td>
-                  <td className={cn('px-3 py-2.5 text-right tabular-nums', e.damagedQty ? 'font-semibold text-warning' : 'text-ink-subtle')}>{e.damagedQty}</td>
-                  <td className={cn('px-3 py-2.5 text-right tabular-nums', e.missingQty ? 'font-semibold text-danger-ink' : 'text-ink-subtle')}>{e.missingQty}</td>
-                  {manage && (
-                    <td className="px-4 py-2.5 text-right">
-                      <EditButton name={e.name} disabled={!!editing && editing !== e.id} onClick={() => setEditing(editing === e.id ? null : e.id)} />
-                    </td>
-                  )}
+                  <td className="px-3 py-3 text-right tabular-nums text-navy-900">{e.totalQty}</td>
+                  <td className="px-3 py-3 text-right font-semibold tabular-nums text-navy-900">{st.available}</td>
+                  <td className="px-3 py-3 text-right tabular-nums text-navy-900">{st.borrowed}</td>
+                  <td className="px-3 py-3 text-[14px]"><Attention e={e} overdue={st.overdue} /></td>
+                  <td className="px-3 py-3 text-ink-subtle"><ChevronRight className="size-4" /></td>
                 </tr>
-                {editing === e.id && (
-                  <tr className="bg-sky-50">
-                    <td colSpan={manage ? 7 : 6} className="px-4 pb-3">
-                      <EditForm e={e} categories={categories} actor={actor} onDone={() => { setEditing(null); setTick((t) => t + 1) }} />
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            ))}
+              )
+            })}
           </tbody>
         </table>
 
-        {/* Phones: one card per item */}
+        {/* Phones: settings-style list */}
         <ul className="divide-y divide-line-soft md:hidden">
-          {(items ?? []).map((e) => (
-            <li key={e.id} className={cn('px-4 py-3', editing === e.id && 'bg-sky-50')}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-semibold text-navy-900">{e.name}</p>
-                  <p className="text-[13px] text-ink-muted">{e.refNo} · {e.category}{e.location ? ` · ${e.location}` : ''}</p>
-                </div>
-                {manage && <EditButton name={e.name} disabled={!!editing && editing !== e.id} onClick={() => setEditing(editing === e.id ? null : e.id)} />}
-              </div>
-              <dl className="mt-2 grid grid-cols-3 gap-2 text-[13.5px]">
-                <div><dt className="text-ink-muted">Total</dt><dd className="font-semibold tabular-nums text-navy-900">{e.totalQty}</dd></div>
-                <div><dt className="text-ink-muted">Damaged</dt><dd className={cn('tabular-nums', e.damagedQty ? 'font-semibold text-warning' : 'text-ink-subtle')}>{e.damagedQty}</dd></div>
-                <div><dt className="text-ink-muted">Missing</dt><dd className={cn('tabular-nums', e.missingQty ? 'font-semibold text-danger-ink' : 'text-ink-subtle')}>{e.missingQty}</dd></div>
-              </dl>
-              <div className="mt-2"><StatusBadges e={e} /></div>
-              {editing === e.id && <div className="mt-3"><EditForm e={e} categories={categories} actor={actor} onDone={() => { setEditing(null); setTick((t) => t + 1) }} /></div>}
-            </li>
-          ))}
+          {(items ?? []).map((e) => {
+            const st = equipmentStatus(e)
+            const flag = st.overdue > 0 || e.missingQty > 0
+            return (
+              <li key={e.id}>
+                <button type="button" onClick={() => setOpenId(e.id)} className="flex min-h-[60px] w-full items-center gap-3 px-4 py-3 text-left active:bg-surface-muted">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold text-navy-900">{e.name}</span>
+                    <span className="block text-[14px] text-ink-muted">{e.totalQty} total · {st.available} available</span>
+                  </span>
+                  {flag && <span aria-label="Needs attention" className="size-2 shrink-0 rounded-full bg-danger" />}
+                  <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
+                </button>
+              </li>
+            )
+          })}
         </ul>
       </Card>
-      <Panel className="mt-4" title="Inventory history">
+      {(items ?? []).some((e) => e.history.length > 0) && <Panel className="mt-4" title="Inventory history">
         <ul className="space-y-1.5 text-[14.5px]">
           {(items ?? []).flatMap((e) => e.history.map((h) => ({ e, h }))).sort((a, b) => b.h.at.localeCompare(a.h.at)).slice(0, 12).map(({ e, h }, i) => (
-            <li key={i} className="text-navy-900">{formatDateTime(h.at)} · <strong>{e.name}</strong>: {h.action}{h.detail ? ` (${h.detail})` : ''}</li>
+            <li key={i} className="text-navy-900"><span className="text-ink-muted">{formatShortDate(h.at)}</span> · <strong>{e.name}</strong>: {h.action}{h.detail ? ` (${h.detail})` : ''}</li>
           ))}
-          {(items ?? []).every((e) => e.history.length === 0) && <li className="text-ink-muted">No changes recorded yet.</li>}
         </ul>
-      </Panel>
+      </Panel>}
+
+      {selected && (
+        <Sheet title={selected.name} onClose={close}>
+          {editing ? (
+            <EditForm e={selected} categories={categories} actor={actor} onDone={() => { setEditing(false); setTick((t) => t + 1) }} />
+          ) : (
+            <Detail e={selected} manage={manage} canBorrowing={canBorrowing} onEdit={() => setEditing(true)} />
+          )}
+        </Sheet>
+      )}
     </>
+  )
+}
+
+/** Only real problems: overdue, damaged, missing. */
+function Attention({ e, overdue }: { e: Equipment; overdue: number }) {
+  const parts = [
+    overdue > 0 && <span key="o" className="font-semibold text-danger-ink">{overdue} overdue</span>,
+    e.missingQty > 0 && <span key="m" className="font-semibold text-danger-ink">{e.missingQty} missing</span>,
+    e.damagedQty > 0 && <span key="d" className="text-warning">{e.damagedQty} damaged</span>,
+  ].filter(Boolean)
+  if (!parts.length) return <span className="text-ink-subtle">–</span>
+  return <span className="flex flex-wrap gap-x-2">{parts}</span>
+}
+
+function Detail({ e, manage, canBorrowing, onEdit }: { e: Equipment; manage: boolean; canBorrowing: boolean; onEdit: () => void }) {
+  const st = equipmentStatus(e)
+  // Units on hand minus units out or set aside; below zero means the records disagree.
+  const balance = e.totalQty - e.damagedQty - e.missingQty - st.maintenance - st.reserved - st.borrowed
+  const rows: [string, number, string?][] = [
+    ['Borrowed', st.borrowed],
+    ['Overdue', st.overdue, st.overdue ? 'text-danger-ink font-semibold' : undefined],
+    ['Reserved', st.reserved],
+    ['Pending requests', st.pending],
+    ['Under maintenance', st.maintenance],
+    ['Damaged', e.damagedQty, e.damagedQty ? 'text-warning font-semibold' : undefined],
+    ['Missing', e.missingQty, e.missingQty ? 'text-danger-ink font-semibold' : undefined],
+  ]
+  return (
+    <div>
+      <div className="flex items-baseline gap-6">
+        <p><span className="block font-display text-[34px] leading-none font-extrabold text-navy-900 tabular-nums">{st.available}</span><span className="text-[14px] text-ink-muted">Available</span></p>
+        <p><span className="block font-display text-[34px] leading-none font-extrabold text-ink-nav tabular-nums">{e.totalQty}</span><span className="text-[14px] text-ink-muted">Total</span></p>
+      </div>
+      {balance < 0 && (
+        <p role="alert" className="mt-3 rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">Counts don't add up: {-balance} more {-balance === 1 ? 'unit is' : 'units are'} out or set aside than on hand.</p>
+      )}
+      <dl className="mt-4 divide-y divide-line-soft border-y border-line-soft">
+        {rows.map(([label, n, cls]) => (
+          <div key={label} className="flex items-center justify-between py-2.5 text-[15px]">
+            <dt className="text-navy-900">{label}</dt>
+            <dd className={cn('tabular-nums', cls ?? (n ? 'text-navy-900' : 'text-ink-subtle'))}>{n}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-3 text-[14px] text-ink-muted">{[e.refNo, e.category, e.location].filter(Boolean).join(' · ')}</p>
+      {e.description && <p className="text-[14px] text-ink-muted">{e.description}</p>}
+      {e.history.length > 0 && (
+        <details className="mt-3 text-[14.5px]">
+          <summary className="cursor-pointer font-semibold text-navy-900">History</summary>
+          <ul className="mt-2 space-y-1">
+            {[...e.history].sort((a, b) => b.at.localeCompare(a.at)).map((h, i) => (
+              <li key={i} className="text-navy-900"><span className="text-ink-muted">{formatShortDate(h.at)}</span> · {h.action}{h.detail ? ` (${h.detail})` : ''}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+      <div className="mt-5 flex flex-wrap gap-2">
+        {manage && <Button icon={<Pencil className="size-4" />} onClick={onEdit}>Edit equipment</Button>}
+        {canBorrowing && <ButtonLink to="/borrowing" variant="secondary">Borrowing records</ButtonLink>}
+      </div>
+    </div>
+  )
+}
+
+/** Bottom sheet on phones, centred dialog on larger screens. */
+function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  useEffect(() => {
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
+  }, [onClose])
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" role="dialog" aria-modal="true" aria-label={title}>
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-navy-900/35" />
+      <div className="relative max-h-[88dvh] w-full overflow-y-auto rounded-t-2xl bg-surface px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl md:max-w-[480px] md:rounded-2xl md:pt-5">
+        <span aria-hidden className="mx-auto mb-3 block h-1.5 w-10 rounded-full bg-line md:hidden" />
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <h2 className="font-display text-[20px] font-bold text-navy-900">{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="-mt-1 -mr-2 grid size-10 place-items-center rounded-full text-ink-nav hover:bg-surface-muted"><X className="size-5" /></button>
+        </div>
+        {children}
+      </div>
+    </div>
   )
 }
 
@@ -148,20 +232,6 @@ function CategoryList({ categories }: { categories: string[] }) {
   )
 }
 
-function EditButton({ name, disabled, onClick }: { name: string; disabled?: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={`Edit ${name}`}
-      title="Edit record"
-      className="inline-grid size-9 place-items-center rounded-[var(--radius-control)] text-ink-nav transition-colors hover:bg-sky-100 hover:text-navy-900 disabled:cursor-not-allowed disabled:opacity-40"
-    >
-      <Pencil className="size-[18px]" />
-    </button>
-  )
-}
 
 /** Edit form: every field from "Add equipment" can be changed here. */
 function EditForm({ e, actor, onDone, categories }: { e: Equipment; actor: NonNullable<ReturnType<typeof useDocActor>>; onDone: () => void; categories: string[] }) {
@@ -200,27 +270,3 @@ function EditForm({ e, actor, onDone, categories }: { e: Equipment; actor: NonNu
   )
 }
 
-/**
- * Units by status as small badges on one line. Overdue units are part of
- * Borrowed (not extra); pending requests are asked-for units, not yet set aside.
- */
-function StatusBadges({ e }: { e: Equipment }) {
-  const st = equipmentStatus(e)
-  const items: [string, number, string, string?][] = [
-    ['Available', st.available, 'bg-success-tint text-success'],
-    ['Pending', st.pending, 'bg-warning-tint text-warning', 'Requested, not yet approved'],
-    ['Reserved', st.reserved, 'bg-[#f1ecfb] text-[#6a3fb5]', 'Approved, not yet released'],
-    ['Borrowed', st.borrowed, 'bg-info-tint text-info'],
-    ['Overdue', st.overdue, 'bg-danger-tint text-danger-ink', 'Included in Borrowed'],
-    ['Maintenance', st.maintenance, 'bg-neutral-tint text-ink-nav'],
-  ]
-  return (
-    <span className="flex flex-wrap gap-1">
-      {items.filter(([, n], i) => n > 0 || i === 0).map(([label, n, cls, title]) => (
-        <span key={label} title={title} className={cn('inline-flex items-center gap-1 rounded px-1.5 text-[12.5px] leading-6 font-semibold whitespace-nowrap', cls)}>
-          {label === 'Overdue' ? `${n} overdue` : <>{label} <span className="tabular-nums">{n}</span></>}
-        </span>
-      ))}
-    </span>
-  )
-}

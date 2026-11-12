@@ -1,4 +1,4 @@
-import { BarChart3, CalendarClock, FileText, Gavel, ShieldCheck, UserRoundPen } from '@/icons'
+import { BarChart3, CalendarClock, ChevronRight, FileText, Gavel, ShieldCheck, UserRoundPen } from '@/icons'
 import { StatusBadge } from '@/components/documents/DocParts'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
@@ -13,7 +13,6 @@ import { STAGE_LABEL, STAGE_TONE, listCases, upcomingHearings } from '@/services
 import { availableTransitions, listRequests } from '@/services/documentService'
 import { getResidentQueueCounts } from '@/services/residentService'
 import { Link } from 'react-router-dom'
-import { BUILTIN_REPORT_TEMPLATES } from '@/config/reportTemplates'
 import { DashHeader, EmptyNote, ListPanel, Row, Stat, ViewAll } from './shared'
 
 /** Ana Manila Salvador: day-to-day administration of records, documents, complaints and reports. */
@@ -115,15 +114,17 @@ export function SecretaryDashboard() {
           />
       </section>
 
-      <Panel className="mt-4" title="Reports to prepare" subtitle="Recurring reports for DILG, OSCA, MADAO and Barangay Bureau">
+      <Panel className="mt-4" title="Reports to prepare">
         <ul className="grid gap-2 sm:grid-cols-2">
           {RECURRING_REPORTS.map((r) => (
-            <li key={r.id} className={`flex items-center justify-between gap-3 rounded-[var(--radius-control)] border px-3 py-2.5 ${r.id === 'senior-masterlist' ? 'border-line' : 'border-warning/40 bg-warning-tint/40'}`}>
-              <span>
-                <span className="block text-[15px] font-semibold text-navy-900">{r.name}</span>
-                <span className="block text-[13.5px] text-ink-muted">{r.schedule.replace(/\s*\(format pending\)/i, '')}</span>
-              </span>
-              <Badge tone={BUILTIN_REPORT_TEMPLATES[`recurring-${r.id}`] ? 'success' : 'warning'}>{BUILTIN_REPORT_TEMPLATES[`recurring-${r.id}`] ? 'Format ready' : 'Awaiting official file'}</Badge>
+            <li key={r.id}>
+              <Link to="/reports" className="flex items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line-soft bg-surface px-3.5 py-3 hover:border-line hover:bg-surface-muted">
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-semibold text-navy-900">{r.name}</span>
+                  <span className="block text-[14px] text-ink-muted">{r.schedule.replace(/\s*\(format pending\)/i, '')}</span>
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
+              </Link>
             </li>
           ))}
         </ul>
