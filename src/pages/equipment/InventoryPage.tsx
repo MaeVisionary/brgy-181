@@ -1,5 +1,6 @@
-import { Plus } from '@/icons'
-import { useState } from 'react'
+import { Pencil, Plus } from '@/icons'
+import { Fragment, useState } from 'react'
+import { cn } from '@/lib/cn'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/Button'
 import { FieldLabel, TextInput } from '@/components/ui/Field'
@@ -32,32 +33,72 @@ export function InventoryPage() {
         actions={manage && <Button icon={<Plus className="size-4" />} onClick={() => setAdding((a) => !a)}>Add equipment</Button>}
       />
       {adding && <AddForm categories={categories} onDone={() => { setAdding(false); setTick((t) => t + 1) }} actor={actor} />}
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-[15px]">
-            <thead>
-              <tr className="bg-surface-muted text-left">{['Equipment ID', 'Equipment', 'Category', 'Total', 'Status', 'Damaged', 'Missing', ''].map((h, i) => <th key={i} className="label-caps px-4 py-2.5">{h}</th>)}</tr>
-            </thead>
-            <tbody>
-              {(items ?? []).map((e) => (
-                editing === e.id ? (
-                  <EditRow key={e.id} e={e} categories={categories} actor={actor} onDone={() => { setEditing(null); setTick((t) => t + 1) }} />
-                ) : (
-                  <tr key={e.id} className="border-t border-line-soft">
-                    <td className="px-4 py-3 font-semibold whitespace-nowrap text-navy-900">{e.refNo}</td>
-                    <td className="px-4 py-3"><span className="block font-semibold text-navy-900">{e.name}</span><span className="block text-[14px] text-ink-muted">{e.description}</span>{e.location && <span className="block text-[14px] text-ink-muted">Kept at: {e.location}</span>}</td>
-                    <td className="px-4 py-3">{e.category}</td>
-                    <td className="px-4 py-3 tabular-nums">{e.totalQty}</td>
-                    <td className="px-4 py-3"><StatusChips e={e} /></td>
-                    <td className="px-4 py-3 tabular-nums">{e.damagedQty}</td>
-                    <td className="px-4 py-3 tabular-nums">{e.missingQty}</td>
-                    <td className="px-4 py-3 text-right">{manage && <Button size="sm" variant="secondary" disabled={!!editing} onClick={() => setEditing(e.id)}>Edit Record</Button>}</td>
+      <Card className="overflow-hidden">
+        {/* Desktop and tablet: compact table */}
+        <table className="hidden w-full text-[15px] md:table">
+          <thead>
+            <tr className="border-b border-line bg-surface-muted/70 text-left text-[13px] font-semibold text-ink-nav">
+              <th className="px-4 py-2">Equipment</th>
+              <th className="px-3 py-2">Category</th>
+              <th className="px-3 py-2 text-right">Total</th>
+              <th className="px-3 py-2">Status</th>
+              <th className="px-3 py-2 text-right">Damaged</th>
+              <th className="px-3 py-2 text-right">Missing</th>
+              {manage && <th className="w-16 px-4 py-2 text-right"><span className="sr-only">Actions</span></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {(items ?? []).map((e) => (
+              <Fragment key={e.id}>
+                <tr className={cn('border-t border-line-soft align-middle transition-colors first:border-t-0 hover:bg-sky-50/60', editing === e.id && 'bg-sky-50')}>
+                  <td className="px-4 py-2.5">
+                    <span className="block font-semibold text-navy-900">{e.name}</span>
+                    <span className="block text-[13.5px] leading-snug text-ink-muted"><span className="whitespace-nowrap text-ink-nav">{e.refNo}</span> · {e.description}{e.location ? ` · ${e.location}` : ''}</span>
+                  </td>
+                  <td className="px-3 py-2.5 text-[14.5px] text-ink-nav">{e.category}</td>
+                  <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-navy-900">{e.totalQty}</td>
+                  <td className="px-3 py-2.5"><StatusBadges e={e} /></td>
+                  <td className={cn('px-3 py-2.5 text-right tabular-nums', e.damagedQty ? 'font-semibold text-warning' : 'text-ink-subtle')}>{e.damagedQty}</td>
+                  <td className={cn('px-3 py-2.5 text-right tabular-nums', e.missingQty ? 'font-semibold text-danger-ink' : 'text-ink-subtle')}>{e.missingQty}</td>
+                  {manage && (
+                    <td className="px-4 py-2.5 text-right">
+                      <EditButton name={e.name} disabled={!!editing && editing !== e.id} onClick={() => setEditing(editing === e.id ? null : e.id)} />
+                    </td>
+                  )}
+                </tr>
+                {editing === e.id && (
+                  <tr className="bg-sky-50">
+                    <td colSpan={manage ? 7 : 6} className="px-4 pb-3">
+                      <EditForm e={e} categories={categories} actor={actor} onDone={() => { setEditing(null); setTick((t) => t + 1) }} />
+                    </td>
                   </tr>
-                )
-              ))}
-            </tbody>
-          </table>
-        </div>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Phones: one card per item */}
+        <ul className="divide-y divide-line-soft md:hidden">
+          {(items ?? []).map((e) => (
+            <li key={e.id} className={cn('px-4 py-3', editing === e.id && 'bg-sky-50')}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-navy-900">{e.name}</p>
+                  <p className="text-[13px] text-ink-muted">{e.refNo} · {e.category}{e.location ? ` · ${e.location}` : ''}</p>
+                </div>
+                {manage && <EditButton name={e.name} disabled={!!editing && editing !== e.id} onClick={() => setEditing(editing === e.id ? null : e.id)} />}
+              </div>
+              <dl className="mt-2 grid grid-cols-3 gap-2 text-[13.5px]">
+                <div><dt className="text-ink-muted">Total</dt><dd className="font-semibold tabular-nums text-navy-900">{e.totalQty}</dd></div>
+                <div><dt className="text-ink-muted">Damaged</dt><dd className={cn('tabular-nums', e.damagedQty ? 'font-semibold text-warning' : 'text-ink-subtle')}>{e.damagedQty}</dd></div>
+                <div><dt className="text-ink-muted">Missing</dt><dd className={cn('tabular-nums', e.missingQty ? 'font-semibold text-danger-ink' : 'text-ink-subtle')}>{e.missingQty}</dd></div>
+              </dl>
+              <div className="mt-2"><StatusBadges e={e} /></div>
+              {editing === e.id && <div className="mt-3"><EditForm e={e} categories={categories} actor={actor} onDone={() => { setEditing(null); setTick((t) => t + 1) }} /></div>}
+            </li>
+          ))}
+        </ul>
       </Card>
       <Panel className="mt-4" title="Inventory history">
         <ul className="space-y-1.5 text-[14.5px]">
@@ -107,14 +148,27 @@ function CategoryList({ categories }: { categories: string[] }) {
   )
 }
 
-/** Inline edit: every field from "Add equipment" can be changed here. */
-function EditRow({ e, actor, onDone, categories }: { e: Equipment; actor: NonNullable<ReturnType<typeof useDocActor>>; onDone: () => void; categories: string[] }) {
+function EditButton({ name, disabled, onClick }: { name: string; disabled?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={`Edit ${name}`}
+      title="Edit record"
+      className="inline-grid size-9 place-items-center rounded-[var(--radius-control)] text-ink-nav transition-colors hover:bg-sky-100 hover:text-navy-900 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <Pencil className="size-[18px]" />
+    </button>
+  )
+}
+
+/** Edit form: every field from "Add equipment" can be changed here. */
+function EditForm({ e, actor, onDone, categories }: { e: Equipment; actor: NonNullable<ReturnType<typeof useDocActor>>; onDone: () => void; categories: string[] }) {
   const [v, setV] = useState({ name: e.name, category: e.category, description: e.description, location: e.location ?? '', totalQty: String(e.totalQty), damagedQty: String(e.damagedQty), missingQty: String(e.missingQty), maintenanceQty: String(e.maintenanceQty ?? 0) })
   const [err, setErr] = useState<string | null>(null)
   const set = (k: keyof typeof v, val: string) => setV((s) => ({ ...s, [k]: val }))
-  const num = (k: 'totalQty' | 'damagedQty' | 'missingQty' | 'maintenanceQty', label: string) => (
-    <TextInput className="h-9 w-20" inputMode="numeric" value={v[k]} onChange={(ev) => set(k, ev.target.value.replace(/\D/g, ''))} aria-label={label} />
-  )
+  const num = (k: 'totalQty' | 'damagedQty' | 'missingQty' | 'maintenanceQty') => (ev: { target: { value: string } }) => set(k, ev.target.value.replace(/\D/g, ''))
   const save = async () => {
     setErr(null)
     try {
@@ -125,54 +179,48 @@ function EditRow({ e, actor, onDone, categories }: { e: Equipment; actor: NonNul
     }
   }
   return (
-    <>
-      <tr className="border-t border-line-soft bg-sky-50 align-top">
-        <td className="px-4 py-2.5 font-semibold whitespace-nowrap text-navy-900">{e.refNo}</td>
-        <td className="space-y-1.5 px-4 py-2.5">
-          <TextInput className="h-9" value={v.name} onChange={(ev) => set('name', ev.target.value)} aria-label="Equipment name" />
-          <TextInput className="h-9" value={v.description} onChange={(ev) => set('description', ev.target.value)} placeholder="Description" aria-label="Description" />
-          <TextInput className="h-9" value={v.location} onChange={(ev) => set('location', ev.target.value)} placeholder="Where it is kept" aria-label="Location" />
-        </td>
-        <td className="px-4 py-2.5"><TextInput className="h-9 w-32" list="equipment-categories" value={v.category} onChange={(ev) => set('category', ev.target.value)} aria-label="Category" /><CategoryList categories={categories} /></td>
-        <td className="px-4 py-2.5">{num('totalQty', 'Total')}</td>
-        <td className="px-4 py-2.5"><span className="mb-0.5 block text-[13.5px] text-ink-muted">Under maintenance</span>{num('maintenanceQty', 'Under maintenance')}</td>
-        <td className="px-4 py-2.5">{num('damagedQty', 'Damaged')}</td>
-        <td className="px-4 py-2.5">{num('missingQty', 'Missing')}</td>
-        <td className="px-4 py-2.5 text-right">
-          <span className="flex justify-end gap-2">
-            <Button size="sm" onClick={save}>Save</Button>
-            <Button size="sm" variant="secondary" onClick={onDone}>Cancel</Button>
-          </span>
-        </td>
-      </tr>
-      {err && (
-        <tr className="bg-sky-50">
-          <td colSpan={8} className="px-4 pb-2.5 text-[14.5px] text-danger-ink">{err}</td>
-        </tr>
-      )}
-    </>
+    <div className="rounded-[var(--radius-control)] border border-line bg-surface p-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <FieldLabel label="Name" required><TextInput value={v.name} onChange={(ev) => set('name', ev.target.value)} /></FieldLabel>
+        <FieldLabel label="Category" required><TextInput list="equipment-categories" value={v.category} onChange={(ev) => set('category', ev.target.value)} /></FieldLabel>
+        <FieldLabel label="Description"><TextInput value={v.description} onChange={(ev) => set('description', ev.target.value)} /></FieldLabel>
+        <FieldLabel label="Where it is kept"><TextInput value={v.location} onChange={(ev) => set('location', ev.target.value)} /></FieldLabel>
+        <FieldLabel label="Total" required><TextInput inputMode="numeric" value={v.totalQty} onChange={num('totalQty')} /></FieldLabel>
+        <FieldLabel label="Damaged"><TextInput inputMode="numeric" value={v.damagedQty} onChange={num('damagedQty')} /></FieldLabel>
+        <FieldLabel label="Missing"><TextInput inputMode="numeric" value={v.missingQty} onChange={num('missingQty')} /></FieldLabel>
+        <FieldLabel label="Under maintenance"><TextInput inputMode="numeric" value={v.maintenanceQty} onChange={num('maintenanceQty')} /></FieldLabel>
+      </div>
+      <CategoryList categories={categories} />
+      {err && <p role="alert" className="mt-2 text-[14.5px] text-danger-ink">{err}</p>}
+      <div className="mt-3 flex justify-end gap-2">
+        <Button size="sm" variant="secondary" onClick={onDone}>Cancel</Button>
+        <Button size="sm" onClick={save}>Save</Button>
+      </div>
+    </div>
   )
 }
 
-/** Units by status as plain figures; colour only where it needs attention. */
-function StatusChips({ e }: { e: Equipment }) {
+/**
+ * Units by status as small badges on one line. Overdue units are part of
+ * Borrowed (not extra); pending requests are asked-for units, not yet set aside.
+ */
+function StatusBadges({ e }: { e: Equipment }) {
   const st = equipmentStatus(e)
-  const rows: [string, number, string][] = [
-    ['Available', st.available, st.available > 0 ? 'text-success' : 'text-danger-ink'],
-    ['Pending request', st.pending, 'text-navy-900'],
-    ['Reserved', st.reserved, 'text-navy-900'],
-    ['Borrowed', st.borrowed, 'text-navy-900'],
-    ['Overdue', st.overdue, 'text-danger-ink'],
-    ['Under maintenance', st.maintenance, 'text-navy-900'],
+  const items: [string, number, string, string?][] = [
+    ['Available', st.available, 'bg-success-tint text-success'],
+    ['Pending', st.pending, 'bg-warning-tint text-warning', 'Requested, not yet approved'],
+    ['Reserved', st.reserved, 'bg-[#f1ecfb] text-[#6a3fb5]', 'Approved, not yet released'],
+    ['Borrowed', st.borrowed, 'bg-info-tint text-info'],
+    ['Overdue', st.overdue, 'bg-danger-tint text-danger-ink', 'Included in Borrowed'],
+    ['Maintenance', st.maintenance, 'bg-neutral-tint text-ink-nav'],
   ]
   return (
-    <dl className="grid grid-cols-[auto_auto] justify-start gap-x-3 text-[14.5px] leading-6">
-      {rows.filter(([, n], i) => n > 0 || i === 0).map(([label, n, tone]) => (
-        <div key={label} className="contents">
-          <dt className="whitespace-nowrap text-ink-nav">{label}</dt>
-          <dd className={`font-semibold tabular-nums ${tone}`}>{n}</dd>
-        </div>
+    <span className="flex flex-wrap gap-1">
+      {items.filter(([, n], i) => n > 0 || i === 0).map(([label, n, cls, title]) => (
+        <span key={label} title={title} className={cn('inline-flex items-center gap-1 rounded px-1.5 text-[12.5px] leading-6 font-semibold whitespace-nowrap', cls)}>
+          {label === 'Overdue' ? `${n} overdue` : <>{label} <span className="tabular-nums">{n}</span></>}
+        </span>
       ))}
-    </dl>
+    </span>
   )
 }

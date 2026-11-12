@@ -1,3 +1,20 @@
+# BMIS Patch Notes: Compact feeds, inventory table, work queue (12 November 2026)
+
+- **Status badges** everywhere: small, softly tinted, square-cornered, no dots. Pending Review amber,
+  Under Verification blue, Approved by Secretary / Ready for Printing green, Needs Revision red.
+- **Recent transactions** (Custodian): compact activity feed. Reference number first with a short status
+  (Submitted, Encoded, Approved, Released, Returned…), resident and date below (date only, e.g. Nov 5, 2026). Shows 10 entries.
+- **Your work queue** (Secretary): compact rows (document · resident; reference · submission date; status on the right).
+  Summary counts from the records: needs your action, open requests (not completed/rejected/cancelled),
+  completed this week (marked completed in the last 7 days).
+- **Property and Equipment Records**: shorter rows, statuses as one line of small badges (Available green,
+  Pending amber, Reserved purple, Borrowed blue, Overdue red), totals right-aligned, damaged/missing highlighted
+  only when non-zero, pencil icon instead of "Edit Record", phone layout as cards, edit form opens under the item.
+  Calculations unchanged. Note: Overdue is part of Borrowed (not extra units); Pending is requested units,
+  not yet set aside, so it is not subtracted from Available.
+
+---
+
 # BMIS Patch Notes: Role manager, toggles, new icons, no instructions (12 November 2026)
 
 - **Roles and Permissions** (System Administrator): editable manager. Roles are columns (Chairman, Secretary,

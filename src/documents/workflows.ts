@@ -2,11 +2,11 @@ import type { BadgeTone } from '@/components/ui/Badge'
 import type { DocumentStatus, Workflow, WorkflowId } from '@/types/document'
 
 export const STATUS_META: Record<DocumentStatus, { label: string; tone: BadgeTone }> = {
-  submitted: { label: 'Pending Review', tone: 'info' },
+  submitted: { label: 'Pending Review', tone: 'warning' },
   under_review: { label: 'Under Verification', tone: 'info' },
-  needs_info: { label: 'Needs Revision', tone: 'warning' },
+  needs_info: { label: 'Needs Revision', tone: 'danger' },
   for_assessment: { label: 'For Assessment', tone: 'warning' },
-  processing: { label: 'Processing', tone: 'info' },
+  processing: { label: 'Processing', tone: 'success' },
   pending_approval: { label: 'Pending Approval', tone: 'warning' },
   approved: { label: 'Approved', tone: 'success' },
   for_signature: { label: 'For Signature', tone: 'warning' },

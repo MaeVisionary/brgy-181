@@ -12,14 +12,14 @@ export type BadgeTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral'
  *  neutral  grey   recorded / closed / cancelled / no action needed
  */
 const tones: Record<BadgeTone, string> = {
-  success: 'text-success',
-  warning: 'text-warning',
-  danger: 'text-danger-ink',
-  info: 'text-info',
-  neutral: 'text-ink-nav',
+  success: 'bg-success-tint text-success',
+  warning: 'bg-warning-tint text-warning',
+  danger: 'bg-danger-tint text-danger-ink',
+  info: 'bg-info-tint text-info',
+  neutral: 'bg-neutral-tint text-ink-nav',
 }
 
-/** Status shown as coloured text (no dot, no pill). `dot` is kept for compatibility. */
+/** Status shown as a small tinted label (no dot). `dot` is kept for compatibility. */
 export function Badge({ tone = 'neutral', children, className }: { tone?: BadgeTone; children: ReactNode; className?: string; dot?: boolean }) {
-  return <span className={cn('inline-flex items-center text-[14.5px] font-semibold whitespace-nowrap', tones[tone], className)}>{children}</span>
+  return <span className={cn('inline-flex h-6 items-center rounded px-1.5 text-[12.5px] font-semibold whitespace-nowrap', tones[tone], className)}>{children}</span>
 }

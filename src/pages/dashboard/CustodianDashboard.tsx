@@ -1,11 +1,12 @@
 import { ChevronRight, PackagePlus } from '@/icons'
+import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { Panel } from '@/components/ui/Panel'
 import { BORROWING } from '@/config/barangay'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
-import { formatDate, formatDateTime } from '@/lib/format'
+import { formatDate, formatShortDate } from '@/lib/format'
 import { availableQty, borrowedQty, listBorrowings, listEquipment, returnState } from '@/services/equipmentService'
 import { RETURN_BADGE } from '@/pages/equipment/badges'
 import { DashHeader, ListPanel, Row, Stat, ViewAll } from './shared'
@@ -87,13 +88,50 @@ export function CustodianDashboard() {
         </div>
       </Panel>
 
-      <ListPanel
-        className="mt-4"
-        title="Recent transactions"
-        items={borrowings ? borrowings.flatMap((b) => b.history.map((h) => ({ b, h }))).sort((x, y) => y.h.at.localeCompare(x.h.at)).slice(0, 6) : null}
-        empty="No transactions yet."
-        render={({ b, h }) => <Row to={`/borrowing/${b.id}`} title={`${h.action} · ${b.refNo}`} meta={`${b.borrowerName} · ${formatDateTime(h.at)}`} right={<ChevronRight className="size-4 text-ink-subtle" />} />}
-      />
+      <Panel className="mt-4" title="Recent transactions" actions={<ViewAll to="/borrowing" />} bodyClassName="px-0 py-0">
+        {!borrowings ? (
+          <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-9 animate-pulse rounded bg-surface-muted" />)}</div>
+        ) : (
+          <ul className="divide-y divide-line-soft">
+            {borrowings
+              .flatMap((b) => b.history.map((h) => ({ b, h })))
+              .sort((x, y) => y.h.at.localeCompare(x.h.at))
+              .slice(0, 10)
+              .map(({ b, h }, i) => {
+                const st = activityStatus(h.action)
+                return (
+                  <li key={`${b.id}-${i}`}>
+                    <Link to={`/borrowing/${b.id}`} className="flex items-center gap-3 px-5 py-2 hover:bg-sky-50">
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2">
+                          <span className="font-semibold text-navy-900">{b.refNo}</span>
+                          <span className={`rounded px-1.5 py-px text-[12.5px] leading-5 font-semibold ${st.cls}`}>{st.label}</span>
+                        </span>
+                        <span className="block truncate text-[14px] text-ink-muted">{b.borrowerName} · {formatShortDate(h.at)}</span>
+                      </span>
+                      <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
+                    </Link>
+                  </li>
+                )
+              })}
+          </ul>
+        )}
+      </Panel>
     </>
   )
 }
+
+/** Short status for a borrowing history step, with its colour. */
+function activityStatus(action: string): { label: string; cls: string } {
+  const a = action.toLowerCase()
+  if (a.startsWith('request submitted')) return { label: 'Submitted', cls: 'bg-info-tint text-info' }
+  if (a.startsWith('encoded')) return { label: 'Encoded', cls: 'bg-info-tint text-info' }
+  if (a.startsWith('approved')) return { label: 'Approved', cls: 'bg-success-tint text-success' }
+  if (a.startsWith('released')) return { label: 'Released', cls: 'bg-warning-tint text-warning' }
+  if (a.startsWith('returned')) return { label: 'Returned', cls: 'bg-neutral-tint text-ink-nav' }
+  if (a.startsWith('rejected')) return { label: 'Rejected', cls: 'bg-danger-tint text-danger-ink' }
+  if (a.startsWith('late-return')) return { label: 'Late notice', cls: 'bg-danger-tint text-danger-ink' }
+  if (a.startsWith('cancel')) return { label: 'Cancelled', cls: 'bg-neutral-tint text-ink-nav' }
+  return { label: action.split(':')[0], cls: 'bg-neutral-tint text-ink-nav' }
+}
+

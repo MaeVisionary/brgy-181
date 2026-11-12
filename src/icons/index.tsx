@@ -70,6 +70,7 @@ import {
   Notepad,
   Package as PhPackage,
   Paperclip as PhPaperclip,
+  PencilSimple,
   Phone as PhPhone,
   Plus as PhPlus,
   Printer as PhPrinter,
@@ -221,6 +222,7 @@ export const Printer = mark(PhPrinter)
 export const Download = mark(DownloadSimple)
 export const Upload = mark(UploadSimple)
 export const Paperclip = mark(PhPaperclip)
+export const Pencil = mark(PencilSimple)
 export const Trash2 = mark(Trash)
 export const RotateCcw = mark(ArrowCounterClockwise)
 export const Copy = mark(PhCopy)

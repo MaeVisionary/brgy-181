@@ -40,3 +40,7 @@ export const initials = (name: string) =>
     .slice(0, 2)
     .join('')
     .toUpperCase()
+
+/** "Nov 5, 2026" (date only, Philippine time). */
+export const formatShortDate = (iso: string | Date) =>
+  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' })
