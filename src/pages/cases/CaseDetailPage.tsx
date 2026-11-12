@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
 import { useAuth } from '@/auth/useAuth'
+import { ConsultationPanel } from '@/pages/appointments/AppointmentPages'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { TextArea, TextInput } from '@/components/ui/Field'
@@ -167,6 +168,7 @@ export function CaseDetailPage() {
           </Panel>
 
           {can('cases.manage') && <AssignPanel c={c} actor={actor} onChange={refresh} />}
+          {can('cases.manage') && <ConsultationPanel caseId={c.id} />}
           {(can('cases.manage') || c.assignedTo?.includes(actor.user.id)) && (
             <Panel title="Internal notes">
               {c.internalNotes.length === 0 && <p className="text-[length:calc(14.5px*var(--fs))] text-ink-muted">No notes.</p>}

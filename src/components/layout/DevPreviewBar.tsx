@@ -19,7 +19,7 @@ export function DevPreviewBar() {
         Development preview
       </span>
       <span className="hidden text-white/70 md:inline">Sample data · not signed in · not available in production builds</span>
-      <label className="ml-auto inline-flex items-center gap-2">
+      <label className="ml-auto inline-flex min-w-0 max-w-full items-center gap-2">
         <span className="text-white/70">Preview as</span>
         <select
           value={user?.id ?? ''}
@@ -27,7 +27,7 @@ export function DevPreviewBar() {
             previewAs(e.target.value)
             navigate('/dashboard')
           }}
-          className="h-7 rounded-md border border-white/20 bg-navy-800 px-2 text-[length:calc(14px*var(--fs))] text-white"
+          className="h-7 min-w-0 max-w-[55vw] rounded-md border border-white/20 bg-navy-800 px-2 text-[length:calc(14px*var(--fs))] text-white"
         >
           {listPreviewAccounts().map((u) => (
             <option key={u.id} value={u.id}>

@@ -68,7 +68,7 @@ const PERSONNEL_NAV: NavGroup[] = [
   { section: 'Resident Records', label: 'Resident Master List', icon: Users, path: '/residents', anyOf: ['residents.view', 'residents.search'] },
   { section: 'Resident Records', label: 'Households', icon: HouseIcon, path: '/residents/households', anyOf: ['residents.view'] },
   { section: 'Resident Records', label: 'Registrations', icon: BadgeCheck, path: '/residents/registrations', anyOf: ['residents.verify'] },
-  { section: 'Resident Records', label: 'Appointments', icon: CalendarClock, path: '/appointments', anyOf: ['residents.approve'] },
+  { section: 'Resident Records', label: 'Appointments', icon: CalendarClock, path: '/appointments', anyOf: ['residents.approve', 'documents.release', 'cases.manage', 'borrowing.release'] },
   { section: 'Resident Records', label: 'Record Update Requests', icon: FilePen, path: '/residents/change-requests', anyOf: ['residents.approve'] },
   { section: 'Services', label: 'Document Requests', icon: FileText, path: '/documents', anyOf: ['documents.view'] },
   { section: 'Services', label: 'Approvals', icon: FileCheck2, path: '/documents/approvals', anyOf: ['documents.approve'] },
@@ -108,7 +108,7 @@ const RESIDENT_NAV: NavGroup[] = [
   { section: 'Main menu', label: 'My Transactions', icon: ClipboardList, path: '/my/transactions', anyOf: ['self.documents', 'self.complaints', 'self.borrowing'] },
   { section: 'Main menu', label: 'Notifications', icon: Bell, path: '/notifications' },
   { section: 'Account', label: 'My Profile', icon: UserRound, path: '/my/profile', anyOf: ['self.profile'] },
-  { section: 'Account', label: 'My Appointments', icon: CalendarClock, path: '/my/appointments', anyOf: ['self.change_requests'] },
+  { section: 'Account', label: 'My Appointments', icon: CalendarClock, path: '/my/appointments', anyOf: ['self.documents', 'self.complaints', 'self.borrowing', 'self.change_requests'] },
   { section: 'Account', label: 'Account Settings', icon: Settings2, path: '/account' },
 ]
 

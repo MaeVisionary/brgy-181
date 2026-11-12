@@ -172,8 +172,8 @@ export function decideChangeRequest(id: string, decision: 'approved' | 'rejected
     if (decision === 'rejected' && !note.trim()) throw new ServiceError('note', 'Add the reason for rejecting.')
     // A visit that is still open or failed blocks approval (rejecting stays possible).
     const visit = appointmentForRequest(cr.id)
-    if (decision === 'approved' && visit && !['verified', 'cancelled'].includes(visit.status))
-      throw new ServiceError('visit', visit.status === 'not_verified' ? 'The documents were not verified at the visit. Reject, or schedule another visit.' : 'Finish the in-person visit before approving.')
+    if (decision === 'approved' && visit && visit.status !== 'cancelled' && visit.verification?.result !== 'verified')
+      throw new ServiceError('visit', visit.verification?.result === 'not_verified' ? 'The documents were not verified at the visit. Reject, or schedule another visit.' : 'Finish the in-person visit before approving.')
     cr.status = decision
     cr.decidedBy = by.id
     cr.decidedAt = new Date().toISOString()

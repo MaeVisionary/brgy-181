@@ -611,13 +611,13 @@ function StoredImage({ id, alt }: { id: string; alt: string }) {
 function CorrectionActions({ c, canDecide, onDecide, onChange }: { c: ResidentChangeRequest; canDecide: boolean; onDecide: (d: 'approved' | 'rejected', note: string) => Promise<void>; onChange: () => void }) {
   const [scheduling, setScheduling] = useState(false)
   const visit = appointmentForRequest(c.id)
-  const open = visit && !['verified', 'not_verified', 'cancelled'].includes(visit.status)
+  const open = visit && !['completed', 'cancelled', 'no_show'].includes(visit.status)
   return (
     <div className="space-y-3">
       {visit && (
         <Link to={`/appointments/${visit.id}`} className="block rounded-[var(--radius-control)] border border-line-soft px-3 py-2 text-[length:calc(15px*var(--fs))] hover:bg-sky-50">
-          <span className="block font-semibold text-navy-900">Visit: {APPOINTMENT_STATUS_LABEL[visit.status]}</span>
-          <span className="block text-ink-muted">{visit.date} · {formatTime(visit.time)}</span>
+          <span className="block font-semibold text-navy-900">Visit: {visit.verification ? (visit.verification.result === 'verified' ? 'Verified' : 'Not verified') : APPOINTMENT_STATUS_LABEL[visit.status]}</span>
+          <span className="block text-ink-muted">{visit.date ? `${visit.date} · ${formatTime(visit.time)}` : 'The resident is choosing a time'}</span>
         </Link>
       )}
       {scheduling ? (

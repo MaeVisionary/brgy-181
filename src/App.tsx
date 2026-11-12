@@ -112,10 +112,10 @@ export default function App() {
 
           {/* Resident portal */}
           <Route path="/my/complaints" element={guard(['self.complaints'], 'resident', <MyComplaintsPage />)} />
-          <Route path="/my/appointments" element={guard(['self.change_requests'], 'resident', <MyAppointmentsPage />)} />
-          <Route path="/my/appointments/:id" element={guard(['self.change_requests'], 'resident', <MyAppointmentPage />)} />
-          <Route path="/appointments" element={guard(['residents.approve'], 'personnel', <AppointmentsPage />)} />
-          <Route path="/appointments/:id" element={guard(['residents.approve'], 'personnel', <AppointmentDetailPage />)} />
+          <Route path="/my/appointments" element={guard(['self.documents', 'self.complaints', 'self.borrowing', 'self.change_requests'], 'resident', <MyAppointmentsPage />)} />
+          <Route path="/my/appointments/:id" element={guard(['self.documents', 'self.complaints', 'self.borrowing', 'self.change_requests'], 'resident', <MyAppointmentPage />)} />
+          <Route path="/appointments" element={guard(['residents.approve', 'documents.release', 'cases.manage', 'borrowing.release'], 'personnel', <AppointmentsPage />)} />
+          <Route path="/appointments/:id" element={guard(['residents.approve', 'documents.release', 'cases.manage', 'borrowing.release'], 'personnel', <AppointmentDetailPage />)} />
           <Route path="/my/concerns/:id" element={guard(['self.complaints'], 'resident', <MyConcernPage />)} />
           <Route path="/concerns" element={guard(['concerns.manage', 'concerns.view'], 'personnel', <ConcernsPage />)} />
           <Route path="/concerns/:id" element={guard(['concerns.manage', 'concerns.view'], 'personnel', <ConcernIssuePage />)} />

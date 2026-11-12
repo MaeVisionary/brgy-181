@@ -15,6 +15,7 @@ import { listRegistrations } from '@/services/registrationService'
 import { listAppointments } from '@/services/appointmentService'
 import { listReviewQueue } from '@/services/concernService'
 import { estimateFor } from '@/services/serviceStandardService'
+import { TodayAppointmentsPanel } from '@/pages/appointments/AppointmentPages'
 import { Link } from 'react-router-dom'
 import { DashHeader, EmptyNote, ListPanel, Row, Stat, ViewAll } from './shared'
 
@@ -55,7 +56,7 @@ export function SecretaryDashboard() {
         auto: crs.filter((c) => c.decidedBy === 'system' && c.decidedAt && new Date(c.decidedAt).getTime() >= weekAgo).length
           + regs.filter((r) => r.status === 'auto_approved' && new Date(r.submittedAt).getTime() >= weekAgo).length,
         resident: docs.filter((d) => d.status === 'needs_info').length + regs.filter((r) => r.status === 'manual_review' && r.inPerson && !r.inPerson.completedAt).length
-          + appts.filter((a) => a.status === 'scheduled' || a.status === 'reschedule_requested').length,
+          + appts.filter((a) => ['awaiting_schedule', 'pending_confirmation', 'rescheduled'].includes(a.status)).length,
         chairman: docs.filter((d) => d.status === 'pending_approval').length,
         late: docs.filter((d) => { if (!openDoc(d)) return false; const e = estimateFor(d); return !!e && (e.extended?.newDate ?? e.expectedBy) < today }).length,
       }
@@ -94,6 +95,8 @@ export function SecretaryDashboard() {
           ))}
         </dl>
       </Panel>
+
+      <TodayAppointmentsPanel />
 
       <Panel className="mt-4" title="Needs attention" bodyClassName="px-0 py-0">
         <ul className="divide-y divide-line-soft">

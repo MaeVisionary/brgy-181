@@ -10,6 +10,7 @@ import { mockUsers } from '@/mocks/users'
 import type { NotificationCategory } from '@/types/activity'
 import type { Permission, User } from '@/types/auth'
 import type { DocumentRequest, DocumentStatus, DocumentTypeId, FieldValue, Transition } from '@/types/document'
+import { cancelFor, completeFor, createAwaitingSchedule } from './appointmentService'
 import { ServiceError, mockRequest } from './mockApi'
 
 /**
@@ -208,11 +209,14 @@ export function applyTransition(
 
     // Notifications follow real events only.
     const owner = ownerUserId(req)
+    // Claiming: a ready document gets a claiming appointment the resident books; release closes it.
+    if (allowed.to === 'ready_for_pickup') createAwaitingSchedule({ kind: 'document_claim', subjectId: req.id, subjectRef: req.referenceNo, title: type.name, residentId: req.residentId, userId: owner, reason: `Claim your ${type.name}`, documents: ['Valid government-issued ID', `Your request reference number (${req.referenceNo})`] }, actor.user.id)
+    if (allowed.to === 'released') completeFor('document_claim', req.id, 'Document released', actor.user.id)
+    if (allowed.to === 'cancelled' || allowed.to === 'rejected') cancelFor('document_claim', req.id, allowed.to === 'cancelled' ? 'The request was cancelled' : 'The request was not approved', actor.user.id)
     const link = `/my/documents/${req.id}`
     const ownerMsg: Partial<Record<DocumentStatus, string>> = {
       needs_info: 'The barangay needs more information for your request.',
       approved: 'Your request was approved by the Barangay Chairman. It will now be printed and signed.',
-      ready_for_pickup: 'Your document is ready for pickup at the Barangay Hall.',
       rejected: 'Your request was not approved.',
       released: 'Your document was released.',
       recorded: 'Your report was recorded.',

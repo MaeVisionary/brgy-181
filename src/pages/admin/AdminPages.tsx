@@ -1,6 +1,7 @@
 import { StepUpDialog } from '@/components/ui/StepUpDialog'
 import { ServiceStandardsPanel } from './ServiceStandardsPanel'
 import { StoragePanel } from './StoragePanel'
+import { SchedulingRulesPanel } from './SchedulingRulesPanel'
 import { BarChart3, Boxes, Check, CheckCircle2, ChevronRight, Copy, FileText, Gavel, Info, KeyRound, Search, Users } from '@/icons'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
@@ -486,6 +487,7 @@ export function SettingsPage() {
         ))}
       </Card>
       <ServiceStandardsPanel />
+      <SchedulingRulesPanel />
       <StoragePanel />
     </>
   )
