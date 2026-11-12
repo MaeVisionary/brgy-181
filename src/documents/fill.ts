@@ -113,6 +113,11 @@ export function prefillFromResident(typeId: DocumentRequest['typeId'], r: Reside
     reporterBarangay: '181',
     reporterTown: 'Manila',
     reporterContact: r.contactNo ?? '',
+    reporterCitizenship: 'Filipino',
+    reporterEducation: r.education ?? '',
+    reporterOccupation: r.employment ?? '',
+    reporterProvince: 'Metro Manila',
+    residingSince: r.residentSince ?? '',
   }
   return Object.fromEntries(Object.entries(all).filter(([k]) => keys.has(k)))
 }

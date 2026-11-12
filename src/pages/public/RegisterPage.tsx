@@ -1,3 +1,4 @@
+import { ID_TYPES, idHasExpiry } from '@/config/idTypes'
 import { AlertCircle, ArrowLeft, Camera, CheckCircle2, CircleHelp, Eye, EyeOff, IdCard, Loader2, ShieldCheck, Upload, UserRound, XCircle } from '@/icons'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAnalytics } from '@/analytics/AnalyticsContext'
@@ -24,22 +25,6 @@ import { PublicLayout } from './PublicLayout'
 const field =
   'h-12 w-full rounded-lg border border-line bg-surface px-4 text-[17px] text-navy-900 placeholder:text-ink-subtle transition-[border-color,box-shadow] duration-200 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none aria-[invalid=true]:border-danger'
 
-/** Government-issued IDs commonly accepted for barangay transactions. */
-const ID_TYPES = [
-  'PhilSys National ID / ePhilID',
-  "Driver's License (LTO)",
-  'Philippine Passport',
-  'UMID',
-  'SSS ID',
-  'PhilHealth ID',
-  'Postal ID',
-  "Voter's ID / Voter's Certification",
-  'PRC ID',
-  'Senior Citizen ID (OSCA)',
-  'PWD ID',
-  'TIN ID',
-  'Barangay ID',
-] as const
 
 const STEPS = ['Privacy', 'Your details', 'Valid ID', 'Face check', 'Account'] as const
 
@@ -103,6 +88,10 @@ export function RegisterPage() {
   // Valid ID
   const [idType, setIdType] = useState('')
   const [idNumber, setIdNumber] = useState('')
+  const [idExpiry, setIdExpiry] = useState('')
+  const expiryNeeded = idHasExpiry(idType)
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })
+  const expiryError = !expiryNeeded ? undefined : !idExpiry ? 'Enter the expiry date printed on the ID.' : idExpiry < today ? 'This ID has expired. Please use a valid ID.' : undefined
   const [idImage, setIdImage] = useState<string | null>(null)
   const [idFace, setIdFace] = useState<'checking' | 'found' | 'missing' | 'error' | null>(null)
   const idDescriptor = useRef<Descriptor | null>(null)
@@ -165,7 +154,7 @@ export function RegisterPage() {
     setTouched(true)
     if (step === 0 && !consent) return
     if (step === 1 && Object.keys(errs).length) return
-    if (step === 2 && (!idType || idNumber.trim().length < 4 || !idImage || idFace === 'checking')) return
+    if (step === 2 && (!idType || idNumber.trim().length < 4 || expiryError || !idImage || idFace === 'checking')) return
     if (step === 3 && !selfie) return
     if (step === 4) {
       if (accountError) return
@@ -184,7 +173,7 @@ export function RegisterPage() {
     setProgress({})
     try {
       const text = (await ocrText.current) ?? ''
-      const ocr = checkIdText(text, { firstName: d.firstName, lastName: d.lastName, idNumber })
+      const ocr = checkIdText(text, { firstName: d.firstName, lastName: d.lastName, idNumber, birthDate: d.birthDate, expiry: expiryNeeded ? idExpiry : undefined })
       setProgress((p) => ({ ...p, ocr: ocr.result }))
 
       let faceSimilarity: number | undefined
@@ -223,7 +212,7 @@ export function RegisterPage() {
         },
         username: username.trim(),
         password,
-        evidence: { idType, idNumber: idNumber.trim(), idImage: idSmall, selfieImage: selfieSmall, faceSimilarity, ocrFound: ocr.found },
+        evidence: { idType, idNumber: idNumber.trim(), idExpiry: expiryNeeded ? idExpiry : undefined, idImage: idSmall, selfieImage: selfieSmall, faceSimilarity, ocrFound: ocr.found },
         checks: { ocr: ocr.result, faceMatch, liveness: selfie!.live ? 'passed' : 'inconclusive' },
         record,
       })
@@ -349,6 +338,11 @@ export function RegisterPage() {
                 <F label="ID number" error={touched && idNumber.trim().length < 4 ? 'Enter the ID number shown on the card.' : undefined}>
                   <input className={field} value={idNumber} onChange={(e) => setIdNumber(e.target.value)} aria-invalid={touched && idNumber.trim().length < 4} />
                 </F>
+                {expiryNeeded && (
+                  <F label="Expiry date" error={touched ? expiryError : undefined}>
+                    <input type="date" className={field} value={idExpiry} min={today} onChange={(e) => setIdExpiry(e.target.value)} aria-invalid={touched && !!expiryError} />
+                  </F>
+                )}
               </div>
 
               <div className="mt-5">

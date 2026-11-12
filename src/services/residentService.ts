@@ -2,6 +2,10 @@ import { AREAS, mockChangeRequests, mockHouseholds, mockRegistrations, mockResid
 import type { User } from '@/types/auth'
 import type { Household, Resident, ResidentChangeRequest } from '@/types/resident'
 import { ServiceError, mockRequest } from './mockApi'
+import { audit } from './auditService'
+import { mockNotifications } from '@/mocks/notifications'
+import { mockUsers } from '@/mocks/users'
+import { ROLE_PERMISSIONS } from '@/config/permissions'
 
 /** Resident records (SAMPLE DATA, in memory). The backend must enforce access again. */
 
@@ -162,6 +166,7 @@ export function decideChangeRequest(id: string, decision: 'approved' | 'rejected
   return mockRequest(() => {
     const cr = mockChangeRequests.find((c) => c.id === id)
     if (!cr) throw new ServiceError('not_found', 'Change request not found.')
+    if (!(ROLE_PERMISSIONS[by.roleId]?.includes('residents.approve') || by.extraPermissions?.includes('residents.approve'))) throw new ServiceError('forbidden', 'You cannot approve corrections.')
     if (cr.status !== 'pending') throw new ServiceError('decided', 'This request was already decided.')
     if (decision === 'rejected' && !note.trim()) throw new ServiceError('note', 'Add the reason for rejecting.')
     cr.status = decision
@@ -175,26 +180,97 @@ export function decideChangeRequest(id: string, decision: 'approved' | 'rejected
         res.updatedAt = cr.decidedAt
       }
     }
+    audit(by, decision === 'approved' ? 'Correction approved' : 'Correction rejected', 'Residents', cr.residentId)
+    const requester = cr.requestedByResidentId ?? cr.residentId
+    notifyUserOfResident(requester, decision === 'approved' ? 'Correction approved' : 'Correction not approved', `${cr.field}${decision === 'rejected' && cr.decisionNote ? ` · ${cr.decisionNote}` : ''}`, '/my/profile')
+    if (decision === 'approved' && cr.requestedByResidentId) notifyUserOfResident(cr.residentId, 'Your record was updated', `${cr.field} · approved by the Barangay Secretary.`, '/my/profile')
     return cr
   })
 }
 
-/** Resident-submitted correction request: own record, or a member of the same family. */
-export function submitChangeRequest(
-  residentId: string,
-  field: string,
-  requestedValue: string,
-  reason: string,
-  by: User,
-  proof?: ResidentChangeRequest['proof'],
-): Promise<ResidentChangeRequest> {
+/** On whose behalf a correction is requested. */
+export type CorrectionBasis = 'self' | 'dependent' | 'representative' | 'household'
+
+/** Legal bases a representative can rely on (staff verify the document). */
+export const REPRESENTATION_KINDS = ['Signed authorization letter with a copy of their ID', 'Special Power of Attorney (SPA)', 'Court-appointed guardianship'] as const
+
+/** Proof that the requester is the parent or guardian of a minor. */
+export const GUARDIAN_PROOF = 'PSA birth certificate of the child, or guardianship papers'
+
+/** Household-level changes (handled apart from personal corrections; only the family head may ask). */
+export const HOUSEHOLD_UPDATES = ['New member living here', 'Member moved out', 'Household address'] as const
+
+const ageYears = (birthDate: string) => {
+  const b = new Date(birthDate)
+  const n = new Date()
+  return n.getFullYear() - b.getFullYear() - (n < new Date(n.getFullYear(), b.getMonth(), b.getDate()) ? 1 : 0)
+}
+
+/** Who the signed-in resident may request corrections for, and on what basis. */
+export function correctionTargets(by: User): { self?: Resident; dependents: Resident[]; adults: Resident[]; isHead: boolean } {
+  const me = mockResidents.find((r) => r.id === by.residentId)
+  if (!me) return { dependents: [], adults: [], isHead: false }
+  const family = mockResidents.filter((r) => r.familyId === me.familyId && r.id !== me.id)
+  return {
+    self: me,
+    // Minors only; the relationship is verified by staff from the proof.
+    dependents: family.filter((r) => ageYears(r.birthDate) < 18),
+    adults: family.filter((r) => ageYears(r.birthDate) >= 18),
+    isHead: me.relationship === 'Head',
+  }
+}
+
+function notifyUserOfResident(residentId: string, title: string, body: string, link: string) {
+  const u = mockUsers.find((x) => x.residentId === residentId && x.status === 'active')
+  if (!u) return
+  mockNotifications.push({ id: `ntf-${Math.random().toString(36).slice(2, 9)}`, userId: u.id, category: 'resident_change', title, body, createdAt: new Date().toISOString(), read: false, link })
+}
+
+export interface CorrectionInput {
+  basis: CorrectionBasis
+  residentId: string
+  field: string
+  requestedValue: string
+  reason: string
+  proof?: ResidentChangeRequest['proof']
+  /** Representative or guardian evidence. */
+  authorization?: ResidentChangeRequest['authorization']
+}
+
+/**
+ * Resident-submitted correction. Rules (RA 10173): own record; a minor child
+ * with proof of guardianship; another adult only with a specific authorization
+ * that staff verify; household-level updates only by the family head. Nothing
+ * changes until staff approve, and the previous value is kept.
+ */
+export function submitCorrection(input: CorrectionInput, by: User): Promise<ResidentChangeRequest> {
   return mockRequest(() => {
     const me = mockResidents.find((r) => r.id === by.residentId)
-    const res = mockResidents.find((r) => r.id === residentId)
+    const res = mockResidents.find((r) => r.id === input.residentId)
     if (!res || !me) throw new ServiceError('not_found', 'Record not found.')
-    if (res.id !== me.id && res.familyId !== me.familyId) throw new ServiceError('forbidden', 'You can only request changes for yourself or your family members.')
-    if (!requestedValue.replace(/\|/g, '').trim()) throw new ServiceError('value', 'Enter the correct information.')
-    if (PROOF_REQUIRED[field] && !proof?.fileName && !proof?.bringOnsite) throw new ServiceError('proof', `Attach proof (${PROOF_REQUIRED[field]}) or choose to bring it to the Barangay Hall.`)
+    const { basis, field } = input
+    const sameFamily = res.familyId === me.familyId
+    if (basis === 'self' && res.id !== me.id) throw new ServiceError('forbidden', 'Choose who this correction is for.')
+    if (basis === 'dependent') {
+      if (!sameFamily || res.id === me.id) throw new ServiceError('forbidden', 'You can only request corrections for your own child or dependent.')
+      if (ageYears(res.birthDate) >= 18) throw new ServiceError('forbidden', 'Adults request their own corrections, or authorize a representative.')
+      if (!input.authorization?.fileName && !input.authorization?.bringOnsite) throw new ServiceError('proof', `Attach proof that you are the parent or guardian (${GUARDIAN_PROOF}).`)
+    }
+    if (basis === 'representative') {
+      if (res.id === me.id) throw new ServiceError('forbidden', 'Use "My own record" for your own corrections.')
+      if (!sameFamily) throw new ServiceError('forbidden', 'Representation for residents outside your family is handled at the Barangay Hall.')
+      if (!input.authorization?.kind || !REPRESENTATION_KINDS.includes(input.authorization.kind as (typeof REPRESENTATION_KINDS)[number])) throw new ServiceError('auth', 'Choose the basis of your authorization.')
+      if (!input.authorization.fileName && !input.authorization.bringOnsite) throw new ServiceError('auth', 'Attach the authorization, or choose to bring it to the Barangay Hall.')
+    }
+    if (basis === 'household') {
+      if (me.relationship !== 'Head') throw new ServiceError('forbidden', 'Only the head of the family can request household updates.')
+      if (!HOUSEHOLD_UPDATES.includes(field as (typeof HOUSEHOLD_UPDATES)[number])) throw new ServiceError('field', 'Choose a household update.')
+    } else if (!CORRECTABLE_FIELDS.includes(field as (typeof CORRECTABLE_FIELDS)[number])) {
+      throw new ServiceError('field', 'Choose what needs correcting.')
+    }
+    if (!input.requestedValue.replace(/\|/g, '').trim()) throw new ServiceError('value', 'Enter the correct information.')
+    if (!input.reason.trim()) throw new ServiceError('reason', 'Add the reason.')
+    if (basis !== 'household' && PROOF_REQUIRED[field] && !input.proof?.fileName && !input.proof?.bringOnsite) throw new ServiceError('proof', `Attach proof (${PROOF_REQUIRED[field]}) or choose to bring it to the Barangay Hall.`)
     const current: Record<string, string> = {
       'Full name': [res.firstName, res.middleName, res.lastName, res.suffix].filter(Boolean).join(' '),
       Birthdate: res.birthDate,
@@ -203,22 +279,34 @@ export function submitChangeRequest(
       Employment: res.employment,
       'Educational attainment': res.education,
       'Relationship in the family': res.relationship,
+      'Household address': `${res.houseNo} ${res.street}`,
     }
     const cr: ResidentChangeRequest = {
       id: `chg-${Date.now().toString(36)}`,
-      residentId,
+      residentId: res.id,
       submittedAt: new Date().toISOString(),
       field,
       originalValue: current[field] ?? '',
-      requestedValue,
-      reason,
+      requestedValue: input.requestedValue.trim(),
+      reason: input.reason.trim(),
       status: 'pending',
+      basis,
       requestedByResidentId: res.id !== me.id ? me.id : undefined,
-      proof: PROOF_REQUIRED[field] ? proof : undefined,
+      proof: PROOF_REQUIRED[field] ? input.proof : undefined,
+      authorization: basis === 'dependent' || basis === 'representative' ? input.authorization : undefined,
     }
     mockChangeRequests.unshift(cr)
+    audit(by, `Correction requested (${basis})`, 'Residents', res.id)
+    notifyUserOfResident(me.id, 'Correction request received', `${field} · under review by the Barangay Secretary.`, '/my/profile')
+    // The affected adult is told someone asked to change their record (no values in the preview).
+    if (basis === 'representative') notifyUserOfResident(res.id, 'A correction was requested for your record', `${field} · submitted by ${me.firstName} ${me.lastName}. Contact the Barangay Hall if you did not authorize this.`, '/my/profile')
     return cr
   })
+}
+
+/** Kept for older callers: own record or a minor dependent. */
+export function submitChangeRequest(residentId: string, field: string, requestedValue: string, reason: string, by: User, proof?: ResidentChangeRequest['proof']): Promise<ResidentChangeRequest> {
+  return submitCorrection({ basis: residentId === by.residentId ? 'self' : 'dependent', residentId, field, requestedValue, reason, proof }, by)
 }
 
 export const CHANGEABLE_FIELDS: string[] = [...CORRECTABLE_FIELDS]

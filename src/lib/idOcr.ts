@@ -10,7 +10,7 @@
 
 export interface OcrResult {
   result: 'passed' | 'inconclusive'
-  found: { firstName: boolean; lastName: boolean; idNumber: boolean }
+  found: { firstName: boolean; lastName: boolean; idNumber: boolean; birthDate?: boolean; expiry?: boolean }
 }
 
 const clean = (s: string) =>
@@ -34,7 +34,20 @@ export async function readIdText(image: string, timeoutMs = 60_000): Promise<str
   }
 }
 
-export function checkIdText(text: string, applicant: { firstName: string; lastName: string; idNumber: string }): OcrResult {
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+
+/** Whether an ISO date (YYYY-MM-DD) appears on the ID in a common printed format. */
+export function textHasDate(text: string, iso: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  if (!m) return false
+  const [, y, mo, d] = m
+  const all = squash(text)
+  const mon = MONTHS[Number(mo) - 1]
+  const forms = [`${y}${mo}${d}`, `${mo}${d}${y}`, `${d}${mo}${y}`, `${mon}${d}${y}`, `${d}${mon}${y}`, `${mon}${Number(d)}${y}`, `${Number(d)}${mon}${y}`]
+  return forms.some((f) => all.includes(f))
+}
+
+export function checkIdText(text: string, applicant: { firstName: string; lastName: string; idNumber: string; birthDate?: string; expiry?: string }): OcrResult {
   const all = squash(text)
   const words = new Set(clean(text).split(/[^A-Z0-9]+/).filter(Boolean))
   const firstToken = clean(applicant.firstName).split(/\s+/).filter(Boolean)[0] ?? ''
@@ -44,6 +57,8 @@ export function checkIdText(text: string, applicant: { firstName: string; lastNa
     firstName: firstToken.length > 1 && (words.has(firstToken) || all.includes(squash(firstToken))),
     lastName: lastName.length > 1 && all.includes(lastName),
     idNumber: idNo.length >= 4 && all.includes(idNo),
+    birthDate: applicant.birthDate ? textHasDate(text, applicant.birthDate) : undefined,
+    expiry: applicant.expiry ? textHasDate(text, applicant.expiry) : undefined,
   }
   return { result: found.firstName && found.lastName ? 'passed' : 'inconclusive', found }
 }

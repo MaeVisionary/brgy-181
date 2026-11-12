@@ -1,14 +1,17 @@
 import { ArrowLeft, Building2, Paperclip } from '@/icons'
+import { IdStatusLine, IdUploadForm } from '@/components/identity/IdOnFile'
+import { maskIdNumber } from '@/config/idTypes'
+import { getIdOnFile, needsUpload, stateOf, submitReplacementId, type IdDocument } from '@/services/identityService'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { FieldInput, groupFields } from '@/components/documents/DocParts'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Card, Panel } from '@/components/ui/Panel'
+import { Panel } from '@/components/ui/Panel'
 import { getDocumentType } from '@/documents/catalog'
 import { activeDocumentTypes } from '@/services/templateService'
-import { isFilled, prefillFromResident, residentFullName } from '@/documents/fill'
+import { ageOn, isFilled, prefillFromResident, residentFullName } from '@/documents/fill'
 import { useDocActor } from '@/hooks/useDocActor'
 import { cn } from '@/lib/cn'
 import { createRequest } from '@/services/documentService'
@@ -16,6 +19,9 @@ import { ServiceError } from '@/services/mockApi'
 import { getResident } from '@/services/residentService'
 import type { DocumentTypeId, FieldValue } from '@/types/document'
 import type { Resident } from '@/types/resident'
+
+/** Requirements satisfied by the requester's own ID on file. */
+const isOwnIdRequirement = (label: string) => /^valid id( of the (person requesting|applicant|owner))?$/i.test(label.trim())
 
 const CATEGORY_LABEL = { certificate: 'Certificates', clearance: 'Clearances', case: 'Reports and complaints' } as const
 
@@ -32,13 +38,24 @@ export function NewRequestPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  const [idDoc, setIdDoc] = useState<IdDocument | undefined | null>(null)
+  const loadId = () => { if (user?.residentId) getIdOnFile(user.residentId, user).then(setIdDoc).catch(() => setIdDoc(undefined)) }
   useEffect(() => {
     if (user?.residentId) getResident(user.residentId).then((r) => setResident(r ?? null))
+    loadId()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.residentId])
+  const idState = stateOf(idDoc ?? undefined)
 
   const type = typeId ? getDocumentType(typeId) : null
   const fields = useMemo(() => (type ? type.fields.filter((f) => f.by !== 'system' && !f.staffOnly) : []), [type])
+  // Details already in the resident record are shown, not asked again.
+  const profileKeys = useMemo(() => new Set(type && resident ? Object.entries(prefillFromResident(type.id, resident)).filter(([, v]) => isFilled(v)).map(([k]) => k) : []), [type, resident])
+  const askFields = fields.filter((f) => !profileKeys.has(f.key))
   const missing = fields.filter((f) => f.required && !isFilled(values[f.key]))
+  const needsId = !!type?.requirements.some((r) => isOwnIdRequirement(r.label))
+  const idBlocked = needsId && needsUpload(idState)
+  const otherReqs = type ? type.requirements.filter((r) => !isOwnIdRequirement(r.label)) : []
 
   const choose = (id: DocumentTypeId) => {
     setTypeId(id)
@@ -49,7 +66,7 @@ export function NewRequestPage() {
 
   const submit = async () => {
     setTouched(true)
-    if (!actor || !type || !resident || missing.length) return
+    if (!actor || !type || !resident || missing.length || idBlocked) return
     setBusy(true)
     setError(null)
     try {
@@ -59,7 +76,9 @@ export function NewRequestPage() {
           residentId: resident.id,
           requesterName: residentFullName(resident),
           values,
-          requirements: Object.fromEntries(type.requirements.map((r) => [r.label, { provided: !!files[r.label], note: files[r.label] ? `Selected: ${files[r.label]}` : undefined }])),
+          requirements: Object.fromEntries(type.requirements.map((r) => [r.label, isOwnIdRequirement(r.label) && idDoc
+            ? { provided: true, note: `${idState === 'pending' ? 'ID on file, verification pending' : 'Verified ID on file'}: ${idDoc.idType} ${maskIdNumber(idDoc.idNumber)}` }
+            : { provided: !!files[r.label], note: files[r.label] ? `Selected: ${files[r.label]}` : undefined }])),
           assisted: false,
         },
         actor,
@@ -80,7 +99,7 @@ export function NewRequestPage() {
       <Link to="/my/documents" className="mb-3 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-ink-muted hover:text-navy-900">
         <ArrowLeft className="size-4" /> Document Requests
       </Link>
-      <PageHeader title="New request" subtitle="Choose what you need. Documents are claimed at the Barangay Hall once ready." />
+      <PageHeader title="New request" />
 
       <div className="space-y-4">
         <Panel title="What do you need?">
@@ -119,31 +138,48 @@ export function NewRequestPage() {
 
         {type && (
           <>
-            <Panel title="Your details" subtitle="Filled in from your resident record. If something is wrong, request a correction from your profile instead of changing it here.">
-              <div className="space-y-5">
-                {groupFields(fields).map(([group, fs]) => (
-                  <section key={group || 'main'}>
-                    {group && <p className="label-caps mb-2">{group}</p>}
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                      {fs.map((f) => (
-                        <FieldInput
-                          key={f.key}
-                          field={f}
-                          value={values[f.key]}
-                          invalid={touched && f.required && !isFilled(values[f.key])}
-                          onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            </Panel>
+            {resident && (
+              <Panel title="Your information">
+                <p className="text-[17px] font-semibold text-navy-900">{residentFullName(resident)}</p>
+                <p className="text-[15px] text-ink-nav">{ageOn(resident.birthDate)} years old · {resident.houseNo} {resident.street}</p>
+                {needsId && idDoc !== null && <IdStatusLine className="mt-3" doc={idDoc} state={idState} />}
+                <Link to="/my/profile" className="mt-3 inline-block text-[14px] font-semibold text-info hover:underline">Something wrong? Request a correction</Link>
+                {idBlocked && (
+                  <div className="mt-4 border-t border-line-soft pt-4">
+                    <p className="mb-3 text-[15px] font-semibold text-navy-900">{idState === 'missing' ? 'Add a valid ID' : 'Upload a valid ID to continue'}</p>
+                    <IdUploadForm name={resident} onSubmit={async (u) => { await submitReplacementId(resident.id, u, user!); loadId() }} />
+                  </div>
+                )}
+              </Panel>
+            )}
 
-            {type.requirements.length > 0 && (
-              <Panel title="Requirements" subtitle="Attach a clear photo or PDF of each requirement.">
+            {askFields.length > 0 && (
+              <Panel title="Request details">
+                <div className="space-y-5">
+                  {groupFields(askFields).map(([group, fs]) => (
+                    <section key={group || 'main'}>
+                      {group && <p className="label-caps mb-2">{group}</p>}
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {fs.map((f) => (
+                          <FieldInput
+                            key={f.key}
+                            field={f}
+                            value={values[f.key]}
+                            invalid={touched && f.required && !isFilled(values[f.key])}
+                            onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </Panel>
+            )}
+
+            {otherReqs.length > 0 && (
+              <Panel title="Requirements">
                 <ul className="grid gap-3 md:grid-cols-2">
-                  {type.requirements.map((r) => (
+                  {otherReqs.map((r) => (
                     <li key={r.label}>
                       <label className="block cursor-pointer">
                         <span className="mb-1 block text-[14.5px] font-semibold text-navy-900">{r.label}</span>
@@ -167,16 +203,14 @@ export function NewRequestPage() {
               </Panel>
             )}
 
-            <Card className="px-5 py-4 text-[14.5px] text-ink-muted">
-              Your information is used only to process this request, in line with the Data Privacy Act of 2012 (RA 10173).
-            </Card>
+            <p className="text-[13.5px] text-ink-muted">Used only to process this request (Data Privacy Act of 2012).</p>
 
             {touched && missing.length > 0 && (
               <p className="rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">Please fill in: {missing.map((f) => f.label).join(', ')}.</p>
             )}
             {error && <p className="rounded-md bg-danger-tint px-3 py-2 text-[14.5px] text-danger-ink">{error}</p>}
             <div className="flex gap-2">
-              <Button onClick={submit} loading={busy}>
+              <Button onClick={submit} loading={busy} disabled={idBlocked}>
                 Submit request
               </Button>
               <Button variant="ghost" onClick={() => navigate('/my/documents')}>

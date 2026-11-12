@@ -13,6 +13,7 @@ import { residentById } from '@/mocks/residents'
 import { userById } from '@/mocks/users'
 import { ServiceError } from '@/services/mockApi'
 import { decideRegistration, listRegistrations } from '@/services/registrationService'
+import { decideId, listPendingIds, type IdDocument } from '@/services/identityService'
 import { PROOF_REQUIRED, decideChangeRequest, displayRequestedValue, listChangeRequests } from '@/services/residentService'
 import type { ResidentChangeRequest, ResidentRegistration } from '@/types/resident'
 import { fullName } from './common'
@@ -177,6 +178,7 @@ export function RegistrationsPage() {
           })}
         </Card>
       )}
+      <IdUpdates />
       {done.length > 0 && (
         <>
           <h2 className="label-caps mt-6 mb-2">Decided</h2>
@@ -190,6 +192,57 @@ export function RegistrationsPage() {
           </Card>
         </>
       )}
+    </>
+  )
+}
+
+/** Replacement IDs uploaded by residents; staff verify the ID itself (text reading is not proof). */
+function IdUpdates() {
+  const { user, can } = useAuth()
+  const [items, setItems] = useState<(IdDocument & { residentName: string })[]>([])
+  const [openId, setOpenId] = useState<string | null>(null)
+  const load = () => { if (user && can('residents.verify')) listPendingIds(user).then(setItems).catch(() => setItems([])) }
+  useEffect(load, [user, can])
+  if (!items.length) return null
+  return (
+    <>
+      <h2 className="label-caps mt-6 mb-2">ID updates</h2>
+      <Card className="divide-y divide-line-soft">
+        {items.map((d) => {
+          const open = openId === d.id
+          return (
+            <div key={d.id} className="px-5 py-4">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                <div className="min-w-0 flex-1 basis-[240px]">
+                  <p className="text-[16.5px] font-bold text-navy-900">{d.residentName}</p>
+                  <p className="text-[14.5px] text-ink-muted">{d.idType} · {formatShortDate(d.uploadedAt)}</p>
+                </div>
+                <Decide
+                  disabled={!can('residents.approve')}
+                  onDecide={async (dec, note) => { await decideId(d.id, dec === 'approved' ? 'verified' : 'rejected', note, user!); load() }}
+                  extra={<Button size="sm" variant="secondary" aria-expanded={open} onClick={() => setOpenId(open ? null : d.id)}>{open ? 'Hide Details' : 'View Details'}</Button>}
+                />
+              </div>
+              {open && (
+                <div className="mt-4 grid gap-4 border-t border-line-soft pt-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                  {d.image && <img src={d.image} alt={`ID of ${d.residentName}`} className="max-h-[200px] w-full rounded-lg border border-line bg-surface-muted object-contain" />}
+                  <div>
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[14.5px]">
+                      <dt className="text-ink-muted">ID number</dt><dd className="text-navy-900">{d.idNumber}</dd>
+                      <dt className="text-ink-muted">Expiry</dt><dd className="text-navy-900">{d.expiresAt ? formatShortDate(d.expiresAt + 'T12:00:00') : 'No expiry on this ID'}</dd>
+                    </dl>
+                    <ul className="mt-2">
+                      <CheckRow label="Name read on ID" v={d.ocr?.name ? 'passed' : 'inconclusive'} />
+                      <CheckRow label="ID number read" v={d.ocr?.idNumber ? 'passed' : 'inconclusive'} />
+                      {d.expiresAt && <CheckRow label="Expiry date read" v={d.ocr?.expiry ? 'passed' : 'inconclusive'} />}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </Card>
     </>
   )
 }
@@ -241,7 +294,10 @@ export function ChangeRequestsPage() {
               <div>
                 <p className="label-caps">{formatDateTime(c.submittedAt)}</p>
                 <p className="mt-1 text-[16px] font-semibold text-navy-900">{r ? <Link to={`/residents/${r.id}`} className="hover:underline">{fullName(r)}</Link> : 'Unknown resident'} · {c.field}</p>
-                {c.requestedByResidentId && residentById(c.requestedByResidentId) && <p className="text-[14px] text-ink-muted">Requested by {fullName(residentById(c.requestedByResidentId)!)} (same family)</p>}
+                {c.requestedByResidentId && residentById(c.requestedByResidentId) && (
+                  <p className="text-[14px] text-ink-nav">Requested by {fullName(residentById(c.requestedByResidentId)!)} · {c.basis === 'representative' ? 'representative' : c.basis === 'household' ? 'household head' : 'parent or guardian'}</p>
+                )}
+                {c.authorization && <AuthLine a={c.authorization} />}
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   <div className="rounded-md bg-surface-muted px-3 py-2"><p className="text-[13px] text-ink-muted">Current record</p><p className="text-[15px] text-navy-900">{c.originalValue || '–'}</p></div>
                   <div className="rounded-md bg-sky-100 px-3 py-2"><p className="text-[13px] text-ink-muted">Requested</p><p className="text-[15px] font-semibold text-navy-900">{displayRequestedValue(c.field, c.requestedValue)}</p></div>
@@ -263,6 +319,16 @@ export function ChangeRequestsPage() {
         })}
       </div>
     </>
+  )
+}
+
+/** Guardianship proof or representative authorization (verify before approving). */
+function AuthLine({ a }: { a: NonNullable<ResidentChangeRequest['authorization']> }) {
+  return (
+    <p className={a.fileName ? 'mt-2 flex flex-wrap items-center gap-2 rounded-md border border-line px-3 py-2 text-[14.5px] text-navy-900' : 'mt-2 rounded-md bg-warning-tint px-3 py-2 text-[14.5px] text-navy-900'}>
+      <Paperclip className="size-4 text-ink-muted" /> {a.kind}: {a.fileName ? <strong>{a.fileName}</strong> : 'original to be presented at the Barangay Hall'}
+      {a.url && <a href={a.url} target="_blank" rel="noreferrer" className="font-semibold text-info hover:underline">View file</a>}
+    </p>
   )
 }
 

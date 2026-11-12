@@ -1,12 +1,11 @@
-import { Paperclip, Plus } from '@/icons'
-import { useState } from 'react'
+import { Plus } from '@/icons'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { StatusLabel } from '@/components/ui/StatusLabel'
 import { borrowingStatusForResident, caseStageForResident, documentStatusForResident } from '@/lib/residentStatus'
 import { Badge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
-import { FieldLabel, Select, TextArea, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
 import { BORROWING } from '@/config/barangay'
@@ -17,8 +16,10 @@ import { formatDate } from '@/lib/format'
 import { listCases } from '@/services/caseService'
 import { listRequests } from '@/services/documentService'
 import { listBorrowings, returnState } from '@/services/equipmentService'
-import { ServiceError } from '@/services/mockApi'
-import { CHANGEABLE_FIELDS, PROOF_REQUIRED, displayRequestedValue, getHousehold, getResident, listChangeRequests, submitChangeRequest } from '@/services/residentService'
+import { displayRequestedValue, getHousehold, getResident, listChangeRequests } from '@/services/residentService'
+import { getIdOnFile, needsUpload, stateOf, submitReplacementId, type IdDocument } from '@/services/identityService'
+import { IdStatusLine, IdUploadForm } from '@/components/identity/IdOnFile'
+import { CorrectionPanel } from './CorrectionPanel'
 import { RETURN_BADGE } from '@/pages/equipment/badges'
 import { BorrowForm, itemsText } from '@/pages/equipment/BorrowingPages'
 import { CIVIL_LABEL, age, fullName } from '@/pages/residents/common'
@@ -31,44 +32,20 @@ export function MyProfilePage() {
   const hh = useAsync(() => (me ? getHousehold(me.householdId) : Promise.resolve(undefined)), [me?.householdId, tick]).data
   const family = hh?.members.filter((m) => m.familyId === me?.familyId) ?? []
   const mine = useAsync(() => listChangeRequests(), [tick]).data?.filter((c) => c.residentId === user?.residentId || c.requestedByResidentId === user?.residentId) ?? []
-  const [whoId, setWhoId] = useState('')
-  const [field, setField] = useState<string>(CHANGEABLE_FIELDS[0])
-  const [value, setValue] = useState('')
-  const [name, setName] = useState({ first: '', middle: '', last: '', suffix: '' })
-  const [reason, setReason] = useState('')
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [proofFile, setProofFile] = useState<File | null>(null)
-  const [onsite, setOnsite] = useState(false)
+  const [idDoc, setIdDoc] = useState<IdDocument | undefined | null>(null)
+  const [replacing, setReplacing] = useState(false)
+  useEffect(() => {
+    if (user?.residentId) getIdOnFile(user.residentId, user).then(setIdDoc).catch(() => setIdDoc(undefined))
+  }, [user, tick])
   if (!me) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
-  const who = family.find((m) => m.id === whoId) ?? me
-  const requested = field === 'Full name' ? [name.first, name.middle, name.last, name.suffix].join('|') : value
-  const filled = field === 'Full name' ? !!(name.first.trim() && name.last.trim()) : !!value.trim()
-  const needsProof = PROOF_REQUIRED[field]
-  const proofOk = !needsProof || !!proofFile || onsite
-  const reset = () => {
-    setValue('')
-    setName({ first: '', middle: '', last: '', suffix: '' })
-    setReason('')
-    setProofFile(null)
-    setOnsite(false)
-  }
-  const submit = async () => {
-    try {
-      await submitChangeRequest(who.id, field, requested.trim(), reason.trim(), user!, needsProof ? { fileName: proofFile?.name, url: proofFile ? URL.createObjectURL(proofFile) : undefined, bringOnsite: onsite && !proofFile } : undefined)
-      reset()
-      setMsg({ ok: true, text: 'Sent to the Barangay Secretary for review. The record changes once it is approved.' })
-      setTick((t) => t + 1)
-    } catch (e) {
-      setMsg({ ok: false, text: e instanceof ServiceError ? e.message : 'Your request could not be sent.' })
-    }
-  }
+  const idState = stateOf(idDoc ?? undefined)
   const F = ({ k, v }: { k: string; v?: string | number }) => (
     <div><dt className="text-[13.5px] text-ink-muted">{k}</dt><dd className="text-[15.5px] text-navy-900">{v || '–'}</dd></div>
   )
   const sectors = [me.sectors.seniorCitizen && 'Senior citizen', me.sectors.pwd && 'PWD', me.sectors.soloParent && 'Solo parent', me.sectors.fourPs && '4Ps member', me.sectors.programBeneficiary && 'Program beneficiary'].filter(Boolean) as string[]
   return (
     <>
-      <PageHeader title="My Profile" subtitle="Your record in the Barangay 181 master list." />
+      <PageHeader title="My Profile" />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="space-y-4">
           <Panel keepSubtitle title={fullName(me)} subtitle={`Resident no. ${me.residentNo}`}>
@@ -110,58 +87,21 @@ export function MyProfilePage() {
           )}
         </div>
         <div className="space-y-4">
-          <Panel title="Request a correction" subtitle="The Barangay Secretary reviews it before the official record changes.">
-            <div className="space-y-3">
-              <FieldLabel label="Whose record">
-                <Select value={who.id} onChange={(e) => { setWhoId(e.target.value === me.id ? '' : e.target.value); setMsg(null) }}>
-                  {family.map((m) => <option key={m.id} value={m.id}>{m.id === me.id ? `Me (${fullName(m)})` : `${fullName(m)} · ${m.relationship}`}</option>)}
-                </Select>
-              </FieldLabel>
-              <FieldLabel label="What needs correcting">
-                <Select value={field} onChange={(e) => { setField(e.target.value); reset(); setMsg(null) }}>{CHANGEABLE_FIELDS.map((f) => <option key={f}>{f}</option>)}</Select>
-              </FieldLabel>
-              {field === 'Full name' ? (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <FieldLabel label="First name" required><TextInput value={name.first} onChange={(e) => setName((n) => ({ ...n, first: e.target.value }))} /></FieldLabel>
-                  <FieldLabel label="Middle name"><TextInput value={name.middle} onChange={(e) => setName((n) => ({ ...n, middle: e.target.value }))} /></FieldLabel>
-                  <FieldLabel label="Last name" required><TextInput value={name.last} onChange={(e) => setName((n) => ({ ...n, last: e.target.value }))} /></FieldLabel>
-                  <FieldLabel label="Suffix"><TextInput value={name.suffix} onChange={(e) => setName((n) => ({ ...n, suffix: e.target.value }))} placeholder="Jr., Sr., III" /></FieldLabel>
-                </div>
-              ) : field === 'Birthdate' ? (
-                <FieldLabel label="Correct birthdate" required hint="Age updates automatically once the correction is approved.">
-                  <TextInput type="date" max={new Date().toISOString().slice(0, 10)} value={value} onChange={(e) => setValue(e.target.value)} />
-                </FieldLabel>
-              ) : field === 'Civil status' ? (
-                <FieldLabel label="Correct civil status" required>
-                  <Select value={value} onChange={(e) => setValue(e.target.value)}><option value="">Select</option>{['Single', 'Married', 'Widowed', 'Separated', 'Live-in'].map((o) => <option key={o}>{o}</option>)}</Select>
-                </FieldLabel>
-              ) : field === 'Relationship in the family' ? (
-                <FieldLabel label="Correct relationship" required>
-                  <Select value={value} onChange={(e) => setValue(e.target.value)}><option value="">Select</option>{['Head', 'Spouse', 'Partner', 'Son', 'Daughter', 'Mother', 'Father', 'Grandchild', 'Sibling', 'Relative'].map((o) => <option key={o}>{o}</option>)}</Select>
-                </FieldLabel>
-              ) : (
-                <FieldLabel label="Correct information" required><TextInput value={value} onChange={(e) => setValue(e.target.value)} /></FieldLabel>
+          {idDoc !== null && (
+            <Panel title="Valid ID">
+              <IdStatusLine doc={idDoc} state={idState} />
+              {idState === 'expiring' && <p className="mt-2 text-[14px] text-ink-nav">Upload your renewed ID so your requests are not delayed.</p>}
+              {idState !== 'pending' && !replacing && (
+                <Button className="mt-3" size="sm" variant={needsUpload(idState) ? 'primary' : 'secondary'} onClick={() => setReplacing(true)}>{idState === 'missing' ? 'Add ID' : 'Replace ID'}</Button>
               )}
-              {needsProof && (
-                <div className="rounded-[var(--radius-control)] border border-warning/50 bg-warning-tint/40 p-3">
-                  <p className="text-[14.5px] font-semibold text-navy-900">Proof needed <span className="text-danger-ink">*</span> <span className="font-normal text-ink-muted">(required)</span></p>
-                  <p className="text-[14px] text-ink-nav">{needsProof}</p>
-                  <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-dashed border-line bg-surface px-3 py-2 text-[15px] text-navy-900 hover:border-navy-600 hover:bg-sky-50">
-                    <Paperclip className="size-4 shrink-0 text-ink-muted" />
-                    <span className="min-w-0 flex-1 truncate">{proofFile ? proofFile.name : 'Attach a photo or PDF'}</span>
-                    <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setProofFile(f); setOnsite(false) } }} />
-                  </label>
-                  <label className="mt-2 flex items-center gap-2 text-[14.5px] text-navy-900">
-                    <input type="checkbox" className="size-4 accent-[#002132]" checked={onsite} disabled={!!proofFile} onChange={(e) => setOnsite(e.target.checked)} />
-                    I will bring the original document to the Barangay Hall instead
-                  </label>
+              {replacing && (
+                <div className="mt-4 border-t border-line-soft pt-4">
+                  <IdUploadForm name={me} onCancel={() => setReplacing(false)} onSubmit={async (u) => { await submitReplacementId(me.id, u, user!); setReplacing(false); setTick((x) => x + 1) }} />
                 </div>
               )}
-              <FieldLabel label="Reason" required><TextArea className="min-h-[60px]" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="For example: My birthdate on record does not match my birth certificate." /></FieldLabel>
-              {msg && <p className={`rounded-md px-3 py-2 text-[14.5px] ${msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink'}`}>{msg.text}</p>}
-              <Button disabled={!filled || !reason.trim() || !proofOk} onClick={submit}>Submit request</Button>
-            </div>
-          </Panel>
+            </Panel>
+          )}
+          <CorrectionPanel onSent={() => setTick((x) => x + 1)} />
           <Panel title="My correction requests" bodyClassName={mine.length ? undefined : 'px-0 py-0'}>
             {mine.length === 0 ? (
               <p className="px-5 py-5 text-[15px] text-ink-muted">You have not requested any corrections.</p>

@@ -118,6 +118,8 @@ export type CheckResult = 'passed' | 'failed' | 'inconclusive'
 export interface RegistrationEvidence {
   idType: string
   idNumber: string
+  /** Expiry date printed on the ID (ISO date); absent for IDs without one. */
+  idExpiry?: string
   /** Downscaled JPEG data URLs. */
   idImage: string
   selfieImage: string
@@ -126,7 +128,7 @@ export interface RegistrationEvidence {
   /** Which record source matched: resident records or the OSCA masterlist. */
   recordSource?: 'resident_records' | 'osca_masterlist'
   /** What the ID text reader found. */
-  ocrFound: { firstName: boolean; lastName: boolean; idNumber: boolean }
+  ocrFound: { firstName: boolean; lastName: boolean; idNumber: boolean; birthDate?: boolean; expiry?: boolean }
   /** Plain-language reasons the registration needs manual review. */
   reasons: string[]
 }
@@ -139,6 +141,10 @@ export interface ResidentChangeRequest {
   requestedByResidentId?: string
   /** Supporting document for corrections that need proof. */
   proof?: { fileName?: string; url?: string; bringOnsite?: boolean }
+  /** On whose behalf: own record, a minor dependent, an authorized representative, or a household update. */
+  basis?: 'self' | 'dependent' | 'representative' | 'household'
+  /** Guardianship proof or representative authorization; verified by staff. */
+  authorization?: { kind?: string; fileName?: string; url?: string; bringOnsite?: boolean }
   submittedAt: string
   field: string
   originalValue: string
