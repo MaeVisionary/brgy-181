@@ -75,10 +75,13 @@ export function borrowingStatusForResident(b: Borrowing, now = new Date()): Resi
     case 'pending':
       return 'Submitted'
     case 'approved':
+      return 'Processing'
+    case 'ready':
       return 'Ready'
     case 'released':
       return returnState(b, now) === 'overdue' ? 'Action Needed' : 'Borrowed'
     case 'returned':
+    case 'completed':
       return 'Completed'
     default:
       // rejected, cancelled

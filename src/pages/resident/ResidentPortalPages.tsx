@@ -5,24 +5,22 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { StatusLabel } from '@/components/ui/StatusLabel'
-import { borrowingStatusForResident, caseStageForResident, documentStatusForResident } from '@/lib/residentStatus'
+import { caseStageForResident, documentStatusForResident } from '@/lib/residentStatus'
 import { Badge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
-import { BORROWING } from '@/config/barangay'
 import { getDocumentType } from '@/documents/catalog'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 import { formatDate } from '@/lib/format'
 import { listCases } from '@/services/caseService'
 import { listRequests } from '@/services/documentService'
-import { listBorrowings, returnState } from '@/services/equipmentService'
+import { borrowingStage, fmtDue, listBorrowings } from '@/services/equipmentService'
 import { displayRequestedValue, getHousehold, getResident, listChangeRequests } from '@/services/residentService'
 import { getIdOnFile, needsUpload, stateOf, submitReplacementId, type IdDocument } from '@/services/identityService'
 import { IdStatusLine, IdUploadForm } from '@/components/identity/IdOnFile'
 import { CorrectionPanel } from './CorrectionPanel'
-import { RETURN_BADGE } from '@/pages/equipment/badges'
 import { BorrowForm, itemsText } from '@/pages/equipment/BorrowingPages'
 import { CIVIL_LABEL, age, fullName } from '@/pages/residents/common'
 
@@ -160,22 +158,20 @@ export function MyBorrowingPage() {
   const list = useAsync(() => listBorrowings(actor), [actor, tick]).data ?? []
   return (
     <>
-      <PageHeader title="Equipment Borrowing" subtitle={`Chairs, tables, ladders and nebulizers. Claim approved equipment at the Barangay 181 Hall; return it within ${BORROWING.periodDays} days (plus a ${BORROWING.graceDays}-day grace period).`} actions={!form && <Button icon={<Plus className="size-4" />} onClick={() => setForm(true)}>New request</Button>} />
+      <PageHeader title="Equipment Borrowing" actions={!form && <Button icon={<Plus className="size-4" />} onClick={() => setForm(true)}>New request</Button>} />
       {form && me && <BorrowForm resident={me} onDone={() => { setForm(false); setTick((t) => t + 1) }} />}
       <Card className="divide-y divide-line-soft">
-        {list.length === 0 && <p className="px-5 py-6 text-[length:calc(15px*var(--fs))] text-ink-muted">No borrowing requests yet.</p>}
+        {list.length === 0 && <p className="px-5 py-6 text-[length:calc(16px*var(--fs))] text-ink-muted">No borrowing requests yet.</p>}
         {list.map((b) => {
-          const rs = returnState(b)
+          const stage = borrowingStage(b)
+          const when = b.status === 'released' && b.dueAt ? `Return by ${fmtDue(b.dueAt)}` : b.status === 'pending' ? (b.estimate?.readyBy ? `Estimated availability: ${formatDate(b.estimate.readyBy)}` : 'Availability being checked') : b.status === 'approved' || b.status === 'ready' ? 'Choose or keep your pickup time' : b.returnedAt ? `Returned ${formatDate(b.returnedAt)}` : `Date of use ${formatDate(b.dateOfUse)}`
           return (
-            <Link key={b.id} to={`/my/borrowing/${b.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 hover:bg-sky-50 sm:px-5">
-              <span>
-                <span className="block text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{b.refNo} · {itemsText(b)}</span>
-                <span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">Date of use {formatDate(b.dateOfUse)}{b.dueAt && ` · return by ${formatDate(b.dueAt)} (grace until ${formatDate(b.graceEndsAt!)})`}</span>
+            <Link key={b.id} to={`/my/borrowing/${b.id}`} className="flex min-h-[72px] items-center justify-between gap-3 px-4 py-3.5 hover:bg-sky-50 sm:px-5">
+              <span className="min-w-0">
+                <span className="block text-[length:calc(17px*var(--fs))] font-semibold text-navy-900">{itemsText(b)}</span>
+                <span className="block text-[length:calc(15.5px*var(--fs))] text-ink-nav">{when}</span>
               </span>
-              <span className="flex items-center gap-2">
-                {b.status === 'released' && rs !== 'overdue' && <Badge tone={RETURN_BADGE[rs].tone}>{RETURN_BADGE[rs].label}</Badge>}
-                <StatusLabel status={borrowingStatusForResident(b)} />
-              </span>
+              <Badge tone={stage === 'Overdue' || stage === 'Rejected' ? 'danger' : stage === 'Return Due Soon' || stage === 'Availability Checking' ? 'warning' : stage === 'Completed' || stage === 'Cancelled' ? 'neutral' : 'info'}>{stage}</Badge>
             </Link>
           )
         })}

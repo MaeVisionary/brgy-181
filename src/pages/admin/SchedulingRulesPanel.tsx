@@ -1,22 +1,41 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/Button'
 import { Panel } from '@/components/ui/Panel'
-import { APPOINTMENT_TYPES, appointmentSettings, saveAppointmentSettings, type AppointmentKind } from '@/services/appointmentService'
+import { APPOINTMENT_TYPES, appointmentSettings, bookedOutsideHours, saveAppointmentSettings, type AppointmentKind } from '@/services/appointmentService'
 import { ServiceError } from '@/services/mockApi'
 import { DEFAULT_RULES, eligibleStaff, saveSchedulingRules, schedulingRules, type SchedulingRules } from '@/services/schedulingService'
 import { formatDateTime } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 
-const input = 'h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface px-2.5 text-[length:calc(15.5px*var(--fs))] text-navy-900'
-const label = 'block text-[length:calc(14.5px*var(--fs))] font-semibold text-ink-nav'
+const control = 'h-12 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(16px*var(--fs))] text-navy-900 focus-visible:outline-2 focus-visible:outline-navy-600'
+/** Fixed-width number box for list rows (never stretches over the label). */
+const small = 'h-12 w-20 shrink-0 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-right text-[length:calc(16px*var(--fs))] text-navy-900 focus-visible:outline-2 focus-visible:outline-navy-600'
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const REMINDER_CHOICES = [48, 24, 2, 1]
 
-/**
- * Scheduling rules (System Administrator only): office hours, buffers, limits,
- * how long each service takes, staff hours and leave. Every save is versioned
- * and written to the audit log. Holidays are under Processing times.
- */
+function Field({ label, unit, children }: { label: string; unit?: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{label}</span>
+      <span className="flex items-center gap-2">
+        <span className="min-w-0 flex-1">{children}</span>
+        {unit && <span className="shrink-0 text-[length:calc(16px*var(--fs))] text-ink-nav">{unit}</span>}
+      </span>
+    </label>
+  )
+}
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="border-t border-line-soft pt-5 first:border-t-0 first:pt-0">
+      <h3 className="mb-4 text-[length:calc(18px*var(--fs))] font-bold text-navy-900">{title}</h3>
+      {children}
+    </section>
+  )
+}
+const grid = 'grid grid-cols-1 gap-4 md:grid-cols-2'
+
+/** Appointment scheduling rules (System Administrator only). Versioned and audited. */
 export function SchedulingRulesPanel() {
   const { user } = useAuth()
   const [r, setR] = useState<SchedulingRules>(schedulingRules())
@@ -27,111 +46,148 @@ export function SchedulingRulesPanel() {
   const staff = [...new Map([...eligibleStaff('residents.approve'), ...eligibleStaff('documents.release'), ...eligibleStaff('cases.manage'), ...eligibleStaff('borrowing.release'), ...mockUsers.filter((u) => u.roleId === 'chairman' && u.status === 'active')].map((u) => [u.id, u])).values()]
   const num = (k: keyof SchedulingRules) => (e: React.ChangeEvent<HTMLInputElement>) => setR({ ...r, [k]: Number(e.target.value) })
   const str = (k: keyof SchedulingRules) => (e: React.ChangeEvent<HTMLInputElement>) => setR({ ...r, [k]: e.target.value })
+  const outside = bookedOutsideHours(r)
   const save = () => {
     setMsg(null)
     try {
       const saved = saveSchedulingRules(r, user)
       saveAppointmentSettings({ remindersOn: reminders }, user)
       setR(saved)
-      setMsg({ ok: true, text: `Saved (version ${saved.version}). New bookings use these rules; booked appointments keep their times.` })
+      setMsg({ ok: true, text: `Saved. Version ${saved.version}.` })
     } catch (e) { setMsg({ ok: false, text: e instanceof ServiceError ? e.message : 'Not saved.' }) }
   }
-  const field = (l: string, el: React.ReactNode) => <label className="space-y-1"><span className={label}>{l}</span>{el}</label>
+  const staffName = (id: string) => mockUsers.find((u) => u.id === id)?.fullName ?? id
+
   return (
-    <Panel className="mt-4" title="Appointment scheduling rules">
+    <Panel className="mt-4" title="Appointment Scheduling">
       <div className="space-y-6">
-        {msg && <p role="status" className={`rounded-md px-3 py-2 text-[length:calc(15px*var(--fs))] ${msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink'}`}>{msg.text}</p>}
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {field('Office opens', <input type="time" className={input} value={r.officeStart} onChange={str('officeStart')} />)}
-          {field('Office closes', <input type="time" className={input} value={r.officeEnd} onChange={str('officeEnd')} />)}
-          {field('Break starts', <input type="time" className={input} value={r.breakStart} onChange={str('breakStart')} />)}
-          {field('Break ends', <input type="time" className={input} value={r.breakEnd} onChange={str('breakEnd')} />)}
-          {field('Start times every (min)', <select className={input} value={r.stepMinutes} onChange={(e) => setR({ ...r, stepMinutes: Number(e.target.value) })}>{[5, 10, 15, 30].map((m) => <option key={m}>{m}</option>)}</select>)}
-          {field('Buffer after each (min)', <input type="number" min={0} max={60} className={input} value={r.bufferMinutes} onChange={num('bufferMinutes')} />)}
-          {field('At the same time (max)', <input type="number" min={1} max={20} className={input} value={r.maxConcurrent} onChange={num('maxConcurrent')} />)}
-          {field('Per day (max)', <input type="number" min={1} className={input} value={r.maxPerDay} onChange={num('maxPerDay')} />)}
-          {field('Earliest booking from now (min)', <input type="number" min={0} className={input} value={r.leadMinutes} onChange={num('leadMinutes')} />)}
-          {field('No-show after (min past end)', <input type="number" min={0} className={input} value={r.noShowGraceMinutes} onChange={num('noShowGraceMinutes')} />)}
-          {field('Reminders (hours before)', <input className={input} value={r.reminderHours.join(', ')} onChange={(e) => setR({ ...r, reminderHours: e.target.value.split(',').map((x) => Number(x.trim())).filter((x) => x > 0) })} />)}
-          <label className="flex items-end gap-2 pb-2.5 text-[length:calc(15.5px*var(--fs))] text-navy-900"><input type="checkbox" className="size-5 accent-[#002132]" checked={reminders} onChange={(e) => setReminders(e.target.checked)} /> Send reminders</label>
-        </section>
+        <Section title="Office Hours">
+          <div className={grid}>
+            <Field label="Opening Time"><input type="time" className={control} value={r.officeStart} onChange={str('officeStart')} /></Field>
+            <Field label="Closing Time"><input type="time" className={control} value={r.officeEnd} onChange={str('officeEnd')} /></Field>
+            <Field label="Break Starts"><input type="time" className={control} value={r.breakStart} onChange={str('breakStart')} /></Field>
+            <Field label="Break Ends"><input type="time" className={control} value={r.breakEnd} onChange={str('breakEnd')} /></Field>
+          </div>
+          {outside > 0 && <p role="alert" className="mt-3 rounded-[var(--radius-control)] bg-warning-tint px-4 py-3 text-[length:calc(16px*var(--fs))] text-navy-900">{outside} booked {outside === 1 ? 'appointment is' : 'appointments are'} outside these hours. {outside === 1 ? 'It keeps its' : 'They keep their'} time until rescheduled.</p>}
+        </Section>
 
-        <section>
-          <h3 className="mb-2 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">How long each check takes (minutes)</h3>
-          <p className="mb-2 text-[length:calc(14.5px*var(--fs))] text-ink-muted">Starting estimates, not legal processing times. Several items in one visit: the longest, plus the extra time for each other item, kept between the floor and the cap.</p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <Section title="Appointment Availability">
+          <div className={grid}>
+            <Field label="Appointment Interval" unit="minutes"><select className={control} value={r.stepMinutes} onChange={(e) => setR({ ...r, stepMinutes: Number(e.target.value) })}>{[5, 10, 15, 30].map((m) => <option key={m} value={m}>{m}</option>)}</select></Field>
+            <Field label="Buffer Between Appointments" unit="minutes"><input type="number" min={0} max={60} className={control} value={r.bufferMinutes} onChange={num('bufferMinutes')} /></Field>
+            <Field label="Maximum Simultaneous Appointments"><input type="number" min={1} max={20} className={control} value={r.maxConcurrent} onChange={num('maxConcurrent')} /></Field>
+            <Field label="Maximum Appointments Per Day"><input type="number" min={1} className={control} value={r.maxPerDay} onChange={num('maxPerDay')} /></Field>
+            <Field label="Earliest Booking From Now" unit="minutes"><input type="number" min={0} className={control} value={r.leadMinutes} onChange={num('leadMinutes')} /></Field>
+          </div>
+        </Section>
+
+        <Section title="Attendance and Reminders">
+          <div className={grid}>
+            <Field label="No-Show Grace Period" unit="minutes"><input type="number" min={0} className={control} value={r.noShowGraceMinutes} onChange={num('noShowGraceMinutes')} /></Field>
+            <fieldset>
+              <legend className="mb-1.5 text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">Reminder Schedule</legend>
+              <div className="flex flex-wrap gap-x-5 gap-y-1">
+                {REMINDER_CHOICES.map((h) => (
+                  <label key={h} className="flex min-h-12 items-center gap-2 text-[length:calc(16px*var(--fs))] text-navy-900">
+                    <input type="checkbox" className="size-5 accent-[#002132]" checked={r.reminderHours.includes(h)} onChange={(e) => setR({ ...r, reminderHours: e.target.checked ? [...r.reminderHours, h] : r.reminderHours.filter((x) => x !== h) })} />
+                    {h} {h === 1 ? 'hour' : 'hours'} before
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <label className="flex min-h-12 items-center gap-3 text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">
+              <input type="checkbox" className="size-5 accent-[#002132]" checked={reminders} onChange={(e) => setReminders(e.target.checked)} /> Enable Appointment Reminders
+            </label>
+          </div>
+        </Section>
+
+        <Section title="Processing Time">
+          <ul className="grid grid-cols-1 gap-x-8 md:grid-cols-2">
             {Object.entries(r.documentMinutes).map(([doc, m]) => (
-              <label key={doc} className="flex items-center justify-between gap-3 rounded-md border border-line-soft px-3 py-1.5 text-[length:calc(15px*var(--fs))] text-navy-900">
-                <span className="min-w-0">{doc}</span>
-                <input type="number" min={5} max={120} className={`${input} w-24 shrink-0`} value={m} onChange={(e) => setR({ ...r, documentMinutes: { ...r.documentMinutes, [doc]: Number(e.target.value) } })} />
-              </label>
+              <li key={doc} className="flex items-center gap-3 border-b border-line-soft py-3">
+                <span className="min-w-0 flex-1 text-[length:calc(16px*var(--fs))] break-words text-navy-900">{doc}</span>
+                <input aria-label={`${doc}, minutes`} type="number" min={5} max={120} className={small} value={m} onChange={(e) => setR({ ...r, documentMinutes: { ...r.documentMinutes, [doc]: Number(e.target.value) } })} />
+                <span className="w-16 shrink-0 text-[length:calc(16px*var(--fs))] text-ink-nav">minutes</span>
+              </li>
             ))}
-          </div>
-          <div className="mt-3 grid grid-cols-3 gap-3">
-            {field('Extra per item', <input type="number" min={0} className={input} value={r.extraDocumentMinutes} onChange={num('extraDocumentMinutes')} />)}
-            {field('Several items: floor', <input type="number" min={5} className={input} value={r.multiDocumentMin} onChange={num('multiDocumentMin')} />)}
-            {field('Several items: cap', <input type="number" min={5} className={input} value={r.multiDocumentMax} onChange={num('multiDocumentMax')} />)}
-          </div>
-        </section>
-
-        <section>
-          <h3 className="mb-2 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">Service length (minutes)</h3>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {Object.entries(r.typeMinutes).map(([k, m]) => field(k === 'hearing' ? 'Hearing (Chairman time)' : APPOINTMENT_TYPES[k as AppointmentKind]?.label ?? k,
-              <input type="number" min={5} max={240} className={input} value={m} onChange={(e) => setR({ ...r, typeMinutes: { ...r.typeMinutes, [k]: Number(e.target.value) } })} />))}
-          </div>
-        </section>
-
-        <section>
-          <h3 className="mb-2 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">Staff hours</h3>
-          <ul className="divide-y divide-line-soft rounded-md border border-line-soft">
-            {staff.map((u) => {
-              const s = r.staff[u.id]
-              const set = (next: typeof s | undefined) => { const copy = { ...r.staff }; if (next) copy[u.id] = next; else delete copy[u.id]; setR({ ...r, staff: copy }) }
-              return (
-                <li key={u.id} className="space-y-2 px-3 py-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{u.fullName} <span className="font-normal text-ink-muted">· {u.position}</span></span>
-                    <label className="flex items-center gap-2 text-[length:calc(14.5px*var(--fs))] text-navy-900"><input type="checkbox" className="size-5 accent-[#002132]" checked={!!s} onChange={(e) => set(e.target.checked ? { days: [1, 2, 3, 4, 5], start: r.officeStart, end: r.officeEnd } : undefined)} /> Own schedule</label>
-                  </div>
-                  {s ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                      {DAYS.map((d, i) => <label key={d} className="flex items-center gap-1 text-[length:calc(14.5px*var(--fs))]"><input type="checkbox" className="size-4 accent-[#002132]" checked={s.days.includes(i)} onChange={(e) => set({ ...s, days: e.target.checked ? [...s.days, i] : s.days.filter((x) => x !== i) })} />{d}</label>)}
-                      <input aria-label="Starts" type="time" className={`${input} w-32`} value={s.start} onChange={(e) => set({ ...s, start: e.target.value })} />
-                      <input aria-label="Ends" type="time" className={`${input} w-32`} value={s.end} onChange={(e) => set({ ...s, end: e.target.value })} />
-                    </div>
-                  ) : <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">Follows office hours on working days.</p>}
-                </li>
-              )
-            })}
           </ul>
-        </section>
+        </Section>
 
-        <section>
-          <h3 className="mb-2 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">Leave and unavailable days</h3>
+        <Section title="Staff Leave">
           {r.leave.length > 0 && (
-            <ul className="mb-3 divide-y divide-line-soft rounded-md border border-line-soft">
+            <ul className="mb-4 divide-y divide-line-soft">
               {r.leave.map((l) => (
-                <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[length:calc(15px*var(--fs))] text-navy-900">
-                  <span>{mockUsers.find((u) => u.id === l.staffId)?.fullName} · {l.from}{l.to !== l.from ? ` to ${l.to}` : ''} · {l.reason}</span>
+                <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-[length:calc(16px*var(--fs))] text-navy-900">
+                  <span>{staffName(l.staffId)} · {l.from}{l.to !== l.from ? ` to ${l.to}` : ''} · {l.reason}</span>
                   <Button size="sm" variant="ghost" onClick={() => setR({ ...r, leave: r.leave.filter((x) => x.id !== l.id) })}>Remove</Button>
                 </li>
               ))}
             </ul>
           )}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1.2fr_1fr_1fr_1.4fr_auto]">
-            <select aria-label="Staff" className={input} value={leave.staffId} onChange={(e) => setLeave({ ...leave, staffId: e.target.value })}><option value="">Staff…</option>{staff.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}</select>
-            <input aria-label="From" type="date" className={input} value={leave.from} onChange={(e) => setLeave({ ...leave, from: e.target.value, to: leave.to || e.target.value })} />
-            <input aria-label="To" type="date" className={input} value={leave.to} onChange={(e) => setLeave({ ...leave, to: e.target.value })} />
-            <input aria-label="Reason" placeholder="Reason" className={input} value={leave.reason} onChange={(e) => setLeave({ ...leave, reason: e.target.value })} />
-            <Button size="sm" variant="secondary" disabled={!leave.staffId || !leave.from || leave.reason.trim().length < 3} onClick={() => { setR({ ...r, leave: [...r.leave, { ...leave, id: `lv-${Date.now().toString(36)}` }] }); setLeave({ staffId: '', from: '', to: '', reason: '' }) }}>Add</Button>
+          <div className={grid}>
+            <Field label="Staff"><select className={control} value={leave.staffId} onChange={(e) => setLeave({ ...leave, staffId: e.target.value })}><option value="">Choose…</option>{staff.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}</select></Field>
+            <Field label="Reason"><input className={control} value={leave.reason} onChange={(e) => setLeave({ ...leave, reason: e.target.value })} /></Field>
+            <Field label="From"><input type="date" className={control} value={leave.from} onChange={(e) => setLeave({ ...leave, from: e.target.value, to: leave.to || e.target.value })} /></Field>
+            <Field label="To"><input type="date" className={control} value={leave.to} onChange={(e) => setLeave({ ...leave, to: e.target.value })} /></Field>
           </div>
-        </section>
+          <Button className="mt-3" size="sm" variant="secondary" disabled={!leave.staffId || !leave.from || leave.reason.trim().length < 3} onClick={() => { setR({ ...r, leave: [...r.leave, { ...leave, id: `lv-${Date.now().toString(36)}` }] }); setLeave({ staffId: '', from: '', to: '', reason: '' }) }}>Add Leave</Button>
+        </Section>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={save}>Save rules</Button>
-          <Button variant="ghost" onClick={() => setR({ ...DEFAULT_RULES, version: r.version })}>Reset to starting values</Button>
-          {r.updatedAt && <span className="text-[length:calc(14px*var(--fs))] text-ink-muted">Version {r.version} · {formatDateTime(r.updatedAt)} · {mockUsers.find((u) => u.id === r.updatedBy)?.fullName}</span>}
+        <details className="group border-t border-line-soft pt-5">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between text-[length:calc(18px*var(--fs))] font-bold text-navy-900">
+            Advanced Settings <span aria-hidden className="text-ink-nav transition-transform group-open:rotate-180">⌄</span>
+          </summary>
+          <div className="mt-4 space-y-6">
+            <div>
+              <h4 className="mb-3 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">Several Documents in One Visit</h4>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <Field label="Extra Per Document" unit="minutes"><input type="number" min={0} className={control} value={r.extraDocumentMinutes} onChange={num('extraDocumentMinutes')} /></Field>
+                <Field label="Shortest Visit" unit="minutes"><input type="number" min={5} className={control} value={r.multiDocumentMin} onChange={num('multiDocumentMin')} /></Field>
+                <Field label="Longest Visit" unit="minutes"><input type="number" min={5} className={control} value={r.multiDocumentMax} onChange={num('multiDocumentMax')} /></Field>
+              </div>
+            </div>
+            <div>
+              <h4 className="mb-3 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">Service Length</h4>
+              <div className={grid}>
+                {Object.entries(r.typeMinutes).map(([k, m]) => (
+                  <Field key={k} label={k === 'hearing' ? 'Hearing' : APPOINTMENT_TYPES[k as AppointmentKind]?.label ?? k} unit="minutes">
+                    <input type="number" min={5} max={240} className={control} value={m} onChange={(e) => setR({ ...r, typeMinutes: { ...r.typeMinutes, [k]: Number(e.target.value) } })} />
+                  </Field>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="mb-3 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">Staff Working Hours</h4>
+              <ul className="divide-y divide-line-soft">
+                {staff.map((u) => {
+                  const s = r.staff[u.id]
+                  const set = (next?: typeof s) => { const copy = { ...r.staff }; if (next) copy[u.id] = next; else delete copy[u.id]; setR({ ...r, staff: copy }) }
+                  return (
+                    <li key={u.id} className="space-y-2 py-3">
+                      <label className="flex min-h-11 flex-wrap items-center justify-between gap-2 text-[length:calc(16px*var(--fs))] text-navy-900">
+                        <span className="font-semibold">{u.fullName}</span>
+                        <span className="flex items-center gap-2"><input type="checkbox" className="size-5 accent-[#002132]" checked={!!s} onChange={(e) => set(e.target.checked ? { days: [1, 2, 3, 4, 5], start: r.officeStart, end: r.officeEnd } : undefined)} /> Own schedule</span>
+                      </label>
+                      {s && (
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                          {DAYS.map((d, i) => <label key={d} className="flex min-h-11 items-center gap-1.5 text-[length:calc(16px*var(--fs))]"><input type="checkbox" className="size-5 accent-[#002132]" checked={s.days.includes(i)} onChange={(e) => set({ ...s, days: e.target.checked ? [...s.days, i] : s.days.filter((x) => x !== i) })} />{d}</label>)}
+                          <input aria-label={`${u.fullName} starts`} type="time" className="h-12 w-36 shrink-0 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(16px*var(--fs))] text-navy-900" value={s.start} onChange={(e) => set({ ...s, start: e.target.value })} />
+                          <input aria-label={`${u.fullName} ends`} type="time" className="h-12 w-36 shrink-0 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[length:calc(16px*var(--fs))] text-navy-900" value={s.end} onChange={(e) => set({ ...s, end: e.target.value })} />
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setR({ ...DEFAULT_RULES, version: r.version, leave: r.leave })}>Reset to Starting Values</Button>
+          </div>
+        </details>
+
+        {msg && <p role={msg.ok ? 'status' : 'alert'} className={`rounded-[var(--radius-control)] px-4 py-3 text-[length:calc(16px*var(--fs))] ${msg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink'}`}>{msg.text}</p>}
+        <div className="flex flex-wrap items-center gap-3 border-t border-line-soft pt-5">
+          <Button onClick={save}>Save Changes</Button>
+          {r.updatedAt && <span className="text-[length:calc(16px*var(--fs))] text-ink-nav">Last saved {formatDateTime(r.updatedAt)} by {staffName(r.updatedBy ?? '')}</span>}
         </div>
       </div>
     </Panel>

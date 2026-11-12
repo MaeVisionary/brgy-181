@@ -1,5 +1,5 @@
-import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Inbox, Info, Mail, MapPin, MessageSquareWarning, Package, Phone, ReceiptText, XCircle } from '@/icons'
-import { useEffect, useMemo, useState } from 'react'
+import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Inbox, Mail, MapPin, MessageSquareWarning, Package, Phone, ReceiptText, XCircle } from '@/icons'
+import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { TransitionPanel } from '@/components/documents/TransitionPanel'
@@ -9,7 +9,7 @@ import { GreetingCard } from '@/components/ui/GreetingCard'
 import { StatCard } from '@/components/ui/StatCard'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Panel'
-import { BARANGAY_CONTACT, BORROWING, KP } from '@/config/barangay'
+import { BARANGAY_CONTACT, KP } from '@/config/barangay'
 import { ROLES } from '@/config/permissions'
 import { getDocumentType } from '@/documents/catalog'
 import { isFilled } from '@/documents/fill'
@@ -21,12 +21,13 @@ import { MAX_TRANSACTION_BYTES } from '@/config/uploads'
 import { attachUploads, totalSize, type StoredFile } from '@/services/fileStore'
 import { toneForPath } from '@/icons/tones'
 import { formatDate, formatDateTime } from '@/lib/format'
-import { ALL_RESIDENT_STATUSES, STATUSES_BY_KIND, borrowingStatusForResident, caseStageForResident, documentStatusForResident, type ResidentStatus } from '@/lib/residentStatus'
+import { ALL_RESIDENT_STATUSES, STATUSES_BY_KIND, caseStageForResident, documentStatusForResident, type ResidentStatus } from '@/lib/residentStatus'
 import { mockUsers } from '@/mocks/users'
 import { getCase } from '@/services/caseService'
 import { estimateFor, standardFor } from '@/services/serviceStandardService'
 import { applyTransition, availableTransitions, getRequest } from '@/services/documentService'
-import { actOnBorrowing, getBorrowing } from '@/services/equipmentService'
+import { STAGE_ORDER, actOnBorrowing, borrowingStage, fmtDue, getBorrowing, runBorrowingJobs } from '@/services/equipmentService'
+import { appointmentFor, formatTime } from '@/services/appointmentService'
 import { ServiceError } from '@/services/mockApi'
 import { listMyTransactions, type Transaction, type TransactionKind } from '@/services/transactionService'
 import type { KPCase } from '@/types/case'
@@ -548,94 +549,85 @@ export function BorrowingDetailsPage() {
   const [err, setErr] = useState<string | null>(null)
   const [confirm, setConfirm] = useState(false)
   useEffect(() => {
+    runBorrowingJobs()
     getBorrowing(id, actor).then(setB).catch(() => setMissing(true))
   }, [id, actor])
-  const rs = useMemo(() => (b ? borrowingStatusForResident(b) : null), [b])
   if (missing) return <NotFound />
-  if (!b || !rs) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
+  if (!b) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
 
-  const labels: ResidentStatus[] = ['Submitted', 'Ready', 'Borrowed', 'Completed']
-  const overdue = b.status === 'released' && rs === 'Action Needed'
-  const idx = overdue ? 2 : labels.indexOf(rs)
-  const ended = rs === 'Unsuccessful'
-  const at = (needle: string) => b.history.find((h) => h.action.toLowerCase().includes(needle))?.at
+  const stage = borrowingStage(b)
+  const ended = stage === 'Rejected' || stage === 'Cancelled'
+  const trackStage = stage === 'Availability Checking' ? 'Request Submitted' : stage === 'Return Due Soon' || stage === 'Overdue' ? 'Borrowed' : stage
+  const idx = STAGE_ORDER.indexOf(trackStage as (typeof STAGE_ORDER)[number])
+  const at = (needle: string) => b.history.find((h) => h.action.toLowerCase().startsWith(needle))?.at
   const notes: Record<number, string | undefined> = {
     0: formatDate(b.requestedAt),
-    1: at('approv') ? formatDate(at('approv')!) : undefined,
-    2: b.releasedAt ? `Released ${formatDate(b.releasedAt)}` : undefined,
-    3: b.returnedAt ? `Returned ${formatDate(b.returnedAt)}` : 'After you return the equipment',
+    1: at('approved') ? formatDate(at('approved')!) : undefined,
+    2: at('prepared') ? formatDate(at('prepared')!) : undefined,
+    3: b.releasedAt ? formatDate(b.releasedAt) : undefined,
+    4: b.returnedAt ? formatDate(b.returnedAt) : undefined,
   }
+  const pickup = appointmentFor('equipment_pickup', b.id)
+  const mine = !!b.residentId && b.residentId === user?.residentId
+  const overdueDays = stage === 'Overdue' && b.graceEndsAt ? Math.max(1, Math.ceil((Date.now() - new Date(b.graceEndsAt).getTime()) / 86_400_000)) : 0
   const cancel = async () => {
     setErr(null)
-    try {
-      setB({ ...(await actOnBorrowing(b.id, 'cancel', actor, { remarks: 'Cancelled by the resident' })) })
-      setConfirm(false)
-    } catch (e) {
-      setErr(e instanceof ServiceError ? e.message : 'The request could not be cancelled.')
-    }
+    try { setB(await actOnBorrowing(b.id, 'cancel', actor)); setConfirm(false) } catch (e) { setErr(e instanceof ServiceError ? e.message : 'The request could not be cancelled.') }
   }
+  const tone = stage === 'Overdue' || stage === 'Rejected' ? 'danger' : stage === 'Return Due Soon' || stage === 'Availability Checking' ? 'warning' : stage === 'Completed' || stage === 'Cancelled' ? 'neutral' : 'info'
+  const row = (label: string, value: React.ReactNode, kind?: string) => (
+    <div className="flex flex-col gap-0.5 border-b border-line-soft py-3 last:border-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+      <dt className="text-[length:calc(16px*var(--fs))] text-ink-nav">{label}{kind && <span className="ml-2 text-[length:calc(14px*var(--fs))] font-semibold text-ink-muted">{kind}</span>}</dt>
+      <dd className="text-[length:calc(17px*var(--fs))] font-semibold text-navy-900 sm:text-right">{value}</dd>
+    </div>
+  )
 
   return (
     <>
       <BackLink to="/my/borrowing">Equipment Borrowing</BackLink>
-      <DetailHeader kind="Equipment borrowing" title={`Borrow ${itemsText(b).replace(/ × /g, ' ')}`} referenceNo={b.refNo} status={rs} date={b.requestedAt} />
+      <DetailHeader kind="Equipment borrowing" title={itemsText(b).replace(/ × /g, ' ')} referenceNo={b.refNo} status={stage} statusTone={tone} date={b.history.at(-1)?.at ?? b.requestedAt} dateLabel="Last updated" />
       <DetailBody
         main={
           <>
-            {rs === 'Submitted' && (
-              <Banner tone="info" icon={<Info />} title="Your request has been received">
-                The Property Custodian will check if the equipment is available. We will notify you when your request is approved.
+            {stage === 'Overdue' && (
+              <Banner tone="danger" icon={<CircleAlert />} title="Your borrowed equipment is overdue">
+                Please return it to the Barangay Hall as soon as possible. It was due on {fmtDue(b.dueAt!)} ({overdueDays} {overdueDays === 1 ? 'day' : 'days'} ago).
               </Banner>
             )}
-            {rs === 'Ready' && (
-              <Banner tone="success" icon={<CheckCircle2 />} title="Approved: ready to claim">
-                Claim the equipment at the Barangay 181 Hall. The {BORROWING.periodDays}-day borrowing period starts on the day it is released to you.
-              </Banner>
-            )}
-            {rs === 'Borrowed' && b.dueAt && (
-              <Banner tone="info" icon={<Package />} title={`Please return it by ${formatDate(b.dueAt)}`}>
-                A {BORROWING.graceDays}-day grace period applies until {formatDate(b.graceEndsAt!)}.
-              </Banner>
-            )}
-            {overdue && (
-              <Banner tone="danger" icon={<CircleAlert />} title="This equipment is overdue">
-                The grace period ended on {formatDate(b.graceEndsAt!)}. Please return the equipment to the Barangay 181 Hall as soon as possible.
-              </Banner>
-            )}
-            {b.status === 'rejected' && <Banner tone="danger" icon={<XCircle />} title="Your request was not approved">See the update below for the reason.</Banner>}
+            {stage === 'Rejected' && <Banner tone="danger" icon={<XCircle />} title="Your request was not approved">See the update below for the reason.</Banner>}
 
-            {rs === 'Submitted' && b.residentId && b.residentId === user?.residentId && (
+            <Section title="Schedule">
+              <dl>
+                {b.status === 'pending' && row('Estimated availability', b.estimate?.readyBy ? formatDate(b.estimate.readyBy) : 'Being determined', 'Estimate')}
+                {b.status === 'pending' && b.estimate && <p className="pb-3 text-[length:calc(16px*var(--fs))] text-ink-nav">{b.estimate.note}</p>}
+                {(b.status === 'approved' || b.status === 'ready') && row('Pickup', pickup?.date ? `${formatDate(pickup.date)} · ${formatTime(pickup.time)}` : <Link to={pickup ? `/my/appointments/${pickup.id}` : '/my/appointments'} className="text-info hover:underline">Choose a pickup time</Link>, pickup?.date ? 'Confirmed' : undefined)}
+                {b.releasedAt && row('Released', formatDateTime(b.releasedAt), 'Actual')}
+                {b.dueAt && row('Return deadline', fmtDue(b.dueAt), 'Confirmed')}
+                {b.graceEndsAt && b.graceEndsAt !== b.dueAt && b.status === 'released' && row('Grace period until', fmtDue(b.graceEndsAt))}
+                {b.returnedAt && row('Returned', formatDateTime(b.returnedAt), 'Actual')}
+                {row('Date of use', `${formatDate(b.dateOfUse)}${b.statedReturnDate ? ` to ${formatDate(b.statedReturnDate)}` : ''}`)}
+              </dl>
+            </Section>
+
+            {mine && ['pending', 'approved', 'ready'].includes(b.status) && (
               <div className="flex flex-wrap items-center gap-2">
                 {confirm ? (
                   <>
-                    <span className="text-[length:calc(15px*var(--fs))] text-navy-900">Cancel this request?</span>
+                    <span className="text-[length:calc(16px*var(--fs))] text-navy-900">Cancel this request?</span>
                     <Button size="sm" variant="danger" onClick={cancel}>Yes, cancel request</Button>
                     <Button size="sm" variant="ghost" onClick={() => setConfirm(false)}>Keep it</Button>
                   </>
-                ) : (
-                  <Button size="sm" variant="danger" onClick={() => setConfirm(true)}>Cancel request</Button>
-                )}
-                {err && <span className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</span>}
+                ) : <Button size="sm" variant="secondary" onClick={() => setConfirm(true)}>Cancel request</Button>}
+                {err && <span className="text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</span>}
               </div>
             )}
 
-            <Section title="Borrowing details">
-              <InfoRows
-                rows={[
-                  ['Requested equipment', itemsText(b)],
-                  ['Date of use', formatDate(b.dateOfUse)],
-                  ...(b.statedReturnDate ? ([['Return date you gave', formatDate(b.statedReturnDate)]] as [string, string][]) : []),
-                  ...(b.dueAt ? ([['Return by', `${formatDate(b.dueAt)} (grace until ${formatDate(b.graceEndsAt!)})`]] as [string, string][]) : []),
-                  ['Borrowing period', `${BORROWING.periodDays} days from release, plus a ${BORROWING.graceDays}-day grace period`],
-                ]}
-              />
-            </Section>
-            <Updates items={[...b.history].reverse().map((h) => ({ title: h.action, at: h.at, by: h.byRole === 'resident' ? 'You' : ROLES[h.byRole]?.name, note: h.remarks }))} />
+            <Updates items={[...b.history].reverse().map((h) => ({ title: h.action, at: h.at, by: h.byUserId === 'system' ? 'System' : h.byRole === 'resident' ? 'You' : ROLES[h.byRole]?.name, note: h.remarks }))} />
           </>
         }
         side={
           <>
-            <Progress steps={stepsFrom(labels, ended ? labels.length : idx, notes, rs === 'Completed')} ended={ended ? (b.status === 'rejected' ? 'Not approved' : 'Cancelled') : undefined} />
+            <Progress steps={stepsFrom([...STAGE_ORDER], ended ? STAGE_ORDER.length : idx, notes, stage === 'Completed')} ended={ended ? (stage === 'Rejected' ? 'Not approved' : 'Cancelled') : undefined} />
             <NeedHelp />
           </>
         }

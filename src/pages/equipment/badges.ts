@@ -12,10 +12,12 @@ export const RETURN_BADGE: Record<ReturnState, { label: string; tone: BadgeTone 
 }
 
 export const BORROW_STATUS: Record<BorrowingStatus, { label: string; tone: BadgeTone }> = {
-  pending: { label: 'Pending', tone: 'warning' },
-  approved: { label: 'Approved: to claim', tone: 'success' },
+  pending: { label: 'New request', tone: 'warning' },
+  approved: { label: 'Approved: to prepare', tone: 'info' },
+  ready: { label: 'Ready for pickup', tone: 'success' },
   rejected: { label: 'Not approved', tone: 'danger' },
-  released: { label: 'Released', tone: 'info' },
-  returned: { label: 'Returned', tone: 'success' },
+  released: { label: 'Borrowed', tone: 'info' },
+  returned: { label: 'Damage review', tone: 'warning' },
+  completed: { label: 'Completed', tone: 'neutral' },
   cancelled: { label: 'Cancelled', tone: 'neutral' },
 }

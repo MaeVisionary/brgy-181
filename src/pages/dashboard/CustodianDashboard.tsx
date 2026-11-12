@@ -4,12 +4,13 @@ import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { Panel } from '@/components/ui/Panel'
-import { BORROWING } from '@/config/barangay'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 import { formatDate, formatShortDate } from '@/lib/format'
-import { availableQty, borrowedQty, listBorrowings, listEquipment, returnState } from '@/services/equipmentService'
-import { RETURN_BADGE } from '@/pages/equipment/badges'
+import { availableQty, borrowedQty, borrowingPolicy, fmtDue, listBorrowings, listEquipment, returnState, runBorrowingJobs } from '@/services/equipmentService'
+import { BORROW_STATUS, RETURN_BADGE } from '@/pages/equipment/badges'
+import { itemsText } from '@/pages/equipment/BorrowingPages'
+import { TodayAppointmentsPanel } from '@/pages/appointments/AppointmentPages'
 import { DashHeader, ListPanel, Row, Stat, ViewAll } from './shared'
 
 /** Property Custodian: barangay equipment and borrowing transactions. */
@@ -18,52 +19,53 @@ export function CustodianDashboard() {
   const equipment = useAsync(listEquipment).data
   const borrowings = useAsync(() => listBorrowings(actor), [actor]).data
 
+  runBorrowingJobs()
   const sum = (f: (e: NonNullable<typeof equipment>[number]) => number) => (equipment ? equipment.reduce((n, e) => n + f(e), 0) : null)
-  const released = borrowings?.filter((b) => b.status === 'released') ?? null
-  const overdue = released?.filter((b) => returnState(b) === 'overdue') ?? null
-  const upcoming = released?.filter((b) => ['due_soon', 'grace'].includes(returnState(b))) ?? null
-  const pending = borrowings?.filter((b) => b.status === 'pending') ?? null
+  const by = (pred: (b: NonNullable<typeof borrowings>[number]) => boolean) => borrowings?.filter(pred) ?? null
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })
+  const dueDay = (b: { dueAt?: string }) => (b.dueAt ? new Date(b.dueAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }) : '')
+  const released = by((b) => b.status === 'released')
+  const overdue = by((b) => b.status === 'released' && returnState(b) === 'overdue')
+  const dueToday = by((b) => b.status === 'released' && dueDay(b) === today)
+  const due48 = by((b) => b.status === 'released' && ['due_soon', 'grace'].includes(returnState(b)))
+  const pending = by((b) => b.status === 'pending')
+  const toPickup = by((b) => b.status === 'approved' || b.status === 'ready')
+  const review = by((b) => b.status === 'returned')
+  const needsAction = [...(overdue ?? []), ...(pending ?? []), ...(review ?? []), ...(toPickup?.filter((b) => b.status === 'approved') ?? [])]
 
   return (
     <>
       <DashHeader
         actionInGreeting
-        subtitle={`Barangay equipment and borrowing. Borrowing period ${BORROWING.periodDays} days plus a ${BORROWING.graceDays}-day grace period.`}
+        subtitle=""
         actions={<ButtonLink to="/inventory" icon={<PackagePlus className="size-4" />}>Equipment Records</ButtonLink>}
       />
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Total equipment units" value={sum((e) => e.totalQty)} to="/inventory" />
+        <Stat label="Overdue" value={overdue?.length ?? null} attention={!!overdue?.length} to="/borrowing" />
+        <Stat label="Requests to review" value={pending?.length ?? null} attention={!!pending?.length} to="/borrowing" />
+        <Stat label="Approved, awaiting pickup" value={toPickup?.length ?? null} to="/borrowing" />
+        <Stat label="Borrowed now" value={released?.length ?? null} to="/borrowing" />
+        <Stat label="Returns due today" value={dueToday?.length ?? null} to="/borrowing" />
+        <Stat label="Due within 48 hours" value={due48?.length ?? null} to="/borrowing" />
+        <Stat label="Under maintenance" value={sum((e) => e.maintenanceQty ?? 0)} to="/inventory" />
         <Stat label="Available now" value={sum((e) => availableQty(e))} to="/inventory" />
-        <Stat label="Currently borrowed" value={sum((e) => borrowedQty(e.id))} to="/borrowing" />
-        <Stat label="Pending requests" value={pending?.length ?? null} attention={!!pending?.length} to="/borrowing" />
-        <Stat label="Upcoming returns" value={upcoming?.length ?? null} to="/borrowing" />
-        <Stat label="Overdue returns" value={overdue?.length ?? null} attention={!!overdue?.length} to="/borrowing" />
-        <Stat label="Damaged units" value={sum((e) => e.damagedQty)} to="/inventory" />
-        <Stat label="Missing units" value={sum((e) => e.missingQty)} to="/inventory" />
       </section>
+      {!borrowingPolicy().confirmed && <p className="mt-3 rounded-[var(--radius-control)] bg-warning-tint px-4 py-3 text-[length:calc(16px*var(--fs))] text-navy-900">Borrowing period and grace days are not yet confirmed by the barangay.</p>}
 
-      <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <ListPanel
-          dark
-          title="Requests to review"
-          subtitle="Check availability, then approve"
-          items={pending}
-          to="/borrowing"
-          empty="No pending requests."
-          render={(b) => <Row to={`/borrowing/${b.id}`} title={`${b.refNo} · ${b.borrowerName}`} meta={`Date of use ${formatDate(b.dateOfUse)}`} right={<Badge tone="warning">Pending</Badge>} />}
-        />
-        <ListPanel
-          title="Returns to watch"
-          subtitle="Due soon, in grace period, or overdue"
-          items={released?.filter((b) => returnState(b) !== 'on_time') ?? null}
-          to="/borrowing"
-          empty="No returns due soon."
-          render={(b) => {
-            const s = returnState(b)
-            return <Row to={`/borrowing/${b.id}`} title={`${b.refNo} · ${b.borrowerName}`} meta={`Due ${formatDate(b.dueAt!)} · grace ends ${formatDate(b.graceEndsAt!)}`} right={<Badge tone={RETURN_BADGE[s].tone}>{RETURN_BADGE[s].label}</Badge>} />
-          }}
-        />
-      </section>
+      <TodayAppointmentsPanel />
+
+      <ListPanel
+        dark
+        className="mt-4"
+        title="Needs your action"
+        items={borrowings ? needsAction : null}
+        to="/borrowing"
+        empty="Nothing needs your action."
+        render={(b) => {
+          const st = b.status === 'released' ? RETURN_BADGE[returnState(b)] : BORROW_STATUS[b.status]
+          return <Row to={`/borrowing/${b.id}`} title={`${b.borrowerName} · ${itemsText(b)}`} meta={b.status === 'released' ? `Due ${fmtDue(b.dueAt!)}` : `Date of use ${formatDate(b.dateOfUse)}`} right={<Badge tone={st.tone}>{st.label}</Badge>} />
+        }}
+      />
 
       <Panel className="mt-4" title="Equipment records" actions={<ViewAll to="/inventory" />} bodyClassName="px-0 py-0">
         <RowList rows={(equipment ?? []).map((e) => ({ key: e.id, to: '/inventory', title: e.name, subtitle: `${e.totalQty} total · ${availableQty(e)} available` }))} />

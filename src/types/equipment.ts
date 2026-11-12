@@ -20,11 +20,19 @@ export interface Equipment {
   history: { at: string; byUserId: string; action: string; detail?: string }[]
 }
 
-export type BorrowingStatus = 'pending' | 'approved' | 'rejected' | 'released' | 'returned' | 'cancelled'
+/**
+ * pending: submitted, availability checked automatically, waiting for the custodian.
+ * approved: reserved; resident books a pickup time.  ready: prepared and inspected.
+ * released: with the borrower.  returned: back, but damaged or missing items are under review.
+ * completed: everything accounted for.  rejected / cancelled: closed.
+ */
+export type BorrowingStatus = 'pending' | 'approved' | 'ready' | 'released' | 'returned' | 'completed' | 'rejected' | 'cancelled'
 
 export interface BorrowItem {
   equipmentId: string
   qty: number
+  /** Set when the custodian approves fewer than requested (with a reason). */
+  approvedQty?: number
   /** Recorded on return. */
   returnedGood?: number
   returnedDamaged?: number
@@ -51,5 +59,15 @@ export interface Borrowing {
   returnedAt?: string
   conditionOnRelease?: string
   returnNotes?: string
-  history: { at: string; byUserId: string; byRole: RoleId; action: string; remarks?: string }[]
+  /** Automatic availability check and estimate, recomputed when inventory changes. Never a promise. */
+  estimate?: { ok: boolean; readyBy?: string; note: string; lines: { equipmentId: string; requested: number; available: number }[]; at: string }
+  /** Borrowing days granted (policy, or fewer if the borrower asked to return earlier). */
+  approvedDays?: number
+  release?: { idPresented: boolean; acknowledged: boolean; byUserId: string }
+  /** Damaged or missing items: open until the custodian closes it with a note. */
+  review?: { open: boolean; note?: string; closedAt?: string; closedBy?: string }
+  extensions?: { from: string; to: string; reason: string; byUserId: string; at: string }[]
+  /** Reminder and overdue notice keys already sent (no duplicates). */
+  remindersSent?: string[]
+  history: { at: string; byUserId: string; byRole: RoleId; action: string; remarks?: string; internal?: boolean }[]
 }

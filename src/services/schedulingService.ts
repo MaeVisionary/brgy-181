@@ -212,6 +212,8 @@ export function saveSchedulingRules(next: SchedulingRules, by: User): Scheduling
   const bad = (t: string) => !/^\d{2}:\d{2}$/.test(t)
   if ([next.officeStart, next.officeEnd, next.breakStart, next.breakEnd].some(bad) || toMin(next.officeStart) >= toMin(next.officeEnd)) throw new ServiceError('hours', 'Check the office hours.')
   if (toMin(next.breakStart) > toMin(next.breakEnd)) throw new ServiceError('break', 'The break must end after it starts.')
+  if (toMin(next.breakStart) < toMin(next.officeStart) || toMin(next.breakEnd) > toMin(next.officeEnd)) throw new ServiceError('break', 'The break must be within office hours.')
+  if (toMin(next.officeEnd) - toMin(next.officeStart) - (toMin(next.breakEnd) - toMin(next.breakStart)) < 30) throw new ServiceError('hours', 'Office hours leave no time for appointments.')
   if (![5, 10, 15, 30].includes(next.stepMinutes)) throw new ServiceError('step', 'Start times can be every 5, 10, 15 or 30 minutes.')
   if (next.maxPerDay < 1 || next.noShowGraceMinutes < 0 || Object.values(next.typeMinutes).some((m) => !(m >= 5 && m <= 240)) || next.reminderHours.some((h) => !(h > 0 && h <= 72))) throw new ServiceError('limits', 'Check the daily limit, service lengths, no-show time and reminders.')
   if (next.bufferMinutes < 0 || next.bufferMinutes > 60 || next.maxConcurrent < 1 || next.maxConcurrent > 20 || next.leadMinutes < 0) throw new ServiceError('limits', 'Check the buffer, limit and notice time.')

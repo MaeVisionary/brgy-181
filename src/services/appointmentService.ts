@@ -571,6 +571,15 @@ export function flagForClosure(dates: string[], reason: string, byUserId: string
   return n
 }
 
+/** Booked future appointments that would fall outside these office hours or inside the break (for the settings warning). */
+export function bookedOutsideHours(r: { officeStart: string; officeEnd: string; breakStart: string; breakEnd: string }): number {
+  const m = (t: string) => { const [h, x] = t.split(':').map(Number); return h * 60 + x }
+  return load().filter((a) => BOOKED.includes(a.status) && a.date && startsAt(a) > Date.now()).filter((a) => {
+    const s = m(a.time), e = s + a.durationMin
+    return s < m(r.officeStart) || e > m(r.officeEnd) || (s < m(r.breakEnd) && e > m(r.breakStart))
+  }).length
+}
+
 // ── Reading ──────────────────────────────────────────────────────────
 export type NamedAppointment = Appointment & { residentName: string }
 const named = (a: Appointment): NamedAppointment => {
