@@ -1,6 +1,7 @@
 import { RowList } from '@/components/ui/RowList'
 import { PackagePlus } from '@/icons'
 import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { Panel } from '@/components/ui/Panel'
@@ -8,6 +9,7 @@ import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 import { formatDate, formatShortDate } from '@/lib/format'
 import { availableQty, borrowedQty, borrowingPolicy, fmtDue, listBorrowings, listEquipment, returnState, runBorrowingJobs } from '@/services/equipmentService'
+import { matchesBorrowFilter, type BorrowFilter } from '@/services/borrowingFilters'
 import { BORROW_STATUS, RETURN_BADGE } from '@/pages/equipment/badges'
 import { itemsText } from '@/pages/equipment/BorrowingPages'
 import { TodayAppointmentsPanel } from '@/pages/appointments/AppointmentPages'
@@ -19,18 +21,20 @@ export function CustodianDashboard() {
   const equipment = useAsync(listEquipment).data
   const borrowings = useAsync(() => listBorrowings(actor), [actor]).data
 
-  runBorrowingJobs()
+  // Overdue checks write records and send notices: run after drawing, never during it.
+  useEffect(() => { runBorrowingJobs() }, [])
   const sum = (f: (e: NonNullable<typeof equipment>[number]) => number) => (equipment ? equipment.reduce((n, e) => n + f(e), 0) : null)
   const by = (pred: (b: NonNullable<typeof borrowings>[number]) => boolean) => borrowings?.filter(pred) ?? null
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })
-  const dueDay = (b: { dueAt?: string }) => (b.dueAt ? new Date(b.dueAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }) : '')
-  const released = by((b) => b.status === 'released')
-  const overdue = by((b) => b.status === 'released' && returnState(b) === 'overdue')
-  const dueToday = by((b) => b.status === 'released' && dueDay(b) === today)
-  const due48 = by((b) => b.status === 'released' && ['due_soon', 'grace'].includes(returnState(b)))
-  const pending = by((b) => b.status === 'pending')
-  const toPickup = by((b) => b.status === 'approved' || b.status === 'ready')
-  const review = by((b) => b.status === 'returned')
+  // Each card counts with the same filter its link opens (services/borrowingFilters).
+  const f = (v: BorrowFilter) => by((b) => matchesBorrowFilter(b, v))
+  const link = (v: BorrowFilter) => `/borrowing?status=${v}`
+  const released = f('released')
+  const overdue = f('overdue')
+  const dueToday = f('due_today')
+  const due48 = f('due_soon')
+  const pending = f('pending')
+  const toPickup = f('to_pickup')
+  const review = f('returned')
   const needsAction = [...(overdue ?? []), ...(pending ?? []), ...(review ?? []), ...(toPickup?.filter((b) => b.status === 'approved') ?? [])]
 
   return (
@@ -41,12 +45,12 @@ export function CustodianDashboard() {
         actions={<ButtonLink to="/inventory" icon={<PackagePlus className="size-4" />}>Equipment Records</ButtonLink>}
       />
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Overdue" value={overdue?.length ?? null} attention={!!overdue?.length} to="/borrowing" />
-        <Stat label="Requests to review" value={pending?.length ?? null} attention={!!pending?.length} to="/borrowing" />
-        <Stat label="Approved, awaiting pickup" value={toPickup?.length ?? null} to="/borrowing" />
-        <Stat label="Borrowed now" value={released?.length ?? null} to="/borrowing" />
-        <Stat label="Returns due today" value={dueToday?.length ?? null} to="/borrowing" />
-        <Stat label="Due within 48 hours" value={due48?.length ?? null} to="/borrowing" />
+        <Stat label="Overdue" value={overdue?.length ?? null} attention={!!overdue?.length} to={link('overdue')} />
+        <Stat label="Requests to review" value={pending?.length ?? null} attention={!!pending?.length} to={link('pending')} />
+        <Stat label="Approved, awaiting pickup" value={toPickup?.length ?? null} to={link('to_pickup')} />
+        <Stat label="Borrowed now" value={released?.length ?? null} to={link('released')} />
+        <Stat label="Returns due today" value={dueToday?.length ?? null} to={link('due_today')} />
+        <Stat label="Due soon or in grace period" value={due48?.length ?? null} to={link('due_soon')} />
         <Stat label="Under maintenance" value={sum((e) => e.maintenanceQty ?? 0)} to="/inventory" />
         <Stat label="Available now" value={sum((e) => availableQty(e))} to="/inventory" />
       </section>

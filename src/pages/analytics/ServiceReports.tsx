@@ -216,7 +216,7 @@ export function ServiceReports() {
           <div className="mt-3 grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
             <label className="block min-w-0 text-[length:calc(14px*var(--fs))] font-semibold text-ink-nav">From<TextInput className="mt-0.5 w-full sm:w-44" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /></label>
             <label className="block min-w-0 text-[length:calc(14px*var(--fs))] font-semibold text-ink-nav">To<TextInput className="mt-0.5 w-full sm:w-44" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></label>
-            {(from || to) && <Button size="sm" variant="ghost" onClick={() => { setFrom(''); setTo('') }}>Clear dates</Button>}
+            {(from || to) && <Button size="sm" variant="secondary" onClick={() => { setFrom(''); setTo('') }}>Clear dates</Button>}
           </div>
         )}
         {!output ? (

@@ -1,6 +1,38 @@
 # BMIS Patch Notes: Report formats, notifications, analytics and cleanup (12 November 2026)
 
-## 2026-11-12 (latest): Saved account changes and activity log, pickup steps, demo recovery requests
+## 2026-11-12 (latest): Scrolling and flicker fix, dashboard accuracy, button design standard, calendar
+
+Scrolling and flicker (root cause)
+- Signed in (especially with the test account), every scroll extended the session again: the once-a-minute guard was reset each time the session updated, so each scroll event wrote a new session. With the test account each new session also built a new user object, every page reloaded its data, lists blanked to a loading placeholder, the page height jumped and the scroll fired again. Result: pages such as Secretary > Document Requests flickered and could not be scrolled. Fixed in the sign-in context (guard kept in a ref, listeners added once per sign-in, user object keyed on the account id). Verified with the test account: 0 session writes and 0 redraws while scrolling; the list scrolls to the end on desktop and phone.
+- Reloads no longer blank lists: data hooks keep showing the current rows until new ones arrive (only the first load shows the placeholder).
+- Pickup checks and borrowing overdue checks no longer run while a page is being drawn (they write records and send notices); they run right after.
+- Lists keep their page number and filters in the address: opening a record and going Back returns to the same page, filter and scroll position; refresh keeps them.
+- Phones: two fixed-height inner scroll boxes (Analytics area table, Import "rows that need fixing") now scroll with the page; on desktop they keep their own scroll beside their chart.
+- Confirmation dialogs never exceed the screen: the message scrolls inside, the title and buttons stay visible.
+- Audit (every page of all roles, desktop and 375px phone): no render loops, no sideways overflow, no unreachable content, no competing scroll areas.
+
+Dashboards: one rule for each number and its list
+- Each card's number is computed with the same filter its link opens, and the link carries that filter in the address (shared rules: services/accountFilters, documents/listFilters, services/caseFilters, services/borrowingFilters).
+- System Administrator: User accounts, Active, Pending verification, Inactive (each opens User Accounts with that status selected), accounts per role (opens the role filter). User Accounts gained status and role filters, a "Showing N of M" line and Clear filters; test accounts are counted like the list shows them. Inactive = switched off (deactivated, suspended or not yet approved); Pending verification = a resident whose registration still waits for review; the three add up to the total.
+- System status shows real checks run in the browser (server answers, internet, saving on the device, HTTPS) and says plainly what is not set up (database, backups, e-mail). Same list on Health and Backups, with "Check again".
+- Secretary, Punong Barangay and Property Custodian cards open Document Requests, Cases, Registrations, Record Update Requests and Equipment Borrowing with the matching filter (new filters: kind of request, "approved, not yet finished", case views, borrowing "awaiting pickup", "due today", "due soon or in grace period"). "Finished" now follows each request's own workflow (a recorded and forwarded report counts as completed).
+- Verified in the browser: every card on the four staff dashboards equals the rows on its destination (32 cards).
+- Hearing calendar and date badges now use Manila time (they followed the device's time zone and could show a different day and hour than the list).
+
+Buttons: one design standard
+- Meaning, not decoration: navy = main step; white with border = supporting action (Back, Cancel, Edit); white with green outline = finishing work (Resolve issue, Record outcome, Mark as returned); white with red outline = cancel/reject/deactivate (always confirmed). A blocked action looks disabled and still explains why when tapped.
+- Shared layouts (ActionStack): `row` (side by side from tablet up, wraps only when needed, buttons keep their natural width), `panel` (full width in a narrow side panel), `pair` (two equal columns); phones always stack full width. ActionDivider separates a destructive action from the main group.
+- Redesigned: Community Concerns actions (Start work navy, Resolve issue green, Assign with explanation when no one is chosen, Change priority / Merge side by side), Announcement actions (Edit + Submit for Approval side by side, Cancel announcement after a divider, confirmed in a dialog that explains the effect and asks the reason; double taps submit once), Account Recovery actions (full width, verification steps side by side, then Approve and Reject), document Next step, case outcomes, appointment and borrowing actions. Back/Cancel/Keep buttons are outlined everywhere (they were borderless).
+- Resident "Cancel appointment" now asks for confirmation first; Cancel pickup time and Cancel borrowing request use the red style.
+
+Barangay Calendar
+- "Add a closure" and "Add a holiday" sit in their panel headers; each closure shows its date, hours, services and reason with its own "Cancel closure" button, confirmed in a dialog with the reason. The closure is kept with who cancelled it and when; the Punong Barangay and residents are told the Hall is open on those days.
+- Holidays are in date order with a coloured label for regular holidays, special non-working days, special working days and local holidays; the source shows when opened. National holidays can only have the Hall's opening changed, not their date or name.
+
+Data
+- The demo closure no longer adds another draft announcement on every start (earlier copies are removed); the e-mail log keeps the newest 500 entries.
+
+## 2026-11-12: Saved account changes and activity log, pickup steps, demo recovery requests
 
 - Account changes are kept on the device and survive a reload: personnel accounts added by the administrator, activation and deactivation, name changes, approved role or permission changes, suspensions from registration reports, and the e-mail changed after a verified account recovery. "Reset demo data" removes added accounts like it removes registered ones.
 - The activity log is kept on the device (shared by its tabs, newest 2,000 entries). Sample entries made while the demo data loads are not saved, so they do not pile up on each start.

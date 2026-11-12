@@ -70,7 +70,7 @@ export function PickupSection({ req, onChange }: { req: DocumentRequest; onChang
           </p>
           <ActionStack className="mt-3">
             <Button variant="secondary" onClick={() => { setSlot({ date: '', time: '' }); setErr(null); setOk(null); steps.next() }}>Change pickup time</Button>
-            <Button variant="ghost" onClick={() => setCancelling(true)}>Cancel pickup time</Button>
+            <Button variant="danger" onClick={() => setCancelling(true)}>Cancel pickup time</Button>
           </ActionStack>
         </div>
       ) : 'blocked' in el ? (

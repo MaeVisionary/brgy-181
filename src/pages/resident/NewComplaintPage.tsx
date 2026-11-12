@@ -118,7 +118,7 @@ export function NewComplaintPage() {
               <DraftIndicator status={draft.status} />
               <ActionStack>
                 <Button onClick={submit} loading={busy}>Submit report</Button>
-                <Button variant="ghost" onClick={() => { draft.clear(); navigate('/my/complaints') }} disabled={busy}>Cancel</Button>
+                <Button variant="secondary" onClick={() => { draft.clear(); navigate('/my/complaints') }} disabled={busy}>Cancel</Button>
               </ActionStack>
             </div>
           </Panel>

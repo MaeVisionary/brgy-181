@@ -26,7 +26,9 @@ import type { Resident } from '@/types/resident'
 import { NotFound } from '@/pages/system/NotFound'
 import { SampleBadge } from '@/pages/dashboard/shared'
 import { BORROW_STATUS, RETURN_BADGE } from './badges'
-import { useStickyState } from '@/hooks/useStickyState'
+import { cn } from '@/lib/cn'
+import { useUrlFilter } from '@/hooks/useUrlFilter'
+import { BORROW_FILTERS, BORROW_FILTER_VALUES, filterBorrowings, type BorrowFilter } from '@/services/borrowingFilters'
 import { Timeline } from '@/components/ui/Timeline'
 import { ActionStack } from '@/components/ui/ActionStack'
 
@@ -40,9 +42,10 @@ export function BorrowingPage() {
   const navigate = useNavigate()
   const [tick, setTick] = useState(0)
   const list = useAsync(() => listBorrowings(actor), [actor, tick]).data
-  const [status, setStatus] = useStickyState('status', '')
+  // The filter lives in the address, so dashboard cards open this list already filtered and refresh keeps it.
+  const [status, setStatus] = useUrlFilter<BorrowFilter>('status', '', BORROW_FILTER_VALUES)
   const [encoding, setEncoding] = useState(false)
-  const rows = (list ?? []).filter((b) => !status || (status === 'overdue' ? returnState(b) === 'overdue' : b.status === status))
+  const rows = filterBorrowings(list ?? [], status)
   return (
     <>
       <PageHeader
@@ -52,18 +55,11 @@ export function BorrowingPage() {
       {encoding && <BorrowForm assisted onDone={(b) => { setEncoding(false); setTick((t) => t + 1); if (b) navigate(`/borrowing/${b.id}`) }} />}
       <Card>
         <div className="flex flex-wrap items-center gap-3 border-b border-line-soft p-4">
-          <Select className="w-56" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter by status">
-            <option value="">All transactions</option>
-            <option value="pending">New requests</option>
-            <option value="approved">Approved: to prepare</option>
-            <option value="ready">Ready for pickup</option>
-            <option value="released">Borrowed</option>
-            <option value="overdue">Overdue</option>
-            <option value="returned">Damage review</option>
-            <option value="completed">Completed</option>
-            <option value="rejected">Not approved</option>
-            <option value="cancelled">Cancelled</option>
+          <Select className={cn('w-full sm:w-80', status && 'border-navy-900 font-semibold')} value={status} onChange={(e) => setStatus(e.target.value as BorrowFilter)} aria-label="Filter by status">
+            {BORROW_FILTERS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
           </Select>
+          {status && <span role="status" className="text-[length:calc(15.5px*var(--fs))] text-navy-900">Showing <strong>{rows.length}</strong></span>}
+          {status && <button type="button" onClick={() => setStatus('')} className="inline-flex min-h-11 items-center text-[length:calc(15.5px*var(--fs))] font-semibold text-info hover:underline">Clear filter</button>}
         </div>
         <RowList rows={rows.map((b) => { const rs = returnState(b); const st = b.status === 'released' ? RETURN_BADGE[rs] : BORROW_STATUS[b.status]; return { key: b.id, to: `/borrowing/${b.id}`, title: b.borrowerName, subtitle: `${b.refNo} · ${itemsText(b)}`, trailing: <Badge tone={st.tone}>{st.label}</Badge> } })} />
         <div className="hidden overflow-x-auto md:block">
@@ -226,7 +222,7 @@ export function BorrowingDetailPage() {
                   </div>
                 ))}
                 <TextArea className="min-h-[60px]" placeholder="Notes on damaged or missing items" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
-                <Button onClick={() => act(() => actOnBorrowing(b.id, 'return', actor, { remarks, returns: b.items.filter((i) => outstanding(i) > 0).map((i) => ({ equipmentId: i.equipmentId, good: Number(ret[i.equipmentId]?.good || 0), damaged: Number(ret[i.equipmentId]?.damaged || 0), missing: Number(ret[i.equipmentId]?.missing || 0) })) }), 'Return recorded.')}>Record return</Button>
+                <Button variant="success" onClick={() => act(() => actOnBorrowing(b.id, 'return', actor, { remarks, returns: b.items.filter((i) => outstanding(i) > 0).map((i) => ({ equipmentId: i.equipmentId, good: Number(ret[i.equipmentId]?.good || 0), damaged: Number(ret[i.equipmentId]?.damaged || 0), missing: Number(ret[i.equipmentId]?.missing || 0) })) }), 'Return recorded.')}>Record return</Button>
                 {can('borrowing.approve') && (
                   <div className="space-y-2 border-t border-line-soft pt-4">
                     <p className="text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">Move the return date</p>
@@ -237,7 +233,7 @@ export function BorrowingDetailPage() {
                     <Button variant="secondary" disabled={!newDate} onClick={() => act(() => extendReturn(b.id, newDate, remarks, actor), 'New return date saved. The resident was told.')}>Save new date</Button>
                   </div>
                 )}
-                {(rs === 'overdue' || rs === 'grace') && <Button variant="ghost" icon={<BellRing className="size-4" />} onClick={() => act(() => sendLateNotice(b.id, actor), 'Reminder sent.')}>Send a reminder now</Button>}
+                {(rs === 'overdue' || rs === 'grace') && <Button variant="secondary" icon={<BellRing className="size-4" />} onClick={() => act(() => sendLateNotice(b.id, actor), 'Reminder sent.')}>Send a reminder now</Button>}
               </>
             )}
 
@@ -251,7 +247,7 @@ export function BorrowingDetailPage() {
 
             {['pending', 'approved', 'ready'].includes(b.status) && can('borrowing.approve') && (
               <div className="border-t border-line-soft pt-4">
-                <Button variant="ghost" onClick={() => act(() => actOnBorrowing(b.id, 'cancel', actor, { remarks }), 'Cancelled. The resident was told.')}>Cancel request (reason above)</Button>
+                <Button variant="danger" onClick={() => act(() => actOnBorrowing(b.id, 'cancel', actor, { remarks }), 'Cancelled. The resident was told.')}>Cancel request (reason above)</Button>
               </div>
             )}
             {['completed', 'rejected', 'cancelled'].includes(b.status) && <p className="text-[length:calc(16px*var(--fs))] text-ink-nav">Closed.</p>}
@@ -350,7 +346,7 @@ export function BorrowForm({ assisted, resident, onDone }: { assisted?: boolean;
       {show('items') && <FieldError>{show('items')}</FieldError>}
       {err && <p role="alert" className="mt-2 rounded-md bg-danger-tint px-3 py-2 text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
       <DraftIndicator status={draft.status} className="mt-2" />
-      <ActionStack className="mt-3"><Button onClick={submit} loading={busy}>Submit request</Button><Button variant="ghost" onClick={() => { draft.clear(); onDone() }}>Cancel</Button></ActionStack>
+      <ActionStack className="mt-3"><Button onClick={submit} loading={busy}>Submit request</Button><Button variant="secondary" onClick={() => { draft.clear(); onDone() }}>Cancel</Button></ActionStack>
     </Panel>
   )
 }

@@ -182,7 +182,7 @@ export function SeniorTab() {
           <div className="border-b border-line-soft p-3">
             <TextInput placeholder="Search area" value={addrQuery} onChange={(e) => setAddrQuery(e.target.value)} aria-label="Search area" />
           </div>
-          <div className="max-h-[320px] overflow-y-auto">
+          <div className="lg:max-h-[320px] lg:overflow-y-auto">
             <table className="w-full text-[length:calc(14.5px*var(--fs))]">
               <thead className="sticky top-0 bg-surface-muted">
                 <tr className="text-left"><th className="label-caps px-4 py-2">Area</th><th className="label-caps px-2 py-2 text-right">Records</th><th className="label-caps px-4 py-2 text-right">%</th></tr>

@@ -19,6 +19,7 @@ import { EDITABLE_ROLES, GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS, PERMISSIO
 import { formatDateTime } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { listAudit } from '@/services/auditService'
+import { useHealth, type HealthReport } from '@/services/healthService'
 import { ASSIGNABLE_ROLES, setDisplayName, setExtraPermissions, setRole, setRolePermissions, type RoleChange, setStatus } from '@/services/userService'
 import { Toggle } from '@/components/ui/Toggle'
 import type { Permission, RoleId, User } from '@/types/auth'
@@ -169,7 +170,7 @@ export function RolesPage() {
         <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3 shadow-sm">
           <span className="text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{changes.length} change{changes.length > 1 ? 's' : ''} not saved</span>
           <span className="flex gap-2">
-            <Button size="sm" variant="ghost" onClick={() => setStaged({})}>Discard</Button>
+            <Button size="sm" variant="secondary" onClick={() => setStaged({})}>Discard</Button>
             <Button size="sm" onClick={() => setReviewing(true)}>Review changes</Button>
           </span>
         </div>
@@ -360,26 +361,33 @@ export function SettingsPage() {
   )
 }
 
+/** Results of the real checks (shared by Health and Backups and the administrator's dashboard). */
+export function HealthList({ report }: { report: HealthReport | null }) {
+  if (!report) return <div className="space-y-2 p-1">{[0, 1, 2, 3].map((i) => <div key={i} className="h-9 animate-pulse rounded bg-surface-muted" />)}</div>
+  return (
+    <dl className="divide-y divide-line-soft">
+      {report.items.map((it) => (
+        <div key={it.key} className="flex flex-col gap-1 py-2.5 text-[length:calc(15px*var(--fs))] first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <dt className="font-semibold text-navy-900">{it.label}</dt>
+          <dd className={cn('flex items-center gap-2 sm:text-right', it.state === 'ok' ? 'text-success' : it.state === 'problem' ? 'text-danger-ink' : 'text-ink-muted')}>
+            {it.state === 'ok' ? <Check className="size-4 shrink-0" /> : <Info className="size-4 shrink-0" />}{it.detail}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 export function HealthPage() {
-  const items: [string, string, 'ok' | 'pending'][] = [
-    ['Application', 'Running', 'ok'],
-    ['Database', 'Not connected', 'pending'],
-    ['Regular database backups', 'Not yet set up', 'pending'],
-    ['Desktop backup for internet outages', 'Not yet set up', 'pending'],
-    ['Email notifications', 'Not configured', 'pending'],
-    ['Secure connection (HTTPS)', 'Active', 'ok'],
-  ]
+  const { report, busy, run } = useHealth()
   return (
     <>
-      <PageHeader title="Health and Backups" subtitle="Status of the services the BMIS depends on." />
-      <Card className="divide-y divide-line-soft">
-        {items.map(([k, v, s]) => (
-          <div key={k} className="flex flex-col gap-1 px-5 py-3 text-[length:calc(15px*var(--fs))] sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <span className="font-semibold text-navy-900">{k}</span>
-            <span className={cn('flex items-center gap-2 sm:text-right', s === 'ok' ? 'text-success' : 'text-ink-muted')}>{s === 'ok' ? <Check className="size-4" /> : <Info className="size-4" />}{v}</span>
-          </div>
-        ))}
-      </Card>
+      <PageHeader
+        title="Health and Backups"
+        subtitle={report ? `Checked ${formatDateTime(report.checkedAt)} in this browser.` : 'Checking…'}
+        actions={<Button variant="secondary" loading={busy} onClick={run}>Check again</Button>}
+      />
+      <Card className="px-5 py-4"><HealthList report={report} /></Card>
     </>
   )
 }

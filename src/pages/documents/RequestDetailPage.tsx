@@ -270,7 +270,7 @@ function ProcessingTimePanel({ req, actor, onChange }: { req: DocumentRequest; a
           {err && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
           <ActionStack>
             <Button size="sm" onClick={async () => { try { onChange(await extendProcessing(req.id, reason, actor)); setOpen(false) } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Failed.') } }}>Extend and notify</Button>
-            <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button size="sm" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
           </ActionStack>
         </div>
       )}

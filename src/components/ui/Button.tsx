@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode 
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/cn'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-solid'
+type Variant = 'primary' | 'secondary' | 'success' | 'ghost' | 'danger' | 'danger-solid'
 type Size = 'sm' | 'md' | 'lg'
 
 /**
@@ -13,8 +13,13 @@ type Size = 'sm' | 'md' | 'lg'
  *  - Icons: 20px, 8px from the label, never shrink.
  *  - Radius var(--radius-control), 1px border on every variant (transparent where not visible), so
  *    neighbouring buttons line up exactly.
- *  - Destructive: `danger` (red outline) starts a delete/reject; `danger-solid` is only the final
- *    confirmation in a dialog.
+ *  - Meaning, not decoration (one look per kind of action, everywhere):
+ *      primary   dark navy: the main next step (Submit, Save, Approve, Start work, Confirm).
+ *      secondary white with a light border: supporting actions (Edit, View, Back, Request more information).
+ *      success   white with a restrained green outline: finishing work (Resolve, Mark as returned, Complete).
+ *      danger    white with a red outline: starts a cancel/reject/deactivate (always confirmed).
+ *      danger-solid red: only the final confirmation inside a dialog.
+ *  - A blocked action (missing information) looks disabled but can still be tapped to show why.
  *  - States: hover, pressed (darker + slight press), visible focus ring, disabled (50% and not-allowed),
  *    loading (spinner in place of the icon, aria-busy).
  */
@@ -25,6 +30,7 @@ export const buttonVariants: Record<Variant, string> = {
   primary: 'border-navy-900 bg-navy-900 text-white hover:bg-navy-800 hover:border-navy-800 active:bg-navy-950',
   secondary: 'border-line bg-surface text-navy-900 hover:border-navy-600/50 hover:bg-surface-muted active:bg-sky-100',
   ghost: 'border-transparent text-ink-nav hover:bg-surface-muted hover:text-navy-900 active:bg-sky-100',
+  success: 'border-success/60 bg-surface text-success hover:bg-success-tint active:bg-success-tint',
   danger: 'border-danger/50 bg-surface text-danger-ink hover:bg-danger-tint active:bg-danger-tint',
   'danger-solid': 'border-danger bg-danger text-white hover:brightness-95 active:brightness-90',
 }
@@ -61,6 +67,7 @@ export function Button({ variant = 'primary', size = 'md', loading, icon, classN
       className={buttonClass(variant, size, className)}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
+      aria-disabled={blockedReason ? true : undefined}
       onClick={(e) => {
         const now = Date.now()
         if (now - lastTap.current < 400) { e.preventDefault(); return }

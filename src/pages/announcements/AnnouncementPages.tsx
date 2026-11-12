@@ -25,7 +25,7 @@ import {
 import { ServiceError } from '@/services/mockApi'
 import { formatTime } from '@/services/schedulingService'
 import { NotFound } from '@/pages/system/NotFound'
-import { ActionStack } from '@/components/ui/ActionStack'
+import { ActionDivider, ActionStack } from '@/components/ui/ActionStack'
 
 const longDate = (d: string) => new Date(d.length === 10 ? `${d}T12:00:00+08:00` : d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' })
 const shortDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'Asia/Manila' })
@@ -292,14 +292,18 @@ export function AnnouncementAdminPage() {
   const [missing, setMissing] = useState(false)
   const [mode, setMode] = useState<null | 'approve' | 'revise' | 'reject' | 'cancel'>(null)
   const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const load = () => { if (user) getAnnouncement(id, user).then(setA).catch(() => setMissing(true)) }
   useEffect(load, [id, user])
   if (missing) return <NotFound />
   if (!a || !user) return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-surface" />
-  const run = async (fn: () => Promise<Announcement>, ok: string) => { setMsg(null); try { setA(await fn()); setMode(null); setNote(''); setMsg({ ok: true, text: ok }) } catch (e) { setMsg({ ok: false, text: errText(e) }); setMode(null) } }
+  const run = async (fn: () => Promise<Announcement>, ok: string) => { if (busy) return; setBusy(true); setMsg(null); try { setA(await fn()); setMode(null); setNote(''); setMsg({ ok: true, text: ok }) } catch (e) { setMsg({ ok: false, text: errText(e) }); setMode(null) }  finally { setBusy(false) } }
   const approver = can('announcements.approve')
   const writer = can('announcements.manage')
+  const canEdit = writer && ['draft', 'returned', 'rejected', 'scheduled', 'published', 'pending'].includes(a.status)
+  const canSubmit = writer && ['draft', 'returned'].includes(a.status)
+  const canCancel = writer && ['scheduled', 'published', 'pending', 'draft', 'returned'].includes(a.status)
   const reviewable = a.status === 'pending' || !!a.revision
   return (
     <>
@@ -318,31 +322,38 @@ export function AnnouncementAdminPage() {
         </div>
         <div className="space-y-4">
           <Panel title="Actions">
-            <div className="space-y-3">
+            {/* Grouped by meaning: the main steps together, then (after a divider) the destructive one. */}
+            <div>
               {approver && reviewable && a.createdBy !== user.id && (mode === 'revise' || mode === 'reject' ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <TextArea aria-label={mode === 'revise' ? 'What should change' : 'Reason'} placeholder={mode === 'revise' ? 'What should change' : 'Reason (the Secretary will see it)'} className="min-h-[80px]" value={note} onChange={(e) => setNote(e.target.value)} />
                   <ActionStack>
                     <Button variant={mode === 'reject' ? 'danger' : 'primary'} onClick={() => run(() => (mode === 'revise' ? requestRevision(a.id, note, user) : rejectAnnouncement(a.id, note, user)), mode === 'revise' ? 'Sent back to the Secretary.' : 'Rejected. The Secretary was told.')}>{mode === 'revise' ? 'Request revision' : 'Reject'}</Button>
-                    <Button variant="ghost" onClick={() => setMode(null)}>Back</Button>
+                    <Button variant="secondary" onClick={() => setMode(null)}>Back</Button>
                   </ActionStack>
                 </div>
               ) : (
-                <ActionStack>
-                  <Button onClick={() => setMode('approve')}>{a.revision ? 'Approve change' : 'Approve'}</Button>
-                  <Button variant="secondary" onClick={() => setMode('revise')}>Request revision</Button>
-                  {!a.revision && <Button variant="ghost" onClick={() => setMode('reject')}>Reject</Button>}
-                </ActionStack>
+                <>
+                  <ActionStack layout="pair">
+                    <Button onClick={() => setMode('approve')}>{a.revision ? 'Approve change' : 'Approve'}</Button>
+                    <Button variant="secondary" onClick={() => setMode('revise')}>Request revision</Button>
+                  </ActionStack>
+                  {!a.revision && <><ActionDivider /><ActionStack layout="panel"><Button variant="danger" onClick={() => { setNote(''); setMode('reject') }}>Reject</Button></ActionStack></>}
+                </>
               ))}
-              {writer && ['draft', 'returned', 'rejected', 'scheduled', 'published', 'pending'].includes(a.status) && <ButtonLink variant="secondary" to={`/announcements/${a.id}/edit`}>Edit</ButtonLink>}
-              {writer && ['draft', 'returned'].includes(a.status) && <Button onClick={() => run(() => submitForApproval(a.id, user), 'Sent to the Punong Barangay for approval.')}>Submit for Approval</Button>}
-              {writer && a.status === 'published' && <Button variant="ghost" onClick={() => run(() => archiveAnnouncement(a.id, user), 'Archived.')}>Archive</Button>}
-              {writer && ['scheduled', 'published', 'pending', 'draft', 'returned'].includes(a.status) && (mode === 'cancel' ? (
-                <div className="space-y-2">
-                  <TextInput aria-label="Reason" placeholder="Reason" value={note} onChange={(e) => setNote(e.target.value)} />
-                  <ActionStack><Button variant="danger" onClick={() => run(() => cancelAnnouncement(a.id, note, user), 'Cancelled.')}>Cancel announcement</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
-                </div>
-              ) : <Button variant="ghost" onClick={() => { setNote(''); setMode('cancel') }}>Cancel announcement</Button>)}
+              {writer && (canEdit || canSubmit) && (
+                <ActionStack layout={canEdit && canSubmit ? 'pair' : 'panel'}>
+                  {canEdit && <ButtonLink variant="secondary" to={`/announcements/${a.id}/edit`}>Edit</ButtonLink>}
+                  {canSubmit && <Button loading={busy} onClick={() => run(() => submitForApproval(a.id, user), 'Sent to the Punong Barangay for approval.')}>Submit for Approval</Button>}
+                </ActionStack>
+              )}
+              {writer && a.status === 'published' && <ActionStack layout="panel" className="mt-2.5"><Button variant="secondary" onClick={() => run(() => archiveAnnouncement(a.id, user), 'Archived.')}>Archive</Button></ActionStack>}
+              {writer && canCancel && (
+                <>
+                  <ActionDivider className="my-4" />
+                  <ActionStack layout="panel"><Button variant="danger" onClick={() => { setNote(''); setMode('cancel') }}>Cancel announcement</Button></ActionStack>
+                </>
+              )}
               {!approver && !writer && <p className="text-[length:calc(16px*var(--fs))] text-ink-nav">View only.</p>}
             </div>
           </Panel>
@@ -351,6 +362,14 @@ export function AnnouncementAdminPage() {
           </Panel>
         </div>
       </div>
+      {mode === 'cancel' && (
+        <ConfirmDialog title="Cancel this announcement?" confirmLabel="Cancel announcement" cancelLabel="Keep it" destructive busy={busy} onCancel={() => setMode(null)} onConfirm={() => run(() => cancelAnnouncement(a.id, note, user), 'Cancelled.')}>
+          <div className="space-y-3 text-left">
+            <p>{a.status === 'published' ? 'It is taken off the residents\' page and residents are told it was cancelled.' : 'It will not be published.'} Its history stays on record with your name and the time.</p>
+            <FieldLabel label="Reason" required><TextArea className="min-h-[72px]" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. The event was moved to a later date" /></FieldLabel>
+          </div>
+        </ConfirmDialog>
+      )}
       {mode === 'approve' && (
         <ConfirmDialog title={a.revision ? 'Approve this change?' : new Date(a.publishAt).getTime() <= Date.now() ? 'Approve and publish now?' : 'Approve for scheduled publishing?'} confirmLabel="Approve" onCancel={() => setMode(null)} onConfirm={() => run(() => approveAnnouncement(a.id, user), 'Approved.')}>
           {a.revision ? 'Residents will see the updated version.' : new Date(a.publishAt).getTime() <= Date.now() ? 'Residents will see it and get a notification.' : 'It will appear on the chosen date and residents will be notified then.'}

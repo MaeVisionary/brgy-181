@@ -114,7 +114,7 @@ export function IdUploadForm({ name, onSubmit, onCancel, submitLabel = 'Submit I
       {err && <p role="alert" className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
       <div className="flex flex-wrap gap-2">
         <Button onClick={submit} loading={!!busy}>{busy ?? submitLabel}</Button>
-        {onCancel && <Button variant="ghost" onClick={onCancel} disabled={!!busy}>Cancel</Button>}
+        {onCancel && <Button variant="secondary" onClick={onCancel} disabled={!!busy}>Cancel</Button>}
       </div>
     </div>
   )

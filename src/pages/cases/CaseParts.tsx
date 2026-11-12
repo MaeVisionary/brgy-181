@@ -166,7 +166,7 @@ function ServedDoc({ d: initial }: { d: DocumentRequest }) {
               {error && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink sm:col-span-3">{error}</p>}
               <div className="flex flex-wrap gap-2 sm:col-span-3">
                 <Button size="sm" blockedReason={!who.trim() ? 'Please enter the name.' : !on ? 'Please choose the date.' : ''} onClick={save}>Save</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setMode('none'); setError(null) }}>Cancel</Button>
+                <Button size="sm" variant="secondary" onClick={() => { setMode('none'); setError(null) }}>Cancel</Button>
               </div>
             </div>
           )}

@@ -1,16 +1,29 @@
 import { ChevronLeft, ChevronRight } from '@/icons'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 /** Rows per page on desktop tables (Figma v3: "up to 10 rows drawn per page"). */
 export const PAGE_SIZE = 10
 
-/** Client-side paging for a list; resets to page 1 when the list length changes. */
+/**
+ * Client-side paging for a list. The page number lives in the address (?page=2), so opening a
+ * record and going Back returns to the same page, and refresh keeps it. Changing a filter clears it.
+ */
 export function usePaged<T>(items: T[], size = PAGE_SIZE) {
-  const [page, setPage] = useState(0)
+  const [params, setParams] = useSearchParams()
+  const page = Math.max(0, (Number(params.get('page')) || 1) - 1)
+  const setPage = useCallback((p: number) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (p <= 0) next.delete('page'); else next.set('page', String(p + 1))
+      return next
+    }, { replace: true })
+  }, [setParams])
   const pages = Math.max(1, Math.ceil(items.length / size))
+  // Out of range (the list got shorter): back to the first page. Not while the list is still loading.
   useEffect(() => {
-    if (page > pages - 1) setPage(0)
-  }, [page, pages])
+    if (items.length > 0 && page > pages - 1) setPage(0)
+  }, [page, pages, items.length, setPage])
   return { page, pages, setPage, slice: items.slice(page * size, page * size + size), total: items.length, size }
 }
 

@@ -56,7 +56,7 @@ export function VerificationPolicyPanel() {
             <FieldLabel label="Reason or barangay resolution" required><TextArea className="min-h-[64px]" value={draft.reason} onChange={(e) => setDraft({ ...draft, reason: e.target.value })} /></FieldLabel>
             <label className="flex min-h-11 items-center gap-2 text-[length:calc(15.5px*var(--fs))] text-navy-900"><input type="checkbox" className="size-5 accent-[#002132]" checked={draft.approve} onChange={(e) => setDraft({ ...draft, approve: e.target.checked })} /> These rules were reviewed and approved for Barangay 181</label>
             {err && <p role="alert" className="text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
-            <ActionStack><Button size="sm" onClick={save}>Save rules</Button><Button size="sm" variant="ghost" onClick={() => setEdit(false)}>Cancel</Button></ActionStack>
+            <ActionStack><Button size="sm" onClick={save}>Save rules</Button><Button size="sm" variant="secondary" onClick={() => setEdit(false)}>Cancel</Button></ActionStack>
           </div>
         )}
       </details>

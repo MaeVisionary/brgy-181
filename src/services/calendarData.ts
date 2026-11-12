@@ -67,6 +67,8 @@ export interface Closure {
   createdBy: string
   createdAt: string
   status: 'active' | 'cancelled'
+  /** Who cancelled it, when and why (kept on the record; the closure is never deleted). */
+  cancelled?: { by: string; at: string; reason: string }
   /** Announcement draft created for the public notice. */
   announcementId?: string
 }

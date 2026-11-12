@@ -9,6 +9,9 @@ import { useDocActor } from '@/hooks/useDocActor'
 import { formatDateTime } from '@/lib/format'
 import { STAGE_LABEL, STAGE_TONE, listCases, mediationDay, upcomingHearings } from '@/services/caseService'
 import { listRequests } from '@/services/documentService'
+import { awaitingDecision, filterRequests, needsActionBy, type DocFilter } from '@/documents/listFilters'
+import { filterCases } from '@/services/caseFilters'
+import { withFilters } from '@/hooks/useUrlFilter'
 import { TodayAppointmentsPanel } from '@/pages/appointments/AppointmentPages'
 import { DashHeader, EmptyNote, ListPanel, PopulationByStreet, Row, Stat, MyRecentActivity } from './shared'
 
@@ -18,12 +21,18 @@ export function ChairmanDashboard() {
   const docs = useAsync(() => listRequests(actor), [actor]).data
   const cases = useAsync(() => listCases(actor), [actor]).data
 
-  const forApproval = docs?.filter((d) => d.status === 'pending_approval' || d.status === 'for_assessment') ?? null
-  const approvedDocs = docs?.filter((d) => !!d.approvedBy && !['released'].includes(d.status)) ?? null
-  const forSignature = docs?.filter((d) => d.status === 'for_signature') ?? null
-  const completed = docs?.filter((d) => d.status === 'released') ?? null
-  const forAssessment = cases?.filter((c) => c.stage === 'for_assessment') ?? null
-  const active = cases?.filter((c) => !['closed', 'settled'].includes(c.stage)) ?? null
+  // Each card counts with the same filter its link opens (documents/listFilters, services/caseFilters).
+  const needsMe = needsActionBy(actor)
+  const docCount = (f: DocFilter) => (docs ? filterRequests(docs, f, needsMe).length : null)
+  const docLink = (f: DocFilter) => withFilters('/documents', f as Record<string, string>)
+  const F = {
+    approved: { tab: 'all', view: 'approved' },
+    signature: { tab: 'all', status: 'for_signature' },
+    done: { tab: 'all', stage: 'done', kind: 'documents' },
+  } satisfies Record<string, DocFilter>
+  const forApproval = docs?.filter(awaitingDecision) ?? null
+  const forAssessment = cases ? filterCases(cases, { stage: 'for_assessment' }) : null
+  const active = cases ? filterCases(cases, { view: 'active' }) : null
   const hearings = cases ? upcomingHearings(cases) : null
   const resolved = cases?.filter((c) => c.outcome) ?? []
 
@@ -36,13 +45,13 @@ export function ChairmanDashboard() {
       />
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Pending approvals" value={forApproval?.length ?? null} attention={!!forApproval?.length} to="/documents/approvals" />
-        <Stat label="Approved documents" value={approvedDocs?.length ?? null} to="/documents" />
-        <Stat label="Documents for signature" value={forSignature?.length ?? null} attention={!!forSignature?.length} to="/documents" />
-        <Stat label="Completed requests" value={completed?.length ?? null} to="/documents" />
+        <Stat label="Approved, not yet finished" value={docCount(F.approved)} to={docLink(F.approved)} />
+        <Stat label="Documents for signature" value={docCount(F.signature)} attention={!!docCount(F.signature)} to={docLink(F.signature)} />
+        <Stat label="Completed requests" value={docCount(F.done)} to={docLink(F.done)} />
       </section>
       <section className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Stat label="Complaints for assessment" value={forAssessment?.length ?? null} attention={!!forAssessment?.length} to="/cases" />
-        <Stat label="Active KP cases" value={active?.length ?? null} to="/cases" />
+        <Stat label="Complaints for assessment" value={forAssessment?.length ?? null} attention={!!forAssessment?.length} to="/cases?stage=for_assessment" />
+        <Stat label="Open KP cases" value={active?.length ?? null} to="/cases?view=active" />
         <Stat label="Upcoming hearings" value={hearings?.length ?? null} to="/hearings" />
       </section>
 
@@ -82,7 +91,7 @@ export function ChairmanDashboard() {
           title="Katarungang Pambarangay cases"
           subtitle="Open cases and the 15-day mediation period"
           items={active}
-          to="/cases"
+          to="/cases?view=active"
           empty="No open cases."
           render={(c) => {
             const md = mediationDay(c)

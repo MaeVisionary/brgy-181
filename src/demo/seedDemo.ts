@@ -52,6 +52,9 @@ function purge() {
   // The equipment service already loaded them into memory: take them out there too.
   for (let i = mockBorrowings.length - 1; i >= 0; i--) if (gone.has(mockBorrowings[i].id) || isDemo(mockBorrowings[i] as Rec)) mockBorrowings.splice(i, 1)
   for (const k of ['bmis.calendar.closures', 'bmis.accessRequests', 'bmis.recoveryRequests']) { const l = read<Rec[] | null>(k, null); if (l) write(k, l.filter(keep)) }
+  // The demo closure creates a draft announcement each start; drop earlier ones (their text carries "(demo)") so they do not pile up.
+  const anns = read<Rec[] | null>('bmis.announcements', null)
+  if (anns) write('bmis.announcements', anns.filter((x) => !JSON.stringify(x).includes('(demo)')))
   const apps = read<Rec[] | null>('bmis.appointments', null)
   if (apps) write('bmis.appointments', apps.filter((x) => keep(x) && !gone.has(x.subjectId ?? '')))
   const c = read<{ submissions: Rec[]; issues: Rec[] } | null>('bmis.concerns', null)

@@ -10,8 +10,11 @@ import { Pagination, usePaged } from '@/components/ui/Pagination'
 import { StatusLabel } from '@/components/ui/StatusLabel'
 import { OFFICIALS } from '@/config/barangay'
 import { ROLES } from '@/config/permissions'
-import { TEST_ACCOUNTS, testAccountByKey, testUserFor } from '@/config/testAccount'
+import { testAccountByKey } from '@/config/testAccount'
 import { useStickyState } from '@/hooks/useStickyState'
+import { useClearFilters, useUrlFilter } from '@/hooks/useUrlFilter'
+import { ACCOUNT_GROUPS, ACCOUNT_STATUSES, ACCOUNT_STATUS_LABEL, accountRows, accountStatus, filterAccounts, registrationFor, type AccountGroup, type AccountRow, type AccountStatus } from '@/services/accountFilters'
+import type { RoleId } from '@/types/auth'
 import { cn } from '@/lib/cn'
 import { formatDate, formatDateTime, initials } from '@/lib/format'
 import { residentById } from '@/mocks/residents'
@@ -32,14 +35,13 @@ import { ManageUser } from './AdminPages'
  * services (administrator only, logged); bulk status changes are confirmed first.
  */
 
-type Group = 'all' | 'personnel' | 'residents'
-type Row = User & { test?: boolean }
+type Group = AccountGroup
+type Row = AccountRow
 
-const STATUS: Record<string, { label: string; tone: 'success' | 'danger' | 'warning' | 'neutral' }> = {
-  active: { label: 'Active', tone: 'success' },
-  inactive: { label: 'Inactive', tone: 'neutral' },
-  locked: { label: 'Locked', tone: 'danger' },
-  pending: { label: 'Pending verification', tone: 'warning' },
+const STATUS: Record<AccountStatus, { label: string; tone: 'success' | 'danger' | 'warning' | 'neutral' }> = {
+  active: { label: ACCOUNT_STATUS_LABEL.active, tone: 'success' },
+  inactive: { label: ACCOUNT_STATUS_LABEL.inactive, tone: 'neutral' },
+  pending: { label: ACCOUNT_STATUS_LABEL.pending, tone: 'warning' },
 }
 const VERIFICATION: Record<ResidentRegistration['status'], string> = {
   auto_approved: 'Verified (records matched)',
@@ -59,7 +61,12 @@ export function UsersPage() {
   const [toast, setToast] = useState<string | null>(null)
   useEffect(() => { if (!toast) return; const t = window.setTimeout(() => setToast(null), 3500); return () => window.clearTimeout(t) }, [toast])
 
-  const [group, setGroup] = useState<Group>('all')
+  // Filters live in the address (?group=…&status=…&role=…), so dashboard cards open the same filtered list and refresh keeps it.
+  const [group, setGroup] = useUrlFilter<Group>('group', 'all', ACCOUNT_GROUPS)
+  const [statusF, setStatusF] = useUrlFilter<AccountStatus | 'all'>('status', 'all', ['all', ...ACCOUNT_STATUSES])
+  const roleIds = Object.keys(ROLES) as RoleId[]
+  const clearFilters = useClearFilters()
+  const [role, setRole] = useUrlFilter<RoleId | ''>('role', '', ['', ...roleIds])
   const [query, setQuery] = useStickyState('query', '')
   const [open, setOpen] = useState<{ id: string; edit: boolean } | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -67,29 +74,27 @@ export function UsersPage() {
   const [busy, setBusy] = useState(false)
   const [adding, setAdding] = useState(false)
 
-  const accounts: Row[] = useMemo(() => [
-    ...TEST_ACCOUNTS.map((a) => ({ ...testUserFor('system_admin', a), id: a.credentialKey, position: 'Test account (all levels)', test: true })),
-    ...users,
-  ], [users])
-  const regFor = (u: User) => regs.filter((r) => r.accountUserId === u.id).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0]
-  const statusOf = (u: Row) => {
-    const r = u.roleId === 'resident' ? regFor(u) : undefined
-    if (u.status === 'active' && r?.status === 'manual_review') return STATUS.pending
-    return STATUS[u.status] ?? STATUS.inactive
-  }
+  const accounts: Row[] = useMemo(() => accountRows(users), [users])
+  const regFor = (u: User) => registrationFor(u, regs)
+  const statusOf = (u: Row) => STATUS[accountStatus(u, regs)]
   const contactOf = (u: User) => (u.roleId === 'resident' ? (u.residentId ? residentById(u.residentId)?.contactNo : undefined) : u.contactNo) || ''
   const residentNoOf = (u: User) => (u.residentId ? residentById(u.residentId)?.residentNo : undefined) ?? ''
 
   const q = query.trim().toLowerCase()
   const digits = q.replace(/\D/g, '')
-  const inGroup = (u: User, g: Group) => g === 'all' || (g === 'residents' ? u.roleId === 'resident' : u.roleId !== 'resident')
   const matches = (u: Row) => !q || [u.fullName, u.username, u.email, u.position, ROLES[u.roleId].name, u.accountNo ?? '', residentNoOf(u)].some((x) => x.toLowerCase().includes(q))
     || (digits.length >= 4 && contactOf(u).replace(/\D/g, '').includes(digits))
-  const shown = accounts.filter((u) => inGroup(u, group) && matches(u))
-  const count = (g: Group) => accounts.filter((u) => inGroup(u, g)).length
+  const filtered = filterAccounts(accounts, { group, status: statusF, role }, regs)
+  const shown = filtered.filter(matches)
+  // Tab counts follow the status and role filters, so each tab's number is what it shows.
+  const count = (g: Group) => filterAccounts(accounts, { group: g, status: statusF, role }, regs).length
+  const statusCount = (st: AccountStatus | 'all') => filterAccounts(accounts, { group, status: st, role }, regs).length
+  const filtersOn = statusF !== 'all' || !!role || group !== 'all'
   const paged = usePaged(shown, 10)
   // New filter or search: back to the first page, nothing expanded.
-  useEffect(() => { paged.setPage(0); setOpen(null) }, [group, q]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Not on the first render: coming Back to this page keeps its page number.
+  const firstRun = useRef(true)
+  useEffect(() => { if (firstRun.current) { firstRun.current = false; return } paged.setPage(0); setOpen(null) }, [group, statusF, role, q]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const changeable = (u: Row) => !u.test && u.id !== me?.id
   const pageIds = paged.slice.map((u) => u.id)
@@ -183,7 +188,23 @@ export function UsersPage() {
           <Search className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-ink-subtle" />
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, username, email, role, number or contact" className="h-12 w-full rounded-[var(--radius-control)] border border-line bg-surface pr-3 pl-10 text-[length:calc(16px*var(--fs))] text-navy-900 placeholder:text-ink-subtle focus:border-navy-600 focus:outline-none" />
         </label>
+        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 xl:flex">
+          <Select aria-label="Filter by account status" value={statusF} onChange={(e) => setStatusF(e.target.value as AccountStatus | 'all')} className={cn('h-12 xl:w-[230px]', statusF !== 'all' && 'border-navy-900 font-semibold')}>
+            <option value="all">All statuses ({statusCount('all')})</option>
+            {ACCOUNT_STATUSES.map((st) => <option key={st} value={st}>{ACCOUNT_STATUS_LABEL[st]} ({statusCount(st)})</option>)}
+          </Select>
+          <Select aria-label="Filter by role" value={role} onChange={(e) => setRole(e.target.value as RoleId | '')} className={cn('h-12 xl:w-[220px]', role && 'border-navy-900 font-semibold')}>
+            <option value="">All roles</option>
+            {roleIds.map((r) => <option key={r} value={r}>{ROLES[r].name}</option>)}
+          </Select>
+        </div>
       </div>
+      {filtersOn && (
+        <p role="status" className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[length:calc(15.5px*var(--fs))] text-navy-900">
+          <span>Showing <strong>{shown.length}</strong> of {accounts.length} accounts{statusF !== 'all' ? ` · ${ACCOUNT_STATUS_LABEL[statusF]}` : ''}{role ? ` · ${ROLES[role].name}` : ''}{group !== 'all' ? ` · ${group === 'residents' ? 'Residents' : 'Barangay Personnel'}` : ''}</span>
+          <button type="button" onClick={clearFilters} className="inline-flex min-h-11 items-center font-semibold text-info hover:underline">Clear filters</button>
+        </p>
+      )}
 
       {/* Bulk actions for the selected accounts */}
       {picked.length > 0 && (
@@ -199,7 +220,7 @@ export function UsersPage() {
       )}
 
       <Card className="overflow-hidden">
-        {shown.length === 0 ? <p className="px-5 py-8 text-center text-[length:calc(16px*var(--fs))] text-ink-nav">No accounts match your search.</p> : (
+        {shown.length === 0 ? <p className="px-5 py-8 text-center text-[length:calc(16px*var(--fs))] text-ink-nav">No accounts match these filters.</p> : (
           <>
             {/* Desktop: table */}
             <table className="hidden w-full table-fixed text-left text-[length:calc(15px*var(--fs))] xl:table">

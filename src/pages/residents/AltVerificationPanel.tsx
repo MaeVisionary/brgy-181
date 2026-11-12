@@ -75,7 +75,7 @@ export function AltEvidence({ r }: { r: ResidentRegistration }) {
       )}
       {shown && (
         <div className="mt-3 rounded-[var(--radius-control)] border border-line p-2">
-          <div className="mb-2 flex items-center justify-between gap-2"><span className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{shown.category}</span><Button size="sm" variant="ghost" onClick={() => setShown(null)}>Close</Button></div>
+          <div className="mb-2 flex items-center justify-between gap-2"><span className="text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{shown.category}</span><Button size="sm" variant="secondary" onClick={() => setShown(null)}>Close</Button></div>
           {shown.kind === 'image' ? <img src={shown.dataUrl} alt={shown.category} className="max-h-[420px] w-full object-contain" /> : <iframe title={shown.category} src={shown.dataUrl} className="h-[420px] w-full" />}
         </div>
       )}
@@ -146,7 +146,7 @@ export function AltChecklist({ r, onChange }: { r: ResidentRegistration; onChang
                   <FieldLabel label="Evidence reviewed" required><TextInput value={f.evidence} onChange={(e) => setF({ ...f, evidence: e.target.value })} placeholder="e.g. PSA birth certificate no. …; household record HH-181-…" /></FieldLabel>
                   <FieldLabel label="Findings (optional)"><TextArea className="min-h-[64px]" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></FieldLabel>
                   {err && <p role="alert" className="text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
-                  <ActionStack><Button size="sm" onClick={save}>Save finding</Button><Button size="sm" variant="ghost" onClick={() => setOpenKey(null)}>Cancel</Button></ActionStack>
+                  <ActionStack><Button size="sm" onClick={save}>Save finding</Button><Button size="sm" variant="secondary" onClick={() => setOpenKey(null)}>Cancel</Button></ActionStack>
                 </div>
               )}
             </li>
@@ -194,14 +194,14 @@ export function AltActions({ r, onChange }: { r: ResidentRegistration; onChange:
           <FieldLabel label="Why it is needed" required><TextArea className="min-h-[64px]" value={more.explanation} onChange={(e) => setMore({ ...more, explanation: e.target.value })} /></FieldLabel>
           <FieldLabel label="How to send it" required><TextArea className="min-h-[64px]" value={more.instructions} onChange={(e) => setMore({ ...more, instructions: e.target.value })} /></FieldLabel>
           <FieldLabel label="Send by (optional)"><TextInput type="date" value={more.deadline} onChange={(e) => setMore({ ...more, deadline: e.target.value })} /></FieldLabel>
-          <ActionStack><Button size="sm" loading={busy} onClick={() => run(() => altRequestMore(r.id, more, user!))}>Send request</Button><Button size="sm" variant="ghost" onClick={() => setMode(null)}>Cancel</Button></ActionStack>
+          <ActionStack><Button size="sm" loading={busy} onClick={() => run(() => altRequestMore(r.id, more, user!))}>Send request</Button><Button size="sm" variant="secondary" onClick={() => setMode(null)}>Cancel</Button></ActionStack>
         </div>
       )}
       {mode === 'visit' && (
         <div className="space-y-3">
           <StaffSlotPicker kind="identity_verification" minutes={30} ignoreId={a.schedule?.appointmentId} value={slot} onChange={setSlot} />
           <FieldLabel label="Instructions for the applicant"><TextArea className="min-h-[64px]" value={instr} onChange={(e) => setInstr(e.target.value)} /></FieldLabel>
-          <ActionStack><Button size="sm" loading={busy} onClick={() => run(() => altSchedule(r.id, { date: slot.date, time: slot.time, staffId: slot.staff, instructions: instr }, user!))}>{a.schedule ? 'Move visit and notify' : 'Schedule and notify'}</Button><Button size="sm" variant="ghost" onClick={() => setMode(null)}>Cancel</Button></ActionStack>
+          <ActionStack><Button size="sm" loading={busy} onClick={() => run(() => altSchedule(r.id, { date: slot.date, time: slot.time, staffId: slot.staff, instructions: instr }, user!))}>{a.schedule ? 'Move visit and notify' : 'Schedule and notify'}</Button><Button size="sm" variant="secondary" onClick={() => setMode(null)}>Cancel</Button></ActionStack>
         </div>
       )}
       {mode === 'verify' && (
@@ -210,7 +210,7 @@ export function AltActions({ r, onChange }: { r: ResidentRegistration; onChange:
           <FieldLabel label="Evidence reviewed" required><TextArea className="min-h-[64px]" value={ver.evidenceReviewed} onChange={(e) => setVer({ ...ver, evidenceReviewed: e.target.value })} /></FieldLabel>
           <FieldLabel label="Findings and remarks" required><TextArea className="min-h-[64px]" value={ver.remarks} onChange={(e) => setVer({ ...ver, remarks: e.target.value })} /></FieldLabel>
           <p className="text-[length:calc(14.5px*var(--fs))] text-ink-nav">Recorded with today's date and your name. The registration is then approved separately.</p>
-          <ActionStack><Button size="sm" loading={busy} onClick={() => run(() => altMarkVerified(r.id, ver, user!))}>Mark as verified</Button><Button size="sm" variant="ghost" onClick={() => setMode(null)}>Cancel</Button></ActionStack>
+          <ActionStack><Button size="sm" loading={busy} onClick={() => run(() => altMarkVerified(r.id, ver, user!))}>Mark as verified</Button><Button size="sm" variant="secondary" onClick={() => setMode(null)}>Cancel</Button></ActionStack>
         </div>
       )}
       {mode === 'reject' && (
@@ -223,7 +223,7 @@ export function AltActions({ r, onChange }: { r: ResidentRegistration; onChange:
             </Select>
           </FieldLabel>
           <FieldLabel label="What was found" required><TextArea className="min-h-[64px]" value={rej.remarks} onChange={(e) => setRej({ ...rej, remarks: e.target.value })} /></FieldLabel>
-          <ActionStack><Button size="sm" variant="danger" onClick={() => (rej.reason && rej.remarks.trim().length >= 10 ? setConfirmReject(true) : setErr('Choose the reason and describe what was found (at least 10 characters).'))}>Reject</Button><Button size="sm" variant="ghost" onClick={() => setMode(null)}>Cancel</Button></ActionStack>
+          <ActionStack><Button size="sm" variant="danger" onClick={() => (rej.reason && rej.remarks.trim().length >= 10 ? setConfirmReject(true) : setErr('Choose the reason and describe what was found (at least 10 characters).'))}>Reject</Button><Button size="sm" variant="secondary" onClick={() => setMode(null)}>Cancel</Button></ActionStack>
           {confirmReject && <ConfirmDialog title="Reject this registration?" confirmLabel="Reject" destructive busy={busy} onCancel={() => setConfirmReject(false)} onConfirm={() => { setConfirmReject(false); void run(() => altReject(r.id, { reason: rej.reason as (typeof ALT_REJECT_REASONS)[number], remarks: rej.remarks }, user!)) }}>The applicant is told the reason and how to register again or ask for reconsideration.</ConfirmDialog>}
         </div>
       )}

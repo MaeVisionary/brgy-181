@@ -1,5 +1,6 @@
 import { AlertCircle } from '@/icons'
 import { useState } from 'react'
+import { ActionStack } from '@/components/ui/ActionStack'
 import { Button } from '@/components/ui/Button'
 import { TextArea } from '@/components/ui/Field'
 import { Panel } from '@/components/ui/Panel'
@@ -96,17 +97,17 @@ export function TransitionPanel({
               {error}
             </p>
           )}
-          <div className="flex gap-2">
-            <Button variant={picked.tone === 'danger' ? 'danger' : 'primary'} onClick={confirm} loading={busy} disabled={picked.remarks === 'required' && !remarks.trim()}>
+          <ActionStack layout="pair">
+            <Button variant={picked.tone === 'danger' ? 'danger' : 'primary'} onClick={confirm} loading={busy} blockedReason={picked.remarks === 'required' && !remarks.trim() && (ownerView ? 'Please write your message first.' : 'Please write the note first.')}>
               Confirm
             </Button>
-            <Button variant="ghost" onClick={reset} disabled={busy}>
+            <Button variant="secondary" onClick={reset} disabled={busy}>
               Back
             </Button>
-          </div>
+          </ActionStack>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {dirty && <p className="rounded-md bg-warning-tint px-3 py-2 text-[length:calc(14px*var(--fs))] text-warning">Save your changes to the details first.</p>}
           {options.map((t, i) => {
             const blocked = (t.requiresComplete && (missingCount ?? 0) > 0) || dirty

@@ -236,7 +236,7 @@ export function RequestFormPage() {
           <DraftIndicator status={draft.status} />
           <ActionStack row>
             <Button onClick={review}>Review Request</Button>
-            <Button variant="ghost" onClick={cancel}>Cancel</Button>
+            <Button variant="secondary" onClick={cancel}>Cancel</Button>
           </ActionStack>
         </div>
       )}

@@ -145,7 +145,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
         <div>
           <h2 className="font-display text-[length:calc(19px*var(--fs))] font-bold text-navy-900">Import Master List</h2>
         </div>
-        <Button variant="ghost" onClick={onClose}>Close</Button>
+        <Button variant="secondary" onClick={onClose}>Close</Button>
       </div>
 
       <Card className="mb-4 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
@@ -204,7 +204,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
 
           {invalid.length > 0 && (
             <Panel className="mt-4" title="Rows that need fixing" subtitle="Correct these in the file and upload again. They will not be imported." bodyClassName="px-0 py-0">
-              <ul className="max-h-[240px] divide-y divide-line-soft overflow-y-auto">
+              <ul className="divide-y divide-line-soft lg:max-h-[240px] lg:overflow-y-auto">
                 {invalid.map((c) => <li key={c.line} className="flex items-start gap-2 px-5 py-2 text-[length:calc(14.5px*var(--fs))] text-navy-900"><XCircle className="icon-line w-4 text-danger" /> Row {c.line}: {c.errors.join('; ')}</li>)}
               </ul>
             </Panel>

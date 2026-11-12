@@ -10,7 +10,13 @@ import { formatDateTime, initials } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { listAudit } from '@/services/auditService'
 import type { RoleId } from '@/types/auth'
-import { DashHeader, ListPanel, PopulationByStreet, Row, Stat, MyRecentActivity } from './shared'
+import { DashHeader, ListPanel, PopulationByStreet, Row, Stat, ViewAll, MyRecentActivity } from './shared'
+import { withFilters } from '@/hooks/useUrlFilter'
+import { accountRows, filterAccounts, type AccountStatus } from '@/services/accountFilters'
+import { listUsers } from '@/services/userService'
+import { listRegistrations } from '@/services/registrationService'
+import { useHealth } from '@/services/healthService'
+import { HealthList } from '@/pages/admin/AdminPages'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 
@@ -55,45 +61,44 @@ export function KagawadDashboard() {
   )
 }
 
-/** System Administrator: accounts, roles, activity log, system status. No resident data. */
+/**
+ * System Administrator: accounts, roles, activity log, system status. No resident data.
+ * Every number uses the same rules as the list it opens (services/accountFilters), and
+ * every link carries the matching filter, so a card's count is the count of its list.
+ */
 export function AdminDashboard() {
-  const active = mockUsers.filter((u) => u.status === 'active').length
-  const byRole = Object.keys(ROLES).map((r) => ({ role: r as RoleId, n: mockUsers.filter((u) => u.roleId === r).length }))
+  const users = useAsync(listUsers).data
+  const regs = useAsync(() => listRegistrations().catch(() => [])).data
+  const rows = users && regs ? accountRows(users) : null
+  const n = (status: AccountStatus | 'all', role: RoleId | '' = '') => (rows && regs ? filterAccounts(rows, { group: 'all', status, role }, regs).length : null)
   const audit = listAudit().slice(0, 6)
+  const health = useHealth()
+  const roleIds = Object.keys(ROLES) as RoleId[]
   return (
     <>
       <GreetingCard subtitle="Accounts, roles and permissions, activity log and system configuration." profileTo="/account" />
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="User accounts" value={mockUsers.length} to="/admin/users" />
-        <Stat label="Active" value={active} to="/admin/users" />
-        <Stat label="Inactive" value={mockUsers.length - active} to="/admin/users" />
-        <Stat label="Roles" value={Object.keys(ROLES).length} to="/admin/roles" />
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+        <Stat label="User accounts" value={n('all')} to="/admin/users?group=all" />
+        <Stat label="Active" value={n('active')} to={withFilters('/admin/users', { status: 'active' })} />
+        <Stat label="Pending verification" value={n('pending')} attention to={withFilters('/admin/users', { status: 'pending' })} />
+        <Stat label="Inactive" value={n('inactive')} to={withFilters('/admin/users', { status: 'inactive' })} />
+        <Stat label="Roles" value={roleIds.length} to="/admin/roles" />
       </section>
       <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <Panel title="Accounts per role">
-          <ul className="space-y-2">
-            {byRole.map(({ role, n }) => (
-              <li key={role} className="flex items-center justify-between text-[length:calc(15px*var(--fs))]">
-                <span className="text-navy-900">{ROLES[role].name}</span>
-                <span className="font-semibold tabular-nums text-navy-900">{n}</span>
+        <Panel title="Accounts per role" subtitle="Test accounts are not counted under a role" bodyClassName="px-0 py-0">
+          <ul className="divide-y divide-line-soft">
+            {roleIds.map((role) => (
+              <li key={role}>
+                <Link to={withFilters('/admin/users', { role })} className="flex min-h-11 items-center justify-between gap-3 px-5 py-2 text-[length:calc(15px*var(--fs))] hover:bg-sky-50">
+                  <span className="text-navy-900">{ROLES[role].name}</span>
+                  <span className="flex items-center gap-1 font-semibold tabular-nums text-navy-900">{n('all', role) ?? '–'}<ChevronRight className="size-4 text-ink-subtle" /></span>
+                </Link>
               </li>
             ))}
           </ul>
         </Panel>
-        <Panel title="System status">
-          <dl className="space-y-2.5 text-[length:calc(15px*var(--fs))]">
-            {[
-              ['Application', 'Running'],
-              ['Database', 'Not connected'],
-              ['Backups', 'Not yet set up'],
-              ['Email notifications', 'Not configured'],
-            ].map(([k, v]) => (
-              <div key={k} className="border-b border-line-soft pb-2.5 last:border-0 last:pb-0">
-                <dt className="text-[length:calc(14px*var(--fs))] text-ink-muted">{k}</dt>
-                <dd className="font-semibold text-navy-900">{v}</dd>
-              </div>
-            ))}
-          </dl>
+        <Panel title="System status" subtitle={health.report ? `Checked ${formatDateTime(health.report.checkedAt)}` : 'Checking…'} actions={<ViewAll to="/admin/health" label="Details" />}>
+          <HealthList report={health.report} />
         </Panel>
       </section>
       <ListPanel
@@ -101,7 +106,7 @@ export function AdminDashboard() {
         title="Recent activity"
         to="/admin/activity"
         items={audit}
-        empty="No activity recorded in this session yet. Report generation, exports and record access appear here."
+        empty="No activity recorded yet. Sign-ins, account changes, exports and record access appear here."
         render={(a) => <Row to="/admin/activity" title={a.action} meta={`${mockUsers.find((u) => u.id === a.userId)?.fullName ?? a.userId} · ${formatDateTime(a.timestamp)}`} />}
       />
     </>

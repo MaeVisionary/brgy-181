@@ -107,7 +107,7 @@ export function ConcernForm() {
         <ActionStack>
           <DraftIndicator status={draft.status} />
           <Button onClick={submit} loading={busy}>Send concern</Button>
-          <Button variant="ghost" onClick={() => { draft.clear(); navigate('/my/complaints') }} disabled={busy}>Cancel</Button>
+          <Button variant="secondary" onClick={() => { draft.clear(); navigate('/my/complaints') }} disabled={busy}>Cancel</Button>
         </ActionStack>
       </div>
     </Panel>

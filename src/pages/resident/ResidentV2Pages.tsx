@@ -438,7 +438,7 @@ export function BorrowingDetailsPage() {
                   <>
                     <span className="text-[length:calc(16px*var(--fs))] text-navy-900">Cancel this request?</span>
                     <Button size="sm" variant="danger" onClick={cancel}>Yes, cancel request</Button>
-                    <Button size="sm" variant="ghost" onClick={() => setConfirm(false)}>Keep it</Button>
+                    <Button size="sm" variant="secondary" onClick={() => setConfirm(false)}>Keep it</Button>
                   </>
                 ) : <Button size="sm" variant="secondary" onClick={() => setConfirm(true)}>Cancel request</Button>}
                 {err && <span className="text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</span>}

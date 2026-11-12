@@ -29,7 +29,7 @@ import { fullName } from './common'
 import { VerificationSummary, verificationOf } from './VerificationSummary'
 import { ALT_TONE, AltActions, AltChecklist, AltEvidence, altMethod, altNextAction } from './AltVerificationPanel'
 import { VerificationPolicyPanel } from './VerificationPolicyPanel'
-import { useStickyState } from '@/hooks/useStickyState'
+import { useUrlFilter } from '@/hooks/useUrlFilter'
 import { ActionStack } from '@/components/ui/ActionStack'
 
 function CheckIcon({ v }: { v: 'passed' | 'failed' | 'inconclusive' }) {
@@ -479,7 +479,7 @@ function VisitForm({ r, onCancel, onDone }: { r: ResidentRegistration; onCancel:
       {err && <p role="alert" className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
       <ActionStack>
         <Button size="sm" onClick={send} loading={busy}>Send request</Button>
-        <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
+        <Button size="sm" variant="secondary" onClick={onCancel} disabled={busy}>Cancel</Button>
       </ActionStack>
     </div>
   )
@@ -514,28 +514,41 @@ function VisitedForm({ r, onCancel, onDone }: { r: ResidentRegistration; onCance
       {err && <p role="alert" className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
       <ActionStack>
         <Button size="sm" onClick={save}>Save visit</Button>
-        <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button size="sm" variant="secondary" onClick={onCancel}>Cancel</Button>
       </ActionStack>
     </div>
   )
 }
 
+export type RegistrationTab = 'review' | 'visit' | 'alt' | 'decided'
+export const REGISTRATION_TABS: readonly RegistrationTab[] = ['review', 'visit', 'alt', 'decided']
+/**
+ * The Registrations tabs (one rule for the page and the dashboards):
+ * - review: waiting for the Secretary, no visit pending, not an alternative verification;
+ * - visit: waiting for the resident's in-person visit;
+ * - alt: registrations without a valid ID (open ones first, then finished ones);
+ * - decided: approved, auto-approved or not approved.
+ */
+export function registrationGroups(items: ResidentRegistration[]): Record<RegistrationTab, ResidentRegistration[]> {
+  const open = items.filter((r) => r.status === 'manual_review')
+  return {
+    review: open.filter((r) => !r.alt && (!r.inPerson || r.inPerson.completedAt)),
+    visit: open.filter((r) => !r.alt && r.inPerson && !r.inPerson.completedAt),
+    alt: [...open.filter((r) => r.alt), ...items.filter((r) => r.alt && r.status !== 'manual_review')],
+    decided: items.filter((r) => r.status !== 'manual_review'),
+  }
+}
+
 /** FR10: registrations that did not pass every check wait for the Secretary's manual verification. */
 export function RegistrationsPage() {
   const [items, setItems] = useState<ResidentRegistration[] | null>(null)
-  const [tab, setTab] = useStickyState<'review' | 'visit' | 'alt' | 'decided'>('tab', 'review')
+  // The tab lives in the address (?tab=visit), so dashboard links open the right tab and refresh keeps it.
+  const [tab, setTab] = useUrlFilter<RegistrationTab>('tab', 'review', REGISTRATION_TABS)
   const load = () => listRegistrations().then((x) => setItems([...x]))
   useEffect(() => {
     load()
   }, [])
-  const open = items?.filter((r) => r.status === 'manual_review') ?? []
-  const groups = {
-    review: open.filter((r) => !r.alt && (!r.inPerson || r.inPerson.completedAt)),
-    visit: open.filter((r) => !r.alt && r.inPerson && !r.inPerson.completedAt),
-    // Registrations without a valid ID: open ones first, then finished ones (every row opens).
-    alt: [...open.filter((r) => r.alt), ...(items?.filter((r) => r.alt && r.status !== 'manual_review') ?? [])],
-    decided: items?.filter((r) => r.status !== 'manual_review') ?? [],
-  }
+  const groups = registrationGroups(items ?? [])
   const shown = groups[tab]
   return (
     <>
@@ -616,7 +629,7 @@ const DECIDED_VISIBLE_DAYS = 7
 export function ChangeRequestsPage() {
   const { user, can } = useAuth()
   const [items, setItems] = useState<ResidentChangeRequest[] | null>(null)
-  const [tab, setTab] = useStickyState<'review' | 'decided'>('tab', 'review')
+  const [tab, setTab] = useUrlFilter<'review' | 'decided'>('tab', 'review', ['review', 'decided'])
   const load = () => listChangeRequests().then(setItems)
   useEffect(() => {
     load()

@@ -5,7 +5,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ChevronRight } from '@/icons'
 import { useAuth } from '@/auth/useAuth'
 import { Badge } from '@/components/ui/Badge'
-import { Button, ButtonLink } from '@/components/ui/Button'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Button, ButtonLink, buttonClass } from '@/components/ui/Button'
 import { FieldLabel, Select, TextArea, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
@@ -174,7 +175,7 @@ export function TimePicker({ a, onPicked, onBack }: { a: Appointment; onPicked: 
       )}
       <ActionStack row>
         <Button onClick={() => { if (!time) { setNudge(true); focusFirstInvalid(); return } setConfirming(true) }}>Next</Button>
-        {onBack && <Button variant="ghost" onClick={onBack}>Back</Button>}
+        {onBack && <Button variant="secondary" onClick={onBack}>Back</Button>}
       </ActionStack>
     </div>
   )
@@ -279,7 +280,7 @@ export function ScheduleVisitForm({ changeRequestId, onDone, onCancel }: { chang
       {err && <Note ok={false}>{err}</Note>}
       <ActionStack>
         <Button size="sm" onClick={save} loading={busy} blockedReason={!docs.length ? 'Please tick at least one document the resident should bring.' : who === 'staff' && !slot.time ? 'Please choose a time.' : !!override && override.reason.trim().length < 5 ? 'Please give the reason for changing the length (at least 5 characters).' : ''}>{who === 'staff' ? 'Schedule and notify resident' : 'Ask the resident to choose a time'}</Button>
-        <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button size="sm" variant="secondary" onClick={onCancel}>Cancel</Button>
       </ActionStack>
     </div>
   )
@@ -372,6 +373,7 @@ export function MyAppointmentPage() {
   const [missing, setMissing] = useState(false)
   const [mode, setMode] = useState<null | 'pick' | 'ask'>(null)
   const [reason, setReason] = useState('')
+  const [cancelOpen, setCancelOpen] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const load = () => { if (user) getAppointment(id, user).then(setA).catch(() => setMissing(true)) }
   useEffect(load, [id, user])
@@ -417,13 +419,13 @@ export function MyAppointmentPage() {
             {mode === 'ask' ? (
               <div className="space-y-2">
                 <TextArea aria-label="Why, or a better day and time" placeholder="Why, or a better day and time" className="min-h-[72px]" value={reason} onChange={(e) => setReason(e.target.value)} />
-                <ActionStack row><Button onClick={() => run(() => requestReschedule(a.id, reason, user), 'Sent. We will notify you of the new time.')}>Send request</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
+                <ActionStack row><Button onClick={() => run(() => requestReschedule(a.id, reason, user), 'Sent. We will notify you of the new time.')}>Send request</Button><Button variant="secondary" onClick={() => setMode(null)}>Back</Button></ActionStack>
               </div>
             ) : ['pending_confirmation', 'rescheduled', 'confirmed'].includes(a.status) && !a.checkedInAt && (
               <ActionStack row>
                 {a.status !== 'confirmed' && <Button onClick={() => run(() => confirmAppointment(a.id, user), 'Your appointment is confirmed!')}>Confirm Appointment</Button>}
                 <Button variant="secondary" onClick={() => setMode(mayMove ? 'pick' : 'ask')}>{mayMove ? 'Choose another time' : 'Request Another Schedule'}</Button>
-                {CONSULT_KINDS.includes(a.kind) && !!a.purpose && <Button variant="ghost" onClick={() => run(() => cancelByResident(a.id, '', user), 'Your appointment was cancelled.')}>Cancel appointment</Button>}
+                {CONSULT_KINDS.includes(a.kind) && !!a.purpose && <Button variant="danger" onClick={() => setCancelOpen(true)}>Cancel appointment</Button>}
               </ActionStack>
             )}
           </>
@@ -434,6 +436,11 @@ export function MyAppointmentPage() {
       <Panel className="mt-4" title="Updates">
         <Timeline items={a.history.map((h) => ({ at: h.at, title: h.action }))} />
       </Panel>
+      {cancelOpen && (
+        <ConfirmDialog title="Cancel this appointment?" confirmLabel="Cancel appointment" cancelLabel="Keep it" destructive onCancel={() => setCancelOpen(false)} onConfirm={() => { setCancelOpen(false); void run(() => cancelByResident(a.id, '', user), 'Your appointment was cancelled.') }}>
+          The time is freed for others and the barangay is told. You can book a new visit anytime.
+        </ConfirmDialog>
+      )}
     </>
   )
 }
@@ -657,13 +664,13 @@ export function AppointmentDetailPage() {
               <ActionStack row className="pt-2">
                 <Button onClick={() => run(() => recordVerification(a.id, 'verified', v, user), 'Marked as verified. You can now decide on the request.')}>Verified</Button>
                 <Button variant="secondary" onClick={() => run(() => recordVerification(a.id, 'not_verified', v, user), 'Marked as not verified. The resident was told.')}>Not verified</Button>
-                <Button variant="ghost" onClick={() => setMode(null)}>Back</Button>
+                <Button variant="secondary" onClick={() => setMode(null)}>Back</Button>
               </ActionStack>
             </div>
           ) : mode === 'reschedule' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">
               <StaffSlotPicker kind={a.kind} minutes={a.durationMin} ignoreId={a.id} value={slot} onChange={setSlot} />
-              <ActionStack><Button blockedReason={!slot.time && 'Please choose a new time.'} onClick={() => run(() => rescheduleAppointment(a.id, slot.date, slot.time, slot.staff, user), 'Moved. The resident was told and asked to confirm.')}>Save new time</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
+              <ActionStack><Button blockedReason={!slot.time && 'Please choose a new time.'} onClick={() => run(() => rescheduleAppointment(a.id, slot.date, slot.time, slot.staff, user), 'Moved. The resident was told and asked to confirm.')}>Save new time</Button><Button variant="secondary" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : mode === 'assist' ? (
             <div className="border-t border-line-soft pt-3"><TimePicker a={a} onPicked={() => { setMode(null); setMsg({ ok: true, text: 'Booked for the resident. They were told.' }); load() }} onBack={() => setMode(null)} /></div>
@@ -674,12 +681,12 @@ export function AppointmentDetailPage() {
                 <Select aria-label="New length" value={len} onChange={(e) => setLen(Number(e.target.value))}>{[10, 15, 20, 25, 30, 40, 45, 60, 90].map((m) => <option key={m} value={m}>{m} minutes</option>)}</Select>
                 <TextInput aria-label="Reason" placeholder="Reason (required)" value={text} onChange={(e) => setText(e.target.value)} />
               </div>
-              <ActionStack><Button onClick={() => run(() => overrideDuration(a.id, len, text, user), 'Length changed and recorded.')}>Save</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
+              <ActionStack><Button onClick={() => run(() => overrideDuration(a.id, len, text, user), 'Length changed and recorded.')}>Save</Button><Button variant="secondary" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : mode === 'complete' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">
               <TextArea aria-label="What happened and the next step" placeholder="What happened and the next step" className="min-h-[72px]" value={text} onChange={(e) => setText(e.target.value)} />
-              <ActionStack><Button onClick={() => run(() => completeAppointment(a.id, text, user), 'Completed.')}>Mark as Completed</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
+              <ActionStack><Button onClick={() => run(() => completeAppointment(a.id, text, user), 'Completed.')}>Mark as Completed</Button><Button variant="secondary" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : mode === 'reassign' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">
@@ -690,26 +697,26 @@ export function AppointmentDetailPage() {
                 </Select>
                 <TextInput aria-label="Reason" placeholder="Reason" value={text} onChange={(e) => setText(e.target.value)} />
               </div>
-              <ActionStack><Button blockedReason={!to && 'Please choose who will take this appointment.'} onClick={() => run(() => reassign(a.id, to, text, user), 'Reassigned. Both members of the Barangay Personnel were told.')}>Reassign</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
+              <ActionStack><Button blockedReason={!to && 'Please choose who will take this appointment.'} onClick={() => run(() => reassign(a.id, to, text, user), 'Reassigned. Both members of the Barangay Personnel were told.')}>Reassign</Button><Button variant="secondary" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : mode === 'cancel' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">
               <TextInput aria-label="Reason" placeholder="Reason (the resident will see it)" value={text} onChange={(e) => setText(e.target.value)} />
-              <ActionStack><Button variant="danger" onClick={() => run(() => cancelAppointment(a.id, text, user), 'Cancelled. The resident was told.')}>Cancel appointment</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
+              <ActionStack><Button variant="danger" onClick={() => run(() => cancelAppointment(a.id, text, user), 'Cancelled. The resident was told.')}>Cancel appointment</Button><Button variant="secondary" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : (
             <ActionStack className="border-t border-line-soft pt-3">
               {a.status === 'pending_confirmation' && a.bookedAt && !a.staffConfirmed && <Button onClick={() => run(() => staffConfirm(a.id, user), 'Confirmed. The resident was told.')}>Confirm appointment</Button>}
               {booked && !a.checkedInAt && <Button variant={a.status === 'pending_confirmation' && !a.staffConfirmed ? 'secondary' : 'primary'} onClick={() => run(() => checkIn(a.id, user), 'Checked in.')}>Check In</Button>}
               {isVerify && a.checkedInAt && a.status !== 'completed' && <Button onClick={() => setMode('verify')}>Record result</Button>}
-              {CONSULT_KINDS.includes(a.kind) && a.checkedInAt && a.status !== 'completed' && <Button onClick={() => setMode('complete')}>Record outcome</Button>}
-              {handledElsewhere && a.status !== 'completed' && <Link to={type.staffLink(a.subjectId)} className={`inline-flex h-12 items-center rounded-[var(--radius-control)] bg-navy-900 px-5 text-[length:calc(16.5px*var(--fs))] font-semibold text-white`}>{a.kind === 'document_claim' ? 'Open request to release' : 'Open borrowing'}</Link>}
+              {CONSULT_KINDS.includes(a.kind) && a.checkedInAt && a.status !== 'completed' && <Button variant="success" onClick={() => setMode('complete')}>Record outcome</Button>}
+              {handledElsewhere && a.status !== 'completed' && <Link to={type.staffLink(a.subjectId)} className={buttonClass('primary')}>{a.kind === 'document_claim' ? 'Open request to release' : 'Open borrowing'}</Link>}
               {['awaiting_schedule', 'no_show'].includes(a.status) && <Button variant="secondary" onClick={() => setMode('assist')}>Book for the resident</Button>}
               {['awaiting_schedule', 'pending_confirmation', 'confirmed', 'reschedule_requested', 'rescheduled', 'no_show'].includes(a.status) && !a.checkedInAt && <Button variant="secondary" onClick={() => setMode('reschedule')}>Reschedule</Button>}
-              {['awaiting_schedule', 'pending_confirmation', 'confirmed', 'reschedule_requested', 'rescheduled'].includes(a.status) && !a.checkedInAt && <Button variant="ghost" onClick={() => setMode('length')}>Change length</Button>}
-              {booked && !a.checkedInAt && staffFor(a.kind).length > 1 && <Button variant="ghost" onClick={() => { setTo(''); setText(''); setMode('reassign') }}>Reassign</Button>}
+              {['awaiting_schedule', 'pending_confirmation', 'confirmed', 'reschedule_requested', 'rescheduled'].includes(a.status) && !a.checkedInAt && <Button variant="secondary" onClick={() => setMode('length')}>Change length</Button>}
+              {booked && !a.checkedInAt && staffFor(a.kind).length > 1 && <Button variant="secondary" onClick={() => { setTo(''); setText(''); setMode('reassign') }}>Reassign</Button>}
               {booked && !a.checkedInAt && <Button variant="secondary" onClick={() => run(() => markNoShow(a.id, user), 'Marked as no-show. The resident was told.')}>No-show</Button>}
-              {!['completed', 'cancelled'].includes(a.status) && <Button variant="ghost" onClick={() => setMode('cancel')}>Cancel</Button>}
+              {!['completed', 'cancelled'].includes(a.status) && <Button variant="secondary" onClick={() => setMode('cancel')}>Cancel</Button>}
               {a.status === 'completed' && <Link to={type.staffLink(a.subjectId)} className={`inline-flex h-12 items-center text-[length:calc(16px*var(--fs))] font-semibold text-info hover:underline`}>Go to the request</Link>}
             </ActionStack>
           )}
@@ -790,7 +797,7 @@ export function ConsultationPanel({ caseId }: { caseId: string }) {
             <FieldLabel label="Why should the complainant come in?"><TextArea className="min-h-[60px]" value={reason} onChange={(e) => setReason(e.target.value)} /></FieldLabel>
             <p className="text-[length:calc(15px*var(--fs))] text-ink-muted">About {minutes} minutes</p>
             <StaffSlotPicker kind="complaint_consult" minutes={minutes} value={slot} onChange={setSlot} />
-            <ActionStack><Button size="sm" loading={busy} blockedReason={!slot.time ? 'Please choose a time.' : reason.trim().length < 5 ? 'Please give the reason (at least 5 characters).' : ''} onClick={save}>Schedule and notify</Button><Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></ActionStack>
+            <ActionStack><Button size="sm" loading={busy} blockedReason={!slot.time ? 'Please choose a time.' : reason.trim().length < 5 ? 'Please give the reason (at least 5 characters).' : ''} onClick={save}>Schedule and notify</Button><Button size="sm" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button></ActionStack>
           </>
         ) : <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Schedule a consultation</Button>}
       </div>
@@ -917,7 +924,7 @@ export function BookVisitPage() {
           <DraftIndicator status={visitDraft.status} />
           <ActionStack row>
             <Button onClick={toTime}>Next: choose a time</Button>
-            <Button variant="ghost" onClick={steps.back}>Back</Button>
+            <Button variant="secondary" onClick={steps.back}>Back</Button>
           </ActionStack>
         </Card>
       )}
@@ -1002,7 +1009,7 @@ export function SlotChooser({ kind, minutes, value, onChange, onNext, onBack, da
       )}
       <ActionStack row>
         <Button onClick={() => { if (!value.time) { setNudge(true); focusFirstInvalid(); return } onNext() }}>{nextLabel}</Button>
-        {onBack && <Button variant="ghost" onClick={onBack}>Back</Button>}
+        {onBack && <Button variant="secondary" onClick={onBack}>Back</Button>}
       </ActionStack>
     </div>
   )

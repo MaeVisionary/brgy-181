@@ -77,9 +77,13 @@ export function cancelClosure(id: string, reason: string, by: User): Promise<Clo
     const c = l.find((x) => x.id === id)
     if (!c || c.status !== 'active') throw new ServiceError('state', 'This closure is not active.')
     c.status = 'cancelled'
+    c.cancelled = { by: by.id, at: new Date().toISOString(), reason: reason.trim() }
     saveClosureList(l)
     audit(by, `Office closure cancelled: ${c.from}–${c.to}`, 'Calendar', reason.trim())
     notify(usersWith('announcements.approve'), 'Office closure cancelled', `${longDate(c.from)}: ${reason.trim()}`, '/calendar')
+    // Residents saw the closure on their calendar: tell them the Hall is open again on those days.
+    const when = c.from === c.to ? longDate(c.from) : `${longDate(c.from)} to ${longDate(c.to)}`
+    notify(mockUsers.filter((u) => u.roleId === 'resident' && u.status === 'active').map((u) => u.id), 'Office closure cancelled', `The Barangay Hall is open as usual on ${when}. ${reason.trim()}`, '/my/calendar')
     return c
   })
 }

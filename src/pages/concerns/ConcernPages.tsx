@@ -261,26 +261,27 @@ export function ConcernIssuePage() {
           {manage && (
             <Panel title="Actions">
               <div className="space-y-4">
-                <ActionStack>
-                  {nextSteps.map(([s, label]) => <Button key={s} size="sm" variant={s === 'open' ? 'secondary' : 'primary'} onClick={() => act(() => setIssueStatus(i.id, s, user), `${label}: done.`)}>{label}</Button>)}
-                  {['assigned', 'in_progress', 'under_review'].includes(i.status) && <Button size="sm" onClick={() => setDialog('resolve')}>Resolve</Button>}
+                {/* Main step (navy) and finishing the work (green outline): never the same look. */}
+                <ActionStack layout="panel">
+                  {nextSteps.map(([s, label]) => <Button key={s} variant={s === 'open' ? 'secondary' : 'primary'} onClick={() => act(() => setIssueStatus(i.id, s, user), `${label}: done.`)}>{label}</Button>)}
+                  {['assigned', 'in_progress', 'under_review'].includes(i.status) && <Button variant="success" onClick={() => setDialog('resolve')}>Resolve issue</Button>}
                 </ActionStack>
                 {!['resolved', 'closed'].includes(i.status) && (
-                  <div className="space-y-2 border-t border-line-soft pt-3">
+                  <div className="space-y-3 border-t border-line-soft pt-4">
                     <FieldLabel label="Assign to">
                       <Select value={form.assignee} onChange={(e) => setForm({ ...form, assignee: e.target.value })}><option value="">Choose</option>{staffList.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}</Select>
                     </FieldLabel>
                     <FieldLabel label="Expected by (optional)"><TextInput type="date" value={form.expected} onChange={(e) => setForm({ ...form, expected: e.target.value })} /></FieldLabel>
-                    <Button size="sm" variant="secondary" disabled={!form.assignee} onClick={() => act(() => assignIssue(i.id, form.assignee, form.expected, user), 'Assigned.')}>Assign</Button>
+                    <ActionStack layout="panel"><Button variant="secondary" blockedReason={!form.assignee && 'Please choose who will handle this issue.'} onClick={() => act(() => assignIssue(i.id, form.assignee, form.expected, user), 'Assigned.')}>Assign</Button></ActionStack>
                   </div>
                 )}
-                <ActionStack className="border-t border-line-soft pt-3">
-                  <Button size="sm" variant="secondary" onClick={() => setDialog('priority')}>Change priority</Button>
-                  <Button size="sm" variant="secondary" onClick={() => setDialog('merge')}>Merge another issue</Button>
+                <ActionStack layout="pair" className="border-t border-line-soft pt-4">
+                  <Button variant="secondary" onClick={() => setDialog('priority')}>Change priority</Button>
+                  <Button variant="secondary" onClick={() => setDialog('merge')}>Merge another issue</Button>
                 </ActionStack>
-                <div className="space-y-2 border-t border-line-soft pt-3">
+                <div className="space-y-3 border-t border-line-soft pt-4">
                   <TextArea aria-label="Note" placeholder="Add a note or action taken" className="min-h-[64px]" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
-                  <Button size="sm" variant="secondary" disabled={!form.note.trim()} onClick={() => act(() => addIssueNote(i.id, form.note, user), 'Note added.').then(() => setForm((f) => ({ ...f, note: '' })))}>Add note</Button>
+                  <ActionStack layout="panel"><Button variant="secondary" blockedReason={!form.note.trim() && 'Please write the note first.'} onClick={() => act(() => addIssueNote(i.id, form.note, user), 'Note added.').then(() => setForm((f) => ({ ...f, note: '' })))}>Add note</Button></ActionStack>
                 </div>
               </div>
             </Panel>

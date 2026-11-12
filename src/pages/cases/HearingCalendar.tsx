@@ -7,20 +7,23 @@ import type { KPCase } from '@/types/case'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const ymd = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+/** The Manila calendar day of a moment, as a local date for the grid (hearings happen in Manila, whatever the device's time zone). */
+const manilaDay = (at: string | Date) => { const [y, m, d] = new Date(at).toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }).split('-').map(Number); return new Date(y, m - 1, d) }
+const manilaTime = (at: string) => new Date(at).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })
 
 /** Month view of hearings (scheduled and held). */
 export function HearingCalendar({ cases }: { cases: KPCase[] }) {
   const [month, setMonth] = useState(() => {
-    const d = new Date()
+    const d = manilaDay(new Date())
     return new Date(d.getFullYear(), d.getMonth(), 1)
   })
-  const items = cases.flatMap((c) => c.hearings.filter((h) => h.status === 'scheduled' || h.status === 'held').map((h) => ({ c, h, d: new Date(h.scheduledAt) })))
+  const items = cases.flatMap((c) => c.hearings.filter((h) => h.status === 'scheduled' || h.status === 'held').map((h) => ({ c, h, d: manilaDay(h.scheduledAt) })))
   const byDay = new Map<string, typeof items>()
   for (const x of items) byDay.set(ymd(x.d), [...(byDay.get(ymd(x.d)) ?? []), x])
   const start = new Date(month)
   start.setDate(1 - month.getDay())
   const cells = Array.from({ length: 42 }, (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i))
-  const todayKey = ymd(new Date())
+  const todayKey = ymd(manilaDay(new Date()))
   const label = month.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' })
   const shift = (n: number) => { setPicked(null); setMonth((m) => new Date(m.getFullYear(), m.getMonth() + n, 1)) }
   // Day picked in the grid; its hearings are listed under the calendar as full-size rows.
@@ -64,7 +67,7 @@ export function HearingCalendar({ cases }: { cases: KPCase[] }) {
                   <span className="mt-0.5 hidden space-y-0.5 sm:block">
                     {list.map(({ c, h }) => (
                       <span key={h.id} className={cn('block rounded px-1 py-0.5 text-[length:calc(13px*var(--fs))] leading-tight font-semibold break-words', h.status === 'held' ? 'bg-surface-muted text-ink-nav' : 'bg-sky-100 text-navy-900')}>
-                        {new Date(h.scheduledAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })} {c.caseNo}
+                        {manilaTime(h.scheduledAt)} {c.caseNo}
                       </span>
                     ))}
                   </span>
@@ -82,7 +85,7 @@ export function HearingCalendar({ cases }: { cases: KPCase[] }) {
               {pickedList.map(({ c, h }) => (
                 <li key={h.id}>
                   <Link to={`/cases/${c.id}`} className="flex min-h-12 items-center gap-3 px-3 py-2 hover:bg-sky-50">
-                    <span className="w-20 shrink-0 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{new Date(h.scheduledAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}</span>
+                    <span className="w-20 shrink-0 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{manilaTime(h.scheduledAt)}</span>
                     <span className="min-w-0 flex-1 text-[length:calc(15px*var(--fs))] break-words text-navy-900">{c.caseNo} · {c.title}{h.status === 'held' ? ' (held)' : ''}</span>
                     <ChevronRight className="size-5 shrink-0 text-ink-subtle" />
                   </Link>

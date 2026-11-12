@@ -9,7 +9,11 @@ import { useDocActor } from '@/hooks/useDocActor'
 import { useAuth } from '@/auth/useAuth'
 import { formatDateTime } from '@/lib/format'
 import { STAGE_LABEL, STAGE_TONE, listCases, upcomingHearings } from '@/services/caseService'
-import { availableTransitions, listRequests } from '@/services/documentService'
+import { listRequests } from '@/services/documentService'
+import { filterRequests, isOpen, needsActionBy, type DocFilter } from '@/documents/listFilters'
+import { filterCases } from '@/services/caseFilters'
+import { withFilters } from '@/hooks/useUrlFilter'
+import { registrationGroups } from '@/pages/residents/ReviewPages'
 import { getResidentQueueCounts, listChangeRequests } from '@/services/residentService'
 import { listRegistrations } from '@/services/registrationService'
 import { listAppointments } from '@/services/appointmentService'
@@ -31,34 +35,40 @@ export function SecretaryDashboard() {
   const appts = useAsync(() => (user ? listAppointments(user) : Promise.resolve([])), [user]).data
   const concernReview = useAsync(() => (user ? listReviewQueue(user) : Promise.resolve([])).catch(() => []), [user]).data
 
-  const myQueue = docs?.filter((d) => availableTransitions(d, actor).some((t) => t.by !== 'owner' && !t.label.startsWith('Cancel'))) ?? null
-  const isCase = (id: string) => getDocumentType(id as never).category === 'case'
-  const newDocs = docs?.filter((d) => d.status === 'submitted' && !isCase(d.typeId)).length ?? null
-  const toPrepare = docs?.filter((d) => ['under_review', 'needs_info', 'processing'].includes(d.status) && !isCase(d.typeId)).length ?? null
-  const completed = docs?.filter((d) => d.status === 'released').length ?? null
-  const awaitingChairman = docs?.filter((d) => d.status === 'pending_approval').length ?? null
-  const submissions = docs?.filter((d) => isCase(d.typeId) && ['submitted', 'under_review', 'needs_info'].includes(d.status)).length ?? null
-  const caseUpdates = cases?.filter((c) => ['filed', 'under_review', 'referred_to_lupon', 'mediation_scheduled'].includes(c.stage)) ?? null
+  // Each card counts with the same filter its link opens (documents/listFilters, services/caseFilters).
+  const needsMe = needsActionBy(actor)
+  const docCount = (f: DocFilter) => (docs ? filterRequests(docs, f, needsMe).length : null)
+  const docLink = (f: DocFilter) => withFilters('/documents', f as Record<string, string>)
+  const F = {
+    new: { tab: 'all', stage: 'new', kind: 'documents' },
+    review: { tab: 'all', stage: 'review', kind: 'documents' },
+    chairman: { tab: 'all', status: 'pending_approval', kind: 'documents' },
+    done: { tab: 'all', stage: 'done', kind: 'documents' },
+    complaints: { tab: 'open', kind: 'cases' },
+    action: { tab: 'action' },
+    open: { tab: 'open' },
+  } satisfies Record<string, DocFilter>
+  const myQueue = docs ? filterRequests(docs, F.action, needsMe) : null
+  const caseUpdates = cases ? filterCases(cases, { view: 'needs_update' }) : null
   const hearings = cases ? upcomingHearings(cases) : null
-  // Open = not completed, rejected or cancelled. Completed this week = marked completed in the last 7 days.
-  const openCount = docs?.filter((d) => !['released', 'served', 'forwarded', 'rejected', 'cancelled'].includes(d.status)).length ?? null
+  const toVerify = regs ? registrationGroups(regs).review.length : null
+  const openCount = docCount(F.open)
   const weekAgo = Date.now() - 7 * 86_400_000
   const doneThisWeek = docs?.filter((d) => d.history.some((h) => ['released', 'served', 'forwarded'].includes(h.status) && new Date(h.at).getTime() >= weekAgo)).length ?? null
 
   // Work split by who has to act next, so the Secretary sees only her own pile first.
   const loaded = docs && regs && crs && appts && concernReview
   const today = new Date().toISOString().slice(0, 10)
-  const openDoc = (d: { status: string }) => !['released', 'served', 'forwarded', 'rejected', 'cancelled'].includes(d.status)
   const byWho = loaded
     ? {
-        mine: (myQueue?.length ?? 0) + regs.filter((r) => r.status === 'manual_review' && !(r.inPerson && !r.inPerson.completedAt)).length
+        mine: (myQueue?.length ?? 0) + registrationGroups(regs).review.length + registrationGroups(regs).alt.filter((r) => r.status === 'manual_review').length
           + crs.filter((c) => c.status === 'pending').length + concernReview.length,
         auto: crs.filter((c) => c.decidedBy === 'system' && c.decidedAt && new Date(c.decidedAt).getTime() >= weekAgo).length
           + regs.filter((r) => r.status === 'auto_approved' && new Date(r.submittedAt).getTime() >= weekAgo).length,
         resident: docs.filter((d) => d.status === 'needs_info').length + regs.filter((r) => r.status === 'manual_review' && r.inPerson && !r.inPerson.completedAt).length
           + appts.filter((a) => ['awaiting_schedule', 'pending_confirmation', 'rescheduled'].includes(a.status)).length,
         chairman: docs.filter((d) => d.status === 'pending_approval').length,
-        late: docs.filter((d) => { if (!openDoc(d)) return false; const e = estimateFor(d); return !!e && (e.extended?.newDate ?? e.expectedBy) < today }).length,
+        late: docs.filter((d) => { if (!isOpen(d)) return false; const e = estimateFor(d); return !!e && (e.extended?.newDate ?? e.expectedBy) < today }).length,
       }
     : null
 
@@ -72,10 +82,10 @@ export function SecretaryDashboard() {
 
       {/* Document pipeline at a glance (registrations live under Needs attention, not here twice). */}
       <section aria-label="Document requests" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="New requests" value={newDocs} to="/documents" />
-        <Stat label="Under verification" value={toPrepare} to="/documents" />
-        <Stat label="Forwarded to Chairman" value={awaitingChairman} to="/documents" />
-        <Stat label="Completed" value={completed} to="/documents" />
+        <Stat label="New requests" value={docCount(F.new)} to={docLink(F.new)} />
+        <Stat label="Under review" value={docCount(F.review)} to={docLink(F.review)} />
+        <Stat label="Waiting for the Punong Barangay" value={docCount(F.chairman)} to={docLink(F.chairman)} />
+        <Stat label="Completed" value={docCount(F.done)} to={docLink(F.done)} />
       </section>
 
       <Panel className="mt-4" title="Who needs to act" bodyClassName="px-0 py-0">
@@ -101,10 +111,10 @@ export function SecretaryDashboard() {
       <Panel className="mt-4" title="Needs attention" bodyClassName="px-0 py-0">
         <ul className="divide-y divide-line-soft">
           {([
-            [ShieldCheck, 'Registrations to verify', q?.registrationsForReview ?? null, '/residents/registrations'],
-            [UserRoundPen, 'Resident update requests', q?.pendingChangeRequests ?? null, '/residents/change-requests'],
-            [FileText, 'Complaints and reports', submissions, '/documents'],
-            [Gavel, 'Cases needing updates', caseUpdates?.length ?? null, '/cases'],
+            [ShieldCheck, 'Registrations to verify', toVerify, '/residents/registrations?tab=review'],
+            [UserRoundPen, 'Resident update requests', q?.pendingChangeRequests ?? null, '/residents/change-requests?tab=review'],
+            [FileText, 'Open complaints and reports', docCount(F.complaints), docLink(F.complaints)],
+            [Gavel, 'Case records to update', caseUpdates?.length ?? null, '/cases?view=needs_update'],
           ] as const).map(([Icon, label, n, to]) => (
             <li key={label}>
               <Link to={to} className="flex min-h-[60px] items-center gap-4 px-5 py-3 transition-colors hover:bg-sky-50 focus-visible:bg-sky-50 active:bg-sky-100">
@@ -120,18 +130,23 @@ export function SecretaryDashboard() {
 
       {/* Work queue across the full width; hearings and case records side by side below it. */}
       <section className="mt-4">
-        <Panel title="Your work queue" actions={<ViewAll to="/documents" />} bodyClassName="px-0 py-0">
+        <Panel title="Your work queue" actions={<ViewAll to={docLink(F.action)} />} bodyClassName="px-0 py-0">
           <dl className="grid grid-cols-3 divide-x divide-line-soft border-b border-line-soft">
             {([
-              ['Needs your action', myQueue?.length ?? null, 'text-navy-900'],
-              ['Open requests', openCount, 'text-navy-900'],
-              ['Completed this week', doneThisWeek, 'text-success'],
-            ] as const).map(([label, n, tone]) => (
-              <div key={label} className="flex flex-col justify-between gap-2 px-3 py-5 sm:px-6">
-                <dt className="text-[length:calc(16px*var(--fs))] leading-snug font-medium text-ink-nav">{label}</dt>
-                <dd className={`font-display text-[length:calc(34px*var(--fs))] leading-none font-extrabold tabular-nums ${tone}`}>{n ?? '–'}</dd>
-              </div>
-            ))}
+              ['Needs your action', myQueue?.length ?? null, 'text-navy-900', docLink(F.action)],
+              ['Open requests', openCount, 'text-navy-900', docLink(F.open)],
+              ['Completed this week', doneThisWeek, 'text-success', null],
+            ] as const).map(([label, n, tone, to]) => {
+              const body = (
+                <>
+                  <dt className="text-[length:calc(16px*var(--fs))] leading-snug font-medium text-ink-nav">{label}</dt>
+                  <dd className={`font-display text-[length:calc(34px*var(--fs))] leading-none font-extrabold tabular-nums ${tone}`}>{n ?? '–'}</dd>
+                </>
+              )
+              return to
+                ? <Link key={label} to={to} className="flex flex-col justify-between gap-2 px-3 py-5 hover:bg-sky-50 sm:px-6">{body}</Link>
+                : <div key={label} className="flex flex-col justify-between gap-2 px-3 py-5 sm:px-6">{body}</div>
+            })}
           </dl>
           {!myQueue ? (
             <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-9 animate-pulse rounded bg-surface-muted" />)}</div>

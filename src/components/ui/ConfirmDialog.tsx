@@ -24,11 +24,12 @@ export function ConfirmDialog({ title, children, confirmLabel, cancelLabel = 'Ca
     return () => document.removeEventListener('keydown', key)
   }, [onCancel])
   return createPortal(
-    <div className="fixed inset-0 z-[60] grid place-items-center bg-navy-900/40 px-4" role="presentation">
-      <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" className="w-full max-w-[380px] rounded-2xl bg-surface p-6 text-center shadow-2xl">
-        <h2 id="confirm-title" className="font-display text-[length:calc(20px*var(--fs))] font-bold text-navy-900">{title}</h2>
-        {children && <div className="mt-2 text-[length:calc(16px*var(--fs))] text-ink-nav">{children}</div>}
-        <div className="mt-6 grid grid-cols-2 gap-3">
+    <div className="fixed inset-0 z-[60] grid place-items-center bg-navy-900/40 px-4 py-4" role="presentation">
+      {/* Never taller than the screen: the message scrolls inside, the title and buttons stay visible (phones in landscape too). */}
+      <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" className="flex max-h-[calc(100dvh-2rem)] w-full max-w-[440px] flex-col rounded-2xl bg-surface p-6 text-center shadow-2xl">
+        <h2 id="confirm-title" className="shrink-0 font-display text-[length:calc(20px*var(--fs))] font-bold text-navy-900">{title}</h2>
+        {children && <div className="-mx-1 mt-2 min-h-0 overflow-y-auto px-1 text-[length:calc(16px*var(--fs))] text-ink-nav">{children}</div>}
+        <div className="mt-6 grid shrink-0 grid-cols-2 gap-3">
           <button ref={cancelRef} type="button" onClick={onCancel} disabled={busy} className={buttonClass('secondary', 'md', 'w-full')}>
             {cancelLabel}
           </button>

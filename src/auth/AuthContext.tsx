@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { clearDraftsFor, purgeExpiredDrafts } from '@/lib/drafts'
 import { APP_CONFIG } from '@/config/app'
 import { ROLES, ROLE_PERMISSIONS } from '@/config/permissions'
@@ -72,7 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const user = useMemo(() => (session ? (findUser(session.userId) ?? null) : null), [session])
+  // Keyed on the account id only: extending the session (new expiry time) must not create a new user
+  // object, or every page would reload its data and redraw on each extension.
+  const userId = session?.userId ?? null
+  const user = useMemo(() => (userId ? (findUser(userId) ?? null) : null), [userId])
 
   const permissions = useMemo<ReadonlySet<Permission>>(() => {
     if (!user) return new Set()
@@ -108,21 +111,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { window.removeEventListener('storage', onStorage); window.clearInterval(t) }
   }, [session, start])
 
-  // Activity keeps the session alive (checked at most once a minute), so working users are never interrupted.
+  // Activity keeps the session alive (extended at most once a minute), so working users are never interrupted.
+  // The last-extension time and the current session live in refs: listeners are added once per sign-in,
+  // not again after every extension. (Before, re-adding them reset the one-minute guard, so every scroll
+  // event extended the session, which re-rendered the page, which scrolled again: the page flickered and
+  // could not be scrolled.)
+  const sessionRef = useRef(session)
+  sessionRef.current = session
+  const rememberRef = useRef(remember)
+  rememberRef.current = remember
+  const lastTouch = useRef(Date.now())
   useEffect(() => {
-    if (!session) return
-    let last = 0
+    if (!userId) return
     const touch = () => {
       const now = Date.now()
-      if (now - last < 60_000) return
-      last = now
-      const next = { ...session, expiresAt: new Date(now + APP_CONFIG.sessionMinutes * 60_000).toISOString() }
-      start(next, remember)
+      const cur = sessionRef.current
+      if (!cur || now - lastTouch.current < 60_000) return
+      lastTouch.current = now
+      start({ ...cur, expiresAt: new Date(now + APP_CONFIG.sessionMinutes * 60_000).toISOString() }, rememberRef.current)
     }
     const events = ['pointerdown', 'keydown', 'scroll'] as const
     events.forEach((e) => window.addEventListener(e, touch, { passive: true, capture: true }))
     return () => events.forEach((e) => window.removeEventListener(e, touch, { capture: true }))
-  }, [session, remember, start])
+  }, [userId, start])
 
   const value = useMemo<AuthContextValue>(
     () => ({

@@ -12,19 +12,25 @@ import { formatDateTime } from '@/lib/format'
 import { STAGE_LABEL, STAGE_TONE, listCases, mediationDay, removedCaseIds, upcomingHearings } from '@/services/caseService'
 import type { CaseStage } from '@/types/case'
 import { SampleBadge } from '@/pages/dashboard/shared'
-import { useStickyState } from '@/hooks/useStickyState'
+import { useClearFilters, useUrlFilter } from '@/hooks/useUrlFilter'
+import { CASE_VIEWS, CASE_VIEW_LABEL, filterCases, type CaseView } from '@/services/caseFilters'
 
 /** Katarungang Pambarangay case list: case number, parties, one status, next hearing. Everything else is on the case page. */
 export function CasesPage() {
   const actor = useDocActor()!
-  const [showRemoved, setShowRemoved] = useStickyState('removed', false)
+  // Filters live in the address, so dashboard cards open this list already filtered and refresh keeps it.
+  const [removedF, setRemovedF] = useUrlFilter<'0' | '1'>('removed', '0', ['0', '1'])
+  const showRemoved = removedF === '1'
+  const setShowRemoved = (on: boolean) => setRemovedF(on ? '1' : '0')
   const cases = useAsync(() => listCases(actor, { includeRemoved: showRemoved }), [actor, showRemoved]).data
-  const [stage, setStage] = useStickyState('stage', '')
-  const [q, setQ] = useStickyState('q', '')
+  const [stage, setStage] = useUrlFilter<CaseStage | ''>('stage', '', ['', ...(Object.keys(STAGE_LABEL) as CaseStage[])])
+  const [view, setView] = useUrlFilter<CaseView | ''>('view', '', ['', ...CASE_VIEWS])
+  const [q, setQ] = useUrlFilter<string>('q', '')
+  const clearFilters = useClearFilters()
   const canRemove = actor.permissions.has('cases.decide')
   const removed = removedCaseIds()
   const needle = q.trim().toLowerCase()
-  const rows = (cases ?? []).filter((c) => (!stage || c.stage === stage) && (!needle || [c.caseNo, c.blotterNo, c.title, c.nature, ...c.complainants.map((p) => p.name), ...c.respondents.map((p) => p.name)].some((v) => v?.toLowerCase().includes(needle))))
+  const rows = filterCases(cases ?? [], { stage, view }).filter((c) => (!needle || [c.caseNo, c.blotterNo, c.title, c.nature, ...c.complainants.map((p) => p.name), ...c.respondents.map((p) => p.name)].some((v) => v?.toLowerCase().includes(needle))))
   const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'Asia/Manila' })
 
   return (
@@ -33,7 +39,7 @@ export function CasesPage() {
       <Card>
         <div className="flex flex-wrap items-center gap-3 border-b border-line-soft p-4">
           <TextInput className="w-full sm:w-72" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search cases" aria-label="Search cases" />
-          <Select className="w-full sm:w-56" value={stage} onChange={(e) => setStage(e.target.value)} aria-label="Filter by stage">
+          <Select className="w-full sm:w-56" value={stage} onChange={(e) => setStage(e.target.value as CaseStage | '')} aria-label="Filter by stage">
             <option value="">All stages</option>
             {(Object.keys(STAGE_LABEL) as CaseStage[]).map((s) => <option key={s} value={s}>{STAGE_LABEL[s]}</option>)}
           </Select>
@@ -44,6 +50,13 @@ export function CasesPage() {
             </label>
           )}
         </div>
+        {(stage || view || q) && (
+          <p role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line-soft px-4 py-2 text-[length:calc(15.5px*var(--fs))] text-navy-900">
+            <span>Showing <strong>{rows.length}</strong>{view ? ` · ${CASE_VIEW_LABEL[view]}` : ''}</span>
+            {view && <button type="button" onClick={() => setView('')} className="inline-flex min-h-11 items-center font-semibold text-info hover:underline">Remove "{CASE_VIEW_LABEL[view]}"</button>}
+            <button type="button" onClick={clearFilters} className="inline-flex min-h-11 items-center font-semibold text-info hover:underline">Clear filters</button>
+          </p>
+        )}
         {cases === undefined || cases === null ? <div className="h-32 animate-pulse" /> : rows.length === 0 ? (
           <p className="px-5 py-8 text-center text-[length:calc(16px*var(--fs))] text-ink-muted">No cases found.</p>
         ) : (
@@ -88,8 +101,8 @@ export function HearingsPage() {
     <li className="border-b border-line-soft last:border-0">
       <button type="button" onClick={() => navigate(`/cases/${c.id}`)} className="flex w-full items-center gap-4 px-5 py-3 text-left hover:bg-sky-50">
         <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-sky-100 text-center leading-tight text-navy-900">
-          <span className="text-[length:calc(12px*var(--fs))] font-semibold uppercase">{new Date(h.scheduledAt).toLocaleDateString('en-US', { month: 'short' })}</span>
-          <span className="font-display text-[length:calc(18px*var(--fs))] font-extrabold">{new Date(h.scheduledAt).getDate()}</span>
+          <span className="text-[length:calc(12px*var(--fs))] font-semibold uppercase">{new Date(h.scheduledAt).toLocaleDateString('en-US', { month: 'short', timeZone: 'Asia/Manila' })}</span>
+          <span className="font-display text-[length:calc(18px*var(--fs))] font-extrabold">{new Date(h.scheduledAt).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'Asia/Manila' })}</span>
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">{c.caseNo} · {c.title}</span>

@@ -163,10 +163,10 @@ export function CaseDetailPage() {
                 )}
                 {step.remarks && <label className="block"><span className="mb-1 block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">{step.outcome === 'settled' ? 'Settlement terms' : 'Note'} {step.remarks === 'required' && '*'}</span><TextArea value={remarks} onChange={(e) => setRemarks(e.target.value)} /></label>}
                 {err && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
-                <ActionStack><Button onClick={run}>Confirm</Button><Button variant="ghost" onClick={() => { setStep(null); setErr(null) }}>Back</Button></ActionStack>
+                <ActionStack layout="pair"><Button onClick={run}>Confirm</Button><Button variant="secondary" onClick={() => { setStep(null); setErr(null) }}>Back</Button></ActionStack>
               </div>
             ) : (
-              <div className="space-y-2">{steps.map((s, i) => <Button key={s.label} className="w-full" variant={s.outcome === 'dismissed' || s.outcome === 'withdrawn' || s.outcome === 'not_settled' ? 'danger' : i === 0 ? 'primary' : 'secondary'} onClick={() => setStep(s)}>{s.label}</Button>)}</div>
+              <ActionStack layout="panel">{steps.map((s, i) => <Button key={s.label} variant={s.outcome === 'dismissed' || s.outcome === 'withdrawn' || s.outcome === 'not_settled' ? 'danger' : i === 0 ? 'primary' : 'secondary'} onClick={() => setStep(s)}>{s.label}</Button>)}</ActionStack>
             )}
           </Panel>
 
@@ -209,7 +209,7 @@ function RemovePanel({ caseId }: { caseId: string }) {
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[length:calc(16px*var(--fs))] text-navy-900">Remove this closed case from the list? The record is kept.</span>
             <Button variant="danger" onClick={() => run(() => removeClosedCase(caseId, actor))}>Remove</Button>
-            <Button variant="ghost" onClick={() => setConfirm(false)}>Keep</Button>
+            <Button variant="secondary" onClick={() => setConfirm(false)}>Keep</Button>
           </div>
         ) : <Button variant="secondary" onClick={() => setConfirm(true)}>Remove from the list</Button>}
       {err && <p role="alert" className="mt-2 text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
@@ -277,7 +277,7 @@ function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase
         <ActionStack className="mt-3">
           {new Date(h.scheduledAt).getTime() <= Date.now() + 3600_000 && <Button size="sm" onClick={() => setMode('attendance')}>Record attendance</Button>}
           <Button size="sm" variant="secondary" onClick={() => setMode('reschedule')}>Reschedule</Button>
-          <Button size="sm" variant="ghost" icon={<BellRing className="size-4" />} onClick={() => setConfirm('reminder')}>Send reminder</Button>
+          <Button size="sm" variant="secondary" icon={<BellRing className="size-4" />} onClick={() => setConfirm('reminder')}>Send reminder</Button>
         </ActionStack>
       )}
       {mode === 'attendance' && (
@@ -289,14 +289,14 @@ function HearingRow({ caseId, h, manage, onChange }: { caseId: string; h: KPCase
             </div>
           ))}
           <TextArea className="min-h-[60px]" placeholder="What happened (outcome, agreement, next step)" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <ActionStack><Button size="sm" disabled={att.some((x) => x === null)} onClick={() => setConfirm('attendance')}>Save</Button><Button size="sm" variant="ghost" onClick={() => setMode('none')}>Cancel</Button></ActionStack>
+          <ActionStack><Button size="sm" disabled={att.some((x) => x === null)} onClick={() => setConfirm('attendance')}>Save</Button><Button size="sm" variant="secondary" onClick={() => setMode('none')}>Cancel</Button></ActionStack>
         </div>
       )}
       {mode === 'reschedule' && (
         <div className="mt-3 flex flex-wrap items-end gap-2 rounded-[var(--radius-control)] border border-line p-3">
           <TextInput type="datetime-local" aria-label="New date and time" className="w-auto" value={when} onChange={(e) => setWhen(e.target.value)} />
           <Button size="sm" disabled={!when} onClick={() => setConfirm('reschedule')}>Save new schedule</Button>
-          <Button size="sm" variant="ghost" onClick={() => setMode('none')}>Cancel</Button>
+          <Button size="sm" variant="secondary" onClick={() => setMode('none')}>Cancel</Button>
         </div>
       )}
       {confirm && (

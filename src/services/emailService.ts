@@ -44,7 +44,8 @@ export async function sendEmail(msg: { to: string; subject: string; body: string
     detail: EMAIL_CONFIGURED ? 'Provider call not implemented.' : 'No email service is configured.',
   }
   try {
-    localStorage.setItem(KEY, JSON.stringify([...read(), rec]))
+    // Newest 500 kept on the device, so the log (and the demo data written each start) cannot grow without limit.
+    localStorage.setItem(KEY, JSON.stringify([...read(), rec].slice(-500)))
   } catch {
     /* ignore */
   }

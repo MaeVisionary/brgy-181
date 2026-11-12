@@ -1,5 +1,5 @@
 import { FilePlus2, Search, Inbox } from '@/icons'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { Badge } from '@/components/ui/Badge'
@@ -12,36 +12,18 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Panel'
 import { Pagination, usePaged } from '@/components/ui/Pagination'
 import { DOCUMENT_TYPES, getDocumentType } from '@/documents/catalog'
-import { STATUS_META, TERMINAL } from '@/documents/workflows'
+import { STATUS_META } from '@/documents/workflows'
+import { DOC_KINDS, DOC_TABS, DOC_VIEWS, KIND_LABEL, STAGES, VIEW_LABEL, awaitingDecision, filterRequests, isOpen, needsActionBy, type DocKind, type DocStage, type DocTab, type DocView } from '@/documents/listFilters'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 import { cn } from '@/lib/cn'
-import { availableTransitions, listRequests } from '@/services/documentService'
+import { listRequests } from '@/services/documentService'
 import { claimFor, formatTime } from '@/services/appointmentService'
 import { readyEstimate } from '@/services/processingService'
 import { runPickupChecks } from '@/services/pickupService'
 import type { DocumentRequest, DocumentStatus } from '@/types/document'
-import { useStickyState } from '@/hooks/useStickyState'
+import { useClearFilters, useUrlFilter } from '@/hooks/useUrlFilter'
 
-type Tab = 'action' | 'open' | 'all'
-
-/** Where a request is, in the words the Secretary works with. Pickup counts come from the linked pickup booking. */
-type Stage = 'new' | 'review' | 'processing' | 'waiting' | 'ready' | 'pickup' | 'done' | 'rejected'
-const STAGES: [Stage, string][] = [
-  ['new', 'New'], ['review', 'Under review'], ['processing', 'Processing'], ['waiting', 'Awaiting requirements'],
-  ['ready', 'Ready for pickup'], ['pickup', 'Pickup scheduled'], ['done', 'Completed'], ['rejected', 'Rejected or cancelled'],
-]
-function stageOf(r: DocumentRequest): Stage {
-  switch (r.status) {
-    case 'submitted': return 'new'
-    case 'under_review': case 'for_assessment': return 'review'
-    case 'needs_info': return 'waiting'
-    case 'ready_for_pickup': return claimFor(r.id)?.date ? 'pickup' : 'ready'
-    case 'released': case 'served': case 'recorded': case 'forwarded': return 'done'
-    case 'rejected': case 'cancelled': return 'rejected'
-    default: return 'processing'
-  }
-}
 const short = (d: Date) => d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })
 const pickupOf = (r: DocumentRequest) => { const c = claimFor(r.id); return c?.date ? `${shortDate(c.date)}, ${formatTime(c.time)}` : '' }
 const shortDate = (d: string) => new Date(`${d}T12:00:00+08:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' })
@@ -63,34 +45,35 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
   const { can } = useAuth()
   const navigate = useNavigate()
   const { data, loading } = useAsync(() => listRequests(actor!), [actor])
-  const [tab, setTab] = useStickyState<Tab>('tab', 'action')
-  const [q, setQ] = useStickyState('q', '')
-  const [type, setType] = useStickyState('type', '')
-  const [status, setStatus] = useStickyState('status', '')
-  const [stage, setStage] = useStickyState<Stage | ''>('stage', '')
-  useMemo(() => runPickupChecks(), [data]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Filters live in the address, so dashboard cards open this list already filtered and refresh keeps it.
+  const [tab, setTab] = useUrlFilter<DocTab>('tab', 'action', DOC_TABS)
+  const [q, setQ] = useUrlFilter<string>('q', '')
+  const [type, setType] = useUrlFilter<string>('type', '')
+  const [status, setStatus] = useUrlFilter<DocumentStatus | ''>('status', '', ['', ...(Object.keys(STATUS_META) as DocumentStatus[])])
+  const [stage, setStage] = useUrlFilter<DocStage | ''>('stage', '', ['', ...STAGES.map(([k]) => k)])
+  const [kind, setKind] = useUrlFilter<DocKind | ''>('kind', '', ['', ...DOC_KINDS])
+  const [view, setView] = useUrlFilter<DocView | ''>('view', '', ['', ...DOC_VIEWS])
+  const clearFilters = useClearFilters()
+  // Releases pickups that can no longer be met. A side effect, so it runs after drawing, not during it.
+  useEffect(() => { if (data) runPickupChecks() }, [data])
 
-  const needsMe = (r: DocumentRequest) => !!actor && availableTransitions(r, actor).some((t) => t.by !== 'owner' && !t.label.startsWith('Cancel'))
+  const needsMe = (r: DocumentRequest) => !!actor && needsActionBy(actor)(r)
 
   const rows = useMemo(() => {
     let list = data ?? []
-    if (approvalsOnly) list = list.filter((r) => r.status === 'pending_approval' || r.status === 'for_assessment')
-    else if (tab === 'action') list = list.filter(needsMe)
-    else if (tab === 'open') list = list.filter((r) => !TERMINAL.includes(r.status))
-    if (type) list = list.filter((r) => r.typeId === type)
-    if (status) list = list.filter((r) => r.status === status)
-    if (stage && !approvalsOnly) list = list.filter((r) => stageOf(r) === stage)
+    if (approvalsOnly) list = filterRequests(list.filter(awaitingDecision), { type }, needsMe)
+    else list = filterRequests(list, { tab, type, status, stage, kind, view }, needsMe)
     const term = q.trim().toLowerCase()
     if (term) list = list.filter((r) => r.referenceNo.toLowerCase().includes(term) || r.requesterName.toLowerCase().includes(term))
     return list
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, tab, q, type, status, stage, approvalsOnly, actor])
+  }, [data, tab, q, type, status, stage, kind, view, approvalsOnly, actor])
 
   const paged = usePaged(rows)
   const counts = useMemo(
     () => ({
       action: (data ?? []).filter(needsMe).length,
-      open: (data ?? []).filter((r) => !TERMINAL.includes(r.status)).length,
+      open: (data ?? []).filter(isOpen).length,
       all: (data ?? []).length,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -125,7 +108,7 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
                 ['action', 'Needs my action'],
                 ['open', 'Open'],
                 ['all', 'All'],
-              ] as [Tab, string][]
+              ] as [DocTab, string][]
             ).map(([id, label]) => (
               <button
                 key={id}
@@ -147,7 +130,7 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
         {!approvalsOnly && (
           <div role="group" aria-label="Filter by stage" className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:flex xl:flex-wrap">
             {STAGES.map(([k, label]) => {
-              const n = (data ?? []).filter((r) => (tab === 'all' || tab === 'open' ? true : needsMe(r)) && stageOf(r) === k).length
+              const n = filterRequests(data ?? [], { tab, type, status, kind, view, stage: k }, needsMe).length
               return (
                 <button key={k} type="button" aria-pressed={stage === k} onClick={() => { setStage(stage === k ? '' : k); paged.setPage(0) }}
                   className={cn('inline-flex min-h-11 items-center justify-between gap-2 rounded-[var(--radius-control)] border px-3 text-left text-[length:calc(14.5px*var(--fs))] leading-tight font-semibold xl:justify-start', stage === k ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-surface-muted')}>
@@ -172,7 +155,13 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
           </Select>
         </div>
         {!approvalsOnly && (
-          <Select value={status} onChange={(e) => setStatus(e.target.value)} className="h-11" aria-label="Filter by status">
+          <Select value={kind} onChange={(e) => setKind(e.target.value as DocKind | '')} className={cn('h-11', kind && 'border-navy-900 font-semibold')} aria-label="Filter by kind of request">
+            <option value="">All kinds of requests</option>
+            {DOC_KINDS.map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
+          </Select>
+        )}
+        {!approvalsOnly && (
+          <Select value={status} onChange={(e) => setStatus(e.target.value as DocumentStatus | '')} className={cn('h-11', status && 'border-navy-900 font-semibold')} aria-label="Filter by status">
             <option value="">All statuses</option>
             {(Object.keys(STATUS_META) as DocumentStatus[]).map((s) => (
               <option key={s} value={s}>
@@ -182,6 +171,13 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
           </Select>
         )}
 
+        {!approvalsOnly && (stage || status || kind || view || type || q) && (
+          <p role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[length:calc(15.5px*var(--fs))] text-navy-900">
+            <span>Showing <strong>{rows.length}</strong>{tab === 'action' ? ' that need your action' : tab === 'open' ? ' open' : ''}{view ? ` · ${VIEW_LABEL[view]}` : ''}</span>
+            {view && <button type="button" onClick={() => setView('')} className="inline-flex min-h-11 items-center font-semibold text-info hover:underline">Remove "{VIEW_LABEL[view]}"</button>}
+            <button type="button" onClick={clearFilters} className="inline-flex min-h-11 items-center font-semibold text-info hover:underline">Clear filters</button>
+          </p>
+        )}
         <div className="overflow-hidden rounded-[var(--radius-control)] border border-line">
           {loading ? (
             <div className="space-y-2 p-4">

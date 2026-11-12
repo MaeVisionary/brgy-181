@@ -251,7 +251,7 @@ export function MyRecentActivity({ className }: { className?: string }) {
   const mine = listAudit().filter((e) => e.userId === user.id).slice(0, 6)
   return (
     <Panel className={className} title="My recent activity" subtitle="What you recorded in the system" bodyClassName="px-0 py-0">
-      {mine.length === 0 ? <p className="px-5 py-4 text-[length:calc(15.5px*var(--fs))] text-ink-muted">Nothing recorded yet in this session.</p> : (
+      {mine.length === 0 ? <p className="px-5 py-4 text-[length:calc(15.5px*var(--fs))] text-ink-muted">Nothing recorded yet.</p> : (
         <ul className="divide-y divide-line-soft">
           {mine.map((e) => (
             <li key={e.id} className="flex flex-col gap-0.5 px-5 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
