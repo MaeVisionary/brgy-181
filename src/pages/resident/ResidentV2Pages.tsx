@@ -1,12 +1,10 @@
-import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Inbox, Mail, MapPin, MessageSquareWarning, Package, Phone, ReceiptText, XCircle } from '@/icons'
+import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Inbox, Mail, MapPin, MessageSquareWarning, Package, Phone, XCircle } from '@/icons'
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { TransitionPanel } from '@/components/documents/TransitionPanel'
 import { Button } from '@/components/ui/Button'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { GreetingCard } from '@/components/ui/GreetingCard'
-import { StatCard } from '@/components/ui/StatCard'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Panel'
 import { BARANGAY_CONTACT, KP } from '@/config/barangay'
@@ -30,77 +28,52 @@ import { STAGE_ORDER, actOnBorrowing, borrowingStage, fmtDue, getBorrowing, runB
 import { appointmentFor, formatTime } from '@/services/appointmentService'
 import { listPublished } from '@/services/announcementService'
 import { AnnouncementRows } from '@/pages/announcements/AnnouncementPages'
+import { HomeCalendarCards } from '@/pages/calendar/CalendarPages'
 import { ServiceError } from '@/services/mockApi'
-import { listMyTransactions, type Transaction, type TransactionKind } from '@/services/transactionService'
+import { listMyTransactions, type TransactionKind } from '@/services/transactionService'
 import type { KPCase } from '@/types/case'
 import type { DocumentRequest, StatusEvent, Transition } from '@/types/document'
 import type { Borrowing } from '@/types/equipment'
 import { itemsText } from '@/pages/equipment/BorrowingPages'
 import { NotFound } from '@/pages/system/NotFound'
-import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, Progress, Section, TitleBar, TransactionList, Updates, needsYou, stepsFrom } from './parts'
+import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, Progress, Section, TitleBar, TransactionList, Updates, stepsFrom } from './parts'
 
 
 // ── Home ─────────────────────────────────────────────────────────────
 
-const IN_PROGRESS: ResidentStatus[] = ['Submitted', 'Processing', 'Action Needed']
-const READY: ResidentStatus[] = ['Ready', 'Borrowed']
 
 /** Resident Home (Figma "Resident v2 / Home (simplified)"). */
+/**
+ * Resident home: what to attend (next appointment), what is happening in the
+ * barangay (calendar), what to do (three services), and the latest
+ * announcements. Everything else is one tap away in the menu.
+ */
 export function ResidentHome() {
-  const actor = useDocActor()!
-  const tx = useAsync(() => listMyTransactions(actor), [actor]).data
-  const recent = tx?.slice(0, 4) ?? null
   const actions = [
-    { to: '/my/documents/new', icon: FileText, title: 'Request a document', body: 'Apply for barangay certificates and clearances' },
-    { to: '/my/complaints/new', icon: MessageSquareWarning, title: 'Report or complain', body: 'Report an incident or submit a complaint' },
-    { to: '/my/borrowing?new=1', icon: Package, title: 'Borrow equipment', body: 'Request chairs, tables, ladders and other equipment.' },
+    { to: '/my/documents/new', icon: FileText, title: 'Request a document' },
+    { to: '/my/complaints/new', icon: MessageSquareWarning, title: 'Report or complain' },
+    { to: '/my/borrowing/new', icon: Package, title: 'Borrow equipment' },
   ]
   return (
     <>
       <GreetingCard subtitle="Your Barangay 181 services in one place." profileTo="/my/profile" />
-
-      {/* Overview of everything the resident submitted (documents, complaints, borrowing). */}
-      <section aria-label="My requests overview" className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Total requests" value={tx ? tx.length : null} to="/my/transactions" />
-        <StatCard label="In progress" value={tx ? tx.filter((t) => IN_PROGRESS.includes(t.status)).length : null} attention={!!tx?.some((t) => t.status === 'Action Needed')} to="/my/transactions" />
-        <StatCard label="Ready" value={tx ? tx.filter((t) => READY.includes(t.status)).length : null} to="/my/transactions" />
-        <StatCard label="Completed" value={tx ? tx.filter((t) => t.status === 'Completed').length : null} to="/my/transactions" />
-      </section>
-
-      <h2 className="font-display text-[length:calc(19px*var(--fs))] font-bold text-navy-900">How can we help you today?</h2>
-      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-        {actions.map(({ to, icon: Icon, title, body }) => (
-          <Link key={title} to={to} className="bmis-press flex min-h-[72px] items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3.5 transition-colors hover:border-navy-600/40 hover:bg-sky-50">
-            <span className={cn('grid size-10 shrink-0 place-items-center rounded-[10px]', toneForPath(to))}><Icon className="size-[18px]" /></span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{title}</span>
-              <span className="block text-[length:calc(14.5px*var(--fs))] text-ink-muted">{body}</span>
-            </span>
-            <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
-          </Link>
-        ))}
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <DarkHeadCard title="My Recent Activities" to="/my/transactions">
-          {recent === null ? (
-            <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-14 animate-pulse rounded bg-surface-muted" />)}</div>
-          ) : recent.length === 0 ? (
-            <EmptyState icon={<ReceiptText className="size-5" />} title="No transactions yet" body="Your requests, complaints and borrowing will appear here." />
-          ) : (
-            <>
-              <ul className="divide-y divide-line-soft">
-                {recent.map((t) => <ActivityRow key={`${t.kind}-${t.id}`} t={t} />)}
-              </ul>
-            </>
-          )}
-        </DarkHeadCard>
-
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <div className="space-y-4">
+          <HomeCalendarCards />
+          <section aria-label="Services" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {actions.map(({ to, icon: Icon, title }) => (
+              <Link key={title} to={to} className="bmis-press flex min-h-16 items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3 transition-colors hover:border-navy-600/40 hover:bg-sky-50">
+                <span className={cn('grid size-10 shrink-0 place-items-center rounded-[10px]', toneForPath(to))}><Icon className="size-[18px]" /></span>
+                <span className="min-w-0 flex-1 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">{title}</span>
+                <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
+              </Link>
+            ))}
+          </section>
+        </div>
         <DarkHeadCard title="Barangay Announcements" to="/my/announcements">
           <HomeAnnouncements />
         </DarkHeadCard>
       </div>
-
       <NeedAssistance />
     </>
   )
@@ -120,26 +93,6 @@ function DarkHeadCard({ title, to, children }: { title: string; to: string; chil
   )
 }
 
-function ActivityRow({ t }: { t: Transaction }) {
-  return (
-    <li>
-      <Link to={t.to} className={cn('flex min-h-[64px] items-center gap-3 px-5 py-3 transition-colors hover:bg-sky-50 active:bg-sky-100', needsYou(t) && 'border-l-4 border-l-warning pl-4')}>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">{t.title}</span>
-          <span className="block truncate text-[length:calc(14.5px*var(--fs))] text-ink-muted">{t.kindLabel}</span>
-        </span>
-        <StatusDot status={t.status} />
-        <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
-      </Link>
-    </li>
-  )
-}
-
-function StatusDot({ status }: { status: ResidentStatus }) {
-  // Lazy import avoided: StatusLabel is tiny.
-  return <StatusLabelInline status={status} />
-}
-import { StatusLabel as StatusLabelInline } from '@/components/ui/StatusLabel'
 
 function NeedAssistance() {
   const C = BARANGAY_CONTACT

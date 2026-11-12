@@ -524,3 +524,24 @@ export function runBorrowingJobs(nowMs = Date.now()) {
   }
   if (changed) persist()
 }
+
+/** A new closure or holiday: return deadlines that now fall on a closed day move to the next open day (borrower told). */
+export function moveDueDatesOffClosedDays(byUserId: string): number {
+  let n = 0
+  for (const b of mockBorrowings.filter((x) => x.status === 'released' && x.dueAt)) {
+    const day = manila(b.dueAt!)
+    if (isWorkingDay(day)) continue
+    const p = borrowingPolicy()
+    const to = nextOpenDay(day)
+    const from = b.dueAt!
+    b.dueAt = atTime(to, p.returnTime)
+    b.graceEndsAt = atTime(p.graceDays ? nextOpenDay(addDays(to, p.graceDays)) : to, p.returnTime)
+    b.remindersSent = (b.remindersSent ?? []).filter((k) => !k.startsWith('due-'))
+    b.history.push({ at: new Date().toISOString(), byUserId, byRole: 'secretary', action: `Return date moved to ${fmtDue(b.dueAt)} (Barangay Hall closed on ${day})` })
+    tellOwner(b, 'New return date', `The Barangay Hall is closed on ${day}. Please return it by ${fmtDue(b.dueAt)}.`)
+    void from
+    n++
+  }
+  if (n) persist()
+  return n
+}

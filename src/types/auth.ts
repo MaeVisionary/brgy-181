@@ -65,6 +65,7 @@ export type Permission =
   | 'security.approve'
   | 'concerns.manage'
   | 'announcements.manage'
+  | 'calendar.manage'
   | 'announcements.approve'
   | 'concerns.view'
   // Resident self-service (own records only)

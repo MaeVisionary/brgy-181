@@ -1,4 +1,5 @@
-import { CLASSIFICATION_MAX, DEFAULT_HOLIDAYS, DEFAULT_STANDARDS, OFFICE_CLOSE_HOUR, type ServiceStandard } from '@/config/serviceStandards'
+import { CLASSIFICATION_MAX, DEFAULT_STANDARDS, OFFICE_CLOSE_HOUR, type ServiceStandard } from '@/config/serviceStandards'
+import { hallClosedOn, holidayList } from './calendarData'
 import { ROLE_PERMISSIONS } from '@/config/permissions'
 import type { User } from '@/types/auth'
 import type { DocumentRequest, DocumentTypeId } from '@/types/document'
@@ -7,7 +8,6 @@ import { ServiceError, mockRequest } from './mockApi'
 
 /** Administrator overrides (prototype: this browser). */
 const KEY = 'bmis.serviceStandards'
-const HOL_KEY = 'bmis.holidays'
 const read = <T,>(k: string, f: T): T => {
   try {
     const raw = localStorage.getItem(k)
@@ -20,8 +20,9 @@ const read = <T,>(k: string, f: T): T => {
 export function standardFor(id: DocumentTypeId): ServiceStandard {
   return { ...DEFAULT_STANDARDS[id], ...(read<Partial<Record<DocumentTypeId, Partial<ServiceStandard>>>>(KEY, {})[id] ?? {}) }
 }
+/** Days the Barangay Hall is closed for a holiday (from the official calendar). */
 export function holidays(): { date: string; name: string }[] {
-  return read(HOL_KEY, DEFAULT_HOLIDAYS)
+  return holidayList().filter((h) => h.hallClosed).map((h) => ({ date: h.date, name: h.name }))
 }
 
 /** Working days allowed: the charter time when set, else the RA 11032 maximum. */
@@ -39,7 +40,9 @@ const dayAfter = (iso: string) => {
   return manilaDay(d)
 }
 
-export function isWorkingDay(iso: string, hol = holidays()): boolean {
+export function isWorkingDay(iso: string, hol?: { date: string; name: string }[]): boolean {
+  // Default: the official calendar (holidays, weekends and full-day office closures).
+  if (!hol) return !hallClosedOn(iso)
   const wd = new Date(iso + 'T12:00:00+08:00').getUTCDay()
   return wd !== 0 && wd !== 6 && !hol.some((h) => h.date === iso)
 }
@@ -49,7 +52,7 @@ export function isWorkingDay(iso: string, hol = holidays()): boolean {
  * Received after office hours or on a non-working day → counting starts the
  * next working day. Returns the ISO date of the last allowed working day.
  */
-export function addWorkingDays(receivedAt: Date, days: number, hol = holidays()): string {
+export function addWorkingDays(receivedAt: Date, days: number, hol?: { date: string; name: string }[]): string {
   let day = manilaDay(receivedAt)
   // The day of receipt counts as day 1 only if received on a working day within office hours.
   let counted = isWorkingDay(day, hol) && manilaHour(receivedAt) < OFFICE_CLOSE_HOUR ? 1 : 0
@@ -101,10 +104,3 @@ export function updateStandard(id: DocumentTypeId, patch: Partial<ServiceStandar
   })
 }
 
-export function setHolidays(list: { date: string; name: string }[], by: User): Promise<void> {
-  return mockRequest(() => {
-    if (!can(by, 'system.settings')) throw new ServiceError('forbidden', 'Only administrators can change holidays.')
-    localStorage.setItem(HOL_KEY, JSON.stringify([...list].sort((a, b) => a.date.localeCompare(b.date))))
-    audit(by, 'Changed office holidays', 'Settings')
-  })
-}

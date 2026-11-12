@@ -4,6 +4,7 @@ import type { Permission, RoleId, User } from '@/types/auth'
 import { audit } from './auditService'
 import { ServiceError } from './mockApi'
 import { isWorkingDay } from './serviceStandardService'
+import { closedFor, specialHours } from './calendarData'
 
 /**
  * SCHEDULING RULES AND SLOT ENGINE (deterministic, no AI).
@@ -189,6 +190,8 @@ const allBookings = () => sources.flatMap((f) => f())
 
 // ── Availability ─────────────────────────────────────────────────────
 export function staffHours(staffId: string, date: string, rules = schedulingRules()): { start: string; end: string } | null {
+  const special = specialHours(date)
+  if (special) rules = { ...rules, officeStart: special.start, officeEnd: special.end }
   const s = rules.staff[staffId]
   if (s && !s.days.includes(weekday(date))) return null
   const start = fromMin(Math.max(toMin(rules.officeStart), toMin(s?.start ?? rules.officeStart)))
@@ -233,6 +236,8 @@ export function freeSlots(date: string, staffId: string, minutes: number, ignore
     const e = t + minutes
     if (t < toMin(r.breakEnd) && e > toMin(r.breakStart)) continue
     if (startsAt(date, fromMin(t)) < now + r.leadMinutes * 60_000) continue
+    // Part-day or service-only office closures.
+    if (closedFor(date, service, t, e)) continue
     // Same staff: no overlap; each side keeps its own buffer after it.
     if (mine.some((b) => t < span(b)[1] + (b.buffer ?? r.bufferMinutes) && span(b)[0] < e + buffer)) continue
     // No stretch of back-to-back work longer than the limit (gaps shorter than 10 minutes do not count as a break).

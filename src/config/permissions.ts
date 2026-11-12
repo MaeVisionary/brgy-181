@@ -102,6 +102,7 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
     'hearings.manage',
     'concerns.manage',
     'announcements.manage',
+    'calendar.manage',
     'analytics.view',
     'reports.view',
     'reports.export',
@@ -129,7 +130,7 @@ export const PERMISSION_GROUPS: { id: string; name: string; permissions: Permiss
   { id: 'documents', name: 'Document requests', permissions: ['documents.view', 'documents.create', 'documents.process', 'documents.inspect', 'documents.approve', 'documents.reject', 'documents.release', 'documents.payment'] },
   { id: 'cases', name: 'Complaints, cases and hearings', permissions: ['complaints.view', 'complaints.create', 'complaints.update', 'cases.view', 'cases.manage', 'cases.decide', 'cases.assigned', 'hearings.view', 'hearings.manage', 'concerns.manage', 'concerns.view'] },
   { id: 'equipment', name: 'Property and equipment', permissions: ['inventory.view', 'inventory.manage', 'borrowing.approve', 'borrowing.release'] },
-  { id: 'announcements', name: 'Announcements', permissions: ['announcements.manage', 'announcements.approve'] },
+  { id: 'announcements', name: 'Announcements', permissions: ['announcements.manage', 'announcements.approve', 'calendar.manage'] },
   { id: 'reports', name: 'Reports and analytics', permissions: ['analytics.view', 'reports.view', 'reports.export'] },
 ]
 
@@ -143,7 +144,7 @@ const ROLE_OVERRIDES_KEY = 'bmis.rolePermissions'
  * permissions introduced after that format always follow the defaults.
  */
 const DEFAULT_ROLE_PERMISSIONS: Record<RoleId, Permission[]> = Object.fromEntries(Object.entries(ROLE_PERMISSIONS).map(([k, v]) => [k, [...v]])) as Record<RoleId, Permission[]>
-const ADDED_AFTER_LIST_FORMAT: Permission[] = ['cases.assigned', 'concerns.manage', 'concerns.view', 'security.approve', 'announcements.manage', 'announcements.approve', 'documents.payment']
+const ADDED_AFTER_LIST_FORMAT: Permission[] = ['cases.assigned', 'concerns.manage', 'concerns.view', 'security.approve', 'announcements.manage', 'announcements.approve', 'documents.payment', 'calendar.manage']
 type RoleDiff = { on: Permission[]; off: Permission[] }
 
 function applyDiff(role: RoleId, d: RoleDiff) {
@@ -252,6 +253,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'concerns.manage': 'Manage community concerns (group, assign, resolve)',
   'concerns.view': 'View community concerns',
   'announcements.manage': 'Write and submit announcements',
+  'calendar.manage': 'Manage office closures and special schedules',
   'announcements.approve': 'Approve or reject announcements',
   'self.profile': 'View own profile',
   'self.documents': 'Request and track own documents',

@@ -595,15 +595,22 @@ export function appointmentsOnClosedDays(isClosed: (date: string) => boolean): A
   return load().filter((a) => BOOKED.includes(a.status) && a.date && isClosed(a.date))
 }
 /** Closure: each affected appointment needs a new time; residents are told. */
-export function flagForClosure(dates: string[], reason: string, byUserId: string): number {
+/**
+ * A closure or holiday affects booked appointments: each one is kept (never
+ * deleted), put back to "Awaiting schedule" with its history, and the resident
+ * and the assigned Barangay Personnel are told. The resident picks a new time.
+ */
+export function flagForClosure(affects: (a: { date: string; time: string; durationMin: number; kind: string }) => boolean, reason: string, byUserId: string): number {
   const list = load()
   let n = 0
-  for (const a of list.filter((x) => BOOKED.includes(x.status) && dates.includes(x.date))) {
-    const was = `${a.date} ${formatTime(a.time)}`
+  for (const a of list.filter((x) => BOOKED.includes(x.status) && x.date && affects(x))) {
+    const was = a.date
+    const staff = a.assignedTo
     a.status = 'awaiting_schedule'
-    a.history.push({ at: new Date().toISOString(), byUserId, action: `Office closed on ${a.date} (${reason}); needs a new time` })
-    a.date = ''; a.time = ''; a.assignedTo = ''; a.remindersSent = []
-    later(a, 'Please choose a new time', 'moved', `The Barangay Hall is closed on ${was.split(' ')[0]} (${reason}).`)
+    a.history.push({ at: new Date().toISOString(), byUserId, action: `Office closed on ${was} (${reason}); needs a new time` })
+    a.date = ''; a.time = ''; a.assignedTo = ''; a.remindersSent = []; a.staffConfirmed = undefined
+    later(a, 'Please choose a new time', 'moved', `The Barangay Hall is closed on ${dateLong(was)} (${reason}).`)
+    if (staff) notify([staff], 'Appointment moved off a closed day', `${a.ref} · ${was}: the resident will choose a new time.`, `/appointments/${a.id}`)
     n++
   }
   if (n) save(list)

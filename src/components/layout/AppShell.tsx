@@ -2,6 +2,10 @@ import { Menu, X } from '@/icons'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { APP_CONFIG } from '@/config/app'
 import { Outlet, useLocation, useNavigationType } from 'react-router-dom'
+import { runAppointmentJobs } from '@/services/appointmentService'
+import { runBorrowingJobs } from '@/services/equipmentService'
+import { runAnnouncementJobs } from '@/services/announcementService'
+import { runCalendarJobs } from '@/services/calendarService'
 import { useAuth } from '@/auth/useAuth'
 import { cn } from '@/lib/cn'
 import { formatDate, formatWeekday } from '@/lib/format'
@@ -37,6 +41,14 @@ export function AppShell() {
   useTrail()
   // Remove uploads that were never submitted (after the configured period).
   useEffect(() => { cleanupAbandoned().catch(() => undefined) }, [])
+  // Automatic jobs (a scheduled server job on Supabase): reminders, no-shows, overdue
+  // equipment, scheduled announcements, closure and event notices. Each is idempotent.
+  useEffect(() => {
+    const run = () => { runAppointmentJobs(); runBorrowingJobs(); runAnnouncementJobs(); runCalendarJobs() }
+    run()
+    const t = window.setInterval(run, 5 * 60_000)
+    return () => window.clearInterval(t)
+  }, [])
 
   // The page scrolls inside <main>. A new page starts at the top; going Back
   // returns to where the user was on that page (content may load a moment later).

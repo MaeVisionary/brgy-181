@@ -57,6 +57,7 @@ import {
 } from '@/services/appointmentService'
 import { EMAIL_STATUS_LABEL, emailsFor } from '@/services/emailService'
 import { ServiceError } from '@/services/mockApi'
+import { calendarEntries } from '@/services/calendarService'
 import { bookingsOn, estimateDuration, freeSlots, manilaToday, nextAvailable, nextDate, unavailableReason, workload } from '@/services/schedulingService'
 import { NotFound } from '@/pages/system/NotFound'
 import { BackLink } from '@/pages/resident/parts'
@@ -417,7 +418,7 @@ export function MyAppointmentPage() {
 // ── Staff ────────────────────────────────────────────────────────────
 
 type Range = 'day' | 'week' | 'month' | 'action'
-type CalItem = { key: string; date: string; time: string; title: string; who: string; status: string; tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral'; to: string; kind: AppointmentKind | 'hearing'; staff: string[] }
+type CalItem = { key: string; date: string; time: string; title: string; who: string; status: string; tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral'; to: string; kind: AppointmentKind | 'hearing' | 'public'; staff: string[] }
 
 function toItems(apps: NamedAppointment[], hearings: HearingEntry[]): CalItem[] {
   return [
@@ -454,7 +455,12 @@ export function AppointmentsPage() {
   const from = range === 'week' ? day : range === 'month' ? monthStart(day) : day
   const to = range === 'week' ? addDays(day, 6) : range === 'month' ? addDays(monthStart(day), 41).slice(0, 8) + '00' : day
   const inRange = (d: string) => (range === 'month' ? d.slice(0, 7) === day.slice(0, 7) : d >= from && d <= to)
-  const shown = range === 'action' ? action : all.filter((x) => x.date && inRange(x.date) && x.status !== 'Cancelled')
+  // The official calendar (holidays, closures, published events) shows on everyone's view.
+  const pub: CalItem[] = range === 'action' || kind ? [] : calendarEntries(range === 'month' ? monthStart(day) : from, range === 'month' ? addDays(monthStart(day), 31) : to).map((e) => ({
+    key: e.id, date: e.date, time: e.time ?? '', title: e.title, who: e.detail, status: e.kind === 'holiday' ? 'Holiday' : e.kind === 'closure' ? 'Closed' : 'Event', tone: e.kind === 'event' ? 'success' as const : 'neutral' as const,
+    to: e.kind === 'event' ? `/announcements/${e.id}` : '/calendar', kind: 'public' as const, staff: [],
+  }))
+  const shown = range === 'action' ? action : [...pub, ...all].filter((x) => x.date && inRange(x.date) && x.status !== 'Cancelled')
   const byDay = new Map<string, CalItem[]>()
   for (const x of shown.sort((p, q) => (p.date + p.time).localeCompare(q.date + q.time))) byDay.set(x.date || 'No time yet', [...(byDay.get(x.date || 'No time yet') ?? []), x])
   const staffIds = [...new Set([...kinds.flatMap((k) => staffFor(k)), ...hearings.flatMap((h) => h.participants)])]

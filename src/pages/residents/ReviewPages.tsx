@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { TextArea } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Panel'
@@ -37,9 +38,10 @@ function Decide({ onDecide, disabled, extra }: { onDecide: (d: 'approved' | 'rej
   const [note, setNote] = useState('')
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const run = async (d: 'approved' | 'rejected') => {
     if (d === 'rejected' && !note.trim()) { setErr('Add the reason for rejecting.'); return }
-    if (d === 'rejected' && !window.confirm('Reject this? The applicant will be told the reason.')) return
+    setConfirming(false)
     setBusy(true)
     setErr(null)
     try {
@@ -56,9 +58,10 @@ function Decide({ onDecide, disabled, extra }: { onDecide: (d: 'approved' | 'rej
         <TextArea autoFocus className="min-h-[64px]" aria-label="Reason for rejecting" placeholder="Reason for rejecting" value={note} onChange={(e) => setNote(e.target.value)} />
         {err && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
         <div className="flex gap-2">
-          <Button size="sm" variant="danger" onClick={() => run('rejected')} loading={busy}>Reject</Button>
+          <Button size="sm" variant="danger" onClick={() => (note.trim() ? setConfirming(true) : setErr('Add the reason for rejecting.'))} loading={busy}>Reject</Button>
           <Button size="sm" variant="secondary" onClick={() => { setRejecting(false); setErr(null) }} disabled={busy}>Cancel</Button>
         </div>
+        {confirming && <ConfirmDialog title="Reject this?" confirmLabel="Reject" destructive onCancel={() => setConfirming(false)} onConfirm={() => run('rejected')}>The applicant will be told the reason.</ConfirmDialog>}
       </div>
     )
   }

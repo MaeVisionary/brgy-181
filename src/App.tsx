@@ -1,3 +1,4 @@
+import { CalendarManagePage, MyCalendarPage } from '@/pages/calendar/CalendarPages'
 import { AnnouncementAdminPage, AnnouncementEditorPage, AnnouncementsAdminPage, ResidentAnnouncementPage, ResidentAnnouncementsPage } from '@/pages/announcements/AnnouncementPages'
 import { AppointmentDetailPage, AppointmentsPage, BookVisitPage, MyAppointmentPage, MyAppointmentsPage } from '@/pages/appointments/AppointmentPages'
 import { ConcernIssuePage, ConcernsPage, MyConcernPage } from '@/pages/concerns/ConcernPages'
@@ -132,6 +133,8 @@ export default function App() {
           <Route path="/my/contact" element={guard([], 'resident', <ContactPage />)} />
           <Route path="/my/announcements" element={guard([], 'resident', <ResidentAnnouncementsPage />)} />
           <Route path="/my/announcements/:id" element={guard([], 'resident', <ResidentAnnouncementPage />)} />
+          <Route path="/calendar" element={<RequirePermission anyOf={['calendar.manage', 'system.settings', 'announcements.approve']}><CalendarManagePage /></RequirePermission>} />
+          <Route path="/my/calendar" element={guard([], 'resident', <MyCalendarPage />)} />
           <Route path="/announcements" element={guard(['announcements.manage', 'announcements.approve'], 'personnel', <AnnouncementsAdminPage />)} />
           <Route path="/announcements/new" element={guard(['announcements.manage'], 'personnel', <AnnouncementEditorPage />)} />
           <Route path="/announcements/:id" element={guard(['announcements.manage', 'announcements.approve'], 'personnel', <AnnouncementAdminPage />)} />
