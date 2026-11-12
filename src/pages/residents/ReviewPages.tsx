@@ -64,9 +64,6 @@ export function RegistrationsPage() {
   return (
     <>
       <PageHeader title="Resident Registrations" subtitle="Online registrations that need manual verification. A failed face or liveness check is never an automatic denial; in-person verification at the Barangay Hall is always possible." />
-      <p className="mb-3 text-[14.5px] text-ink-muted">
-        Online registrations are approved automatically only when the ID name, face comparison, live selfie and barangay records all match. Everything else lands here.
-      </p>
       <div className="space-y-3">
         {queue.length === 0 && items && <Card className="px-5 py-6 text-[15px] text-ink-muted">No registrations waiting for review.</Card>}
         {queue.map((r) => {

@@ -13,6 +13,7 @@ import { STAGE_LABEL, STAGE_TONE, listCases, upcomingHearings } from '@/services
 import { availableTransitions, listRequests } from '@/services/documentService'
 import { getResidentQueueCounts } from '@/services/residentService'
 import { Link } from 'react-router-dom'
+import { BUILTIN_REPORT_TEMPLATES } from '@/config/reportTemplates'
 import { DashHeader, EmptyNote, ListPanel, Row, Stat, ViewAll } from './shared'
 
 /** Ana Manila Salvador: day-to-day administration of records, documents, complaints and reports. */
@@ -122,7 +123,7 @@ export function SecretaryDashboard() {
                 <span className="block text-[15px] font-semibold text-navy-900">{r.name}</span>
                 <span className="block text-[13.5px] text-ink-muted">{r.schedule.replace(/\s*\(format pending\)/i, '')}</span>
               </span>
-              <Badge tone={r.id === 'senior-masterlist' ? 'success' : 'warning'}>{r.id === 'senior-masterlist' ? 'Analytics ready' : 'Awaiting official file'}</Badge>
+              <Badge tone={BUILTIN_REPORT_TEMPLATES[`recurring-${r.id}`] ? 'success' : 'warning'}>{BUILTIN_REPORT_TEMPLATES[`recurring-${r.id}`] ? 'Format ready' : 'Awaiting official file'}</Badge>
             </li>
           ))}
         </ul>

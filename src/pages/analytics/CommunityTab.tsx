@@ -39,7 +39,7 @@ export function CommunityTab() {
   return (
     <>
 
-      <Panel title="1. Select the affected areas" subtitle="For example, the streets reached by flooding during a typhoon. No areas selected = whole barangay.">
+      <Panel title="Affected Areas" subtitle="For example, the streets reached by flooding during a typhoon. No areas selected = whole barangay.">
         <div className="flex flex-wrap gap-2">
           {(areas ?? []).map((a) => (
             <button
@@ -64,24 +64,24 @@ export function CommunityTab() {
       </Panel>
 
       <section className="mt-4">
-        <p className="label-caps mb-2">2. Potentially affected {selected.length ? `in ${selected.join(', ')}` : 'across the barangay'}</p>
+        <p className="label-caps mb-2">Affected {selected.length ? `(${selected.join(', ')})` : '(whole barangay)'}</p>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard label="Residents" value={totals?.residents ?? null} />
           <StatCard label="Households" value={totals?.households ?? null} />
           <StatCard label="Families" value={totals?.families ?? null} />
-          <StatCard label="Senior citizens" value={totals?.seniors ?? null} />
+          <StatCard label="Senior Citizens" value={totals?.seniors ?? null} />
           <StatCard label="PWDs" value={totals?.pwds ?? null} />
-          <StatCard label="Solo parents" value={totals?.solo ?? null} />
-          <StatCard label="4Ps members" value={totals?.fourPs ?? null} />
-          <StatCard label="Program beneficiaries" value={totals?.beneficiaries ?? null} />
+          <StatCard label="Solo Parents" value={totals?.solo ?? null} />
+          <StatCard label="4Ps Members" value={totals?.fourPs ?? null} />
+          <StatCard label="Program Beneficiaries" value={totals?.beneficiaries ?? null} />
         </div>
       </section>
 
       <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-        <Panel title="Residents and households per area">
+        <Panel title="Residents and Households by Area">
           {areas ? <AreaChart data={areas} /> : <div className="h-[244px] animate-pulse rounded bg-surface-muted" />}
         </Panel>
-        <Panel title="Vulnerable residents per area" bodyClassName="px-0 py-0">
+        <Panel title="Vulnerable Sectors by Area" bodyClassName="px-0 py-0">
           <table className="w-full text-[15px]">
             <thead>
               <tr className="bg-surface-muted text-left">

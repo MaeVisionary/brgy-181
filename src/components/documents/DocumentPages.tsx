@@ -155,7 +155,6 @@ function SlotView({
   isSystemEmpty,
   label,
   showSlots,
-  pendingSystemLabel,
 }: {
   slot: Slot
   pageNo: number
@@ -217,7 +216,7 @@ function SlotView({
       if (!screen || !(isMissing || isSystemEmpty || showSlots)) return null
       return (
         <div style={{ position: 'absolute', ...box, display: 'flex', alignItems: 'flex-end', paddingBottom: '0.4mm' }}>
-          <Hole label={isSystemEmpty ? `${label}: ${pendingSystemLabel ?? 'set automatically'}` : label} system={isSystemEmpty || (showSlots && !isMissing)} style={{ width: '100%' }} />
+          <Hole label={label} system={isSystemEmpty || (showSlots && !isMissing)} style={{ width: '100%' }} />
         </div>
       )
     }

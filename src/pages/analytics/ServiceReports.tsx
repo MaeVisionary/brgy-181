@@ -92,7 +92,6 @@ export function ServiceReports() {
         ],
         columns: ['Case no.', 'Blotter no.', 'Nature', 'Filed', 'Stage', 'Outcome'],
         rows: list.map((c) => [c.caseNo, c.blotterNo ?? '', c.nature, formatDate(c.filedAt), STAGE_LABEL[c.stage], c.outcome ? c.outcome.type.replace('_', ' ') : '']),
-        note: 'For the Katarungang Pambarangay report to DILG, use the office format uploaded under Official reports.',
       }
     }
     if (id === 'borrowing') {
@@ -135,7 +134,6 @@ export function ServiceReports() {
         ],
         columns: ['Equipment ID', 'Equipment', 'Location', 'Total', 'Available', 'Reserved', 'Borrowed', 'Maintenance', 'Damaged', 'Missing'],
         rows: st.map(({ e, s }) => [e.refNo, e.name, e.location ?? '', e.totalQty, s.available, s.reserved, s.borrowed, s.maintenance, e.damagedQty, e.missingQty]),
-        note: 'Availability is as of the time the report is generated.',
       }
     }
     if (id === 'personnel') {

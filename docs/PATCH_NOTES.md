@@ -1,3 +1,22 @@
+# BMIS Patch Notes: Report formats, notifications, analytics and cleanup (12 November 2026)
+
+- **Report formats** (Reports page): official files from the barangay's shared drive — DILG BOIS form,
+  OSCA social pension transmittal, BADAC (MADAO) transmittal, DILG weekly clean-up report (Annex A);
+  prepared formats for the Barangay Bureau monthly report, Katarungang Pambarangay monthly report and the
+  monthly senior masterlist (blank, same columns as the July 2025 masterlist). A filled-in field in the BOIS
+  copy was blanked; the "Barangay Blue Format" file was not used because it contains a resident's personal data.
+- **Notifications**: iOS-style cards grouped by Today / Yesterday / Earlier; tap to expand for the reference,
+  person, time and an action (View Request, Open Case…); mark read, mark all read, dismiss (history kept).
+  Preview notifications are used only while developing locally, never on the live site.
+- **Analytics**: short titles (Age Distribution, Residents by Area…), stat cards without hints,
+  area table (Area · Records · %), no methodology sections, import messages limited to results and problems.
+- **Global cleanup**: removed internal explanations ("How addresses were grouped", normalization log,
+  "About this data", auto-approval explanation, report methodology notes, "set automatically" placeholders).
+- **Recent transactions**: reference and status on top, name and date below.
+- Live sweep: 79 pages × 8 roles, no raw values (undefined/null/NaN), no escape codes, no overflow, no console errors.
+
+---
+
 # BMIS Patch Notes: Compact feeds, inventory table, work queue (12 November 2026)
 
 - **Status badges** everywhere: small, softly tinted, square-cornered, no dots. Pending Review amber,

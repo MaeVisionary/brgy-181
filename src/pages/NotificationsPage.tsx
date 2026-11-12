@@ -1,63 +1,38 @@
-import { Bell } from '@/icons'
-import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
-import { Button } from '@/components/ui/Button'
-import { EmptyState } from '@/components/ui/EmptyState'
+import { NoNotifications, NotificationItem, groupByDay } from '@/components/notifications/NotificationItem'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Card } from '@/components/ui/Panel'
 import { useNotifications } from '@/hooks/useNotifications'
-import { cn } from '@/lib/cn'
-import { formatDateTime } from '@/lib/format'
 
 export function NotificationsPage() {
   const { user } = useAuth()
-  const { items, unread, loading, markAllRead } = useNotifications(user?.id)
+  const { items, unread, loading, markAllRead, markRead, dismiss } = useNotifications(user?.id)
 
   return (
-    <>
+    <div className="mx-auto max-w-[720px]">
       <PageHeader
         title="Notifications"
-        subtitle="Updates about your requests and the work assigned to you."
-        actions={unread > 0 && <Button variant="secondary" onClick={markAllRead}>Mark all as read</Button>}
-      />
-      <Card>
-        {loading ? (
-          <div className="space-y-3 p-5">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-12 animate-pulse rounded bg-surface-muted" />
-            ))}
-          </div>
-        ) : items.length === 0 ? (
-          <EmptyState icon={<Bell className="size-5" />} title="No notifications yet" body="You'll see updates here when something needs your attention." />
-        ) : (
-          <ul>
-            {items.map((n) => {
-              const inner = (
-                <>
-                  <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', n.read ? 'bg-line' : 'bg-info')} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[15.5px] font-semibold text-navy-900">{n.title}</span>
-                    <span className="block text-[15px] text-ink-muted">{n.body}</span>
-                  </span>
-                  <span className="shrink-0 text-[14px] text-ink-subtle">{formatDateTime(n.createdAt)}</span>
-                </>
-              )
-              const cls = cn('flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-start sm:gap-3', !n.read && 'bg-sky-50/60')
-              return (
-                <li key={n.id} className="border-b border-line-soft last:border-0">
-                  {n.link ? (
-                    <Link to={n.link} className={cn(cls, 'hover:bg-sky-50')}>
-                      {inner}
-                    </Link>
-                  ) : (
-                    <div className={cls}>{inner}</div>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
+        actions={unread > 0 && (
+          <button type="button" onClick={markAllRead} className="inline-flex min-h-11 items-center text-[15px] font-semibold text-info hover:underline">
+            Mark all as read
+          </button>
         )}
-      </Card>
-    </>
+      />
+      {loading ? (
+        <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-surface" />)}</div>
+      ) : items.length === 0 ? (
+        <NoNotifications />
+      ) : (
+        <div className="space-y-5">
+          {groupByDay(items).map(([label, list]) => (
+            <section key={label}>
+              <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-[0.04em] text-ink-muted uppercase">{label}</h2>
+              <div className="space-y-2">
+                {list.map((n) => <NotificationItem key={n.id} n={n} onRead={markRead} onDismiss={dismiss} />)}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

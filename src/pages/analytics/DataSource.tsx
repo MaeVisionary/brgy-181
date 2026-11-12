@@ -1,4 +1,4 @@
-import { AlertTriangle, FileSpreadsheet, Info, Upload, XCircle } from '@/icons'
+import { AlertTriangle, FileSpreadsheet, Upload, XCircle } from '@/icons'
 import { useRef } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { useAnalytics } from '@/analytics/AnalyticsContext'
@@ -87,22 +87,15 @@ export function DataSource() {
           <XCircle className="size-4" /> {error}
         </p>
       )}
-      {dataset && (
-        <details className="mt-3 rounded-md border border-line-soft bg-surface-muted/60 px-3 py-2 text-[14.5px]">
-          <summary className="font-semibold text-navy-900">About this data</summary>
-          <ul className="mt-2 space-y-1">
-            {dataset.messages.map((m, i) => (
-              <li key={i} className="flex items-start gap-2 text-navy-900">
-                {m.level === 'info' ? <Info className="mt-px size-4 shrink-0 text-info" /> : m.level === 'warning' ? <AlertTriangle className="mt-px size-4 shrink-0 text-warning" /> : <XCircle className="mt-px size-4 shrink-0 text-danger" />}
-                {m.text}
-              </li>
-            ))}
-            <li className="flex items-start gap-2 text-ink-nav">
-              <Info className="mt-px size-4 shrink-0 text-info" />
-              This is the senior citizen masterlist, not the complete resident database. Senior status is decided by age on the date above (60 and above), not by being on the list.
+      {dataset && dataset.messages.some((m) => m.level !== 'info') && (
+        <ul className="mt-3 space-y-1 rounded-md border border-warning/40 bg-warning-tint/50 px-3 py-2 text-[14.5px]">
+          {dataset.messages.filter((m) => m.level !== 'info').map((m, i) => (
+            <li key={i} className="flex items-start gap-2 text-navy-900">
+              {m.level === 'warning' ? <AlertTriangle className="mt-px size-4 shrink-0 text-warning" /> : <XCircle className="mt-px size-4 shrink-0 text-danger" />}
+              {m.text}
             </li>
-          </ul>
-        </details>
+          ))}
+        </ul>
       )}
     </Card>
   )

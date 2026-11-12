@@ -7,6 +7,9 @@ export type NotificationCategory =
   | 'complaint'
   | 'hearing'
   | 'borrowing'
+  | 'approval'
+  | 'payment'
+  | 'overdue'
   | 'system'
 
 export interface AppNotification {
@@ -20,6 +23,13 @@ export interface AppNotification {
   read: boolean
   /** In-app route to the related record. */
   link?: string
+  /** Preview data (not a real event). */
+  demo?: boolean
+  priority?: 'high'
+  /** Reference number shown when the notification is expanded. */
+  reference?: string
+  /** Person or record the notification is about. */
+  subject?: string
 }
 
 export type AuditOutcome = 'success' | 'failure'

@@ -3,12 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { useNotifications } from '@/hooks/useNotifications'
-import { cn } from '@/lib/cn'
-import { formatRelative } from '@/lib/format'
+import { NoNotifications, NotificationItem } from '@/components/notifications/NotificationItem'
 
 export function NotificationMenu() {
   const { user } = useAuth()
-  const { items, unread, markAllRead } = useNotifications(user?.id)
+  const { items, unread, markAllRead, markRead, dismiss } = useNotifications(user?.id)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -39,8 +38,8 @@ export function NotificationMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-40 mt-2 w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-lg border border-line bg-surface shadow-[0_8px_24px_rgba(0,33,50,0.10)]">
-          <div className="flex items-center justify-between border-b border-line-soft px-4 py-3">
+        <div className="absolute right-0 z-40 mt-2 w-[min(400px,calc(100vw-24px))] overflow-hidden rounded-xl border border-line bg-canvas shadow-[0_12px_32px_rgba(0,33,50,0.14)]">
+          <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2">
             <p className="font-display text-[16px] font-bold text-navy-900">Notifications</p>
             {unread > 0 && (
               <button type="button" onClick={markAllRead} className="text-[14px] font-semibold text-info hover:underline">
@@ -48,34 +47,13 @@ export function NotificationMenu() {
               </button>
             )}
           </div>
-          <ul className="max-h-[360px] overflow-y-auto">
-            {items.length === 0 && (
-              <li className="px-4 py-5">
-                <p className="text-[15px] font-semibold text-navy-900">No notifications yet</p>
-                <p className="text-[14.5px] text-ink-muted">You\u2019ll see updates here when something needs your attention.</p>
-              </li>
-            )}
-            {items.slice(0, 6).map((n) => (
-              <li key={n.id} className="border-b border-line-soft last:border-0">
-                <Link
-                  to={n.link ?? '/notifications'}
-                  onClick={() => setOpen(false)}
-                  className={cn('flex gap-3 px-4 py-3 hover:bg-sky-50', !n.read && 'bg-sky-50/60')}
-                >
-                  <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', n.read ? 'bg-transparent' : 'bg-info')} />
-                  <span className="min-w-0">
-                    <span className="block text-[15px] font-semibold text-navy-900">{n.title}</span>
-                    <span className="block text-[14px] text-ink-muted">{n.body}</span>
-                    <span className="mt-1 block text-[13px] text-ink-subtle">{formatRelative(n.createdAt)}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <div className="max-h-[440px] space-y-2 overflow-y-auto px-3 pb-3">
+            {items.length === 0 ? <NoNotifications /> : items.slice(0, 5).map((n) => <NotificationItem key={n.id} n={n} onRead={markRead} onDismiss={dismiss} onOpen={() => setOpen(false)} />)}
+          </div>
           <Link
             to="/notifications"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-1 border-t border-line-soft px-4 py-3 text-[14.5px] font-semibold text-info hover:bg-surface-muted"
+            className="flex items-center justify-center gap-1 border-t border-line-soft bg-surface px-4 py-3 text-[14.5px] font-semibold text-info hover:bg-surface-muted"
           >
             View All Notifications <ChevronRight className="size-4" />
           </Link>

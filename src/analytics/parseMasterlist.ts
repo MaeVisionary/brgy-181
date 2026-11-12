@@ -172,7 +172,7 @@ export function parseMasterlist(rows: Cell[][], fileName: string, sheetName: str
   for (const k of missingCols) {
     messages.push({
       level: REQUIRED.includes(k) ? 'error' : 'warning',
-      text: `Column "${COLUMNS[k][0]}" was not found${REQUIRED.includes(k) ? '. Related figures will be missing.' : '.'}`,
+      text: `Column "${COLUMNS[k][0]}" was not found.`,
     })
   }
 
@@ -295,9 +295,8 @@ export function parseMasterlist(rows: Cell[][], fileName: string, sheetName: str
 
   messages.unshift({
     level: 'info',
-    text: `${records.length} records read from sheet "${sheetName}". ${skipped} rows without a name were skipped (blank or number-only rows).`,
+    text: `${records.length} records imported.`,
   })
-  if (normalizations.length) messages.push({ level: 'info', text: `${normalizations.length} values were normalized for analysis. Originals are kept and listed under Data quality.` })
 
   return {
     fileName,

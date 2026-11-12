@@ -17,6 +17,7 @@ import { ServiceError } from '@/services/mockApi'
 import { deleteReportTemplate, listReportTemplates, saveReportTemplate, type ReportTemplate } from '@/services/reportTemplateService'
 import { downloadBlob } from '@/services/templateService'
 import { ServiceReports } from './ServiceReports'
+import { BUILTIN_REPORT_TEMPLATES, builtInTemplateUrl } from '@/config/reportTemplates'
 
 export function ReportsPage() {
   const { user, can } = useAuth()
@@ -106,7 +107,7 @@ export function ReportsPage() {
               canManage={canManageTemplates}
               onUpload={upload}
               onDelete={remove}
-              note={r.id === 'senior-masterlist' && !templates[`recurring-${r.id}`] ? 'Until the OSCA format is uploaded, use the internal masterlist report below.' : undefined}
+              
               icon={<FileClock className="size-4" />}
             />
           ))}
@@ -150,7 +151,7 @@ export function ReportsPage() {
               No senior citizen masterlist is loaded in this browser. <Link to="/analytics" className="font-semibold text-info hover:underline">Load it in Analytics</Link>.
             </p>
           ) : locked ? (
-            <p className="flex items-center gap-2 text-[15px] text-ink-muted"><Lock className="size-4" /> This report lists individual residents and needs access to resident records.</p>
+            <p className="flex items-center gap-2 text-[15px] text-ink-muted"><Lock className="size-4" /> Requires access to resident records.</p>
           ) : output ? (
             <>
               <p className="mb-3 rounded-md bg-danger-tint px-3 py-2 text-[14px] font-semibold text-danger-ink">Internal analytics report: not an official government submission.</p>
@@ -225,6 +226,7 @@ function TemplateSlot({
 }) {
   const input = useRef<HTMLInputElement>(null)
   const [confirm, setConfirm] = useState(false)
+  const builtIn = !template ? BUILTIN_REPORT_TEMPLATES[id] : undefined
   return (
     <div className="grid gap-2 py-3 md:grid-cols-[minmax(0,1fr)_170px_auto] md:items-center md:gap-4">
       <div className="min-w-0">
@@ -234,20 +236,28 @@ function TemplateSlot({
             {template.fileName} · {template.uploadedBy} · {new Date(template.uploadedAt).toLocaleDateString('en-PH', { day: '2-digit', month: 'short', year: 'numeric' })}
           </p>
         )}
-        {!template && note && <p className="text-[14px] text-ink-nav">{note}</p>}
+        {builtIn && <p className="truncate text-[14px] text-ink-nav" title={builtIn.fileName}>{builtIn.fileName}</p>}
+        {!template && !builtIn && note && <p className="text-[14px] text-ink-nav">{note}</p>}
       </div>
-      <Badge tone={template ? 'success' : 'warning'}>{template ? 'Template uploaded' : 'Awaiting official file'}</Badge>
+      <Badge tone={template ? 'success' : builtIn ? (builtIn.kind === 'official' ? 'success' : 'info') : 'warning'}>
+        {template ? 'Template uploaded' : builtIn ? (builtIn.kind === 'official' ? 'Official file' : 'Prepared format') : 'Awaiting official file'}
+      </Badge>
       <div className="flex flex-wrap gap-2 md:justify-end">
         {template && (
           <Button size="sm" variant="secondary" icon={<Download className="size-3.5" />} onClick={() => downloadBlob(template.blob, template.fileName)}>
             Download
           </Button>
         )}
+        {builtIn && (
+          <a href={builtInTemplateUrl(builtIn)} download={builtIn.fileName} className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface px-3.5 text-[14.5px] font-semibold whitespace-nowrap text-navy-900 hover:bg-surface-muted">
+            <Download className="size-3.5" /> Download
+          </a>
+        )}
         {canManage && (
           <>
             <input ref={input} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(id, title, f); e.target.value = '' }} />
-            <Button size="sm" variant={template ? 'secondary' : 'primary'} icon={<Upload className="size-3.5" />} onClick={() => input.current?.click()}>
-              {template ? 'Replace' : 'Upload template'}
+            <Button size="sm" variant={template || builtIn ? 'secondary' : 'primary'} icon={<Upload className="size-3.5" />} onClick={() => input.current?.click()}>
+              {template || builtIn ? 'Replace' : 'Upload template'}
             </Button>
             {template && (confirm ? (
               <>

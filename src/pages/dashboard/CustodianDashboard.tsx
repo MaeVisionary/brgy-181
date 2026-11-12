@@ -1,4 +1,4 @@
-import { ChevronRight, PackagePlus } from '@/icons'
+import { PackagePlus } from '@/icons'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
@@ -101,15 +101,11 @@ export function CustodianDashboard() {
                 const st = activityStatus(h.action)
                 return (
                   <li key={`${b.id}-${i}`}>
-                    <Link to={`/borrowing/${b.id}`} className="flex items-center gap-3 px-5 py-2 hover:bg-sky-50">
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2">
-                          <span className="font-semibold text-navy-900">{b.refNo}</span>
-                          <span className={`rounded px-1.5 py-px text-[12.5px] leading-5 font-semibold ${st.cls}`}>{st.label}</span>
-                        </span>
-                        <span className="block truncate text-[14px] text-ink-muted">{b.borrowerName} · {formatShortDate(h.at)}</span>
-                      </span>
-                      <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
+                    <Link to={`/borrowing/${b.id}`} className="grid grid-cols-[1fr_auto] items-center gap-x-3 px-5 py-2 hover:bg-sky-50">
+                      <span className="font-semibold text-navy-900">{b.refNo}</span>
+                      <span className={`justify-self-end rounded px-1.5 text-[12.5px] leading-6 font-semibold ${st.cls}`}>{st.label}</span>
+                      <span className="truncate text-[13.5px] text-ink-muted">{b.borrowerName}</span>
+                      <span className="justify-self-end text-[13.5px] whitespace-nowrap text-ink-muted">{formatShortDate(h.at)}</span>
                     </Link>
                   </li>
                 )
@@ -125,9 +121,9 @@ export function CustodianDashboard() {
 function activityStatus(action: string): { label: string; cls: string } {
   const a = action.toLowerCase()
   if (a.startsWith('request submitted')) return { label: 'Submitted', cls: 'bg-info-tint text-info' }
-  if (a.startsWith('encoded')) return { label: 'Encoded', cls: 'bg-info-tint text-info' }
+  if (a.startsWith('encoded')) return { label: 'Encoded', cls: 'bg-neutral-tint text-ink-nav' }
   if (a.startsWith('approved')) return { label: 'Approved', cls: 'bg-success-tint text-success' }
-  if (a.startsWith('released')) return { label: 'Released', cls: 'bg-warning-tint text-warning' }
+  if (a.startsWith('released')) return { label: 'Released', cls: 'bg-[#f1ecfb] text-[#6a3fb5]' }
   if (a.startsWith('returned')) return { label: 'Returned', cls: 'bg-neutral-tint text-ink-nav' }
   if (a.startsWith('rejected')) return { label: 'Rejected', cls: 'bg-danger-tint text-danger-ink' }
   if (a.startsWith('late-return')) return { label: 'Late notice', cls: 'bg-danger-tint text-danger-ink' }
