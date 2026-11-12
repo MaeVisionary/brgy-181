@@ -67,7 +67,6 @@ export function HomePage() {
               ['City', 'Manila'],
             ].map(([k, v]) => (
               <div key={k} className="relative overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface px-5 py-4">
-                <img aria-hidden alt="" src={`${import.meta.env.BASE_URL}seal.png`} className="pointer-events-none absolute -top-4 -right-6 w-[110px] max-w-none opacity-[0.08] grayscale select-none" />
                 <dt className="label-caps relative">{k}</dt>
                 <dd className="relative mt-1 font-display text-[length:calc(30px*var(--fs))] leading-none font-extrabold text-navy-900">{v}</dd>
               </div>

@@ -1,3 +1,4 @@
+import { SealWatermark } from '@/components/layout/SealWatermark'
 import { EXPIRED_KEY } from '@/auth/AuthContext'
 import { APP_CONFIG } from '@/config/app'
 import { ArrowLeft, ChevronRight } from '@/icons'
@@ -39,7 +40,7 @@ export function PortalPage() {
         {expired && <p role="status" className="mb-4 rounded-[var(--radius-control)] bg-sky-100 px-4 py-3 text-[length:calc(16px*var(--fs))] text-navy-900">You were signed out after {APP_CONFIG.sessionMinutes} minutes without activity. Please sign in again.</p>}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:items-stretch">
           <aside className="bmis-rise relative flex flex-col items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-navy-900 to-navy-800 px-6 py-10 text-center text-white md:py-14">
-            <img aria-hidden alt="" src={`${import.meta.env.BASE_URL}seal.png`} className="pointer-events-none absolute -right-20 -bottom-24 w-[320px] max-w-none opacity-[0.07] grayscale select-none" />
+            <SealWatermark onDark size={340} />
             <BarangaySeal onDark className="relative size-16" />
             <h1 className="relative mt-4 font-display text-[length:calc(28px*var(--fs))] leading-tight font-extrabold tracking-tight sm:text-[length:calc(30px*var(--fs))]">Welcome to Barangay 181</h1>
             <p className="relative mt-2 text-[length:calc(16.5px*var(--fs))] text-white/85">How would you like to access the portal?</p>

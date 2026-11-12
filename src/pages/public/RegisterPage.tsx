@@ -1,3 +1,4 @@
+import { SealWatermark } from '@/components/layout/SealWatermark'
 import { ID_TYPES, idHasExpiry } from '@/config/idTypes'
 import { sniff } from '@/lib/uploads'
 import { AlertCircle, ArrowLeft, Camera, CheckCircle2, CircleHelp, Eye, EyeOff, IdCard, Loader2, ShieldCheck, Upload, UserRound, XCircle } from '@/icons'
@@ -233,7 +234,9 @@ export function RegisterPage() {
 
   return (
     <PublicLayout minimal>
-      <div ref={topRef} className="mx-auto max-w-[760px] scroll-mt-20 px-4 py-8 sm:px-6 sm:py-12">
+      <div className="relative overflow-hidden">
+      <SealWatermark size={560} className="hidden lg:block" />
+      <div ref={topRef} className="relative mx-auto max-w-[760px] scroll-mt-20 px-4 py-8 sm:px-6 sm:py-12">
         {step < 5 && (
           <button
             type="button"
@@ -478,6 +481,7 @@ export function RegisterPage() {
             </div>
           )}
         </section>
+      </div>
       </div>
     </PublicLayout>
   )

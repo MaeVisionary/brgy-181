@@ -1,3 +1,4 @@
+import { SealWatermark } from '@/components/layout/SealWatermark'
 import { ArrowRight } from '@/icons'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -13,8 +14,10 @@ export function GreetingCard({ profileTo, action }: { subtitle?: string; profile
   const [now] = useState(() => new Date())
   if (!user) return null
   return (
-    <section className="mb-4 flex flex-col gap-4 rounded-[var(--radius-card)] border border-line bg-gradient-to-r from-surface via-surface to-surface-muted px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-      <div className="min-w-0">
+    <section className="relative mb-4 flex flex-col gap-4 overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <SealWatermark side size={240} className="hidden sm:block" />
+      <SealWatermark side size={170} className="sm:hidden" />
+      <div className="relative min-w-0">
         <p className="text-[length:calc(12.5px*var(--fs))] font-semibold tracking-[0.08em] text-navy-600 uppercase">
           {user.position} · As of {formatDateTime(now)}
         </p>
@@ -22,10 +25,10 @@ export function GreetingCard({ profileTo, action }: { subtitle?: string; profile
           {greeting(now)}, {user.fullName}
         </h1>
       </div>
-      {action ? <div className="shrink-0 self-start sm:self-center">{action}</div> : profileTo && (
+      {action ? <div className="relative shrink-0 self-start sm:self-center">{action}</div> : profileTo && (
         <Link
           to={profileTo}
-          className="bmis-press inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-[var(--radius-control)] bg-navy-900 px-4 text-[length:calc(15px*var(--fs))] font-semibold text-white hover:bg-navy-800 sm:self-center"
+          className="bmis-press relative inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-[var(--radius-control)] bg-navy-900 px-4 text-[length:calc(15px*var(--fs))] font-semibold text-white hover:bg-navy-800 sm:self-center"
         >
           View Profile <ArrowRight className="size-4" />
         </Link>

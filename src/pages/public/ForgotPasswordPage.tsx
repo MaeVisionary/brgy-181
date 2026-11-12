@@ -1,3 +1,4 @@
+import { SealWatermark } from '@/components/layout/SealWatermark'
 import { ArrowLeft, CheckCircle2, KeyRound } from '@/icons'
 import { useState, type FormEvent } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
@@ -31,7 +32,9 @@ export function ForgotPasswordPage() {
 
   return (
     <PublicLayout minimal>
-      <div className="mx-auto max-w-[520px] px-4 py-12 sm:py-16">
+      <div className="relative overflow-hidden">
+      <SealWatermark size={520} className="hidden md:block" />
+      <div className="relative mx-auto max-w-[520px] px-4 py-12 sm:py-16">
         <section className="bmis-rise rounded-lg border border-line bg-surface p-7 md:p-9">
           <button type="button" onClick={() => go(`/login/${type.slug}`, 'back')} className="bmis-press -ml-1 inline-flex items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
             <ArrowLeft className="size-4" /> Back to {type.loginTitle}
@@ -64,6 +67,7 @@ export function ForgotPasswordPage() {
             </form>
           )}
         </section>
+      </div>
       </div>
     </PublicLayout>
   )

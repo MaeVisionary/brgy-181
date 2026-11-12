@@ -1,3 +1,4 @@
+import { SealWatermark } from '@/components/layout/SealWatermark'
 import { AlertCircle, ArrowLeft, Eye, EyeOff } from '@/icons'
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useParams } from 'react-router-dom'
@@ -60,7 +61,7 @@ export function RoleLoginPage() {
         <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         {/* Selected account type */}
         <aside className="bmis-rise relative flex min-h-[260px] flex-col overflow-hidden rounded-lg bg-gradient-to-b from-navy-900 to-navy-800 p-7 text-white md:min-h-[420px] md:p-8">
-          <img aria-hidden alt="" src={`${import.meta.env.BASE_URL}seal.png`} className="pointer-events-none absolute -right-24 -bottom-28 w-[340px] max-w-none opacity-[0.07] grayscale select-none" />
+          <SealWatermark onDark size={360} />
           <div className="relative flex items-center gap-3">
             <BarangaySeal onDark className="size-11" />
             <span className="leading-tight">

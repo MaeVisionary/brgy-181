@@ -1,3 +1,4 @@
+import { SealWatermark } from '@/components/layout/SealWatermark'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -114,7 +115,8 @@ export function NotificationItem({
 /** Shared empty state. */
 export function NoNotifications() {
   return (
-    <div className="flex flex-col items-center px-4 py-10 text-center">
+    <div className="relative flex flex-col items-center overflow-hidden px-4 py-10 text-center [&>*:not(img)]:relative">
+      <SealWatermark size={200} />
       <span className="grid size-11 place-items-center rounded-full bg-surface-muted text-ink-muted"><Bell className="size-5" /></span>
       <p className="mt-2 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">No notifications yet</p>
       <p className="text-[length:calc(14px*var(--fs))] text-ink-muted">You'll see updates here when something needs your attention.</p>
