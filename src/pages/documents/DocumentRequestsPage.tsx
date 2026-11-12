@@ -93,11 +93,11 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
                 aria-selected={tab === id}
                 onClick={() => setTab(id)}
                 className={cn(
-                  'border-b-[3px] px-1 py-2 text-left transition-colors',
-                  tab === id ? 'border-navy-900 text-navy-900' : 'border-line text-navy-900 hover:border-navy-600/50',
+                  'rounded-[var(--radius-control)] border px-3 py-2.5 text-left transition-colors sm:px-4',
+                  tab === id ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-navy-900 hover:bg-surface-muted',
                 )}
               >
-                <span className={cn('block text-[14px] sm:text-[14.5px]', tab === id ? 'font-semibold text-navy-900' : 'text-ink-nav')}>{label}</span>
+                <span className={cn('block text-[14px] sm:text-[14.5px]', tab === id ? 'text-white/80' : 'text-ink-nav')}>{label}</span>
                 <span className="font-display text-[22px] leading-tight font-extrabold">{counts[id]}</span>
               </button>
             ))}
@@ -128,7 +128,7 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
           </Select>
         )}
 
-        <div className="overflow-hidden border-b border-line-soft">
+        <div className="overflow-hidden rounded-[var(--radius-control)] border border-line">
           {loading ? (
             <div className="space-y-2 p-4">
               {[0, 1, 2, 3].map((i) => (

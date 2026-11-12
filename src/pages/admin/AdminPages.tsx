@@ -81,7 +81,7 @@ export function UsersPage() {
       )}
       {pending.length > 0 && (
         <Card className="mb-4 overflow-hidden">
-          <h2 className="border-b border-line pb-2.5 font-display text-[18px] font-bold text-navy-900">Password reset requests</h2>
+          <h2 className="bg-bar border-b border-sky-300 text-navy-900 px-5 py-3 font-display text-[17px] font-bold">Password reset requests</h2>
           <ul className="divide-y divide-line-soft">
             {pending.map((r) => {
               const u = matchFor(r)
@@ -284,7 +284,7 @@ export function ActivityPage() {
   const who = (id: string) => mockUsers.find((u) => u.id === id)?.fullName ?? id
   return (
     <>
-      <PageHeader title="Activity Log" subtitle="Record views, report generation, exports, imports and account changes made in this browser session. The permanent, tamper-protected log is a backend feature." />
+      <PageHeader title="Activity Log" />
       <Card className="overflow-hidden">
         {entries.length === 0 ? (
           <p className="px-5 py-6 text-[15px] text-ink-muted">No activity recorded yet.</p>

@@ -14,6 +14,7 @@ import { exportExcel, exportPdf, type ReportOutput } from '@/analytics/exporters
 import { AreaChart } from '@/components/charts/AreaChart'
 import { StreetBarChart } from '@/components/charts/StreetBarChart'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Panel'
 import { BARANGAY } from '@/config/barangay'
 import { useState } from 'react'
 
@@ -50,7 +51,7 @@ export function ViewAll({ to, label = 'View All' }: { to: string; label?: string
 /** Empty container note: tells the user there is nothing here yet. */
 export function EmptyNote({ children }: { children: ReactNode }) {
   return (
-    <p className="flex items-center gap-2 py-5 text-[15px] text-ink-muted">
+    <p className="flex items-center gap-2 px-5 py-6 text-[15px] text-ink-muted">
       <Inbox className="size-4 shrink-0 text-ink-subtle" /> {children}
     </p>
   )
@@ -182,13 +183,13 @@ export function PopulationByStreet() {
   return (
     <div className="space-y-4">
       {/* Header: navy title bar, then one toolbar row (filter left, exports right). */}
-      <div>
-        <div className="flex items-center gap-3 border-b border-line pb-2.5 text-navy-900">
+      <Card className="overflow-hidden">
+        <div className="flex items-center gap-3 bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5">
           <BarChart3 className="size-5 shrink-0" />
           <h2 className="font-display text-[17px] font-bold">Population by street</h2>
           <span className="rounded-full bg-surface px-2 py-0.5 text-[13.5px] font-semibold">{year}</span>
         </div>
-        <div className="flex flex-col gap-3 py-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 px-5 py-3.5 md:flex-row md:items-center md:justify-between">
           <label className="flex w-full items-center gap-2 text-[15px] font-semibold text-navy-900 md:w-auto">
             <span className="shrink-0">Street</span>
             <select
@@ -211,7 +212,7 @@ export function PopulationByStreet() {
             </div>
           )}
         </div>
-      </div>
+      </Card>
       <Panel title={street ? `Overview: ${street}` : 'Barangay overview'} subtitle="Counts from the resident records" >
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
           {items.map(([label, v]) => (

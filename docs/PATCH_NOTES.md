@@ -1,3 +1,10 @@
+# BMIS Patch Notes: Containers restored (12 November 2026)
+
+- Brought back the boxed layout (cards, light-blue title bars, grey page background, boxed greeting and stat cards), as it was before the "open layout" change.
+- Kept every removal made since: no subtext under titles, no helper text under fields, no developer-facing text, no status dots or pill badges, full-width content, connected workflow steps, plain equipment figures, full-width report template rows.
+
+---
+
 # BMIS Patch Notes: No developer-facing text (12 November 2026)
 
 Removed or reworded text that described how the prototype works instead of helping users:

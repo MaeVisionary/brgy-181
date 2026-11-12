@@ -46,7 +46,7 @@ export function ApprovalsPage() {
       ) : queue.length === 0 ? (
         <Card><EmptyState icon={<Inbox className="size-5" />} title="Nothing to approve" body="New requests appear here once the Secretary forwards them." /></Card>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-3">
           {queue.map((r) => (
             <ApprovalCard
               key={r.id}
@@ -94,7 +94,7 @@ function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: Doc
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line-soft py-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-sky-300 bg-bar px-5 py-3.5">
         <div className="min-w-0">
           <p className="text-[13.5px] font-semibold text-ink-nav">{req.referenceNo} · requested {formatDate(req.submittedAt)}</p>
           <h2 className="font-display text-[18px] font-bold text-navy-900">{type.name}</h2>
@@ -103,7 +103,7 @@ function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: Doc
         <StatusBadge status={req.status} typeId={req.typeId} />
       </div>
 
-      <div className="grid gap-4 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <dl className="space-y-2.5 text-[15px]">
           <div>
             <dt className="label-caps">Purpose</dt>
@@ -149,7 +149,7 @@ function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: Doc
         </div>
       </div>
 
-      <div className="border-t border-line-soft py-3">
+      <div className="border-t border-line-soft px-5 py-3">
         <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-info hover:underline">
           <ChevronDown className={open ? 'size-4 rotate-180 transition-transform' : 'size-4 transition-transform'} /> {open ? 'Hide details' : 'View details'}
         </button>
@@ -171,7 +171,7 @@ function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: Doc
         )}
       </div>
 
-      <div className="border-t border-line-soft py-4">
+      <div className="border-t border-line-soft bg-surface-muted/60 px-5 py-4">
         {!picked ? (
           <div className="flex flex-wrap gap-2">
             {actions.map((t) => (

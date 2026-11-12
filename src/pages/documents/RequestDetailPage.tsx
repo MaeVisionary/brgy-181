@@ -87,7 +87,7 @@ export function RequestDetailPage() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-4">
           {req.assisted && (
-            <p className="border-l-4 border-line py-1 pl-3 text-[14.5px] text-navy-900">
+            <p className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-2.5 text-[14.5px] text-navy-900">
               <strong>Walk-in (assisted service).</strong> Encoded by {encodedBy?.fullName ?? 'staff'} on {formatDateTime(req.assisted.at)}.
             </p>
           )}
