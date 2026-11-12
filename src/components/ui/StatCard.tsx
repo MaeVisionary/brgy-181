@@ -27,14 +27,13 @@ export function StatCard({
   const body = (
     <Card className="flex h-full flex-col justify-between py-3">
       <p className={cn('flex items-center gap-1.5 text-[14.5px] text-ink-nav', to && 'group-hover:text-navy-900 group-hover:underline')}>
-        {attention && <span aria-label="Needs attention" className="size-1.5 shrink-0 rounded-full bg-danger" />}
         {label}
       </p>
       <div className="mt-1.5 flex items-end justify-between gap-2">
         {loading || value === null ? (
           <span className="h-[26px] w-16 animate-pulse rounded bg-surface-muted" />
         ) : (
-          <span className="font-display text-[26px] leading-none font-extrabold text-navy-900">{formatNumber(value)}</span>
+          <span className={cn('font-display text-[26px] leading-none font-extrabold', attention && value ? 'text-danger-ink' : 'text-navy-900')}>{formatNumber(value)}</span>
         )}
         {hint && <span className="text-[14px] text-ink-muted">{hint}</span>}
       </div>

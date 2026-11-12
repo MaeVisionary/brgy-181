@@ -2,7 +2,7 @@ import { AlertTriangle, Eye, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
-import { FieldInput, HistoryList, ProgressTracker, StatusBadge, groupFields } from '@/components/documents/DocParts'
+import { FieldInput, HistoryList, StatusBadge, WorkflowSteps, groupFields } from '@/components/documents/DocParts'
 import { TransitionPanel } from '@/components/documents/TransitionPanel'
 import { PaymentPanel, VerificationPanel } from '@/components/documents/RecordPanels'
 import { Button, ButtonLink } from '@/components/ui/Button'
@@ -79,6 +79,10 @@ export function RequestDetailPage() {
           </>
         }
       />
+
+      <section className="mb-4 border-t border-line pt-4">
+        <WorkflowSteps workflow={type.workflow} req={req} />
+      </section>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-4">
@@ -186,9 +190,6 @@ export function RequestDetailPage() {
 
         <div className="space-y-4">
           <TransitionPanel req={req} actor={actor} dirty={dirty} missingCount={missing.length} onChange={(r) => { setReq({ ...r }); setDraft(r.values) }} />
-          <Panel title="Progress">
-            <ProgressTracker req={req} />
-          </Panel>
           {req.messages.length > 0 && (
             <Panel title="Messages from the requester">
               <ul className="space-y-2">

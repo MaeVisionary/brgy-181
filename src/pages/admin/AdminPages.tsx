@@ -190,7 +190,6 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
           <label className="block max-w-md">
             <span className="mb-1 block text-[14px] font-semibold text-navy-900">Display name</span>
             <span className="flex gap-2"><TextInput value={name} onChange={(e) => setName(e.target.value)} /><Button size="md" variant="secondary" onClick={() => run(() => setDisplayName(u.id, name, me))}>Save</Button></span>
-            <span className="mt-1 block text-[13.5px] text-ink-muted">Set the name of the person holding this position.</span>
           </label>
         ) : (
           <p className="text-[14.5px] text-ink-muted">This is an official's account; the name comes from the barangay's records.</p>
@@ -205,7 +204,6 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
             </Select>
             <Button size="md" variant="secondary" disabled={role === u.roleId} onClick={async () => { await run(() => setRole(u.id, role, me)); onSaved(`${u.fullName} is now ${ROLES[role].name}.`) }}>Save</Button>
           </span>
-          <span className="mt-1 block text-[13.5px] text-ink-muted">Changes the menu and the base permissions of this account.</span>
         </label>
       )}
       {GRANTABLE_ROLES.includes(u.roleId) ? (

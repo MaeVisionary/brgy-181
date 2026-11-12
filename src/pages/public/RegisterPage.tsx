@@ -290,7 +290,7 @@ export function RegisterPage() {
                 <F label="First name" error={err('firstName')}><input className={field} value={d.firstName} onChange={(e) => set('firstName', e.target.value)} aria-invalid={!!err('firstName')} autoComplete="given-name" /></F>
                 <F label="Middle name" optional><input className={field} value={d.middleName} onChange={(e) => set('middleName', e.target.value)} autoComplete="additional-name" /></F>
                 <F label="Last name" error={err('lastName')}><input className={field} value={d.lastName} onChange={(e) => set('lastName', e.target.value)} aria-invalid={!!err('lastName')} autoComplete="family-name" /></F>
-                <F label="Suffix" optional hint="Jr., Sr., III"><input className={field} value={d.suffix} onChange={(e) => set('suffix', e.target.value)} /></F>
+                <F label="Suffix" optional><input className={field} placeholder="Jr., Sr., III" value={d.suffix} onChange={(e) => set('suffix', e.target.value)} /></F>
                 <F label="Sex" error={err('sex')}>
                   <select className={field} value={d.sex} onChange={(e) => set('sex', e.target.value as Sex)} aria-invalid={!!err('sex')}>
                     <option value="">Select</option><option value="male">Male</option><option value="female">Female</option>
@@ -322,7 +322,7 @@ export function RegisterPage() {
                   </select>
                 </F>
                 {d.birthDate && ageOn(d.birthDate) >= 60 && (
-                  <F label="OSCA ID no." optional hint="Senior citizen ID number, if you have one"><input className={field} value={d.oscaId} onChange={(e) => set('oscaId', e.target.value)} /></F>
+                  <F label="OSCA ID no." optional><input className={field} placeholder="Senior citizen ID number" value={d.oscaId} onChange={(e) => set('oscaId', e.target.value)} /></F>
                 )}
               </div>
               <fieldset className="mt-5">
@@ -399,9 +399,9 @@ export function RegisterPage() {
               <StepTitle icon={<ShieldCheck />} title="Your sign-in details" sub="You'll use these to sign in to the resident portal." />
               <div className="mt-6 grid gap-4">
                 <F label="Username" hint="You can also sign in with your email."><input className={field} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" /></F>
-                <F label="Password" hint="At least 8 characters with letters and numbers.">
+                <F label="Password">
                   <span className="relative block">
-                    <input className={cn(field, 'pr-12')} type={showPw ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+                    <input className={cn(field, 'pr-12')} type={showPw ? 'text' : 'password'} placeholder="At least 8 characters, letters and numbers" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
                     <button type="button" onClick={() => setShowPw((s) => !s)} aria-label={showPw ? 'Hide password' : 'Show password'} className="absolute top-1/2 right-2 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-ink-muted hover:text-navy-900">
                       {showPw ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
                     </button>
@@ -692,14 +692,14 @@ function StepTitle({ icon, title, sub }: { icon: ReactNode; title: string; sub: 
   )
 }
 
-function F({ label, error, hint, optional, children }: { label: string; error?: string; hint?: string; optional?: boolean; children: ReactNode }) {
+function F({ label, error, optional, children }: { label: string; error?: string; hint?: string; optional?: boolean; children: ReactNode }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-[15px] font-semibold text-navy-900">
         {label} {optional && <span className="font-normal text-ink-muted">(optional)</span>}
       </span>
       {children}
-      {error ? <span className="mt-1 block text-[14.5px] text-danger-ink">{error}</span> : hint ? <span className="mt-1 block text-[14px] text-ink-muted">{hint}</span> : null}
+      {error ? <span className="mt-1 block text-[14.5px] text-danger-ink">{error}</span> : null}
     </label>
   )
 }

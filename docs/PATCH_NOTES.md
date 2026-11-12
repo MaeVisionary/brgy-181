@@ -1,3 +1,16 @@
+# BMIS Patch Notes: Less AI-looking, better use of space (12 November 2026)
+
+- Content uses the full width beside the sidebar (up to 1600px) instead of a narrow 1180px column.
+- Status labels (Submitted, Ready for Pickup, Pending, Approved, Rejected, Overdue…) are coloured text: no dots, no pill backgrounds. Same colours as before.
+- Numbers that need attention turn red instead of having a red dot. Pulsing dots removed.
+- Helper text under fields removed; useful examples moved into the field placeholder (e.g. "Jr., Sr., III", password rule). Validation messages unchanged.
+- Document Templates: the workflow is shown as connected numbered steps. The same stepper on each request shows done, current and upcoming stages (replaces the side progress list).
+- Equipment Records: status as plain figures (Available, Pending request, Reserved, Borrowed, Overdue, Under maintenance); green for available, red for overdue.
+- Reports: each official and recurring report template is one full-width row; "No template yet…" text removed; status reads "Awaiting official file".
+- Checked: no sideways scrolling at 375, 1024 and 1440 px for every role.
+
+---
+
 # BMIS Patch Notes: Less subtext (12 November 2026)
 
 - Page titles and dashboard greetings no longer show a description line under them.

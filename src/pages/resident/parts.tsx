@@ -264,10 +264,5 @@ export const needsYou = (t: Transaction) => t.status === 'Needs Additional Infor
 
 /** Pulsing dot: stops once the resident replies (the status changes). */
 export function Pulse() {
-  return (
-    <span aria-hidden className="relative flex size-2.5 shrink-0">
-      <span className="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-70" />
-      <span className="relative inline-flex size-2.5 rounded-full bg-warning" />
-    </span>
-  )
+  return null
 }

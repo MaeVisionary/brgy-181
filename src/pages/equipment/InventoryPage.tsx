@@ -10,7 +10,6 @@ import { useAsync } from '@/hooks/useAsync'
 import { useDocActor } from '@/hooks/useDocActor'
 import { formatDateTime } from '@/lib/format'
 import { addEquipment, equipmentStatus, listEquipment, updateEquipment } from '@/services/equipmentService'
-import { Badge } from '@/components/ui/Badge'
 import { ServiceError } from '@/services/mockApi'
 import type { Equipment, EquipmentCategory } from '@/types/equipment'
 
@@ -155,20 +154,25 @@ function EditRow({ e, actor, onDone, categories }: { e: Equipment; actor: NonNul
   )
 }
 
-/** Units by status, each with the same colour everywhere. */
+/** Units by status as plain figures; colour only where it needs attention. */
 function StatusChips({ e }: { e: Equipment }) {
   const st = equipmentStatus(e)
-  const chips: [string, number, 'success' | 'warning' | 'info' | 'danger' | 'neutral'][] = [
-    ['Available', st.available, 'success'],
-    ['Pending request', st.pending, 'warning'],
-    ['Reserved', st.reserved, 'info'],
-    ['Borrowed', st.borrowed, 'info'],
-    ['Overdue', st.overdue, 'danger'],
-    ['Under maintenance', st.maintenance, 'neutral'],
+  const rows: [string, number, string][] = [
+    ['Available', st.available, st.available > 0 ? 'text-success' : 'text-danger-ink'],
+    ['Pending request', st.pending, 'text-navy-900'],
+    ['Reserved', st.reserved, 'text-navy-900'],
+    ['Borrowed', st.borrowed, 'text-navy-900'],
+    ['Overdue', st.overdue, 'text-danger-ink'],
+    ['Under maintenance', st.maintenance, 'text-navy-900'],
   ]
   return (
-    <span className="flex flex-wrap gap-1">
-      {chips.filter(([, n], i) => n > 0 || i === 0).map(([label, n, tone]) => <Badge key={label} tone={tone}>{label}: {n}</Badge>)}
-    </span>
+    <dl className="grid grid-cols-[auto_auto] justify-start gap-x-3 text-[14.5px] leading-6">
+      {rows.filter(([, n], i) => n > 0 || i === 0).map(([label, n, tone]) => (
+        <div key={label} className="contents">
+          <dt className="whitespace-nowrap text-ink-nav">{label}</dt>
+          <dd className={`font-semibold tabular-nums ${tone}`}>{n}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }

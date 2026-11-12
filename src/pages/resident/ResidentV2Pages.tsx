@@ -366,10 +366,6 @@ export function DocumentDetailsPage() {
             {rs === 'Needs Additional Information' && needInfo?.remarks && (
               <Card className="overflow-hidden border-warning/50 bg-warning-tint/50 px-5 py-4">
                 <h2 className="mb-3 flex items-center gap-2 border-b border-warning/40 pb-2.5 font-display text-[18px] font-bold text-navy-900">
-                  <span className="relative flex size-2.5">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-70" />
-                    <span className="relative inline-flex size-2.5 rounded-full bg-warning" />
-                  </span>
                   Message from the barangay
                 </h2>
                 <p className="rounded-md bg-surface px-3 py-2 text-[15.5px] text-navy-900">“{needInfo.remarks}”</p>

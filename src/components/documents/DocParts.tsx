@@ -7,7 +7,7 @@ import { cn } from '@/lib/cn'
 import { formatDateTime } from '@/lib/format'
 import { mockUsers } from '@/mocks/users'
 import { ROLES } from '@/config/permissions'
-import type { DocumentRequest, DocumentStatus, DocumentTypeId, FieldDef, FieldValue, StatusEvent } from '@/types/document'
+import type { DocumentRequest, DocumentStatus, DocumentTypeId, FieldDef, FieldValue, StatusEvent, WorkflowId } from '@/types/document'
 
 export function StatusBadge({ status, typeId }: { status: DocumentStatus; typeId?: DocumentTypeId }) {
   const m = STATUS_META[status]
@@ -122,7 +122,6 @@ export function FieldInput({
             </label>
           ))}
         </div>
-        {field.help && <span className="mt-1 block text-[13.5px] text-ink-muted">{field.help}</span>}
       </fieldset>
     )
   }
@@ -137,9 +136,9 @@ export function FieldInput({
   const str = typeof value === 'string' ? value : ''
   return (
     <div className={field.kind === 'textarea' ? 'sm:col-span-2' : undefined}>
-      <FieldLabel label={label} required={field.required} hint={field.help}>
+      <FieldLabel label={label} required={field.required}>
         {field.kind === 'textarea' ? (
-          <TextArea value={str} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={invalidCls} />
+          <TextArea value={str} disabled={disabled} placeholder={field.help} onChange={(e) => onChange(e.target.value)} className={invalidCls} />
         ) : field.kind === 'choice' ? (
           <Select value={str} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={invalidCls}>
             <option value="">Select…</option>
@@ -152,11 +151,58 @@ export function FieldInput({
             value={str}
             disabled={disabled}
             inputMode={field.kind === 'number' ? 'numeric' : undefined}
+            placeholder={field.help}
             onChange={(e) => onChange(field.kind === 'number' ? e.target.value.replace(/[^\d]/g, '') : e.target.value)}
             className={invalidCls}
           />
         )}
       </FieldLabel>
+    </div>
+  )
+}
+
+/**
+ * Connected step-progress for a workflow. Without a request it shows the
+ * sequence of stages; with one it marks done, current and upcoming stages.
+ */
+export function WorkflowSteps({ workflow, req }: { workflow: WorkflowId; req?: DocumentRequest }) {
+  const wf = WORKFLOWS[workflow]
+  const side = !!req && !wf.path.includes(req.status)
+  const reached = req ? [...req.history].reverse().find((h) => wf.path.includes(h.status))?.status : undefined
+  const idx = req ? wf.path.indexOf(side ? (reached ?? wf.path[0]) : req.status) : -1
+  const finished = !!req && !side && TERMINAL.includes(req.status)
+  const stopped = !!req && side && TERMINAL.includes(req.status)
+  return (
+    <div className="overflow-x-auto pb-1">
+      <ol className="flex min-w-[680px]" aria-label="Workflow stages">
+        {wf.path.map((s, i) => {
+          const state = !req ? 'step' : i < idx || (i === idx && finished) ? 'done' : i === idx ? 'current' : 'upcoming'
+          const lineOn = state === 'step' || state === 'done' || state === 'current'
+          return (
+            <li key={s} className="relative flex-1 text-center" aria-current={state === 'current' ? 'step' : undefined}>
+              {i > 0 && <span aria-hidden className={cn('absolute top-4 right-1/2 h-0.5 w-full -translate-y-1/2', lineOn ? 'bg-navy-900' : 'bg-line')} />}
+              <span
+                className={cn(
+                  'relative z-10 mx-auto grid size-8 place-items-center rounded-full border-2 text-[14px] font-bold',
+                  state === 'done' && 'border-navy-900 bg-navy-900 text-white',
+                  state === 'current' && (side ? 'border-warning bg-surface text-warning' : 'border-navy-900 bg-sky-100 text-navy-900'),
+                  state === 'step' && 'border-navy-900 bg-surface text-navy-900',
+                  state === 'upcoming' && 'border-line bg-surface text-ink-subtle',
+                )}
+              >
+                {state === 'done' ? <Check className="size-4" strokeWidth={3} /> : i + 1}
+              </span>
+              <span className={cn('mt-2 block px-1 text-[13.5px] leading-snug', state === 'current' ? 'font-bold text-navy-900' : state === 'upcoming' ? 'text-ink-muted' : 'font-semibold text-navy-900')}>
+                {statusLabel(s, wf.id)}
+              </span>
+              {state === 'current' && (
+                <span className={cn('block text-[12.5px] font-semibold', side ? 'text-warning' : 'text-info')}>{side && !stopped ? `Now: ${statusLabel(req!.status, wf.id)}` : 'In progress'}</span>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+      {stopped && <p className="mt-2 text-[14.5px] font-semibold text-danger-ink">Stopped: {statusLabel(req!.status, wf.id)}</p>}
     </div>
   )
 }

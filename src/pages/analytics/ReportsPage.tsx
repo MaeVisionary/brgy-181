@@ -89,13 +89,13 @@ export function ReportsPage() {
 
       <Panel title="Official reports" subtitle="Each office's required format. Upload the file the office provides; reports follow it once it is here.">
         {templateMsg && <p role="status" className={cn('mb-3 rounded-md px-3 py-2 text-[14.5px]', templateMsg.ok ? 'bg-success-tint text-navy-900' : 'bg-danger-tint text-danger-ink')}>{templateMsg.text}</p>}
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="divide-y divide-line-soft border-y border-line-soft">
           {REPORT_CATEGORIES.map((c) => (
             <TemplateSlot key={c.id} id={c.id} title={c.name} subtitle={c.full} template={templates[c.id]} canManage={canManageTemplates} onUpload={upload} onDelete={remove} />
           ))}
         </div>
         <p className="label-caps mt-4 mb-2">Recurring reports</p>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="divide-y divide-line-soft border-y border-line-soft">
           {RECURRING_REPORTS.map((r) => (
             <TemplateSlot
               key={r.id}
@@ -227,22 +227,18 @@ function TemplateSlot({
   const input = useRef<HTMLInputElement>(null)
   const [confirm, setConfirm] = useState(false)
   return (
-    <div className={cn('flex flex-col rounded-[var(--radius-control)] border px-4 py-3', template ? 'border-line' : 'border-warning/50 border-l-4 border-l-warning bg-warning-tint/30')}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="flex items-center gap-1.5 font-display text-[16.5px] font-extrabold text-navy-900">{icon}{title}</p>
-          <p className="text-[14px] text-ink-muted">{subtitle}</p>
-        </div>
-        <Badge tone={template ? 'success' : 'warning'}>{template ? 'Template uploaded' : 'Template pending'}</Badge>
+    <div className="grid gap-2 py-3 md:grid-cols-[minmax(0,1fr)_170px_auto] md:items-center md:gap-4">
+      <div className="min-w-0">
+        <p className="flex items-center gap-1.5 font-display text-[16.5px] font-extrabold text-navy-900">{icon}{title} {subtitle !== title && <span className="font-sans text-[14px] font-normal text-ink-muted">{subtitle}</span>}</p>
+        {template && (
+          <p className="truncate text-[14px] text-ink-nav" title={template.fileName}>
+            {template.fileName} · {template.uploadedBy} · {new Date(template.uploadedAt).toLocaleDateString('en-PH', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </p>
+        )}
+        {!template && note && <p className="text-[14px] text-ink-nav">{note}</p>}
       </div>
-      {template ? (
-        <p className="mt-2 truncate text-[14px] text-ink-nav" title={template.fileName}>
-          {template.fileName} · {template.uploadedBy} · {new Date(template.uploadedAt).toLocaleDateString('en-PH', { day: '2-digit', month: 'short', year: 'numeric' })}
-        </p>
-      ) : (
-        <p className="mt-2 text-[14px] text-warning">{note ?? 'No template yet. Upload the official file to use this report.'}</p>
-      )}
-      <div className="mt-3 flex flex-wrap gap-2">
+      <Badge tone={template ? 'success' : 'warning'}>{template ? 'Template uploaded' : 'Awaiting official file'}</Badge>
+      <div className="flex flex-wrap gap-2 md:justify-end">
         {template && (
           <Button size="sm" variant="secondary" icon={<Download className="size-3.5" />} onClick={() => downloadBlob(template.blob, template.fileName)}>
             Download
