@@ -1,6 +1,7 @@
-import { AlertTriangle, ArrowLeft, CheckCircle2, Printer } from '@/icons'
+import { AlertTriangle, CheckCircle2, Printer } from '@/icons'
+import { BackLink } from '@/components/ui/BackLink'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { StatusBadge } from '@/components/documents/DocParts'
 import { DocumentPages, ScaledPages } from '@/components/documents/DocumentPages'
 import { PrintPortal } from '@/components/documents/PrintPortal'
@@ -38,9 +39,7 @@ export function PreviewPage() {
     <>
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <Link to={`/documents/${req.id}`} className="mb-1 inline-flex items-center gap-1.5 text-[length:calc(14.5px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
-            <ArrowLeft className="size-4" /> Back to request
-          </Link>
+          <BackLink fallbackTo={`/documents/${req.id}`} fallbackLabel="Request" />
           <h1 className="font-display text-[length:calc(24px*var(--fs))] font-extrabold text-navy-900">
             {type.name} <span className="font-sans text-[length:calc(16px*var(--fs))] font-semibold text-ink-muted">· {req.referenceNo}</span>
           </h1>

@@ -69,7 +69,7 @@ export function TextSizeControl({ className }: { className?: string }) {
         <span className="text-[17px] leading-none">A<span className="text-[13px]">a</span></span>
       </button>
       {open && (
-        <div role="dialog" aria-label="Text size" className="absolute top-full right-0 z-50 mt-2 w-[260px] rounded-2xl border border-line bg-surface p-3 shadow-xl">
+        <div role="dialog" aria-label="Text size" className="fixed inset-x-4 top-[72px] z-50 sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-[260px] rounded-2xl border border-line bg-surface p-3 shadow-xl">
           <p className="mb-2 px-1 text-[14px] font-semibold text-navy-900">Text size</p>
           <div className="flex gap-2">
             {opt('small', 'A−', 'text-[15px]', 'Smaller text')}

@@ -1,5 +1,5 @@
 import { FilePlus2, Search, Inbox } from '@/icons'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { Badge } from '@/components/ui/Badge'
@@ -18,6 +18,7 @@ import { useDocActor } from '@/hooks/useDocActor'
 import { cn } from '@/lib/cn'
 import { availableTransitions, listRequests } from '@/services/documentService'
 import type { DocumentRequest, DocumentStatus } from '@/types/document'
+import { useStickyState } from '@/hooks/useStickyState'
 
 type Tab = 'action' | 'open' | 'all'
 
@@ -26,10 +27,10 @@ export function DocumentRequestsPage({ approvalsOnly = false }: { approvalsOnly?
   const { can } = useAuth()
   const navigate = useNavigate()
   const { data, loading } = useAsync(() => listRequests(actor!), [actor])
-  const [tab, setTab] = useState<Tab>('action')
-  const [q, setQ] = useState('')
-  const [type, setType] = useState('')
-  const [status, setStatus] = useState('')
+  const [tab, setTab] = useStickyState<Tab>('tab', 'action')
+  const [q, setQ] = useStickyState('q', '')
+  const [type, setType] = useStickyState('type', '')
+  const [status, setStatus] = useStickyState('status', '')
 
   const needsMe = (r: DocumentRequest) => !!actor && availableTransitions(r, actor).some((t) => t.by !== 'owner' && !t.label.startsWith('Cancel'))
 

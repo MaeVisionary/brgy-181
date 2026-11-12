@@ -78,7 +78,7 @@ export function RoleLoginPage() {
         </aside>
 
         {/* Form */}
-        <section className="bmis-rise bmis-rise-2 rounded-lg border border-line bg-surface p-7 md:p-9">
+        <section className="bmis-rise bmis-rise-2 rounded-lg border border-line bg-surface px-5 py-7 sm:p-7 md:p-9">
           <h1 className="font-display text-[length:calc(26px*var(--fs))] leading-tight font-extrabold tracking-tight text-navy-900 sm:text-[length:calc(28px*var(--fs))]">Login as {type.title}</h1>
 
           <form onSubmit={submit} noValidate className="mt-7 space-y-4">
@@ -118,12 +118,13 @@ export function RoleLoginPage() {
               {pwError && <span id="pw-err" className="mt-1 block text-[length:calc(14.5px*var(--fs))] text-danger-ink">{pwError}</span>}
             </label>
 
-            <div className="flex items-center justify-between gap-3">
-              <label className="flex items-center gap-2 text-[length:calc(15px*var(--fs))] text-navy-900">
-                <input type="checkbox" className="size-4 accent-[#002132]" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+            {/* One line when it fits; on the narrowest screens the link moves to its own line instead of squeezing. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <label className="flex min-h-11 items-center gap-2 text-[length:calc(15px*var(--fs))] whitespace-nowrap text-navy-900">
+                <input type="checkbox" className="size-5 shrink-0 accent-[#002132]" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                 Remember me
               </label>
-              <button type="button" onClick={() => go(`/forgot-password/${type.slug}`, 'forward')} className="text-[length:calc(15px*var(--fs))] font-semibold text-info hover:underline">
+              <button type="button" onClick={() => go(`/forgot-password/${type.slug}`, 'forward')} className="min-h-11 text-[length:calc(15px*var(--fs))] font-semibold whitespace-nowrap text-info hover:underline">
                 Forgot password?
               </button>
             </div>

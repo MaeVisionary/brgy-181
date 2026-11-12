@@ -1,6 +1,6 @@
 import { RowList } from '@/components/ui/RowList'
 import { ChevronRight, Home, Search, Users } from '@/icons'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -11,14 +11,15 @@ import { useAsync } from '@/hooks/useAsync'
 import { getHousehold, listHouseholds, listResidents } from '@/services/residentService'
 import { NotFound } from '@/pages/system/NotFound'
 import { SectorBadges, age, fullName } from './common'
+import { useStickyState } from '@/hooks/useStickyState'
 
 /** Households: everyone at one address; one household can hold several families (study §1.4). */
 export function HouseholdsPage() {
   const households = useAsync(listHouseholds).data
   const residents = useAsync(listResidents).data
   const navigate = useNavigate()
-  const [query, setQuery] = useState('')
-  const [street, setStreet] = useState('')
+  const [query, setQuery] = useStickyState('query', '')
+  const [street, setStreet] = useStickyState('street', '')
 
   const rows = useMemo(
     () =>

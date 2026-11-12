@@ -1,7 +1,7 @@
 import { Menu, X } from '@/icons'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { APP_CONFIG } from '@/config/app'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, useNavigationType } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { cn } from '@/lib/cn'
 import { formatDate, formatWeekday } from '@/lib/format'
@@ -38,10 +38,26 @@ export function AppShell() {
   // Remove uploads that were never submitted (after the configured period).
   useEffect(() => { cleanupAbandoned().catch(() => undefined) }, [])
 
-  // The page scrolls inside <main>, so each new page starts at the top.
+  // The page scrolls inside <main>. A new page starts at the top; going Back
+  // returns to where the user was on that page (content may load a moment later).
+  const navType = useNavigationType()
   useEffect(() => {
-    document.getElementById('main-scroll')?.scrollTo({ top: 0 })
-  }, [pathname])
+    const el = document.getElementById('main-scroll')
+    if (!el) return
+    const key = `bmis.scroll:${pathname}`
+    const saved = Number(sessionStorage.getItem(key) ?? 0)
+    let frames = 0
+    let raf = 0
+    const restore = () => {
+      el.scrollTo({ top: saved })
+      if (el.scrollTop < saved - 2 && frames++ < 60) raf = requestAnimationFrame(restore)
+    }
+    if (navType === 'POP' && saved > 0) restore()
+    else el.scrollTo({ top: 0 })
+    const onScroll = () => { try { sessionStorage.setItem(key, String(Math.round(el.scrollTop))) } catch { /* ignore */ } }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => { cancelAnimationFrame(raf); el.removeEventListener('scroll', onScroll) }
+  }, [pathname, navType])
 
   const toggle = () => {
     if (window.matchMedia('(min-width: 1024px)').matches) {

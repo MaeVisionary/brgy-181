@@ -1,6 +1,7 @@
-import { ArrowLeft, Search, UserRound, X } from '@/icons'
+import { Search, UserRound, X } from '@/icons'
+import { BackLink } from '@/components/ui/BackLink'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { FieldInput, groupFields } from '@/components/documents/DocParts'
 import { Button } from '@/components/ui/Button'
@@ -94,9 +95,7 @@ export function NewAssistedRequestPage() {
 
   return (
     <>
-      <Link to="/documents" className="mb-3 inline-flex items-center gap-1.5 text-[length:calc(14.5px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
-        <ArrowLeft className="size-4" /> Document Requests
-      </Link>
+      <BackLink fallbackTo="/documents" fallbackLabel="Document Requests" />
       <PageHeader title="Encode walk-in request" subtitle="For residents who request at the Barangay Hall. They get the same tracking as online requests." />
 
       <div className="max-w-3xl space-y-4">

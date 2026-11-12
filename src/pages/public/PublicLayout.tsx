@@ -32,11 +32,11 @@ export function PublicLayout({ children, minimal }: { children: ReactNode; minim
   return (
     <div id="top" className="flex min-h-full flex-col bg-canvas">
       <header className="sticky top-0 z-40 border-b border-line/70 bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
-        <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-5 sm:px-8 lg:px-12">
-          <Link to="/" onClick={(e) => { e.preventDefault(); jump('#top') }} className="flex min-w-0 shrink-0 items-center gap-2.5">
-            <BarangaySeal className="size-10" />
-            <span className="leading-tight">
-              <span className="block font-display text-[17px] font-extrabold whitespace-nowrap text-navy-900">{BARANGAY.name}</span>
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-2 px-4 sm:gap-4 sm:px-8 lg:px-12">
+          <Link to="/" onClick={(e) => { e.preventDefault(); jump('#top') }} className="flex min-w-0 shrink items-center gap-2.5">
+            <BarangaySeal className="size-10 shrink-0" />
+            <span className="min-w-0 leading-tight">
+              <span className="block truncate font-display text-[17px] font-extrabold whitespace-nowrap text-navy-900">{BARANGAY.name}</span>
               <span className="hidden text-[length:calc(13px*var(--fs))] text-ink-muted sm:block">Zone {BARANGAY.zone}, District {BARANGAY.district}, {BARANGAY.city}</span>
             </span>
           </Link>
@@ -49,7 +49,7 @@ export function PublicLayout({ children, minimal }: { children: ReactNode; minim
               ))}
             </nav>
           )}
-          <div className={cn('flex items-center gap-2', minimal ? 'ml-auto' : 'ml-auto lg:ml-3')}>
+          <div className={cn('flex shrink-0 items-center gap-1.5 sm:gap-2', minimal ? 'ml-auto' : 'ml-auto lg:ml-3')}>
             <TextSizeControl />
             {!minimal && (
               <button type="button" onClick={() => go('/register')} className="bmis-press ml-auto hidden h-9 items-center rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted sm:inline-flex lg:ml-0">
@@ -57,7 +57,7 @@ export function PublicLayout({ children, minimal }: { children: ReactNode; minim
               </button>
             )}
             {!minimal && (
-              <button type="button" onClick={() => go('/portal')} className="bmis-press ml-auto inline-flex h-9 items-center rounded-[var(--radius-control)] bg-navy-900 px-5 text-[length:calc(15.5px*var(--fs))] font-semibold text-white hover:bg-navy-800 sm:ml-0">
+              <button type="button" onClick={() => go('/portal')} className="bmis-press ml-auto inline-flex h-9 items-center rounded-[var(--radius-control)] bg-navy-900 px-3.5 text-[length:calc(15.5px*var(--fs))] font-semibold whitespace-nowrap text-white hover:bg-navy-800 sm:ml-0 sm:px-5">
                 Login
               </button>
             )}

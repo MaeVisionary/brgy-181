@@ -26,6 +26,7 @@ import { TEST_ACCOUNTS, testAccountByKey, testUserFor } from '@/config/testAccou
 import { accountTypeBySlug } from '@/config/accountTypes'
 import type { Permission, RoleId, User } from '@/types/auth'
 import { cn } from '@/lib/cn'
+import { useStickyState } from '@/hooks/useStickyState'
 
 /** FR3: create, deactivate and assign roles to user accounts. */
 export function UsersPage() {
@@ -54,7 +55,7 @@ export function UsersPage() {
   }
   const accounts = [...TEST_ACCOUNTS.map((a) => ({ ...testUserFor('system_admin', a), id: a.credentialKey, position: 'Test account (all levels)' })), ...users]
   const [group, setGroup] = useState<'all' | 'personnel' | 'residents'>('all')
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useStickyState('query', '')
   const [toast, setToast] = useState<string | null>(null)
   useEffect(() => {
     if (!toast) return

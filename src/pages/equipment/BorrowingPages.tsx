@@ -24,6 +24,7 @@ import type { Resident } from '@/types/resident'
 import { NotFound } from '@/pages/system/NotFound'
 import { SampleBadge } from '@/pages/dashboard/shared'
 import { BORROW_STATUS, RETURN_BADGE } from './badges'
+import { useStickyState } from '@/hooks/useStickyState'
 
 const eqName = (id: string) => mockEquipment.find((e) => e.id === id)?.name ?? id
 export const itemsText = (b: Borrowing) => b.items.map((i) => `${qtyOf(i)} × ${eqName(i.equipmentId)}`).join(', ')
@@ -35,7 +36,7 @@ export function BorrowingPage() {
   const navigate = useNavigate()
   const [tick, setTick] = useState(0)
   const list = useAsync(() => listBorrowings(actor), [actor, tick]).data
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useStickyState('status', '')
   const [encoding, setEncoding] = useState(false)
   const rows = (list ?? []).filter((b) => !status || (status === 'overdue' ? returnState(b) === 'overdue' : b.status === status))
   return (
@@ -298,7 +299,7 @@ export function BorrowForm({ assisted, resident, onDone }: { assisted?: boolean;
   }
 
   return (
-    <Panel className="mb-4" title={assisted ? 'Encode walk-in borrowing request' : 'Request to borrow equipment'} >
+    <Panel className="mb-4" title={assisted ? 'Encode walk-in borrowing request' : 'What do you need?'} >
       {assisted && !who && (
         <FieldLabel label="Borrower (resident)" required>
           <TextInput placeholder="Search name" value={q} onChange={(e) => setQ(e.target.value)} />

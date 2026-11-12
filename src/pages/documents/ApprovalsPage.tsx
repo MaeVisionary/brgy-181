@@ -15,6 +15,7 @@ import { mockUsers } from '@/mocks/users'
 import { applyTransition, availableTransitions, listRequests, type DocActor } from '@/services/documentService'
 import { ServiceError } from '@/services/mockApi'
 import type { DocumentRequest, Transition } from '@/types/document'
+import { useStickyState } from '@/hooks/useStickyState'
 
 const nameOf = (id?: string) => mockUsers.find((u) => u.id === id)?.fullName ?? 'Barangay Secretary'
 
@@ -66,7 +67,7 @@ export function ApprovalsPage() {
 function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: DocActor; onDone: (text: string) => void }) {
   const type = getDocumentType(req.typeId)
   const values = effectiveValues(req)
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useStickyState(`open:${req.id}`, false)
   const [picked, setPicked] = useState<Transition | null>(null)
   const [remarks, setRemarks] = useState('')
   const [busy, setBusy] = useState(false)

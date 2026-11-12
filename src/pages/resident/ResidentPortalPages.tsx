@@ -2,7 +2,8 @@ import { RowList } from '@/components/ui/RowList'
 import { listMyConcerns } from '@/services/concernService'
 import { Plus } from '@/icons'
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { BackLink as BackLinkSmart } from '@/components/ui/BackLink'
 import { useAuth } from '@/auth/useAuth'
 import { StatusLabel } from '@/components/ui/StatusLabel'
 import { caseStageForResident, documentStatusForResident } from '@/lib/residentStatus'
@@ -149,17 +150,13 @@ export function MyComplaintsPage() {
 
 /** Resident's equipment borrowing: request and track (FR21–FR22). */
 export function MyBorrowingPage() {
-  const { user } = useAuth()
   const actor = useDocActor()!
-  const [tick, setTick] = useState(0)
   const [params] = useSearchParams()
-  const [form, setForm] = useState(params.get('new') === '1')
-  const me = useAsync(() => getResident(user!.residentId!), [user?.residentId]).data
-  const list = useAsync(() => listBorrowings(actor), [actor, tick]).data ?? []
+  const list = useAsync(() => listBorrowings(actor), [actor]).data ?? []
+  if (params.get('new') === '1') return <Navigate to="/my/borrowing/new" replace />
   return (
     <>
-      <PageHeader title="Equipment Borrowing" actions={!form && <Button icon={<Plus className="size-4" />} onClick={() => setForm(true)}>New request</Button>} />
-      {form && me && <BorrowForm resident={me} onDone={() => { setForm(false); setTick((t) => t + 1) }} />}
+      <PageHeader title="Equipment Borrowing" actions={<ButtonLink to="/my/borrowing/new" icon={<Plus className="size-4" />}>New request</ButtonLink>} />
       <Card className="divide-y divide-line-soft">
         {list.length === 0 && <p className="px-5 py-6 text-[length:calc(16px*var(--fs))] text-ink-muted">No borrowing requests yet.</p>}
         {list.map((b) => {
@@ -189,5 +186,19 @@ function MyConcernsList() {
     <Panel className="mt-4" title="My community concerns" bodyClassName="px-0 py-0">
       <ul>{items.map((c) => <li key={c.submission.id} className="border-b border-line-soft last:border-0"><Link to={`/my/concerns/${c.submission.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-sky-50"><span className="min-w-0"><span className="block truncate text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{c.submission.title}</span><span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{c.submission.street ?? c.submission.landmark}</span></span><StatusLabel status={c.status} /></Link></li>)}</ul>
     </Panel>
+  )
+}
+
+/** Borrowing request form on its own page. */
+export function NewBorrowingPage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const me = useAsync(() => getResident(user!.residentId!), [user?.residentId]).data
+  return (
+    <>
+      <BackLinkSmart fallbackTo="/my/borrowing" fallbackLabel="Equipment Borrowing" />
+      <PageHeader title="Borrow equipment" />
+      {me ? <BorrowForm resident={me} onDone={(b) => (b ? navigate(`/my/borrowing/${b.id}`, { replace: true }) : navigate(-1))} /> : <div className="h-40 animate-pulse rounded-[var(--radius-card)] bg-surface" />}
+    </>
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { ChevronRight } from '@/icons'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/Button'
 import { FieldLabel, TextArea, TextInput } from '@/components/ui/Field'
@@ -15,13 +16,18 @@ import type { Resident } from '@/types/resident'
 import { BackLink } from './parts'
 import { ConcernForm } from './ConcernForm'
 
-/** Dedicated complaint / report form (never a document request). */
+/** URL part for each report type, so each form has its own page. */
+const SLUG: Record<ComplaintCategory, string> = { 'Complaint against a person': 'person', 'Incident report': 'incident', 'Community concern': 'concern' }
+const BY_SLUG = Object.fromEntries(Object.entries(SLUG).map(([k, v]) => [v, k])) as Record<string, ComplaintCategory>
+
+/** Step 1 chooses the type; step 2 is that type's form on its own page (never a document request). */
 export function NewComplaintPage() {
+  const { kind } = useParams()
   const actor = useDocActor()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [me, setMe] = useState<Resident | null>(null)
-  const [category, setCategory] = useState<ComplaintCategory | null>(null)
+  const category: ComplaintCategory | null = kind ? BY_SLUG[kind] ?? null : null
   const [nature, setNature] = useState('')
   const [details, setDetails] = useState('')
   const [date, setDate] = useState('')
@@ -51,20 +57,28 @@ export function NewComplaintPage() {
     }
   }
 
-  return (
+  if (kind && !category) return <Navigate to="/my/complaints/new" replace />
+  if (!category) return (
     <>
       <BackLink to="/my/complaints">My Complaints and Reports</BackLink>
-      <PageHeader title="File a report" />
+      <PageHeader title="What are you reporting?" />
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {COMPLAINT_CATEGORIES.map((c) => (
+          <li key={c}>
+            <button type="button" onClick={() => navigate(`/my/complaints/new/${SLUG[c]}`)} className={cn('flex min-h-14 w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-left text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900 hover:border-navy-600 hover:bg-sky-50')}>
+              {c} <ChevronRight className="size-5 shrink-0 text-ink-subtle" />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+
+  return (
+    <>
+      <BackLink to="/my/complaints/new">Report types</BackLink>
+      <PageHeader title={category} />
       <div className="space-y-4">
-        <Panel title="What are you reporting?">
-          <div role="radiogroup" aria-label="Report type" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            {COMPLAINT_CATEGORIES.map((c) => (
-              <button key={c} type="button" role="radio" aria-checked={category === c} onClick={() => { setCategory(c); setErr(null) }} className={cn('min-h-12 rounded-[var(--radius-control)] border px-3.5 py-2.5 text-left text-[length:calc(15px*var(--fs))] font-semibold', category === c ? 'border-navy-900 bg-sky-100 text-navy-900' : 'border-line text-navy-900 hover:bg-sky-50')}>
-                {c}
-              </button>
-            ))}
-          </div>
-        </Panel>
 
         {category === 'Community concern' && <ConcernForm />}
 

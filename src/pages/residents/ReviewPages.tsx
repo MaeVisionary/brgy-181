@@ -23,6 +23,7 @@ import { ScheduleVisitForm } from '@/pages/appointments/AppointmentPages'
 import { PROOF_REQUIRED, decideChangeRequest, displayRequestedValue, listChangeRequests } from '@/services/residentService'
 import type { ResidentChangeRequest, ResidentRegistration } from '@/types/resident'
 import { fullName } from './common'
+import { useStickyState } from '@/hooks/useStickyState'
 
 function CheckIcon({ v }: { v: 'passed' | 'failed' | 'inconclusive' }) {
   if (v === 'passed') return <CheckCircle2 className="mt-px size-4 shrink-0 text-success" />
@@ -375,7 +376,7 @@ function VisitedForm({ r, onCancel, onDone }: { r: ResidentRegistration; onCance
 /** FR10: registrations that did not pass every check wait for the Secretary's manual verification. */
 export function RegistrationsPage() {
   const [items, setItems] = useState<ResidentRegistration[] | null>(null)
-  const [tab, setTab] = useState<'review' | 'visit' | 'decided'>('review')
+  const [tab, setTab] = useStickyState<'review' | 'visit' | 'decided'>('tab', 'review')
   const load = () => listRegistrations().then((x) => setItems([...x]))
   useEffect(() => {
     load()
@@ -476,7 +477,7 @@ const DECIDED_VISIBLE_DAYS = 7
 export function ChangeRequestsPage() {
   const { user, can } = useAuth()
   const [items, setItems] = useState<ResidentChangeRequest[] | null>(null)
-  const [tab, setTab] = useState<'review' | 'decided'>('review')
+  const [tab, setTab] = useStickyState<'review' | 'decided'>('tab', 'review')
   const load = () => listChangeRequests().then(setItems)
   useEffect(() => {
     load()

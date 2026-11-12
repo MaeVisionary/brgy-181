@@ -16,6 +16,7 @@ import { ServiceError } from '@/services/mockApi'
 import type { CaseStage } from '@/types/case'
 import { SampleBadge } from '@/pages/dashboard/shared'
 import { KP } from '@/config/barangay'
+import { useStickyState } from '@/hooks/useStickyState'
 
 /** Katarungang Pambarangay case list. */
 export function CasesPage() {
@@ -24,8 +25,8 @@ export function CasesPage() {
   const [showRemoved, setShowRemoved] = useState(false)
   const [version, setVersion] = useState(0)
   const cases = useAsync(() => listCases(actor, { includeRemoved: showRemoved }), [actor, showRemoved, version]).data
-  const [stage, setStage] = useState('')
-  const [q, setQ] = useState('')
+  const [stage, setStage] = useStickyState('stage', '')
+  const [q, setQ] = useStickyState('q', '')
   const [confirmId, setConfirmId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const canRemove = actor.permissions.has('cases.decide')

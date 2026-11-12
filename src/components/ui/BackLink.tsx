@@ -46,6 +46,19 @@ export function useTrail() {
 }
 
 const DETAIL_LABELS: [RegExp, string][] = [
+  [/^\/documents\/approvals$/, 'Approvals'],
+  [/^\/documents\/[^/]+\/preview$/, 'Document preview'],
+  [/^\/appointments\/[^/]+$/, 'Appointment'],
+  [/^\/concerns\/[^/]+$/, 'Concern'],
+  [/^\/my\/documents\/new$/, 'Choose a document'],
+  [/^\/my\/documents\/new\/.+$/, 'Request form'],
+  [/^\/my\/complaints\/new$/, 'Report types'],
+  [/^\/my\/borrowing\/new$/, 'Borrowing form'],
+  [/^\/my\/documents\/[^/]+$/, 'Request'],
+  [/^\/my\/complaints\/[^/]+$/, 'Report'],
+  [/^\/my\/borrowing\/[^/]+$/, 'Borrowing'],
+  [/^\/my\/appointments\/[^/]+$/, 'Appointment'],
+  [/^\/my\/concerns\/[^/]+$/, 'Concern'],
   [/^\/residents\/households\/[^/]+$/, 'Household'],
   [/^\/residents\/[^/]+$/, 'Resident profile'],
   [/^\/cases\/[^/]+$/, 'Case'],
@@ -70,13 +83,15 @@ export function BackLink({ fallbackTo, fallbackLabel }: { fallbackTo: string; fa
   const trail = readTrail()
   const current = trail[trail.length - 1]
   const prev = current?.path === pathname ? trail[trail.length - 2] : trail[trail.length - 1]
-  const prevLabel = prev && prev.path !== pathname ? labelFor(prev.path) : null
-  const cls = 'mb-3 inline-flex min-h-9 items-center gap-1.5 text-[length:calc(15px*var(--fs))] font-semibold text-info hover:underline'
+  const hasPrev = !!prev && prev.path !== pathname
+  const prevLabel = hasPrev ? labelFor(prev.path) : null
+  const cls = 'mb-3 inline-flex min-h-11 items-center gap-1.5 text-[length:calc(15.5px*var(--fs))] font-semibold text-info hover:underline'
 
-  if (prev && prevLabel) {
+  // Always return to the page the user came from when there is one; the label is a courtesy.
+  if (hasPrev) {
     return (
       <button type="button" onClick={() => navigate(-1)} className={cls}>
-        <ArrowLeft className="size-4" /> Back to {prevLabel}
+        <ArrowLeft className="size-4" /> {prevLabel ? `Back to ${prevLabel}` : 'Back'}
       </button>
     )
   }

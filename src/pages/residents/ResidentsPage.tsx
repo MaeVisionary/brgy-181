@@ -12,6 +12,7 @@ import { AREAS } from '@/mocks/residents'
 import { listHouseholds, listResidents } from '@/services/residentService'
 import { ImportPanel } from './ImportPage'
 import { RegistrationBadge, SectorBadges, age, fullName } from './common'
+import { useStickyState } from '@/hooks/useStickyState'
 
 const PAGE = 15
 type Sort = 'name' | 'age' | 'area'
@@ -22,12 +23,12 @@ export function ResidentsPage() {
   const navigate = useNavigate()
   const residents = useAsync(listResidents).data
   const households = useAsync(listHouseholds).data
-  const [q, setQ] = useState('')
+  const [q, setQ] = useStickyState('q', '')
   const [area, setArea] = useState('')
   const [sector, setSector] = useState('')
   const [voter, setVoter] = useState('')
-  const [sort, setSort] = useState<Sort>('name')
-  const [page, setPage] = useState(0)
+  const [sort, setSort] = useStickyState<Sort>('sort', 'name')
+  const [page, setPage] = useStickyState('page', 0)
 
   const hhNo = (id: string) => households?.find((h) => h.id === id)?.householdNo ?? ''
 

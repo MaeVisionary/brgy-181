@@ -55,6 +55,7 @@ import { ServiceError } from '@/services/mockApi'
 import { bookingsOn, estimateDuration, freeSlots, manilaToday, nextAvailable, nextDate, unavailableReason } from '@/services/schedulingService'
 import { NotFound } from '@/pages/system/NotFound'
 import { BackLink } from '@/pages/resident/parts'
+import { useStickyState } from '@/hooks/useStickyState'
 
 const shortDate = (d: string) => new Date(`${d}T12:00:00+08:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Manila' })
 const staffName = (id: string) => mockUsers.find((u) => u.id === id)?.fullName ?? ''
@@ -421,9 +422,9 @@ function toItems(apps: NamedAppointment[], hearings: HearingEntry[]): CalItem[] 
 export function AppointmentsPage() {
   const { user } = useAuth()
   const [items, setItems] = useState<NamedAppointment[] | null>(null)
-  const [range, setRange] = useState<Range>('today')
-  const [kind, setKind] = useState<'' | AppointmentKind | 'hearing'>('')
-  const [staff, setStaff] = useState('')
+  const [range, setRange] = useStickyState<Range>('range', 'today')
+  const [kind, setKind] = useStickyState<'' | AppointmentKind | 'hearing'>('kind', '')
+  const [staff, setStaff] = useStickyState('staff', '')
   useEffect(() => { runAppointmentJobs(); if (user) listAppointments(user).then(setItems).catch(() => setItems([])) }, [user])
   if (!user) return null
   const kinds = kindsFor(user)
