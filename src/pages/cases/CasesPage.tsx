@@ -61,9 +61,10 @@ export function CasesPage() {
                         {removed.has(c.id) && <span className="text-ink-muted">· Removed</span>}
                       </span>
                       <span className="block text-[length:calc(17px*var(--fs))] font-semibold break-words text-navy-900">{c.title}</span>
+                      <span className="mt-1 block sm:hidden"><Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge></span>
                       {next && <span className="block text-[length:calc(15px*var(--fs))] text-ink-nav">Next hearing: {shortDate(next.scheduledAt)}</span>}
                     </span>
-                    <Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>
+                    <span className="hidden sm:inline-flex"><Badge tone={STAGE_TONE[c.stage]}>{STAGE_LABEL[c.stage]}</Badge></span>
                     <ChevronRight className="size-5 shrink-0 text-ink-subtle" />
                   </Link>
                 </li>
