@@ -41,8 +41,8 @@
   --color-info-tint: #e4f0f6;       /* (derived) */
   --color-neutral-tint: #eef0f2;    /* (derived) closed, cancelled */
 
-  --radius-card: 15px;              /* (figma) stat card */
-  --radius-control: 8px;            /* buttons, inputs */
+  --radius-card: 8px;               /* cards and panels (small, even corners) */
+  --radius-control: 6px;            /* buttons, inputs */
   --radius-badge: 4px;
 }
 

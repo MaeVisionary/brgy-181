@@ -1,3 +1,12 @@
+# BMIS Patch Notes: Second test account, smaller corners (12 November 2026)
+
+- Test accounts: a second team test account is supported (same "Viewing as" level switcher, own password).
+  Its email and password hash come from `.env.local` locally and from repository secrets
+  `VITE_TEST_ACCOUNT_2_EMAIL` / `VITE_TEST_ACCOUNT_2_PASSWORD_SHA256` on the live site. The Treasurer level was added to the switcher.
+- Corners: cards 15px → 8px, buttons and inputs 8px → 6px, large rounded panels → 8px, pill buttons → normal buttons. Avatars, dots and the camera oval stay round.
+
+---
+
 # BMIS Patch Notes: Containers restored (12 November 2026)
 
 - Brought back the boxed layout (cards, light-blue title bars, grey page background, boxed greeting and stat cards), as it was before the "open layout" change.

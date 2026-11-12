@@ -39,7 +39,7 @@ export function NotificationMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-40 mt-2 w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-xl border border-line bg-surface shadow-[0_8px_24px_rgba(0,33,50,0.10)]">
+        <div className="absolute right-0 z-40 mt-2 w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-lg border border-line bg-surface shadow-[0_8px_24px_rgba(0,33,50,0.10)]">
           <div className="flex items-center justify-between border-b border-line-soft px-4 py-3">
             <p className="font-display text-[16px] font-bold text-navy-900">Notifications</p>
             {unread > 0 && (

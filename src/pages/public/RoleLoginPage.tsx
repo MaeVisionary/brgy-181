@@ -12,7 +12,7 @@ import { ServiceError } from '@/services/mockApi'
 import { PublicLayout } from './PublicLayout'
 
 const field =
-  'h-12 w-full rounded-xl border bg-surface px-4 text-[17px] text-navy-900 placeholder:text-ink-subtle transition-[border-color,box-shadow] duration-200 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none'
+  'h-12 w-full rounded-lg border bg-surface px-4 text-[17px] text-navy-900 placeholder:text-ink-subtle transition-[border-color,box-shadow] duration-200 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none'
 
 /** Step 3: the sign-in form for the selected account type. */
 export function RoleLoginPage() {
@@ -59,7 +59,7 @@ export function RoleLoginPage() {
         </button>
         <div className="grid gap-5 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         {/* Selected account type */}
-        <aside className="bmis-rise relative flex min-h-[260px] flex-col overflow-hidden rounded-[24px] bg-gradient-to-b from-navy-900 to-navy-800 p-7 text-white md:min-h-[420px] md:p-8">
+        <aside className="bmis-rise relative flex min-h-[260px] flex-col overflow-hidden rounded-lg bg-gradient-to-b from-navy-900 to-navy-800 p-7 text-white md:min-h-[420px] md:p-8">
           <img aria-hidden alt="" src={`${import.meta.env.BASE_URL}seal.png`} className="pointer-events-none absolute -right-24 -bottom-28 w-[340px] max-w-none opacity-[0.07] grayscale select-none" />
           <div className="relative flex items-center gap-3">
             <BarangaySeal onDark className="size-11" />
@@ -69,7 +69,7 @@ export function RoleLoginPage() {
             </span>
           </div>
           <div className="relative my-auto pt-8">
-            <span className="grid size-11 place-items-center rounded-xl bg-white/10"><Icon className="size-5" /></span>
+            <span className="grid size-11 place-items-center rounded-lg bg-white/10"><Icon className="size-5" /></span>
             <p className="mt-4 text-[15.5px] text-white/80">{type.slug === 'resident' ? 'Welcome!' : 'Welcome back!'}</p>
             <p className="font-display text-[32px] leading-[1.08] font-extrabold tracking-tight sm:text-[38px]">{type.title}</p>
             <p className="mt-2 text-[15.5px] text-white/80">{type.slug === 'resident' ? 'Sign in to request documents and follow your transactions.' : 'Sign in to access your Barangay 181 account.'}</p>
@@ -77,7 +77,7 @@ export function RoleLoginPage() {
         </aside>
 
         {/* Form */}
-        <section className="bmis-rise bmis-rise-2 rounded-[24px] border border-line bg-surface p-7 md:p-9">
+        <section className="bmis-rise bmis-rise-2 rounded-lg border border-line bg-surface p-7 md:p-9">
           <h1 className="font-display text-[26px] leading-tight font-extrabold tracking-tight text-navy-900 sm:text-[28px]">Login as {type.title}</h1>
 
           <form onSubmit={submit} noValidate className="mt-7 space-y-4">
@@ -128,7 +128,7 @@ export function RoleLoginPage() {
             </div>
 
             {notice && (
-              <p role="alert" className="bmis-rise flex items-start gap-2.5 rounded-xl border border-danger/25 bg-danger-tint px-4 py-3 text-[15px] text-navy-900">
+              <p role="alert" className="bmis-rise flex items-start gap-2.5 rounded-lg border border-danger/25 bg-danger-tint px-4 py-3 text-[15px] text-navy-900">
                 <AlertCircle className="mt-px size-4 shrink-0 text-danger" />
                 <span>
                   {notice}
@@ -141,12 +141,12 @@ export function RoleLoginPage() {
               </p>
             )}
 
-            <Button type="submit" loading={busy} className="bmis-press h-12 w-full rounded-xl text-[17px]">
+            <Button type="submit" loading={busy} className="bmis-press h-12 w-full rounded-lg text-[17px]">
               Sign In
             </Button>
           </form>
           {type.slug === 'resident' && (
-            <p className="mt-5 rounded-xl bg-surface-muted px-4 py-3 text-center text-[15.5px] text-navy-900">
+            <p className="mt-5 rounded-lg bg-surface-muted px-4 py-3 text-center text-[15.5px] text-navy-900">
               New resident?{' '}
               <button type="button" onClick={() => go('/register', 'forward')} className="font-semibold text-info hover:underline">
                 Create an account

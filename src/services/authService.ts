@@ -1,5 +1,5 @@
 import { APP_CONFIG } from '@/config/app'
-import { TEST_ACCOUNT, TEST_LEVELS, isTestUser, testUserFor } from '@/config/testAccount'
+import { TEST_LEVELS, testAccountByEmail, testAccountOf, testUserFor } from '@/config/testAccount'
 import { mockUsers } from '@/mocks/users'
 import type { RoleId, Session, User } from '@/types/auth'
 import { addFailure, addResetRequest, clearFailures, failedCount, getCredential, hashPassword } from './credentialStore'
@@ -42,13 +42,14 @@ export async function signIn(input: SignInInput): Promise<{ user: User; session:
   }
 
   // Test account: any account type; the chosen type decides the starting level.
-  if (TEST_ACCOUNT.enabled && id === TEST_ACCOUNT.email) {
-    const cred = getCredential(TEST_ACCOUNT.credentialKey)
-    const expected = cred?.hash ?? TEST_ACCOUNT.passwordHash
-    if (!(await passwordMatches(TEST_ACCOUNT.credentialKey, input.password, expected))) fail()
+  const testAccount = testAccountByEmail(id)
+  if (testAccount) {
+    const cred = getCredential(testAccount.credentialKey)
+    const expected = cred?.hash ?? testAccount.passwordHash
+    if (!(await passwordMatches(testAccount.credentialKey, input.password, expected))) fail()
     clearFailures(lockKey)
     const role = input.roles.includes('staff') ? 'staff' : input.roles[0]
-    const user = testUserFor(role)
+    const user = testUserFor(role, testAccount)
     return mockRequest(() => ({ user, session: createSession(user.id, !!cred?.mustChange) }))
   }
 
@@ -84,10 +85,11 @@ export function createSession(userId: string, mustChangePassword = false): Sessi
 }
 
 export function findUser(userId: string): User | undefined {
-  if (isTestUser(userId) && TEST_ACCOUNT.enabled) {
-    const role = userId.replace('usr-test-', '') as RoleId
+  const testAccount = testAccountOf(userId)
+  if (testAccount) {
+    const role = userId.slice(testAccount.idPrefix.length) as RoleId
     // A level that no longer exists (e.g. a removed role) ends the saved session.
-    return TEST_LEVELS.includes(role) ? testUserFor(role) : undefined
+    return TEST_LEVELS.includes(role) ? testUserFor(role, testAccount) : undefined
   }
   return mockUsers.find((u) => u.id === userId)
 }
@@ -103,8 +105,9 @@ export function listPreviewAccounts(): User[] {
  * preview) cannot confirm.
  */
 export async function verifyOwnPassword(user: User, password: string): Promise<boolean> {
-  const key = isTestUser(user.id) ? TEST_ACCOUNT.credentialKey : user.id
-  const expected = getCredential(key)?.hash ?? (isTestUser(user.id) ? TEST_ACCOUNT.passwordHash : undefined)
+  const test = testAccountOf(user.id)
+  const key = test ? test.credentialKey : user.id
+  const expected = getCredential(key)?.hash ?? test?.passwordHash
   if (!expected) return false
   return passwordMatches(key, password, expected)
 }

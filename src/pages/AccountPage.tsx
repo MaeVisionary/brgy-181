@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
-import { TEST_ACCOUNT, isTestUser } from '@/config/testAccount'
+import { testAccountOf } from '@/config/testAccount'
 import { initials } from '@/lib/format'
 import { audit } from '@/services/auditService'
 import { PASSWORD_CHANGE_LIMIT, PASSWORD_CHANGE_WINDOW_DAYS, getCredential, hashPassword, nextPasswordChangeAt, passwordChangesLeft, passwordProblem, recordPasswordChange, setCredential } from '@/services/credentialStore'
@@ -25,8 +25,9 @@ export function AccountPage() {
   const [busy, setBusy] = useState(false)
   if (!user || !role) return null
 
-  const key = isTestUser(user.id) ? TEST_ACCOUNT.credentialKey : user.id
-  const existing = getCredential(key)?.hash ?? (isTestUser(user.id) ? TEST_ACCOUNT.passwordHash : undefined)
+  const test = testAccountOf(user.id)
+  const key = test ? test.credentialKey : user.id
+  const existing = getCredential(key)?.hash ?? test?.passwordHash
   // A change required after an administrator reset is not limited.
   const left = mustChangePassword ? PASSWORD_CHANGE_LIMIT : passwordChangesLeft(key)
   const nextAt = nextPasswordChangeAt(key)

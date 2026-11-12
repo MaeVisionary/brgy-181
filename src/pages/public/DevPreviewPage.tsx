@@ -20,7 +20,7 @@ export function DevPreviewPage() {
       <p className="mt-2 text-[15.5px] text-ink-muted">
         For reviewing role screens with sample data during development. This page does not exist in production builds and is not a sign-in.
       </p>
-      <ul className="mt-6 divide-y divide-line-soft rounded-xl border border-line bg-surface">
+      <ul className="mt-6 divide-y divide-line-soft rounded-lg border border-line bg-surface">
         {listPreviewAccounts().map((u) => (
           <li key={u.id}>
             <button

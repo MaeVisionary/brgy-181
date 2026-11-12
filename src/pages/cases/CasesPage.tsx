@@ -170,7 +170,7 @@ function Total({ icon, label, value, hint }: { icon: React.ReactNode; label: str
   return (
     <Card className="px-6 py-5">
       <div className="flex items-center gap-4">
-        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-sky-100 text-navy-900">{icon}</span>
+        <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-sky-100 text-navy-900">{icon}</span>
         <div>
           <p className="text-[14px] font-semibold tracking-[0.06em] text-navy-600 uppercase">{label}</p>
           <p className="font-display text-[34px] leading-none font-extrabold text-navy-900">{value ?? '–'}</p>

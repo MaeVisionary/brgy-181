@@ -50,12 +50,12 @@ export function PublicLayout({ children, minimal }: { children: ReactNode; minim
           )}
           <div className={cn('flex items-center gap-2', minimal ? 'ml-auto' : 'lg:ml-3')}>
             {!minimal && (
-              <button type="button" onClick={() => go('/register')} className="bmis-press ml-auto hidden h-9 items-center rounded-full border border-line bg-surface px-4 text-[15.5px] font-semibold text-navy-900 hover:bg-surface-muted sm:inline-flex lg:ml-0">
+              <button type="button" onClick={() => go('/register')} className="bmis-press ml-auto hidden h-9 items-center rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[15.5px] font-semibold text-navy-900 hover:bg-surface-muted sm:inline-flex lg:ml-0">
                 Create account
               </button>
             )}
             {!minimal && (
-              <button type="button" onClick={() => go('/portal')} className="bmis-press ml-auto inline-flex h-9 items-center rounded-full bg-navy-900 px-5 text-[15.5px] font-semibold text-white hover:bg-navy-800 sm:ml-0">
+              <button type="button" onClick={() => go('/portal')} className="bmis-press ml-auto inline-flex h-9 items-center rounded-[var(--radius-control)] bg-navy-900 px-5 text-[15.5px] font-semibold text-white hover:bg-navy-800 sm:ml-0">
                 Login
               </button>
             )}

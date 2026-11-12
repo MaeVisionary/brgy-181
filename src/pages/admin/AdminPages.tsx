@@ -17,7 +17,7 @@ import { ServiceError } from '@/services/mockApi'
 import { verifyOwnPassword } from '@/services/authService'
 import { ASSIGNABLE_ROLES, listUsers, resetPassword, setDisplayName, setExtraPermissions, setRole, setStatus } from '@/services/userService'
 import { getCredential, listResetRequests, type ResetRequest } from '@/services/credentialStore'
-import { TEST_ACCOUNT, testUserFor } from '@/config/testAccount'
+import { TEST_ACCOUNTS, testAccountByKey, testUserFor } from '@/config/testAccount'
 import { accountTypeBySlug } from '@/config/accountTypes'
 import type { Permission, RoleId, User } from '@/types/auth'
 import { cn } from '@/lib/cn'
@@ -39,17 +39,15 @@ export function UsersPage() {
     try { await fn(); await load() } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Failed.') }
   }
   const reset = async (u: User) => {
-    const isTest = u.id === 'usr-test'
+    const isTest = !!testAccountByKey(u.id)
     const password = await resetPassword(
-      { credentialKey: isTest ? TEST_ACCOUNT.credentialKey : u.id, identifiers: [u.username, u.email], label: isTest ? 'Test account' : u.username },
+      { credentialKey: u.id, identifiers: [u.username, u.email], label: isTest ? `Test account (${u.email})` : u.username },
       me!,
     )
     setIssued({ label: u.fullName, password })
     setRequests(listResetRequests())
   }
-  const accounts = TEST_ACCOUNT.enabled
-    ? [{ ...testUserFor('system_admin'), id: 'usr-test', position: 'Test account (all levels)' }, ...users]
-    : users
+  const accounts = [...TEST_ACCOUNTS.map((a) => ({ ...testUserFor('system_admin', a), id: a.credentialKey, position: 'Test account (all levels)' })), ...users]
   const [group, setGroup] = useState<'all' | 'personnel' | 'residents'>('all')
   const [query, setQuery] = useState('')
   const [toast, setToast] = useState<string | null>(null)
@@ -132,7 +130,7 @@ export function UsersPage() {
               <span className="min-w-0 flex-1">
                 <span className="block text-[15.5px] font-semibold text-navy-900">{u.fullName}</span>
                 <span className="block text-[14px] text-ink-muted">{u.position} · {u.username} · {ROLES[u.roleId].name}</span>
-                <span className="block text-[13.5px] text-ink-muted">{getCredential(u.id === 'usr-test' ? TEST_ACCOUNT.credentialKey : u.id)?.mustChange ? 'Temporary password issued' : u.id === 'usr-test' || getCredential(u.id) ? 'Password set' : 'No password yet'}</span>
+                <span className="block text-[13.5px] text-ink-muted">{getCredential(u.id)?.mustChange ? 'Temporary password issued' : testAccountByKey(u.id) || getCredential(u.id) ? 'Password set' : 'No password yet'}</span>
               </span>
               <span className="flex w-full items-center gap-3 pl-12 sm:w-auto sm:pl-0">
                 <StatusLabel status={u.status === 'active' ? 'Active' : u.status === 'locked' ? 'Locked' : 'Inactive'} tone={u.status === 'active' ? 'success' : u.status === 'locked' ? 'danger' : 'danger'} />
@@ -141,7 +139,7 @@ export function UsersPage() {
                 </button>
               </span>
             </div>
-            {open === u.id && (u.id === 'usr-test' ? (
+            {open === u.id && (testAccountByKey(u.id) ? (
               <div className="mt-3 flex flex-wrap items-center gap-3 rounded-[var(--radius-control)] bg-surface-muted p-4 text-[14.5px] text-navy-900">
                 Test account for the project team. It can switch between every level after signing in.
                 <Button size="sm" icon={<KeyRound className="size-3.5" />} onClick={() => reset(u)}>Reset password</Button>
@@ -151,7 +149,7 @@ export function UsersPage() {
         ))}
       </Card>
       {toast && (
-        <div role="status" className="fixed right-4 bottom-4 z-50 flex max-w-sm items-start gap-2 rounded-xl border border-success/40 bg-surface px-4 py-3 text-[15px] text-navy-900 shadow-[0_8px_24px_rgba(0,33,50,0.15)]">
+        <div role="status" className="fixed right-4 bottom-4 z-50 flex max-w-sm items-start gap-2 rounded-lg border border-success/40 bg-surface px-4 py-3 text-[15px] text-navy-900 shadow-[0_8px_24px_rgba(0,33,50,0.15)]">
           <CheckCircle2 className="mt-px size-4 shrink-0 text-success" /> {toast}
         </div>
       )}

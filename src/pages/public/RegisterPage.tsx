@@ -22,7 +22,7 @@ import { PublicLayout } from './PublicLayout'
  */
 
 const field =
-  'h-12 w-full rounded-xl border border-line bg-surface px-4 text-[17px] text-navy-900 placeholder:text-ink-subtle transition-[border-color,box-shadow] duration-200 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none aria-[invalid=true]:border-danger'
+  'h-12 w-full rounded-lg border border-line bg-surface px-4 text-[17px] text-navy-900 placeholder:text-ink-subtle transition-[border-color,box-shadow] duration-200 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none aria-[invalid=true]:border-danger'
 
 /** Government-issued IDs commonly accepted for barangay transactions. */
 const ID_TYPES = [
@@ -257,7 +257,7 @@ export function RegisterPage() {
 
         {step < 5 && <Stepper step={step} />}
 
-        <section key={step} className="bmis-rise mt-6 rounded-[24px] border border-line bg-surface p-6 sm:p-8">
+        <section key={step} className="bmis-rise mt-6 rounded-lg border border-line bg-surface p-6 sm:p-8">
           {step === 0 && (
             <>
               <StepTitle icon={<ShieldCheck />} title="Before you start" sub="It takes about 5 minutes." />
@@ -266,7 +266,7 @@ export function RegisterPage() {
                 <Li>A phone or computer with a camera for a short live selfie check.</Li>
                 <Li>You must be a resident of Barangay 181 and at least {MIN_AGE} years old.</Li>
               </ul>
-              <div className="mt-6 rounded-2xl bg-surface-muted p-5 text-[15px] leading-relaxed text-navy-900">
+              <div className="mt-6 rounded-lg bg-surface-muted p-5 text-[15px] leading-relaxed text-navy-900">
                 <p className="font-semibold">Privacy notice (Data Privacy Act of 2012, RA 10173)</p>
                 <p className="mt-2 text-ink-muted">
                   Barangay 181 collects your personal details, a photo of your ID and a selfie only to confirm that you are a resident and that the ID is yours.
@@ -353,11 +353,11 @@ export function RegisterPage() {
 
               <div className="mt-5">
                 {idImage ? (
-                  <div className="overflow-hidden rounded-2xl border border-line">
+                  <div className="overflow-hidden rounded-lg border border-line">
                     <img src={idImage} alt="Your ID" className="max-h-[320px] w-full bg-surface-muted object-contain" />
                   </div>
                 ) : (
-                  <div className="grid place-items-center rounded-2xl border-2 border-dashed border-line bg-surface-muted px-6 py-10 text-center">
+                  <div className="grid place-items-center rounded-lg border-2 border-dashed border-line bg-surface-muted px-6 py-10 text-center">
                     <IdCard className="size-10 text-ink-subtle" />
                     <p className="mt-2 text-[16px] font-semibold text-navy-900">Photo of the front of your ID</p>
                     <p className="text-[14.5px] text-ink-muted">Place it on a plain surface, in good light, with no glare.</p>
@@ -410,7 +410,7 @@ export function RegisterPage() {
                 <F label="Confirm password"><input className={field} type={showPw ? 'text' : 'password'} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" /></F>
                 {touched && accountError && <ErrorText>{accountError}</ErrorText>}
               </div>
-              <div className="mt-6 rounded-2xl bg-surface-muted p-4 text-[15px] text-navy-900">
+              <div className="mt-6 rounded-lg bg-surface-muted p-4 text-[15px] text-navy-900">
                 <p className="font-semibold">Review</p>
                 <p className="mt-1 text-ink-muted">
                   {[d.firstName, d.middleName, d.lastName, d.suffix].filter(Boolean).join(' ')} · born {d.birthDate} · {d.houseNo} {street} · {idType}
@@ -458,18 +458,18 @@ export function RegisterPage() {
                   </p>
                 </>
               )}
-              <p className="mt-5 inline-block rounded-xl bg-surface-muted px-4 py-2 text-[15px] text-navy-900">
+              <p className="mt-5 inline-block rounded-lg bg-surface-muted px-4 py-2 text-[15px] text-navy-900">
                 Reference no. <span className="font-semibold">{result.referenceNo}</span>
               </p>
               <div className="mt-6">
-                <Button className="h-12 rounded-xl px-6 text-[17px]" onClick={() => go('/login/resident', 'forward')}>Go to sign in</Button>
+                <Button className="h-12 rounded-lg px-6 text-[17px]" onClick={() => go('/login/resident', 'forward')}>Go to sign in</Button>
               </div>
             </div>
           )}
 
           {step < 5 && (
             <div className="mt-8 flex justify-end">
-              <Button className="h-12 rounded-xl px-7 text-[17px]" onClick={next} disabled={step === 2 && idFace === 'checking'}>
+              <Button className="h-12 rounded-lg px-7 text-[17px]" onClick={next} disabled={step === 2 && idFace === 'checking'}>
                 {step === 4 ? 'Submit registration' : 'Continue'}
               </Button>
             </div>
@@ -599,7 +599,7 @@ function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: 
   if (value) {
     return (
       <div className="mt-6 text-center">
-        <img src={value.image} alt="Your selfie" className={cn('mx-auto aspect-[3/4] w-56 rounded-[28px] object-cover', value.live && '-scale-x-100')} />
+        <img src={value.image} alt="Your selfie" className={cn('mx-auto aspect-[3/4] w-56 rounded-lg object-cover', value.live && '-scale-x-100')} />
         <Status tone={value.live ? 'success' : 'warning'} icon={value.live ? <CheckCircle2 className="size-4" /> : <CircleHelp className="size-4" />}>
           {value.live ? 'Live check complete.' : 'Photo uploaded. Without the live check, the Barangay Secretary will review your registration.'}
         </Status>
@@ -620,7 +620,7 @@ function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: 
 
   return (
     <div className="mt-6">
-      <div className="relative mx-auto aspect-[3/4] w-full max-w-[320px] overflow-hidden rounded-[28px] bg-navy-900">
+      <div className="relative mx-auto aspect-[3/4] w-full max-w-[320px] overflow-hidden rounded-lg bg-navy-900">
         <video ref={video} playsInline muted className="absolute inset-0 size-full -scale-x-100 object-cover" />
         {/* Oval guide */}
         <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
@@ -683,7 +683,7 @@ function Stepper({ step }: { step: number }) {
 function StepTitle({ icon, title, sub }: { icon: ReactNode; title: string; sub: string }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-sky-100 text-navy-900 [&>svg]:size-5">{icon}</span>
+      <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-sky-100 text-navy-900 [&>svg]:size-5">{icon}</span>
       <div>
         <h2 className="font-display text-[21px] font-extrabold text-navy-900">{title}</h2>
         <p className="text-[15.5px] text-ink-muted">{sub}</p>
@@ -728,7 +728,7 @@ function ErrorText({ children }: { children: ReactNode }) {
 
 function Status({ tone, icon, children }: { tone: 'info' | 'success' | 'warning' | 'danger'; icon: ReactNode; children: ReactNode }) {
   const cls = { info: 'bg-sky-100 text-navy-900', success: 'bg-success-tint text-navy-900', warning: 'bg-warning-tint text-navy-900', danger: 'bg-danger-tint text-navy-900' }[tone]
-  return <p role="status" className={cn('mt-3 flex items-start gap-2 rounded-xl px-4 py-3 text-left text-[15px]', cls)}><span className="mt-px shrink-0">{icon}</span>{children}</p>
+  return <p role="status" className={cn('mt-3 flex items-start gap-2 rounded-lg px-4 py-3 text-left text-[15px]', cls)}><span className="mt-px shrink-0">{icon}</span>{children}</p>
 }
 
 function FilePick({ label, icon, capture, inline, onFile }: { label: string; icon?: ReactNode; capture?: boolean | 'user'; inline?: boolean; onFile: (f: File | undefined) => void }) {
@@ -757,7 +757,7 @@ function FilePick({ label, icon, capture, inline, onFile }: { label: string; ico
 
 function Progress({ label, v, active = true }: { label: string; v?: CheckResult; active?: boolean }) {
   return (
-    <li className={cn('flex items-center gap-3 rounded-xl border border-line px-4 py-3 text-[16px] transition-opacity', active ? 'opacity-100' : 'opacity-50')}>
+    <li className={cn('flex items-center gap-3 rounded-lg border border-line px-4 py-3 text-[16px] transition-opacity', active ? 'opacity-100' : 'opacity-50')}>
       {v ? <CheckCircle2 className="size-5 text-success" /> : active ? <Loader2 className="size-5 animate-spin text-navy-600" /> : <span className="size-5 rounded-full border-2 border-line" />}
       <span className="text-navy-900">{label}</span>
       {v && <span className="ml-auto text-[14px] text-ink-muted">Done</span>}

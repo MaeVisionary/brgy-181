@@ -1,7 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { APP_CONFIG } from '@/config/app'
 import { ROLES, ROLE_PERMISSIONS } from '@/config/permissions'
-import { isTestUser } from '@/config/testAccount'
+import { testAccountOf } from '@/config/testAccount'
 import { createSession, findUser, signIn as signInRequest, type SignInInput } from '@/services/authService'
 import type { Permission, Role, RoleId, Session, User } from '@/types/auth'
 
@@ -99,8 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout: () => start(null, false),
       passwordChanged: () => session && start({ ...session, mustChangePassword: false }, remember),
       switchTestLevel: (role) => {
-        if (!session || !isTestUser(session.userId)) return
-        start({ ...session, userId: `usr-test-${role}` }, remember)
+        const account = testAccountOf(session?.userId)
+        if (!session || !account) return
+        start({ ...session, userId: `${account.idPrefix}${role}` }, remember)
       },
       previewAs: (userId) => {
         if (!APP_CONFIG.devPreview) return

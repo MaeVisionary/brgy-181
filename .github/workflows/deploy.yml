@@ -33,6 +33,8 @@ jobs:
           # Test account (stored as repository secrets, never in the code).
           VITE_TEST_ACCOUNT_EMAIL: ${{ secrets.VITE_TEST_ACCOUNT_EMAIL }}
           VITE_TEST_ACCOUNT_PASSWORD_SHA256: ${{ secrets.VITE_TEST_ACCOUNT_PASSWORD_SHA256 }}
+          VITE_TEST_ACCOUNT_2_EMAIL: ${{ secrets.VITE_TEST_ACCOUNT_2_EMAIL }}
+          VITE_TEST_ACCOUNT_2_PASSWORD_SHA256: ${{ secrets.VITE_TEST_ACCOUNT_2_PASSWORD_SHA256 }}
       # Single-page app: unknown paths (e.g. /brgy-181/portal) load the app.
       - run: cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v5

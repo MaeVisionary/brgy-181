@@ -32,11 +32,11 @@ export function ForgotPasswordPage() {
   return (
     <PublicLayout minimal>
       <div className="mx-auto max-w-[520px] px-4 py-12 sm:py-16">
-        <section className="bmis-rise rounded-[24px] border border-line bg-surface p-7 md:p-9">
+        <section className="bmis-rise rounded-lg border border-line bg-surface p-7 md:p-9">
           <button type="button" onClick={() => go(`/login/${type.slug}`, 'back')} className="bmis-press -ml-1 inline-flex items-center gap-1.5 rounded-full px-1 text-[15px] font-semibold text-ink-muted hover:text-navy-900">
             <ArrowLeft className="size-4" /> Back to {type.loginTitle}
           </button>
-          <span className="mt-6 grid size-12 place-items-center rounded-2xl bg-sky-100 text-navy-900"><KeyRound className="size-6" /></span>
+          <span className="mt-6 grid size-12 place-items-center rounded-lg bg-sky-100 text-navy-900"><KeyRound className="size-6" /></span>
           <h1 className="mt-4 font-display text-[26px] font-extrabold text-navy-900">Reset your password</h1>
           {sent ? (
             <div className="bmis-rise mt-4 space-y-3 text-[16px] text-navy-900">
@@ -53,14 +53,14 @@ export function ForgotPasswordPage() {
               <label className="block">
                 <span className="mb-1.5 block text-[15px] font-semibold text-navy-900">Username or Email</span>
                 <input
-                  className={cn('h-12 w-full rounded-xl border bg-surface px-4 text-[17px] text-navy-900 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none', touched && !identifier.trim() ? 'border-danger' : 'border-line')}
+                  className={cn('h-12 w-full rounded-lg border bg-surface px-4 text-[17px] text-navy-900 focus:border-navy-600 focus:shadow-[0_0_0_4px_rgba(44,88,113,0.12)] focus:outline-none', touched && !identifier.trim() ? 'border-danger' : 'border-line')}
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   autoComplete="username"
                 />
                 {touched && !identifier.trim() && <span className="mt-1 block text-[14.5px] text-danger-ink">Enter your username or email.</span>}
               </label>
-              <Button type="submit" loading={busy} className="bmis-press h-12 w-full rounded-xl text-[17px]">Send reset request</Button>
+              <Button type="submit" loading={busy} className="bmis-press h-12 w-full rounded-lg text-[17px]">Send reset request</Button>
             </form>
           )}
         </section>

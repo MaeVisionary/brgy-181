@@ -36,10 +36,10 @@ export function HomePage() {
               Making barangay services more accessible, organized and convenient for every resident of Zone {BARANGAY.zone}, District {BARANGAY.district}, Manila.
             </p>
             <div className="bmis-rise bmis-rise-4 mt-7 flex flex-wrap gap-3">
-              <button type="button" onClick={() => go('/login/resident')} className="bmis-press inline-flex h-12 items-center gap-2 rounded-full bg-navy-900 px-6 text-[17px] font-semibold text-white hover:bg-navy-800">
+              <button type="button" onClick={() => go('/login/resident')} className="bmis-press inline-flex h-12 items-center gap-2 rounded-[var(--radius-control)] bg-navy-900 px-6 text-[17px] font-semibold text-white hover:bg-navy-800">
                 <LogIn className="size-4" /> Resident Login
               </button>
-              <button type="button" onClick={() => go('/register')} className="bmis-press inline-flex h-12 items-center gap-2 rounded-full border border-navy-900 bg-surface px-6 text-[17px] font-semibold text-navy-900 hover:bg-sky-50">
+              <button type="button" onClick={() => go('/register')} className="bmis-press inline-flex h-12 items-center gap-2 rounded-[var(--radius-control)] border border-navy-900 bg-surface px-6 text-[17px] font-semibold text-navy-900 hover:bg-sky-50">
                 <UserPlus className="size-4" /> Create Account
               </button>
             </div>

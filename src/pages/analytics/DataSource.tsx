@@ -27,7 +27,7 @@ export function DataSource() {
     <Card className="mb-4 px-5 py-4">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-navy-900 text-white">
+          <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-navy-900 text-white">
             <FileSpreadsheet className="size-5" />
           </span>
           <div className="min-w-0">

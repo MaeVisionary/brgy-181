@@ -25,7 +25,7 @@ export function PortalPage() {
           <ArrowLeft className="size-4" /> Back to home
         </button>
         <div className="grid gap-5 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:items-stretch">
-          <aside className="bmis-rise relative flex flex-col items-center justify-center overflow-hidden rounded-[24px] bg-gradient-to-b from-navy-900 to-navy-800 px-6 py-10 text-center text-white md:py-14">
+          <aside className="bmis-rise relative flex flex-col items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-navy-900 to-navy-800 px-6 py-10 text-center text-white md:py-14">
             <img aria-hidden alt="" src={`${import.meta.env.BASE_URL}seal.png`} className="pointer-events-none absolute -right-20 -bottom-24 w-[320px] max-w-none opacity-[0.07] grayscale select-none" />
             <BarangaySeal onDark className="relative size-16" />
             <h1 className="relative mt-4 font-display text-[28px] leading-tight font-extrabold tracking-tight sm:text-[30px]">Welcome to Barangay 181</h1>
@@ -44,13 +44,13 @@ export function PortalPage() {
                     onClick={() => choose(a.slug)}
                     aria-pressed={isPicked}
                     className={cn(
-                      'bmis-press group flex h-full min-h-[64px] w-full items-center gap-3.5 rounded-[14px] border bg-surface px-4 py-3 text-left',
+                      'bmis-press group flex h-full min-h-[64px] w-full items-center gap-3.5 rounded-lg border bg-surface px-4 py-3 text-left',
                       'hover:border-navy-600/40 hover:bg-sky-50',
                       isPicked ? 'border-navy-900 shadow-[0_0_0_3px_rgba(0,33,50,0.12)]' : 'border-line',
                       picked && !isPicked && 'opacity-60',
                     )}
                   >
-                    <span className={cn('grid size-10 shrink-0 place-items-center rounded-xl transition-colors', isPicked ? 'bg-navy-900 text-white' : 'bg-sky-100 text-navy-900 group-hover:bg-navy-900 group-hover:text-white')}>
+                    <span className={cn('grid size-10 shrink-0 place-items-center rounded-lg transition-colors', isPicked ? 'bg-navy-900 text-white' : 'bg-sky-100 text-navy-900 group-hover:bg-navy-900 group-hover:text-white')}>
                       <Icon className="size-[18px]" />
                     </span>
                     <span className="min-w-0 flex-1">

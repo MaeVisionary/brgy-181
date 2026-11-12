@@ -128,7 +128,7 @@ function FlatNav({
         ))}
       </div>
       <div className={cn('p-3', collapsed && 'px-2')}>
-        <div className={cn('flex items-center gap-3 rounded-[10px] bg-surface-muted p-2.5', collapsed && 'justify-center p-1.5')}>
+        <div className={cn('flex items-center gap-3 rounded-md bg-surface-muted p-2.5', collapsed && 'justify-center p-1.5')}>
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-navy-900 text-[13px] font-semibold text-white">{initials(user.fullName)}</span>
           {!collapsed && (
             <>

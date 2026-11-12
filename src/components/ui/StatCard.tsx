@@ -64,7 +64,7 @@ export function TaskTile({
 }) {
   return (
     <Link to={to} className="block h-full rounded-[var(--radius-control)]">
-      <Card className="flex h-full items-center gap-3 rounded-[10px] px-4 py-3 transition-colors hover:bg-sky-50">
+      <Card className="flex h-full items-center gap-3 rounded-md px-4 py-3 transition-colors hover:bg-sky-50">
         <span
           className={cn(
             'grid size-8 shrink-0 place-items-center rounded-md',
