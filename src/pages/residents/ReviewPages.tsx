@@ -18,6 +18,8 @@ import { ServiceError } from '@/services/mockApi'
 import { IN_PERSON_REASONS, completeInPerson, decideRegistration, inPersonEmail, listRegistrations, requestInPerson, resendInPersonEmail } from '@/services/registrationService'
 import { decideId, listPendingIds, type IdDocument } from '@/services/identityService'
 import { fileMeta, openFile } from '@/services/fileStore'
+import { APPOINTMENT_STATUS_LABEL, appointmentForRequest, formatTime } from '@/services/appointmentService'
+import { ScheduleVisitForm } from '@/pages/appointments/AppointmentPages'
 import { PROOF_REQUIRED, decideChangeRequest, displayRequestedValue, listChangeRequests } from '@/services/residentService'
 import type { ResidentChangeRequest, ResidentRegistration } from '@/types/resident'
 import { fullName } from './common'
@@ -524,9 +526,18 @@ export function ChangeRequestsPage() {
                 </div>
                 <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-ink-muted">Reason: {c.reason}</p>
                 <ProofLine c={c} />
+                {c.checks && c.status === 'pending' && (
+                  <ul className="mt-2 space-y-0.5 text-[length:calc(14.5px*var(--fs))]">
+                    {c.checks.filter((k) => k.result !== 'not_applicable').map((k) => (
+                      <li key={k.name} className={k.result === 'passed' ? 'text-ink-nav' : k.result === 'failed' ? 'text-danger-ink' : 'text-warning'}>
+                        {k.result === 'passed' ? 'Passed' : k.result === 'failed' ? 'Failed' : 'Needs review'} · {k.name}{k.note ? `: ${k.note}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               {c.status === 'pending' ? (
-                <Decide disabled={!can('residents.approve')} onDecide={async (d, note) => { await decideChangeRequest(c.id, d, note, user!); await load() }} />
+                <CorrectionActions c={c} canDecide={can('residents.approve')} onDecide={async (d, note) => { await decideChangeRequest(c.id, d, note, user!); await load() }} onChange={load} />
               ) : (
                 <div className="text-[length:calc(14.5px*var(--fs))]">
                   <Badge tone={c.status === 'approved' ? 'success' : 'danger'}>{c.status === 'approved' ? 'Approved' : 'Rejected'}</Badge>
@@ -594,4 +605,29 @@ function StoredImage({ id, alt }: { id: string; alt: string }) {
   return meta?.mimeType === 'application/pdf'
     ? <a href={url} target="_blank" rel="noreferrer" className="font-semibold text-info hover:underline">Open ID (PDF)</a>
     : <img src={url} alt={alt} className="max-h-[200px] w-full rounded-lg border border-line bg-surface-muted object-contain" />
+}
+
+/** Decide, or first require an in-person visit; shows the visit once scheduled. */
+function CorrectionActions({ c, canDecide, onDecide, onChange }: { c: ResidentChangeRequest; canDecide: boolean; onDecide: (d: 'approved' | 'rejected', note: string) => Promise<void>; onChange: () => void }) {
+  const [scheduling, setScheduling] = useState(false)
+  const visit = appointmentForRequest(c.id)
+  const open = visit && !['verified', 'not_verified', 'cancelled'].includes(visit.status)
+  return (
+    <div className="space-y-3">
+      {visit && (
+        <Link to={`/appointments/${visit.id}`} className="block rounded-[var(--radius-control)] border border-line-soft px-3 py-2 text-[length:calc(15px*var(--fs))] hover:bg-sky-50">
+          <span className="block font-semibold text-navy-900">Visit: {APPOINTMENT_STATUS_LABEL[visit.status]}</span>
+          <span className="block text-ink-muted">{visit.date} · {formatTime(visit.time)}</span>
+        </Link>
+      )}
+      {scheduling ? (
+        <ScheduleVisitForm changeRequestId={c.id} onCancel={() => setScheduling(false)} onDone={() => { setScheduling(false); onChange() }} />
+      ) : (
+        <>
+          <Decide disabled={!canDecide} onDecide={onDecide} />
+          {canDecide && !open && <Button size="sm" variant="secondary" onClick={() => setScheduling(true)}>Require in-person verification</Button>}
+        </>
+      )}
+    </div>
+  )
 }

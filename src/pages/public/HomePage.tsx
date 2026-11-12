@@ -23,7 +23,7 @@ export function HomePage() {
             aria-hidden
             alt=""
             src={`${import.meta.env.BASE_URL}seal.png`}
-            className="bmis-rise pointer-events-none absolute top-1/2 left-1/2 w-[440px] max-w-none -translate-x-[15%] -translate-y-1/2 object-contain opacity-[0.07] grayscale select-none sm:w-[560px] md:left-auto md:right-[2%] md:w-[600px] md:translate-x-0 lg:right-[6%] lg:w-[640px]"
+            className="bmis-rise pointer-events-none absolute top-1/2 right-[2%] hidden w-[560px] max-w-none -translate-y-1/2 object-contain opacity-[0.07] grayscale select-none lg:block lg:right-[4%] xl:w-[640px]"
           />
           <div className="relative max-w-[700px]">
             <p className="bmis-rise label-caps text-navy-600">Official digital portal</p>

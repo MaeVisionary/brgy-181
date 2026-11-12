@@ -235,7 +235,7 @@ export function RegisterPage() {
   return (
     <PublicLayout minimal>
       <div className="relative overflow-hidden">
-      <SealWatermark size={560} className="hidden lg:block" />
+      <SealWatermark size={480} className="hidden 2xl:block" />
       <div ref={topRef} className="relative mx-auto max-w-[760px] scroll-mt-20 px-4 py-8 sm:px-6 sm:py-12">
         {step < 5 && (
           <button

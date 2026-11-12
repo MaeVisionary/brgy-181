@@ -1,4 +1,3 @@
-import { SealWatermark } from '@/components/layout/SealWatermark'
 import { ArrowRight } from '@/icons'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -15,8 +14,6 @@ export function GreetingCard({ profileTo, action }: { subtitle?: string; profile
   if (!user) return null
   return (
     <section className="relative mb-4 flex flex-col gap-4 overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-      <SealWatermark side size={240} className="hidden sm:block" />
-      <SealWatermark side size={170} className="sm:hidden" />
       <div className="relative min-w-0">
         <p className="text-[length:calc(12.5px*var(--fs))] font-semibold tracking-[0.08em] text-navy-600 uppercase">
           {user.position} · As of {formatDateTime(now)}

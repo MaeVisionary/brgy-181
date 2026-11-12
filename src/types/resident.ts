@@ -165,6 +165,10 @@ export interface ResidentChangeRequest {
   /** Guardianship proof or representative authorization; verified by staff. */
   authorization?: { kind?: string; fileName?: string; url?: string; fileId?: string; bringOnsite?: boolean }
   submittedAt: string
+  /** Automated check results at submission. */
+  checks?: { name: string; result: 'passed' | 'failed' | 'needs_review' | 'not_applicable'; note?: string }[]
+  /** auto = applied by the system; verification = a document must be checked; decision = Secretary decides; chairman = escalated. */
+  route?: 'auto' | 'verification' | 'decision' | 'chairman'
   field: string
   originalValue: string
   requestedValue: string

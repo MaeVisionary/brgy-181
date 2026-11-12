@@ -2,6 +2,7 @@ import { AREAS, mockChangeRequests, mockHouseholds, mockRegistrations, mockResid
 import type { User } from '@/types/auth'
 import type { Household, Resident, ResidentChangeRequest } from '@/types/resident'
 import { ServiceError, mockRequest } from './mockApi'
+import { appointmentForRequest } from './appointmentService'
 import { audit } from './auditService'
 import { mockNotifications } from '@/mocks/notifications'
 import { mockUsers } from '@/mocks/users'
@@ -169,6 +170,10 @@ export function decideChangeRequest(id: string, decision: 'approved' | 'rejected
     if (!(ROLE_PERMISSIONS[by.roleId]?.includes('residents.approve') || by.extraPermissions?.includes('residents.approve'))) throw new ServiceError('forbidden', 'You cannot approve corrections.')
     if (cr.status !== 'pending') throw new ServiceError('decided', 'This request was already decided.')
     if (decision === 'rejected' && !note.trim()) throw new ServiceError('note', 'Add the reason for rejecting.')
+    // A visit that is still open or failed blocks approval (rejecting stays possible).
+    const visit = appointmentForRequest(cr.id)
+    if (decision === 'approved' && visit && !['verified', 'cancelled'].includes(visit.status))
+      throw new ServiceError('visit', visit.status === 'not_verified' ? 'The documents were not verified at the visit. Reject, or schedule another visit.' : 'Finish the in-person visit before approving.')
     cr.status = decision
     cr.decidedBy = by.id
     cr.decidedAt = new Date().toISOString()
@@ -243,6 +248,51 @@ export interface CorrectionInput {
  * that staff verify; household-level updates only by the family head. Nothing
  * changes until staff approve, and the previous value is kept.
  */
+/**
+ * Correction routing policy (configurable; confirm with the barangay).
+ *  auto            applied at once, own record only, after format/duplicate/conflict checks
+ *  self_reported   applied at once but marked self-reported (not officially verified)
+ *  review          Secretary decides (identity or legally significant fields)
+ * Contact numbers would need a one-time code sent to the new number; with no
+ * SMS service connected they are applied and marked "not verified".
+ */
+export const CORRECTION_POLICY: Record<string, 'auto' | 'self_reported' | 'review'> = {
+  'Contact number': 'auto',
+  Employment: 'self_reported',
+  'Educational attainment': 'self_reported',
+  'Full name': 'review',
+  Birthdate: 'review',
+  'Civil status': 'review',
+  'Relationship in the family': 'review',
+}
+
+export type CheckResult = 'passed' | 'failed' | 'needs_review' | 'not_applicable'
+export interface CorrectionCheck { name: string; result: CheckResult; note?: string }
+
+function correctionChecks(input: CorrectionInput, res: Resident, me: Resident): CorrectionCheck[] {
+  const checks: CorrectionCheck[] = []
+  const v = input.requestedValue.trim()
+  const fmt = input.field === 'Contact number' ? /^09\d{9}$/.test(v.replace(/[\s-]/g, '')) : input.field === 'Birthdate' ? !Number.isNaN(Date.parse(v)) && new Date(v) < new Date() : v.replace(/\|/g, '').trim().length > 0
+  checks.push({ name: 'Format', result: fmt ? 'passed' : 'failed', note: fmt ? undefined : input.field === 'Contact number' ? 'Use an 11-digit mobile number starting with 09.' : 'Check the value.' })
+  const pending = mockChangeRequests.some((c) => c.residentId === res.id && c.field === input.field && c.status === 'pending')
+  checks.push({ name: 'No pending request for this field', result: pending ? 'failed' : 'passed', note: pending ? 'There is already a pending request for this.' : undefined })
+  if (input.field === 'Full name' || input.field === 'Birthdate') {
+    const [first, , last] = input.field === 'Full name' ? v.split('|') : [res.firstName, '', res.lastName]
+    const birth = input.field === 'Birthdate' ? v : res.birthDate
+    const clash = mockResidents.some((r) => r.id !== res.id && r.firstName.toLowerCase() === (first ?? '').trim().toLowerCase() && r.lastName.toLowerCase() === (last ?? '').trim().toLowerCase() && r.birthDate === birth)
+    checks.push({ name: 'No other resident with the same name and birthdate', result: clash ? 'needs_review' : 'passed', note: clash ? 'Another record has the same name and birthdate.' : undefined })
+  } else checks.push({ name: 'Conflicting records', result: 'not_applicable' })
+  if (input.field === 'Relationship in the family') {
+    const heads = mockResidents.filter((r) => r.familyId === res.familyId && r.relationship === 'Head' && r.id !== res.id).length
+    checks.push({ name: 'Household consistency', result: v === 'Head' && heads > 0 ? 'needs_review' : 'passed', note: v === 'Head' && heads > 0 ? 'The family already has a head.' : undefined })
+  }
+  const proof = PROOF_REQUIRED[input.field]
+  checks.push({ name: 'Supporting document', result: !proof ? 'not_applicable' : input.proof?.fileId || input.proof?.fileName ? 'needs_review' : input.proof?.bringOnsite ? 'needs_review' : 'failed', note: proof && input.proof?.bringOnsite ? 'Original to be shown at the Barangay Hall.' : undefined })
+  checks.push({ name: 'Own record', result: res.id === me.id ? 'passed' : 'needs_review', note: res.id === me.id ? undefined : 'Submitted for someone else.' })
+  checks.push({ name: 'One-time code to the new number', result: input.field === 'Contact number' ? 'needs_review' : 'not_applicable', note: input.field === 'Contact number' ? 'No SMS service connected; number not verified.' : undefined })
+  return checks
+}
+
 export function submitCorrection(input: CorrectionInput, by: User): Promise<ResidentChangeRequest> {
   return mockRequest(() => {
     const me = mockResidents.find((r) => r.id === by.residentId)
@@ -295,6 +345,28 @@ export function submitCorrection(input: CorrectionInput, by: User): Promise<Resi
       proof: PROOF_REQUIRED[field] ? input.proof : undefined,
       authorization: basis === 'dependent' || basis === 'representative' ? input.authorization : undefined,
     }
+    // Automated checks and routing.
+    const checks = correctionChecks(input, res, me)
+    const failed = checks.find((c) => c.result === 'failed' && c.name !== 'Supporting document')
+    if (failed) throw new ServiceError('check', failed.note ?? `${failed.name} check failed.`)
+    cr.checks = checks
+    const policy = CORRECTION_POLICY[field] ?? 'review'
+    const clean = basis === 'self' && !checks.some((c) => c.result === 'needs_review' && c.name !== 'One-time code to the new number')
+    if (basis !== 'household' && policy !== 'review' && clean) {
+      const now = new Date().toISOString()
+      FIELD_SETTERS[field]?.(res, cr.requestedValue)
+      res.updatedAt = now
+      cr.status = 'approved'
+      cr.decidedBy = 'system'
+      cr.decidedAt = now
+      cr.route = 'auto'
+      cr.decisionNote = field === 'Contact number' ? 'Updated automatically. Number not verified (no SMS service yet).' : policy === 'self_reported' ? 'Updated automatically as self-reported information.' : 'Updated automatically.'
+      mockChangeRequests.unshift(cr)
+      audit(by, `Correction applied automatically: ${field}`, 'Residents', `${res.id}: "${cr.originalValue}" → "${displayRequestedValue(field, cr.requestedValue)}"`)
+      notifyUserOfResident(me.id, 'Your record was updated', `${field} · ${cr.decisionNote}`, '/my/profile')
+      return cr
+    }
+    cr.route = checks.some((c) => c.result === 'needs_review' && c.name === 'Supporting document') ? 'verification' : 'decision'
     mockChangeRequests.unshift(cr)
     audit(by, `Correction requested (${basis})`, 'Residents', res.id)
     notifyUserOfResident(me.id, 'Correction request received', `${field} · under review by the Barangay Secretary.`, '/my/profile')
