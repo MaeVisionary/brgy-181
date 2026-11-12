@@ -219,11 +219,11 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
       ) : null}
       {review === 'perms' && (
         <StepUpDialog
-          title="Review permission changes"
-          action="account-permissions"
+          title="Request permission changes"
+          action="account-permissions" confirmLabel="Send for approval"
           payload={{ id: u.id, perms: nextPerms }}
           onCancel={() => setReview(null)}
-          onApply={async (reason, challengeId) => { await setExtraPermissions(u.id, [...perms], me, reason, challengeId); setReview(null); onSaved(`Access updated for ${u.fullName}. They have been notified.`) }}
+          onApply={async (reason, challengeId) => { const r = await setExtraPermissions(u.id, [...perms], me, reason, challengeId); setReview(null); onSaved(`Sent for approval (${r.ref}). Nothing changes until a second person approves.`) }}
         >
           <p className="text-[length:calc(15.5px*var(--fs))] text-navy-900">{u.fullName} · {ROLES[u.roleId].name}</p>
           <ChangeTable rows={GRANTABLE_STAFF_PERMISSIONS.filter((p) => before.has(p) !== perms.has(p)).map((p) => [PERMISSION_LABELS[p], before.has(p), perms.has(p)])} />
@@ -231,11 +231,11 @@ function ManageUser({ u, me, run, onReset, onSaved }: { u: User; me: User; run: 
       )}
       {review === 'role' && (
         <StepUpDialog
-          title="Change role?"
-          action="account-role"
+          title="Request role change"
+          action="account-role" confirmLabel="Send for approval"
           payload={{ id: u.id, roleId: role }}
           onCancel={() => setReview(null)}
-          onApply={async (reason, challengeId) => { await setRole(u.id, role, me, reason, challengeId); setReview(null); onSaved(`${u.fullName} is now ${ROLES[role].name}. They have been notified.`) }}
+          onApply={async (reason, challengeId) => { const r = await setRole(u.id, role, me, reason, challengeId); setReview(null); onSaved(`Sent for approval (${r.ref}). Nothing changes until a second person approves.`) }}
         >
           <p className="text-[length:calc(15.5px*var(--fs))] text-navy-900">{u.fullName}: <strong>{ROLES[u.roleId].name}</strong> → <strong>{ROLES[role].name}</strong></p>
         </StepUpDialog>
@@ -310,11 +310,11 @@ export function RolesPage() {
       )}
       {reviewing && (
         <StepUpDialog
-          title="Review permission changes"
-          action="role-permissions"
+          title="Request permission changes"
+          action="role-permissions" confirmLabel="Send for approval"
           payload={{ changes }}
           onCancel={() => setReviewing(false)}
-          onApply={async (reason, challengeId) => { await setRolePermissions(changes, reason, challengeId, user!); setStaged({}); setReviewing(false); setMsg({ ok: true, text: 'Permissions updated. Affected accounts have been notified.' }) }}
+          onApply={async (reason, challengeId) => { const r = await setRolePermissions(changes, reason, challengeId, user!); setStaged({}); setReviewing(false); setMsg({ ok: true, text: `Sent for approval (${r.ref}). Nothing changes until a second person approves.` }) }}
         >
           <ChangeTable rows={changes.map((c) => [`${ROLES[c.roleId].name}: ${PERMISSION_LABELS[c.permission]}`, !c.on, c.on])} />
         </StepUpDialog>

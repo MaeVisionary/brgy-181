@@ -132,7 +132,8 @@ function icon(Ph: PhosphorIcon, weight: IconWeight): LucideIcon {
 }
 
 const ui = (Ph: PhosphorIcon) => icon(Ph, 'bold')
-const mark = (Ph: PhosphorIcon) => icon(Ph, 'duotone')
+// One line style everywhere (no two-tone fills), like SF Symbols.
+const mark = (Ph: PhosphorIcon) => icon(Ph, 'bold')
 
 // ── Controls (bold) ────────────────────────────────────────────────
 export const ArrowDownUp = ui(ArrowsDownUp)

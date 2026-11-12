@@ -16,6 +16,7 @@ import {
   Gavel,
   Home,
   LayoutDashboard,
+  Lock,
   MessageSquareWarning,
   Package,
   ScrollText,
@@ -77,6 +78,7 @@ const PERSONNEL_NAV: NavGroup[] = [
   { section: 'Property and Equipment', label: 'Borrowing', icon: HandHelping, path: '/borrowing', anyOf: ['borrowing.approve', 'borrowing.release'] },
   { section: 'Insights', label: 'Analytics', icon: ChartPie, path: '/analytics', anyOf: ['analytics.view'] },
   { section: 'Insights', label: 'Reports', icon: BookOpenCheck, path: '/reports', anyOf: ['reports.view'] },
+  { section: 'Insights', label: 'Access approvals', icon: Lock, path: '/admin/security', anyOf: ['security.approve'] },
   { section: 'Account', label: 'Notifications', icon: Bell, path: '/notifications' },
   { section: 'Account', label: 'Account Settings', icon: Settings2, path: '/account' },
 ]
@@ -87,6 +89,7 @@ const ADMIN_NAV: NavGroup[] = [
   { section: 'Users and Access', label: 'User Accounts', icon: Users, path: '/admin/users', anyOf: ['users.manage'] },
   { section: 'Users and Access', label: 'Roles and Permissions', icon: ShieldCheck, path: '/admin/roles', anyOf: ['roles.manage'] },
   { section: 'Users and Access', label: 'Barangay Personnel', icon: UserRound, path: '/admin/personnel', anyOf: ['users.manage'] },
+  { section: 'Users and Access', label: 'Security', icon: Lock, path: '/admin/security', anyOf: ['security.approve'] },
   { section: 'Records', label: 'Activity Log', icon: ScrollText, path: '/admin/activity', anyOf: ['audit_logs.view'] },
   { section: 'System', label: 'System Settings', icon: SlidersHorizontal, path: '/admin/settings', anyOf: ['system.settings'] },
   { section: 'System', label: 'Health and Backups', icon: Database, path: '/admin/health', anyOf: ['system.health'] },

@@ -63,6 +63,7 @@ export type Permission =
   | 'audit_logs.view'
   | 'system.settings'
   | 'system.health'
+  | 'security.approve'
   // Resident self-service (own records only)
   | 'self.profile'
   | 'self.documents'

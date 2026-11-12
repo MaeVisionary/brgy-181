@@ -1,13 +1,19 @@
 /** Apple-style icon tiles: soft tint background + rich foreground. One colour per function. */
+/**
+ * Icon colours. Icons are plain navy line icons with no coloured tile; colour
+ * is kept only for real meaning (red = overdue / error). The names are kept so
+ * existing call sites stay valid.
+ */
+const NEUTRAL = 'text-navy-800'
 export const TONE = {
-  blue: 'bg-[#e6f0fd] text-[#0a66d8]',
-  indigo: 'bg-[#ecebfd] text-[#4f46c8]',
-  purple: 'bg-[#f3eafc] text-[#8a3fc7]',
-  green: 'bg-[#e5f6ea] text-[#1f8a43]',
-  teal: 'bg-[#e1f5f4] text-[#0f8a84]',
-  orange: 'bg-[#fff0e1] text-[#d06a0a]',
-  red: 'bg-[#fde9e8] text-[#d6342c]',
-  gray: 'bg-[#eef0f2] text-[#5b6670]',
+  blue: NEUTRAL,
+  indigo: NEUTRAL,
+  purple: NEUTRAL,
+  green: NEUTRAL,
+  teal: NEUTRAL,
+  orange: NEUTRAL,
+  red: 'text-danger',
+  gray: NEUTRAL,
 } as const
 export type ToneName = keyof typeof TONE
 

@@ -1,3 +1,4 @@
+import { SecurityPage } from '@/pages/admin/SecurityPage'
 import { lazy, Suspense, type ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { RequireAuth, RequirePermission } from '@/auth/guards'
@@ -100,6 +101,7 @@ export default function App() {
 
           {/* System administration */}
           <Route path="/admin/users" element={guard(['users.manage'], 'admin', <UsersPage />)} />
+          <Route path="/admin/security" element={<RequirePermission anyOf={['security.approve']}><SecurityPage /></RequirePermission>} />
           <Route path="/admin/roles" element={guard(['roles.manage'], 'admin', <RolesPage />)} />
           <Route path="/admin/personnel" element={guard(['users.manage'], 'admin', <PersonnelPage />)} />
           <Route path="/admin/activity" element={guard(['audit_logs.view'], 'admin', <ActivityPage />)} />

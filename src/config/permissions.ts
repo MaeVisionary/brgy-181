@@ -62,9 +62,10 @@ export const ROLES: Record<RoleId, Role> = {
 }
 
 export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
-  system_admin: ['users.manage', 'roles.manage', 'audit_logs.view', 'system.settings', 'system.health'],
+  system_admin: ['users.manage', 'roles.manage', 'audit_logs.view', 'system.settings', 'system.health', 'security.approve'],
 
   chairman: [
+    'security.approve',
     'analytics.view',
     'documents.view',
     'documents.approve',
@@ -140,7 +141,15 @@ const ROLE_OVERRIDES_KEY = 'bmis.rolePermissions'
 ;(function applyRoleOverrides() {
   try {
     const saved = JSON.parse(localStorage.getItem(ROLE_OVERRIDES_KEY) ?? '{}') as Partial<Record<RoleId, Permission[]>>
-    for (const r of EDITABLE_ROLES) if (Array.isArray(saved[r])) (ROLE_PERMISSIONS as Record<RoleId, Permission[]>)[r] = saved[r]!
+    // Only matrix-editable permissions come from saved changes; everything else
+    // (e.g. security.approve, cases.assigned) always follows the defaults, so a
+    // permission added in a later release is not lost on devices with old saves.
+    const editable = new Set<Permission>(PERMISSION_GROUPS.flatMap((g) => g.permissions))
+    for (const r of EDITABLE_ROLES) {
+      if (!Array.isArray(saved[r])) continue
+      const fixed = ROLE_PERMISSIONS[r].filter((p) => !editable.has(p))
+      ;(ROLE_PERMISSIONS as Record<RoleId, Permission[]>)[r] = [...new Set([...saved[r]!.filter((p) => editable.has(p)), ...fixed])]
+    }
   } catch {
     /* no saved changes */
   }
@@ -219,6 +228,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'audit_logs.view': 'View activity logs',
   'system.settings': 'Manage system settings',
   'system.health': 'View system health and backups',
+  'security.approve': 'Approve access changes as the second person',
   'self.profile': 'View own profile',
   'self.documents': 'Request and track own documents',
   'self.complaints': 'Submit and track own complaints',
