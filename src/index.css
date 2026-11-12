@@ -9,7 +9,7 @@
   --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  --color-canvas: #f4f7f8;          /* (figma) page background */
+  --color-canvas: #ffffff;          /* page background: sections sit on it directly (no boxes) */
   --color-surface: #ffffff;         /* (figma) cards, sidebar, header */
   --color-surface-muted: #f5f6f7;   /* (figma, gray-50) inset areas, table header */
 

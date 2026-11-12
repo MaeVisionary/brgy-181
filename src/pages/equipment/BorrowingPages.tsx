@@ -46,7 +46,7 @@ export function BorrowingPage() {
       />
       {encoding && <BorrowForm assisted onDone={(b) => { setEncoding(false); setTick((t) => t + 1); if (b) navigate(`/borrowing/${b.id}`) }} />}
       <Card>
-        <div className="flex flex-wrap items-center gap-3 border-b border-line-soft p-4">
+        <div className="flex flex-wrap items-center gap-3 border-b border-line-soft py-3">
           <Select className="w-56" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter by status">
             <option value="">All transactions</option>
             <option value="pending">Pending</option>

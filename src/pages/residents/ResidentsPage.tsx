@@ -67,7 +67,7 @@ export function ResidentsPage() {
         </Card>
       )}
       <Card>
-        <div className="grid gap-2 border-b border-line-soft p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
+        <div className="grid gap-2 border-b border-line-soft py-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" />
             <TextInput className="pl-9" placeholder="Search name, resident no. or address" value={q} onChange={(e) => reset(() => setQ(e.target.value))} aria-label="Search residents" />

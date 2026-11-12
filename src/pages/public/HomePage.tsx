@@ -65,7 +65,7 @@ export function HomePage() {
               ['District', 'II'],
               ['City', 'Manila'],
             ].map(([k, v]) => (
-              <div key={k} className="relative overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface px-5 py-4">
+              <div key={k} className="relative overflow-hidden border-t border-line pt-3">
                 <img aria-hidden alt="" src={`${import.meta.env.BASE_URL}seal.png`} className="pointer-events-none absolute -top-4 -right-6 w-[110px] max-w-none opacity-[0.08] grayscale select-none" />
                 <dt className="label-caps relative">{k}</dt>
                 <dd className="relative mt-1 font-display text-[30px] leading-none font-extrabold text-navy-900">{v}</dd>
@@ -79,7 +79,7 @@ export function HomePage() {
           </p>
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
             <div className="space-y-4">
-              <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
+              <div className="border-t border-line pt-4">
                 <p className="label-caps">Barangay Council</p>
                 <div className="mt-3 grid gap-4 sm:grid-cols-2">
                   <Person name={CHAIRMAN.name} position="Barangay Chairman" lead />
@@ -88,7 +88,7 @@ export function HomePage() {
                 </div>
               </div>
               {lupon.length > 0 && (
-                <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
+                <div className="border-t border-line pt-4">
                   <p className="label-caps">Lupong Tagapamayapa members</p>
                   <ul className="mt-3 grid gap-x-4 gap-y-1 sm:grid-cols-2">
                     {lupon.map((l) => <li key={l.id} className="text-[16px] font-semibold text-navy-900">{l.name}</li>)}
@@ -97,7 +97,7 @@ export function HomePage() {
                 </div>
               )}
             </div>
-            <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
+            <div className="border-t border-line pt-4">
               <p className="label-caps">Barangay Kagawad</p>
               <ul className="mt-3 grid gap-x-4 gap-y-2.5 sm:grid-cols-2">
                 {kagawads.map((k) => (
@@ -124,7 +124,7 @@ export function HomePage() {
               { icon: Gavel, title: 'Complaints and Incident Reports', body: 'Report incidents and file complaints. Cases go through the Katarungang Pambarangay process: blotter, hearing and mediation.', action: 'File a Complaint', to: '/my/complaints' },
               { icon: Package, title: 'Equipment Borrowing', body: `Borrow chairs, tables, ladders and other barangay equipment. Fixed 15-day borrowing period with a 3-day grace period.`, action: 'Borrow Equipment', to: '/my/borrowing' },
             ].map(({ icon: Icon, title, body, action, to }) => (
-              <div key={title} className="flex flex-col rounded-[var(--radius-card)] border border-line bg-canvas p-6">
+              <div key={title} className="flex flex-col border-t-2 border-navy-900 pt-5">
                 <p className="flex items-center gap-2.5 font-display text-[17.5px] font-bold text-navy-900">
                   <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-sky-100 text-navy-900"><Icon className="size-5" /></span>
                   {title}
@@ -160,7 +160,7 @@ export function HomePage() {
               {BARANGAY.locality}.
             </p>
           </div>
-          <div className="rounded-[var(--radius-card)] border border-line bg-surface p-6">
+          <div className="border-t border-line pt-5">
             <dl className="space-y-4 text-[16px]">
               <div>
                 <dt className="label-caps">Location</dt>

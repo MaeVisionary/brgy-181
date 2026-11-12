@@ -50,7 +50,7 @@ export function CasesPage() {
         actions={<>{actor.permissions.has('cases.manage') && <ButtonLink to="/cases/new" icon={<Plus className="size-4" />}>New blotter entry</ButtonLink>}<SampleBadge /></>}
       />
       <Card>
-        <div className="flex flex-wrap items-center gap-3 border-b border-line-soft p-4">
+        <div className="flex flex-wrap items-center gap-3 border-b border-line-soft py-3">
           <TextInput className="w-full sm:w-72" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search case no., blotter no., name" aria-label="Search the blotter" />
           <Select className="w-56" value={stage} onChange={(e) => setStage(e.target.value)} aria-label="Filter by stage">
             <option value="">All stages</option>

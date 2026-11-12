@@ -46,7 +46,7 @@ export function HouseholdsPage() {
       <PageHeader title="Households" subtitle="A household is everyone living at one address. It can contain more than one family." />
 
       <Card className="overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-line-soft p-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 border-b border-line-soft py-3 sm:flex-row sm:items-center">
           <label className="relative block flex-1">
             <span className="sr-only">Search households</span>
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" />

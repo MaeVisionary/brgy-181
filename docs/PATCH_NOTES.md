@@ -1,3 +1,19 @@
+# BMIS Patch Notes: Open layout, no boxed cards (12 November 2026)
+
+Design only. The boxed-card look (borders, rounded corners and tinted title bars around
+every block) was removed. Pages now use a white background, section headings with a thin
+rule under them, and content lined up with the page edge.
+
+- Sections (`Panel`): heading + thin rule, no box. Lists inside run edge to edge with dividers.
+- Content blocks (`Card`): a thin top rule instead of a box. Tinted notices (warnings, errors) keep their box because the colour carries meaning.
+- Stat numbers and the resident service shortcuts: label and number on a top rule.
+- Greeting: a heading area with a rule below.
+- Kept as boxes because they are controls or data: form fields, buttons, tables' header rows, the hearing calendar grid, account type choices, search results, tinted notices.
+- Homepage: the same open style for the services, officials and contact sections.
+- Checked: no sideways scrolling at 375, 1024 and 1280 px for every role.
+
+---
+
 # BMIS Patch Notes: Spacing and alignment (12 November 2026)
 
 Design only; no change to colours, fonts or features.

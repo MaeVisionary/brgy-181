@@ -187,7 +187,7 @@ export function ServiceReports() {
   return (
     <div className="mt-4 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
       <Card className="h-fit overflow-hidden xl:sticky xl:top-0">
-        <h2 className="border-b border-sky-300 bg-bar px-4 py-3 font-display text-[16px] font-bold text-navy-900">Service reports</h2>
+        <h2 className="border-b border-line pb-2.5 font-display text-[18px] font-bold text-navy-900">Service reports</h2>
         <ul>
           {REPORTS.map((r) => (
             <li key={r.id} className="border-b border-line-soft last:border-0">
@@ -233,7 +233,7 @@ export function ServiceReports() {
             {output.rows.length === 0 ? (
               <p className="mt-4 text-[15px] text-ink-muted">No records for this period, or none your account can view.</p>
             ) : (
-              <div className="mt-4 overflow-x-auto rounded-md border border-line">
+              <div className="mt-4 overflow-x-auto border-b border-line-soft">
                 <table className="w-full min-w-[640px] text-[14.5px]">
                   <thead><tr className="bg-surface-muted text-left">{output.columns.map((c) => <th key={c} className="label-caps px-3 py-2">{c}</th>)}</tr></thead>
                   <tbody>

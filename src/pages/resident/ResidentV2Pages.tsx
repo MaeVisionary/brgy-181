@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { GreetingCard } from '@/components/ui/GreetingCard'
 import { StatCard } from '@/components/ui/StatCard'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Card } from '@/components/ui/Panel'
+import { Card, FLUSH_ROWS, SECTION_HEAD, SECTION_TITLE } from '@/components/ui/Panel'
 import { BARANGAY_CONTACT, BORROWING, KP } from '@/config/barangay'
 import { ROLES } from '@/config/permissions'
 import { getDocumentType } from '@/documents/catalog'
@@ -85,10 +85,10 @@ export function ResidentHome() {
       <p className="text-[15px] text-ink-muted">Choose a service to get started.</p>
       <div className="mt-3 grid gap-3 md:grid-cols-3">
         {actions.map(({ to, icon: Icon, title, body }) => (
-          <Link key={title} to={to} className="bmis-press flex min-h-[72px] items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3.5 transition-colors hover:border-navy-600/40 hover:bg-sky-50">
+          <Link key={title} to={to} className="group flex min-h-[72px] items-center gap-3 border-t-2 border-navy-900 py-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-sky-100 text-navy-900"><Icon className="size-[18px]" /></span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[16px] font-semibold text-navy-900">{title}</span>
+              <span className="block text-[16px] font-semibold text-navy-900 group-hover:underline">{title}</span>
               <span className="block text-[14.5px] text-ink-muted">{body}</span>
             </span>
             <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
@@ -126,15 +126,15 @@ export function ResidentHome() {
 
 function DarkHeadCard({ title, to, children }: { title: string; to: string; children: React.ReactNode }) {
   return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center justify-between gap-3 bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5">
-        <h2 className="font-display text-[17.5px] font-bold">{title}</h2>
+    <section className="min-w-0">
+      <div className={SECTION_HEAD}>
+        <h2 className={SECTION_TITLE}>{title}</h2>
         <Link to={to} className="inline-flex min-h-9 shrink-0 items-center gap-1 text-[14.5px] font-semibold text-navy-900 hover:underline">
           View all <ChevronRight className="size-4" />
         </Link>
       </div>
-      {children}
-    </Card>
+      <div className={FLUSH_ROWS}>{children}</div>
+    </section>
   )
 }
 
@@ -188,16 +188,16 @@ function NeedAssistance() {
         </Link>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
+        <div className="border-t border-line pt-3">
           <p className="flex items-center gap-1.5 text-[15.5px] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
           <p className="mt-1 text-[15px] text-navy-900">{C.hall}, {C.address}</p>
         </div>
-        <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
+        <div className="border-t border-line pt-3">
           <p className="flex items-center gap-1.5 text-[15.5px] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
           <a href={`tel:${C.phone.replace(/[^\d+]/g, '')}`} className="mt-1 block text-[15px] text-info hover:underline">{C.phone}</a>
           <a href={`mailto:${C.email}`} className="block text-[15px] break-all text-info hover:underline">{C.email}</a>
         </div>
-        <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
+        <div className="border-t border-line pt-3">
           <p className="flex items-center gap-1.5 text-[15.5px] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
           <p className="mt-1 text-[15px] text-navy-900">{C.officeHours}</p>
         </div>
@@ -368,7 +368,7 @@ export function DocumentDetailsPage() {
 
             {rs === 'Needs Additional Information' && needInfo?.remarks && (
               <Card className="overflow-hidden border-warning/50 bg-warning-tint/50 px-5 py-4">
-                <h2 className="-mx-5 -mt-4 mb-3 flex items-center gap-2 bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5 font-display text-[17.5px] font-bold">
+                <h2 className="mb-3 flex items-center gap-2 border-b border-warning/40 pb-2.5 font-display text-[18px] font-bold text-navy-900">
                   <span className="relative flex size-2.5">
                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-70" />
                     <span className="relative inline-flex size-2.5 rounded-full bg-warning" />

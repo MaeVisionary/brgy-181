@@ -220,7 +220,7 @@ export function TemplatesPage() {
               </div>
             )}
             {uploads.length > 0 && (
-              <div className="mt-4 rounded-[var(--radius-control)] border border-line px-4 py-3">
+              <div className="mt-4 border-t border-line pt-3">
                 <p className="label-caps mb-2">Uploaded versions (waiting for layout setup)</p>
                 <ul className="divide-y divide-line-soft">
                   {uploads.map((u) => (

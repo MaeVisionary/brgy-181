@@ -117,7 +117,7 @@ export function ReportsPage() {
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
         <Card className="h-fit overflow-hidden xl:sticky xl:top-0">
-          <h2 className="bg-bar border-b border-sky-300 text-navy-900 px-4 py-3 font-display text-[16px] font-bold">Internal analytics reports</h2>
+          <h2 className="border-b border-line pb-2.5 font-display text-[18px] font-bold text-navy-900">Internal analytics reports</h2>
           <ul>
             {SENIOR_REPORTS.map((r) => (
               <li key={r.id} className="border-b border-line-soft last:border-0">

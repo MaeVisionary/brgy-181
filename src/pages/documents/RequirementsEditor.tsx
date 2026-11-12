@@ -30,7 +30,7 @@ export function RequirementsEditor({ typeId, onSaved }: { typeId: DocumentTypeId
   }
 
   return (
-    <div className="mt-4 rounded-[var(--radius-control)] border border-line px-4 py-3">
+    <div className="mt-4 border-t border-line pt-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="label-caps">Requirements {custom && <span className="normal-case tracking-normal text-info">(set by the barangay)</span>}</p>
         {editable && !editing && (

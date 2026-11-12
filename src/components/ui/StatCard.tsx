@@ -25,8 +25,8 @@ export function StatCard({
   loading?: boolean
 }) {
   const body = (
-    <Card className={cn('flex h-full flex-col justify-between px-4 py-3.5 sm:px-5', to && 'transition-colors hover:bg-sky-50')}>
-      <p className="flex items-center gap-1.5 text-[14.5px] text-ink-nav">
+    <Card className="flex h-full flex-col justify-between py-3">
+      <p className={cn('flex items-center gap-1.5 text-[14.5px] text-ink-nav', to && 'group-hover:text-navy-900 group-hover:underline')}>
         {attention && <span aria-label="Needs attention" className="size-1.5 shrink-0 rounded-full bg-danger" />}
         {label}
       </p>
@@ -41,7 +41,7 @@ export function StatCard({
     </Card>
   )
   return to ? (
-    <Link to={to} className="block rounded-[var(--radius-card)]">
+    <Link to={to} className="group block">
       {body}
     </Link>
   ) : (
@@ -64,8 +64,8 @@ export function TaskTile({
   attention?: boolean
 }) {
   return (
-    <Link to={to} className="block h-full rounded-[var(--radius-control)]">
-      <Card className="flex h-full items-center gap-3 rounded-[10px] px-4 py-3 transition-colors hover:bg-sky-50">
+    <Link to={to} className="group block h-full">
+      <Card className="flex h-full items-center gap-3 py-3">
         <span
           className={cn(
             'grid size-8 shrink-0 place-items-center rounded-md',
@@ -75,7 +75,7 @@ export function TaskTile({
           {icon}
         </span>
         <span className="min-w-0">
-          <span className="block text-[14px] leading-tight font-semibold text-navy-900">{label}</span>
+          <span className="block text-[14px] leading-tight font-semibold text-navy-900 group-hover:underline">{label}</span>
           <span className="font-display text-[20px] leading-tight font-extrabold text-navy-900">
             {count === null ? '–' : formatNumber(count)}
           </span>

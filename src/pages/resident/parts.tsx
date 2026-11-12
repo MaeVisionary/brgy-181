@@ -2,7 +2,7 @@ import { Check, ChevronRight, LifeBuoy } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BackLink as SmartBack } from '@/components/ui/BackLink'
-import { Card } from '@/components/ui/Panel'
+import { Card, SECTION_HEAD, SECTION_TITLE } from '@/components/ui/Panel'
 import { BARANGAY_CONTACT } from '@/config/barangay'
 import { StatusLabel } from '@/components/ui/StatusLabel'
 import { cn } from '@/lib/cn'
@@ -77,19 +77,21 @@ export function Banner({ tone, icon, title, children }: { tone: keyof typeof BAN
 /** White card with a bold title. */
 export function Section({ title, subtitle, children, className }: { title: string; subtitle?: string; children: ReactNode; className?: string }) {
   return (
-    <Card className={cn('overflow-hidden', className)}>
-      <div className="bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5">
-        <h2 className="font-display text-[17.5px] font-bold text-navy-900">{title}</h2>
-        {subtitle && <p className="text-[14px] text-ink-nav">{subtitle}</p>}
+    <section className={cn('min-w-0', className)}>
+      <div className={SECTION_HEAD}>
+        <div>
+          <h2 className={SECTION_TITLE}>{title}</h2>
+          {subtitle && <p className="text-[14px] text-ink-nav">{subtitle}</p>}
+        </div>
       </div>
-      <div className="px-5 py-4">{children}</div>
-    </Card>
+      <div className="pt-3">{children}</div>
+    </section>
   )
 }
 
 /** Navy title bar used by side cards (Progress, Need help, What these words mean). */
 export function TitleBar({ children }: { children: ReactNode }) {
-  return <h2 className="-mx-5 -mt-4 mb-3 flex items-center gap-2 bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5 font-display text-[17.5px] font-bold">{children}</h2>
+  return <h2 className={cn(SECTION_HEAD, SECTION_TITLE, 'mb-3 justify-start gap-2')}>{children}</h2>
 }
 
 /** Label / value rows separated by lines. */
