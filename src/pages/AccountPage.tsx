@@ -40,7 +40,7 @@ export function AccountPage() {
     if (limited) return setError(`You have changed your password ${PASSWORD_CHANGE_LIMIT} times in the last ${PASSWORD_CHANGE_WINDOW_DAYS} days. You can change it again on ${nextAt ? formatDate(nextAt.toISOString()) : 'a later date'}.`)
     if (existing && !current) return setError('Enter your current password.')
     if (existing && (await hashPassword(key, current)) !== existing) return setError('Your current password is incorrect.')
-    const problem = passwordProblem(next)
+    const problem = passwordProblem(next, { email: user?.email, username: user?.username })
     if (problem) return setError(problem)
     if (next !== confirm) return setError('The new passwords do not match.')
     if (next === current) return setError('Choose a password different from your current one.')
@@ -96,7 +96,7 @@ export function AccountPage() {
             ))}
           </dl>
         </Panel>
-        <Panel keepSubtitle title="Change password" subtitle="At least 8 characters, with letters and numbers.">
+        <Panel keepSubtitle title="Change password" subtitle="At least 12 characters. A short sentence you can remember works well.">
           <form onSubmit={submit} className="space-y-3.5" noValidate>
             {existing && (
               <Req label={mustChangePassword ? 'Temporary password' : 'Current password'}>{pw(current, setCurrent, 'current-password')}</Req>

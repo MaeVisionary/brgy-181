@@ -2,7 +2,7 @@ import { EDITABLE_ROLES, GRANTABLE_ROLES, GRANTABLE_STAFF_PERMISSIONS, PERMISSIO
 import { mockUsers } from '@/mocks/users'
 import type { Permission, RoleId, User } from '@/types/auth'
 import { audit } from './auditService'
-import { clearFailures, hashPassword, resolveResetRequests, setCredential, temporaryPassword } from './credentialStore'
+import { sendResetLinkFor } from './passwordResetService'
 import { ServiceError, mockRequest } from './mockApi'
 import { consumeChallenge } from './stepUp'
 import { mockNotifications } from '@/mocks/notifications'
@@ -44,21 +44,6 @@ export function setDisplayName(id: string, fullName: string, by: User): Promise<
   })
 }
 
-/**
- * Administrator password reset: issues a one-time temporary password, unlocks the
- * account and requires a new password at next sign-in. Returns the temporary password
- * so the administrator can hand it over; it is never stored in plain text.
- */
-export async function resetPassword(target: { credentialKey: string; identifiers: string[]; label: string }, by: User): Promise<string> {
-  requireAdmin(by)
-  const temp = temporaryPassword()
-  setCredential(target.credentialKey, { hash: await hashPassword(target.credentialKey, temp), mustChange: true, updatedAt: new Date().toISOString() })
-  for (const id of target.identifiers) clearFailures(`login:${id.toLowerCase()}`)
-  resolveResetRequests(target.identifiers)
-  audit(by, 'Reset password', 'User accounts', target.label)
-  return temp
-}
-
 function notifyAccounts(userIds: string[], title: string, body: string, link = '/account') {
   const now = new Date().toISOString()
   for (const userId of new Set(userIds)) mockNotifications.push({ id: `ntf-${Math.random().toString(36).slice(2, 9)}`, userId, category: 'system', title, body, createdAt: now, read: false, link })
@@ -92,25 +77,24 @@ export function newAccountErrors(i: NewPersonnelAccount): Partial<Record<keyof N
   return e
 }
 
-/** Creates a Barangay Personnel account with a one-time temporary password (changed at first sign-in). */
-export async function createPersonnelAccount(i: NewPersonnelAccount, by: User): Promise<{ user: User; password: string }> {
+/** Creates a Barangay Personnel account. No password is set: the person gets a single-use setup link by e-mail. */
+export async function createPersonnelAccount(i: NewPersonnelAccount, by: User): Promise<{ user: User }> {
   requireAdmin(by)
   const errs = newAccountErrors(i)
   if (Object.keys(errs).length) throw new ServiceError('invalid', Object.values(errs)[0]!)
   const id = `usr-${Date.now().toString(36)}`
-  const temp = temporaryPassword()
-  const hash = await hashPassword(id, temp)
-  return mockRequest(() => {
+  const created = await mockRequest(() => {
     const seq = mockUsers.map((u) => Number(u.accountNo?.match(/^EMP-181-(\d+)$/)?.[1] ?? 0)).reduce((a, b) => Math.max(a, b), 0) + 1
     const user: User = {
       id, username: i.username.trim().toLowerCase(), fullName: i.fullName.trim(), position: ROLES[i.roleId].name, roleId: i.roleId, email: i.email.trim().toLowerCase(),
       status: 'active', accountNo: personnelNumber(seq), createdAt: new Date().toISOString(), contactNo: i.contactNo?.replace(/[\s-]/g, '') || undefined,
     }
     mockUsers.push(user)
-    setCredential(id, { hash, mustChange: true, updatedAt: user.createdAt! })
     audit(by, 'Created account', 'User accounts', `${user.username} · ${ROLES[user.roleId].name}`)
-    return { user, password: temp }
+    return user
   })
+  await sendResetLinkFor(created.id, by, 'setup')
+  return { user: created }
 }
 
 /** Personnel positions the administrator may assign (elected officials keep their role). */

@@ -90,11 +90,34 @@ export function temporaryPassword(): string {
   return `${body.slice(0, 5)}-${body.slice(5)}`
 }
 
-/** Rules for new passwords. Returns an error message or null. */
-export function passwordProblem(pw: string): string | null {
-  if (pw.length < 8) return 'Use at least 8 characters.'
-  if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return 'Use both letters and numbers.'
+/**
+ * Rules for new passwords (NIST SP 800-63B style): at least 12 characters, long
+ * passphrases welcome (up to 128), no forced mix of symbols or capitals, and
+ * common or easily guessed passwords refused. Existing passwords keep working;
+ * the rules apply when a password is set. A breached-password check (e.g. the
+ * Have I Been Pwned range API) belongs on the server when the backend exists.
+ */
+export const PASSWORD_MIN = 12
+const COMMON = ['password', 'qwerty', '123456', '12345678', '123456789', '1234567890', 'iloveyou', 'admin', 'welcome', 'letmein', 'monkey', 'dragon', 'sunshine', 'princess', 'football', 'baseball', 'barangay', 'brgy181', 'barangay181', 'manila', 'tondo', 'philippines', 'pilipinas', 'mahalkita', 'iloveyou1', 'abcdefgh', 'aaaaaaaa', 'passw0rd', 'changeme', 'resident', 'kapetuwingumagasatondo']
+export function passwordProblem(pw: string, ctx: { email?: string; username?: string } = {}): string | null {
+  if (pw.length < PASSWORD_MIN) return `Use at least ${PASSWORD_MIN} characters. A short sentence you can remember works well, for example "kape tuwing umaga sa Tondo".`
+  if (pw.length > 128) return 'Use 128 characters or fewer.'
+  const low = pw.toLowerCase().replace(/\s+/g, '')
+  if (/^(.)\1+$/.test(low) || /^(0123456789|1234567890|abcdefghijkl)/.test(low)) return 'This password is too easy to guess. Please choose another.'
+  if (COMMON.some((c) => low === c || low.replace(/\d+$/, '') === c || low.replace(/[^a-z]/g, '') === c)) return 'This password is commonly used and easy to guess. Please choose another.'
+  const local = ctx.email?.split('@')[0]?.toLowerCase()
+  if ((local && local.length >= 4 && low.includes(local)) || (ctx.username && ctx.username.length >= 4 && low.includes(ctx.username.toLowerCase()))) return 'Do not use your username or email in your password.'
   return null
+}
+
+// ── Ending sessions after a password reset ───────────────────────────
+const EPOCH_KEY = 'bmis.sessionEpoch'
+/** Sessions of this account started before this moment are no longer valid. */
+export const sessionsValidFrom = (credentialKey: string): string | undefined => read<Record<string, string>>(EPOCH_KEY, {})[credentialKey]
+export function endSessionsFor(credentialKey: string) {
+  const all = read<Record<string, string>>(EPOCH_KEY, {})
+  all[credentialKey] = new Date().toISOString()
+  write(EPOCH_KEY, all)
 }
 
 // ── Password change limit ────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { CheckCircle2, ChevronDown, Copy, Download, KeyRound, MoreHorizontal, Pencil, Plus, Search, UserCheck, UserX, X } from '@/icons'
+import { CheckCircle2, ChevronDown, Download, KeyRound, MoreHorizontal, Pencil, Plus, Search, UserCheck, UserX, X } from '@/icons'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { Button, IconButton } from '@/components/ui/Button'
@@ -11,16 +11,16 @@ import { StatusLabel } from '@/components/ui/StatusLabel'
 import { OFFICIALS } from '@/config/barangay'
 import { ROLES } from '@/config/permissions'
 import { TEST_ACCOUNTS, testAccountByKey, testUserFor } from '@/config/testAccount'
-import { accountTypeBySlug } from '@/config/accountTypes'
 import { useStickyState } from '@/hooks/useStickyState'
 import { cn } from '@/lib/cn'
 import { formatDate, formatDateTime, initials } from '@/lib/format'
 import { residentById } from '@/mocks/residents'
 import { audit } from '@/services/auditService'
-import { getCredential, listResetRequests, type ResetRequest } from '@/services/credentialStore'
+import { getCredential } from '@/services/credentialStore'
+import { sendResetLinkFor } from '@/services/passwordResetService'
 import { ServiceError } from '@/services/mockApi'
 import { listRegistrations } from '@/services/registrationService'
-import { CREATABLE_ROLES, createPersonnelAccount, listUsers, newAccountErrors, resetPassword, setStatus, type NewPersonnelAccount } from '@/services/userService'
+import { CREATABLE_ROLES, createPersonnelAccount, listUsers, newAccountErrors, setStatus, type NewPersonnelAccount } from '@/services/userService'
 import type { ResidentRegistration } from '@/types/resident'
 import type { User } from '@/types/auth'
 import { ManageUser } from './AdminPages'
@@ -55,8 +55,6 @@ export function UsersPage() {
   const [regs, setRegs] = useState<ResidentRegistration[]>([])
   const load = () => listUsers().then((u) => setUsers([...u]))
   useEffect(() => { load(); listRegistrations().then(setRegs).catch(() => setRegs([])) }, [])
-  const [requests, setRequests] = useState<ResetRequest[]>(listResetRequests)
-  const [issued, setIssued] = useState<{ label: string; password: string; note?: string } | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   useEffect(() => { if (!toast) return; const t = window.setTimeout(() => setToast(null), 3500); return () => window.clearTimeout(t) }, [toast])
@@ -100,13 +98,10 @@ export function UsersPage() {
   const togglePage = () => setSelected((s) => { const n = new Set(s); for (const id of pageIds) if (allOnPage) n.delete(id); else n.add(id); return n })
   const picked = accounts.filter((u) => selected.has(u.id))
 
+  // Personnel never see or set a password: the owner gets a single-use link at their registered e-mail.
   const reset = async (u: Row) => {
     setErr(null)
-    try {
-      const password = await resetPassword({ credentialKey: u.id, identifiers: [u.username, u.email], label: u.test ? `Test account (${u.email})` : u.username }, me!)
-      setIssued({ label: u.fullName, password })
-      setRequests(listResetRequests())
-    } catch (e) { setErr(e instanceof ServiceError ? e.message : 'The password could not be reset. Please try again.') }
+    try { await sendResetLinkFor(u.id, me!); setToast(`Reset link sent to ${u.email}. It works once and expires in 15 minutes.`) } catch (e) { setErr(e instanceof ServiceError ? e.message : 'The link could not be sent. Please try again.') }
   }
   const run = async (fn: () => Promise<unknown>) => {
     setErr(null)
@@ -144,19 +139,16 @@ export function UsersPage() {
     ? { label: 'Deactivate account', icon: <UserX />, danger: true, onSelect: () => setConfirm({ kind: 'deactivate', ids: [u.id] }) }
     : { label: 'Activate account', icon: <UserCheck />, onSelect: () => setConfirm({ kind: 'activate', ids: [u.id] }) }
   const menuFor = (u: Row): MenuItem[] => [
-    { label: 'Reset password', icon: <KeyRound />, onSelect: () => reset(u) },
+    ...(u.roleId === 'system_admin' || u.test ? [] : [{ label: 'Send password reset link', icon: <KeyRound />, onSelect: () => reset(u) }]),
     ...(changeable(u) ? [statusAction(u)] : []),
   ]
   const isOpen = (u: Row) => open?.id === u.id
   const expand = (u: Row, edit = false) => setOpen(isOpen(u) && open?.edit === edit ? null : { id: u.id, edit })
 
-  const pending = requests.filter((r) => r.status === 'pending')
-  const matchFor = (r: ResetRequest) => accounts.find((u) => u.username.toLowerCase() === r.identifier || u.email.toLowerCase() === r.identifier)
-
   const details = (u: Row) => (
     <AccountDetails u={u} status={statusOf(u).label} contact={contactOf(u)} residentNo={residentNoOf(u)} reg={u.roleId === 'resident' ? regFor(u) : undefined}>
       {open?.edit && (u.test ? (
-        <p className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-[length:calc(15px*var(--fs))] text-navy-900">Test account for the project team. Its role and permissions are not edited here; use Reset password from the actions menu.</p>
+        <p className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-[length:calc(15px*var(--fs))] text-navy-900">Test account for the project team. Its role and permissions are not edited here. Administrator passwords are recovered through Account Recovery with the Punong Barangay's approval.</p>
       ) : <ManageUser u={u} me={me!} run={run} onReset={() => reset(u)} onSaved={(m) => setToast(m)} hideQuickActions />)}
     </AccountDetails>
   )
@@ -169,37 +161,6 @@ export function UsersPage() {
         actions={<Button icon={<Plus />} onClick={() => setAdding(true)}>Add User</Button>}
       />
       {err && <p role="alert" className="mb-3 rounded-md bg-danger-tint px-4 py-3 text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
-      {issued && (
-        <Card className="mb-4 border-success/40 bg-success-tint px-5 py-4">
-          <p className="text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900">Temporary password for {issued.label}</p>
-          {issued.note && <p className="mt-1 text-[length:calc(15px*var(--fs))] text-navy-900">{issued.note}</p>}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <code className="rounded-md bg-surface px-3 py-2 font-mono text-[length:calc(17px*var(--fs))] font-semibold tracking-wider text-navy-900">{issued.password}</code>
-            <Button size="sm" variant="secondary" icon={<Copy />} onClick={() => navigator.clipboard?.writeText(issued.password)}>Copy</Button>
-            <Button size="sm" variant="ghost" onClick={() => setIssued(null)}>Done</Button>
-          </div>
-          <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-ink-nav">Shown only once. The person must change it at first sign-in.</p>
-        </Card>
-      )}
-      {pending.length > 0 && (
-        <Card className="mb-4 overflow-hidden">
-          <h2 className="border-b border-sky-300 bg-bar px-5 py-3 font-display text-[length:calc(17px*var(--fs))] font-bold text-navy-900">Password reset requests</h2>
-          <ul className="divide-y divide-line-soft">
-            {pending.map((r) => {
-              const u = matchFor(r)
-              return (
-                <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-[length:calc(15px*var(--fs))]">
-                  <span>
-                    <span className="block font-semibold text-navy-900">{r.identifier}</span>
-                    <span className="block text-[length:calc(14.5px*var(--fs))] text-ink-nav">{accountTypeBySlug(r.accountType)?.title ?? r.accountType} · {formatDateTime(r.requestedAt)} · {u ? `matches ${u.fullName}` : 'no matching account'}</span>
-                  </span>
-                  {u && <Button size="sm" icon={<KeyRound />} onClick={() => reset(u)}>Reset password</Button>}
-                </li>
-              )
-            })}
-          </ul>
-        </Card>
-      )}
 
       {/* Filters and search */}
       <div className="mb-3 flex flex-col gap-3 xl:flex-row xl:items-center">
@@ -342,7 +303,7 @@ export function UsersPage() {
           })()}
         </ConfirmDialog>
       )}
-      {adding && <AddUserDialog onClose={() => setAdding(false)} onCreated={(u, password) => { setAdding(false); load(); setIssued({ label: u.fullName, password, note: `Account ${u.accountNo} created for ${u.username}.` }); setToast('Account created.') }} />}
+      {adding && <AddUserDialog onClose={() => setAdding(false)} onCreated={(u) => { setAdding(false); load(); setToast(`Account ${u.accountNo} created. A setup link was sent to ${u.email}.`) }} />}
       {toast && (
         <div role="status" className="fixed right-4 bottom-4 z-50 flex max-w-sm items-start gap-2 rounded-lg border border-success/40 bg-surface px-4 py-3 text-[length:calc(15px*var(--fs))] text-navy-900 shadow-[0_8px_24px_rgba(0,33,50,0.15)]">
           <CheckCircle2 className="icon-line w-4 text-success" /> {toast}
@@ -401,7 +362,7 @@ function RowMenu({ label, items, bordered }: { label: string; items: MenuItem[];
 function AccountDetails({ u, status, contact, residentNo, reg, children }: { u: Row; status: string; contact: string; residentNo: string; reg?: ResidentRegistration; children?: React.ReactNode }) {
   const resident = u.residentId ? residentById(u.residentId) : undefined
   const cred = getCredential(u.id)
-  const password = cred?.mustChange ? 'Temporary password issued' : testAccountByKey(u.id) || cred ? 'Password set' : 'No password yet'
+  const password = cred?.mustChange ? 'Must be changed at next sign-in' : testAccountByKey(u.id) || cred ? 'Set by the account owner' : 'Not set yet (setup link sent)'
   const official = OFFICIALS.find((o) => o.userId === u.id)
   const account: [string, string][] = [
     ['Account number', u.accountNo ?? NOT_ON_FILE],
@@ -454,7 +415,7 @@ function DetailSection({ title, rows }: { title: string; rows: [string, string][
 }
 
 /** Barangay Personnel only: residents get accounts by registering and being verified. */
-function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (u: User, password: string) => void }) {
+function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (u: User) => void }) {
   const { user: me } = useAuth()
   const [f, setF] = useState<NewPersonnelAccount>({ fullName: '', username: '', email: '', contactNo: '', roleId: 'property_custodian' })
   const [shownErrs, setShownErrs] = useState(false)
@@ -468,7 +429,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
     setShownErrs(true); setErr(null)
     if (Object.keys(errs).length) { window.setTimeout(() => box.current?.querySelector<HTMLElement>('[aria-invalid=true]')?.focus(), 0); return }
     setBusy(true)
-    try { const r = await createPersonnelAccount(f, me!); onCreated(r.user, r.password) } catch (x) { setErr(x instanceof ServiceError ? x.message : 'The account could not be created. Please try again.') } finally { setBusy(false) }
+    try { const r = await createPersonnelAccount(f, me!); onCreated(r.user) } catch (x) { setErr(x instanceof ServiceError ? x.message : 'The account could not be created. Please try again.') } finally { setBusy(false) }
   }
   const e = (k: keyof NewPersonnelAccount) => (shownErrs ? errs[k] : undefined)
   return (
@@ -478,7 +439,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
           <h2 id="add-user-title" className="font-display text-[length:calc(21px*var(--fs))] font-bold text-navy-900">Add Barangay Personnel account</h2>
           <IconButton label="Close" onClick={onClose}><X /></IconButton>
         </div>
-        <p className="mt-1 text-[length:calc(15px*var(--fs))] text-ink-nav">Residents get their accounts by registering online and being verified. A one-time temporary password is shown after you create the account.</p>
+        <p className="mt-1 text-[length:calc(15px*var(--fs))] text-ink-nav">Residents get their accounts by registering online and being verified. A setup link is e-mailed to the person so they choose their own password; no one else sees it.</p>
         <div className="mt-4 space-y-4">
           <FieldLabel label="Position" required error={e('roleId')}>
             <Select value={f.roleId} onChange={set('roleId')} aria-invalid={!!e('roleId')}>

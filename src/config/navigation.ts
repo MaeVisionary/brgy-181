@@ -26,6 +26,7 @@ import {
   SlidersHorizontal,
   UserRound,
   Users,
+  KeyRound,
   type LucideIcon,
 } from '@/icons'
 import type { Permission, Portal } from '@/types/auth'
@@ -69,6 +70,7 @@ const PERSONNEL_NAV: NavGroup[] = [
   { section: 'Resident Records', label: 'Resident Master List', icon: Users, path: '/residents', anyOf: ['residents.view', 'residents.search'] },
   { section: 'Resident Records', label: 'Households', icon: HouseIcon, path: '/residents/households', anyOf: ['residents.view'] },
   { section: 'Resident Records', label: 'Registrations', icon: BadgeCheck, path: '/residents/registrations', anyOf: ['residents.verify', 'residents.override'] },
+  { section: 'Resident Records', label: 'Account Recovery', icon: KeyRound, path: '/account-recovery', anyOf: ['residents.verify', 'users.manage', 'security.approve'] },
   { section: 'Resident Records', label: 'Calendar', icon: CalendarClock, path: '/appointments', anyOf: ['residents.approve', 'documents.release', 'cases.manage', 'borrowing.release', 'hearings.view', 'cases.assigned'] },
   { section: 'Resident Records', label: 'Record Update Requests', icon: FilePen, path: '/residents/change-requests', anyOf: ['residents.approve'] },
   { section: 'Services', label: 'Document Requests', icon: FileText, path: '/documents', anyOf: ['documents.view'] },
@@ -95,6 +97,7 @@ const ADMIN_NAV: NavGroup[] = [
   { section: 'Users and Access', label: 'Roles and Permissions', icon: ShieldCheck, path: '/admin/roles', anyOf: ['roles.manage'] },
   { section: 'Users and Access', label: 'Barangay Personnel', icon: UserRound, path: '/admin/personnel', anyOf: ['users.manage'] },
   { section: 'Users and Access', label: 'Security', icon: Lock, path: '/admin/security', anyOf: ['security.approve'] },
+  { section: 'Users and Access', label: 'Account Recovery', icon: KeyRound, path: '/account-recovery', anyOf: ['users.manage'] },
   { section: 'Records', label: 'Activity Log', icon: ScrollText, path: '/admin/activity', anyOf: ['audit_logs.view'] },
   { section: 'System', label: 'System Settings', icon: SlidersHorizontal, path: '/admin/settings', anyOf: ['system.settings'] },
   { section: 'System', label: 'Holidays and Calendar', icon: CalendarClock, path: '/calendar', anyOf: ['system.settings'] },

@@ -199,7 +199,7 @@ export function RegisterPage() {
     else if (!/^[a-z0-9._@-]{4,}$/i.test(username.trim())) e.username = 'Please use at least 4 characters: letters, numbers, dots (.), dashes (-) or @. Example: juan.delacruz'
     else if (username.trim().toLowerCase() !== d.email.trim().toLowerCase() && identifierTaken(username)) e.username = 'This username is already taken. Please choose another one.'
     if (!password) e.password = MSG.required('a password')
-    else { const pw = passwordProblem(password); if (pw) e.password = `${pw} Example: barangay2026` }
+    else { const pw = passwordProblem(password, { email: d.email, username }); if (pw) e.password = pw }
     if (!confirm) e.confirm = 'Please type your password again to confirm it.'
     else if (password !== confirm) e.confirm = 'The two passwords do not match. Please type the same password in both boxes.'
     return e
@@ -505,7 +505,7 @@ export function RegisterPage() {
                 <F label="Username" hint="You can also sign in with your email." error={touched ? accountErrs.username : undefined}><input className={field} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" aria-invalid={touched && !!accountErrs.username} /></F>
                 <F label="Password" error={touched ? accountErrs.password : undefined}>
                   <span className="relative block">
-                    <input className={cn(field, 'pr-12')} type={showPw ? 'text' : 'password'} placeholder="At least 8 characters, letters and numbers" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" aria-invalid={touched && !!accountErrs.password} />
+                    <input className={cn(field, 'pr-12')} type={showPw ? 'text' : 'password'} placeholder="At least 12 characters" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" aria-invalid={touched && !!accountErrs.password} />
                     <button type="button" onClick={() => setShowPw((s) => !s)} aria-label={showPw ? 'Hide password' : 'Show password'} className="absolute top-1/2 right-2 grid size-11 -translate-y-1/2 place-items-center rounded-lg text-ink-muted hover:text-navy-900">
                       {showPw ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
                     </button>

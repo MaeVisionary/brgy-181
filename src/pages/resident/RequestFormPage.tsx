@@ -1,4 +1,6 @@
 import { IdStatusLine, IdUploadForm } from '@/components/identity/IdOnFile'
+import { useSteps } from '@/hooks/useSteps'
+import { StepProgress } from '@/components/ui/StepProgress'
 import { DraftConflictNote, DraftIndicator, DraftRecoveryCard, useDraft } from '@/hooks/useDraft'
 import { focusFirstInvalid } from '@/lib/validation'
 import { maskIdNumber } from '@/config/idTypes'
@@ -54,7 +56,9 @@ export function RequestFormPage() {
   const [values, setValues] = useState<Record<string, FieldValue>>({})
   const [files, setFiles] = useState<Record<string, StoredFile | null>>({})
   const [touched, setTouched] = useState(false)
-  const [reviewing, setReviewing] = useState(false)
+  // Two steps (form → review) on the shared step controller; Back from review returns to the form with everything kept.
+  const rsteps = useSteps(['form', 'review'] as const)
+  const reviewing = rsteps.current === 'review'
   const [leaving, setLeaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -102,13 +106,11 @@ export function RequestFormPage() {
   const typed = askFields.some((f) => isFilled(values[f.key]) && !profileKeys.has(f.key)) || Object.values(files).some(Boolean)
 
   const discard = () => { draft.clear(); navigate('/my/documents/new', { replace: true }) }
-  const back = () => (reviewing ? setReviewing(false) : navigate(-1))
+  const back = () => (reviewing ? rsteps.back() : navigate(-1))
   const cancel = () => (typed ? setLeaving(true) : discard())
   const review = () => {
     setTouched(true)
-    if (missing.length || idBlocked) { focusFirstInvalid(); return }
-    setReviewing(true)
-    window.scrollTo({ top: 0 })
+    if (rsteps.next(() => { if (missing.length || idBlocked) { focusFirstInvalid(); return false } return true })) window.scrollTo({ top: 0 })
   }
   const submit = async () => {
     if (!actor || !resident || busy) return
@@ -145,6 +147,7 @@ export function RequestFormPage() {
         <ArrowLeft className="size-4" /> {reviewing ? 'Back to the form' : 'Back'}
       </button>
       <PageHeader title={type.name} />
+      <StepProgress labels={['Fill in the form', 'Check and send']} index={rsteps.index} />
       {(reviewing || PURPOSE[type.id]) && <p className="-mt-2 mb-4 text-[length:calc(16.5px*var(--fs))] text-ink-nav">{reviewing ? 'Please check your request before sending it.' : PURPOSE[type.id]}</p>}
 
       {reviewing ? (
@@ -169,7 +172,7 @@ export function RequestFormPage() {
           {error && <p role="alert" className="rounded-md bg-danger-tint px-4 py-3 text-[length:calc(16px*var(--fs))] text-danger-ink">{error}</p>}
           <ActionStack>
             <Button onClick={submit} loading={busy}>Submit Request</Button>
-            <Button variant="secondary" onClick={() => setReviewing(false)}>Change something</Button>
+            <Button variant="secondary" onClick={() => rsteps.back()}>Change something</Button>
           </ActionStack>
         </div>
       ) : (

@@ -41,7 +41,7 @@ export function ManageUser({ u, me, run, onReset, onSaved, hideQuickActions }: {
       <div className="space-y-3">
         {!hideQuickActions && <ActionStack>
           <Button size="sm" variant={u.status === 'active' ? 'danger' : 'primary'} disabled={u.id === me.id} onClick={() => run(() => setStatus(u.id, u.status === 'active' ? 'inactive' : 'active', me))}>{u.status === 'active' ? 'Deactivate' : 'Activate'}</Button>
-          <Button size="sm" variant="secondary" icon={<KeyRound className="size-3.5" />} onClick={onReset}>Reset password</Button>
+          <Button size="sm" variant="secondary" icon={<KeyRound className="size-3.5" />} onClick={onReset}>Send reset link</Button>
         </ActionStack>}
         {renamable ? (
           <label className="block max-w-md">

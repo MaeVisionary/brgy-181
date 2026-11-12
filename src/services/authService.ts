@@ -2,7 +2,7 @@ import { APP_CONFIG } from '@/config/app'
 import { TEST_LEVELS, testAccountByEmail, testAccountOf, testUserFor } from '@/config/testAccount'
 import { mockUsers } from '@/mocks/users'
 import type { RoleId, Session, User } from '@/types/auth'
-import { addFailure, addResetRequest, clearFailures, failedCount, getCredential, hashPassword } from './credentialStore'
+import { addFailure, clearFailures, failedCount, getCredential, hashPassword } from './credentialStore'
 import { ServiceError, mockRequest } from './mockApi'
 import { pendingAccountMessage } from './registrationService'
 
@@ -27,13 +27,13 @@ async function passwordMatches(key: string, password: string, expected: string):
   return trimmed !== password && (await hashPassword(key, trimmed)) === expected
 }
 
-const INVALID = 'Incorrect username/email or password. If you have no password yet, ask the System Administrator to reset your account.'
+const INVALID = 'Incorrect username/email or password. Forgot it? Use "Forgot password?" to get a reset link.'
 
 export async function signIn(input: SignInInput): Promise<{ user: User; session: Session }> {
   const id = input.identifier.trim().toLowerCase()
   const lockKey = `login:${id}`
   if (failedCount(lockKey) >= APP_CONFIG.lockoutThreshold) {
-    throw new ServiceError('locked', 'This account is locked after too many failed attempts. Ask the System Administrator to reset your password.')
+    throw new ServiceError('locked', 'This account is locked after too many failed attempts. Use "Forgot password?" to set a new password, which unlocks it.')
   }
   const fail = (): never => {
     const n = addFailure(lockKey)
@@ -64,14 +64,6 @@ export async function signIn(input: SignInInput): Promise<{ user: User; session:
   clearFailures(lockKey)
   user!.lastLoginAt = new Date().toISOString()
   return mockRequest(() => ({ user: user!, session: createSession(user!.id, cred!.mustChange) }))
-}
-
-/** Always answers the same way, so it never reveals whether an account exists. */
-export function requestPasswordReset(identifier: string, accountType: string): Promise<void> {
-  return mockRequest(() => {
-    if (!identifier.trim()) throw new ServiceError('invalid', 'Enter your username or email.')
-    addResetRequest(identifier, accountType)
-  })
 }
 
 export function createSession(userId: string, mustChangePassword = false): Session {

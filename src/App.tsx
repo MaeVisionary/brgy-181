@@ -15,6 +15,8 @@ import { RoleLoginPage } from '@/pages/public/RoleLoginPage'
 import { ForgotPasswordPage } from '@/pages/public/ForgotPasswordPage'
 import { RegisterPage } from '@/pages/public/RegisterPage'
 import { RegistrationStatusPage } from '@/pages/public/RegistrationStatusPage'
+import { RecoveryRequestPage, ResetPasswordPage } from '@/pages/public/RecoveryPages'
+import { AccountRecoveryDetailPage, AccountRecoveryPage } from '@/pages/admin/AccountRecoveryPage'
 import { AccountPage } from '@/pages/AccountPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { DocumentRequestsPage } from '@/pages/documents/DocumentRequestsPage'
@@ -48,6 +50,7 @@ import { ModulePending } from '@/pages/system/ModulePending'
 import { NotFound } from '@/pages/system/NotFound'
 
 /** Development-only preview; `import.meta.env.DEV` is false in production, so this module is not bundled. */
+const DevMailboxPage = import.meta.env.DEV ? lazy(() => import('@/pages/public/DevMailboxPage').then((m) => ({ default: m.DevMailboxPage }))) : null
 const DevPreviewPage = import.meta.env.DEV ? lazy(() => import('@/pages/public/DevPreviewPage').then((m) => ({ default: m.DevPreviewPage }))) : null
 
 /** Modules not built yet come from the navigation registry, so links and guards never drift apart. */
@@ -70,6 +73,9 @@ export default function App() {
       <Route path="/forgot-password/:role" element={<ForgotPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/register/status" element={<RegistrationStatusPage />} />
+      <Route path="/account-recovery/new" element={<RecoveryRequestPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      {DevMailboxPage && <Route path="/dev/mailbox" element={<Suspense fallback={null}><DevMailboxPage /></Suspense>} />}
       {DevPreviewPage && <Route path="/preview" element={<Suspense fallback={null}><DevPreviewPage /></Suspense>} />}
 
       <Route element={<RequireAuth />}>
@@ -110,6 +116,8 @@ export default function App() {
 
           {/* System administration */}
           <Route path="/admin/users" element={guard(['users.manage'], 'admin', <UsersPage />)} />
+          <Route path="/account-recovery" element={<RequirePermission anyOf={['residents.verify', 'users.manage', 'security.approve']}><AccountRecoveryPage /></RequirePermission>} />
+          <Route path="/account-recovery/:id" element={<RequirePermission anyOf={['residents.verify', 'users.manage', 'security.approve']}><AccountRecoveryDetailPage /></RequirePermission>} />
           <Route path="/admin/security" element={<RequirePermission anyOf={['security.approve']}><SecurityPage /></RequirePermission>} />
           <Route path="/admin/roles" element={guard(['roles.manage'], 'admin', <RolesPage />)} />
           <Route path="/admin/personnel" element={guard(['users.manage'], 'admin', <PersonnelPage />)} />

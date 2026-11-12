@@ -5,6 +5,7 @@ import { ROLES, ROLE_PERMISSIONS } from '@/config/permissions'
 import { testAccountOf } from '@/config/testAccount'
 import { createSession, findUser, signIn as signInRequest, type SignInInput } from '@/services/authService'
 import { audit } from '@/services/auditService'
+import { sessionsValidFrom } from '@/services/credentialStore'
 import type { Permission, Role, RoleId, Session, User } from '@/types/auth'
 
 /**
@@ -13,6 +14,9 @@ import type { Permission, Role, RoleId, Session, User } from '@/types/auth'
  */
 
 const STORAGE_KEY = 'bmis.session'
+export const RESET_SIGNOUT_KEY = 'bmis.signedOutByReset'
+/** A password reset ends every earlier session of the account (this tab and others). */
+const endedByReset = (s: Session) => { const from = sessionsValidFrom(testAccountOf(s.userId)?.credentialKey ?? s.userId); return !!from && s.startedAt < from }
 export const EXPIRED_KEY = 'bmis.sessionExpired'
 
 export interface AuthContextValue {
@@ -40,7 +44,7 @@ function readSession(): Session | null {
       const raw = store.getItem(STORAGE_KEY)
       if (!raw) continue
       const session = JSON.parse(raw) as Session
-      if (new Date(session.expiresAt) > new Date() && findUser(session.userId)) return session
+      if (new Date(session.expiresAt) > new Date() && findUser(session.userId) && !endedByReset(session)) return session
     } catch {
       /* ignore */
     }
@@ -92,6 +96,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       start(null, false)
     }, Math.max(ms, 0))
     return () => clearTimeout(timer)
+  }, [session, start])
+
+  // Password reset elsewhere (another tab, another device in the real system): sign out here too.
+  useEffect(() => {
+    if (!session) return
+    const check = () => { if (endedByReset(session)) { try { sessionStorage.setItem(RESET_SIGNOUT_KEY, '1') } catch { /* ignore */ } start(null, false) } }
+    const onStorage = (e: StorageEvent) => { if (e.key === 'bmis.sessionEpoch') check() }
+    window.addEventListener('storage', onStorage)
+    const t = window.setInterval(check, 30_000)
+    return () => { window.removeEventListener('storage', onStorage); window.clearInterval(t) }
   }, [session, start])
 
   // Activity keeps the session alive (checked at most once a minute), so working users are never interrupted.

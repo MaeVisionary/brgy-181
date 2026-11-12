@@ -1,5 +1,5 @@
 import { SealWatermark } from '@/components/layout/SealWatermark'
-import { EXPIRED_KEY } from '@/auth/AuthContext'
+import { EXPIRED_KEY, RESET_SIGNOUT_KEY } from '@/auth/AuthContext'
 import { APP_CONFIG } from '@/config/app'
 import { ArrowLeft, ChevronRight } from '@/icons'
 import { useState } from 'react'
@@ -24,6 +24,11 @@ export function PortalPage() {
     }
   })
 
+  // Shown once after a password reset ended this session.
+  const [byReset] = useState(() => {
+    try { const v = sessionStorage.getItem(RESET_SIGNOUT_KEY) === '1'; sessionStorage.removeItem(RESET_SIGNOUT_KEY); return v } catch { return false }
+  })
+
   const choose = (slug: string) => {
     if (picked) return
     setPicked(slug)
@@ -37,6 +42,7 @@ export function PortalPage() {
         <button type="button" onClick={() => go('/', 'back')} className="bmis-press mb-5 inline-flex min-h-11 items-center gap-1.5 rounded-full px-1 text-[length:calc(15px*var(--fs))] font-semibold text-ink-muted hover:text-navy-900">
           <ArrowLeft className="size-4" /> Back to home
         </button>
+        {byReset && <p role="status" className="mb-4 rounded-[var(--radius-control)] bg-sky-100 px-4 py-3 text-[length:calc(16px*var(--fs))] text-navy-900">Your password was changed, so you were signed out. Please sign in with your new password.</p>}
         {expired && <p role="status" className="mb-4 rounded-[var(--radius-control)] bg-sky-100 px-4 py-3 text-[length:calc(16px*var(--fs))] text-navy-900">You were signed out after {APP_CONFIG.sessionMinutes} minutes without activity. Please sign in again.</p>}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:items-stretch">
           <aside className="bmis-rise relative flex flex-col items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-navy-900 to-navy-800 px-6 py-10 text-center text-white md:py-14">

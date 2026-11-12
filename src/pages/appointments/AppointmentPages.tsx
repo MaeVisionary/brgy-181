@@ -72,6 +72,8 @@ import { BackLink } from '@/pages/resident/parts'
 import { useStickyState } from '@/hooks/useStickyState'
 import { Timeline } from '@/components/ui/Timeline'
 import { ActionStack } from '@/components/ui/ActionStack'
+import { StepProgress } from '@/components/ui/StepProgress'
+import { useSteps } from '@/hooks/useSteps'
 
 const shortDate = (d: string) => new Date(`${d}T12:00:00+08:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Manila' })
 const staffName = (id: string) => mockUsers.find((u) => u.id === id)?.fullName ?? ''
@@ -100,7 +102,9 @@ export function TimePicker({ a, onPicked, onBack }: { a: Appointment; onPicked: 
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
   const [nudge, setNudge] = useState(false)
-  const [confirming, setConfirming] = useState(false)
+  const tsteps = useSteps(['choose', 'confirm'] as const)
+  const confirming = tsteps.current === 'confirm'
+  const setConfirming = (v: boolean) => (v ? tsteps.next() : tsteps.back())
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const times = date ? timeOptions(a, date) : []
@@ -811,7 +815,9 @@ export function BookVisitPage() {
   const [caseId, setCaseId] = useState('')
   const [contactNo, setContactNo] = useState(resident?.contactNo ?? '')
   const [slot, setSlot] = useState({ date: '', time: '' })
-  const [step, setStep] = useState<'purpose' | 'details' | 'time' | 'review'>('purpose')
+  // One step controller: purpose → details → time → review, exactly one step per Next/Back.
+  const steps = useSteps(['purpose', 'details', 'time', 'review'] as const)
+  const step = steps.current
   const [touched, setTouched] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -828,12 +834,15 @@ export function BookVisitPage() {
   const loadVisit = (d: typeof draftValue | null) => {
     if (!d) return
     setKind((d.kind || null) as AppointmentKind | null); setReason(d.reason); setDescription(d.description); setCaseId(d.caseId); setContactNo(d.contactNo || resident?.contactNo || '')
-    setStep(d.kind ? 'details' : 'purpose')
+    steps.goTo(d.kind ? 'details' : 'purpose')
   }
   const toTime = () => {
     setTouched(true)
-    if (detailKeys.some((k) => errs[k])) { window.setTimeout(() => focusFirstInvalid(box.current ?? undefined), 0); return }
-    setStep('time')
+    // Only this step's fields are checked; on a problem the page stays here.
+    steps.next(() => {
+      if (detailKeys.some((k) => errs[k])) { window.setTimeout(() => focusFirstInvalid(box.current ?? undefined), 0); return false }
+      return true
+    })
   }
   const submit = async () => {
     if (!kind || busy) return
@@ -842,13 +851,13 @@ export function BookVisitPage() {
       const a = await bookPurposeVisit({ kind, reason, description, caseId: caseId || undefined, contactNo, ...slot }, user, visitDraft.draftId)
       visitDraft.clear()
       navigate(`/my/appointments/${a.id}`, { replace: true })
-    } catch (e) { setErr(errText(e)); if (e instanceof ServiceError && e.code === 'slot') { setSlot({ date: slot.date, time: '' }); setStep('time') } } finally { setBusy(false) }
+    } catch (e) { setErr(errText(e)); if (e instanceof ServiceError && e.code === 'slot') { setSlot({ date: slot.date, time: '' }); steps.back() } } finally { setBusy(false) }
   }
-  const stepNo = { purpose: 1, details: 2, time: 3, review: 4 }[step]
   return (
     <>
       <BackLink to="/my/appointments">My Appointments</BackLink>
-      <PageHeader title="Book a visit" subtitle={`Step ${stepNo} of 4`} />
+      <PageHeader title="Book a visit" />
+      <StepProgress labels={['Purpose', 'Details', 'Time', 'Review']} index={steps.index} />
       {visitDraft.recovered && step === 'purpose' && <DraftRecoveryCard savedAt={visitDraft.recovered.savedAt} onContinue={() => loadVisit(visitDraft.resume())} onStartOver={visitDraft.startOver} />}
       {step === 'purpose' && (
         <>
@@ -860,7 +869,7 @@ export function BookVisitPage() {
                 title={p.title}
                 note={<>With the {p.who} · about {lengthOf(p.kind, [])} minutes</>}
                 selected={kind === p.kind}
-                onClick={() => { if (kind !== p.kind) { setReason(''); setCaseId('') } setKind(p.kind); setTouched(false); setStep('details') }}
+                onClick={() => { if (kind !== p.kind) { setReason(''); setCaseId('') } setKind(p.kind); setTouched(false); steps.next() }}
               />
             ))}
           </SelectionGrid>
@@ -908,14 +917,14 @@ export function BookVisitPage() {
           <DraftIndicator status={visitDraft.status} />
           <ActionStack>
             <Button onClick={toTime}>Next: choose a time</Button>
-            <Button variant="ghost" onClick={() => setStep('purpose')}>Back</Button>
+            <Button variant="ghost" onClick={steps.back}>Back</Button>
           </ActionStack>
         </Card>
       )}
       {step === 'time' && kind && (
         <Card className="px-5 py-5">
           {err && <div className="mb-3"><Note ok={false}>{err}</Note></div>}
-          <SlotChooser kind={kind} minutes={minutes} value={slot} onChange={setSlot} onNext={() => { setErr(null); setStep('review') }} onBack={() => setStep('details')} />
+          <SlotChooser kind={kind} minutes={minutes} value={slot} onChange={setSlot} onNext={() => { setErr(null); steps.next() }} onBack={steps.back} />
         </Card>
       )}
       {step === 'review' && purpose && (
@@ -935,7 +944,7 @@ export function BookVisitPage() {
           {err && <Note ok={false}>{err}</Note>}
           <ActionStack>
             <Button loading={busy} onClick={submit}>Book appointment</Button>
-            <Button variant="secondary" onClick={() => setStep('time')}>Choose another time</Button>
+            <Button variant="secondary" onClick={steps.back}>Choose another time</Button>
           </ActionStack>
         </Card>
       )}
