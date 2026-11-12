@@ -66,6 +66,7 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
 
   chairman: [
     'security.approve',
+    'concerns.manage',
     'analytics.view',
     'documents.view',
     'documents.approve',
@@ -79,7 +80,7 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
 
   // Study §1.5: Kagawads may access community population summaries and reports
   // related to their responsibilities. Further access is granted per account.
-  kagawad: ['analytics.view', 'reports.view', 'cases.assigned'],
+  kagawad: ['analytics.view', 'reports.view', 'cases.assigned', 'concerns.view'],
 
 
   secretary: [
@@ -103,6 +104,7 @@ export const ROLE_PERMISSIONS: Record<RoleId, readonly Permission[]> = {
     'cases.manage',
     'hearings.view',
     'hearings.manage',
+    'concerns.manage',
     'analytics.view',
     'reports.view',
     'reports.export',
@@ -130,25 +132,45 @@ export const EDITABLE_ROLES: RoleId[] = ['chairman', 'secretary', 'kagawad', 'pr
 export const PERMISSION_GROUPS: { id: string; name: string; permissions: Permission[] }[] = [
   { id: 'residents', name: 'Resident records', permissions: ['residents.view', 'residents.search', 'residents.import', 'residents.create', 'residents.update', 'residents.verify', 'residents.approve', 'residents.reject', 'residents.lookup_borrower'] },
   { id: 'documents', name: 'Document requests', permissions: ['documents.view', 'documents.create', 'documents.process', 'documents.inspect', 'documents.approve', 'documents.reject', 'documents.release', 'documents.payment'] },
-  { id: 'cases', name: 'Complaints, cases and hearings', permissions: ['complaints.view', 'complaints.create', 'complaints.update', 'cases.view', 'cases.manage', 'cases.decide', 'cases.assigned', 'hearings.view', 'hearings.manage'] },
+  { id: 'cases', name: 'Complaints, cases and hearings', permissions: ['complaints.view', 'complaints.create', 'complaints.update', 'cases.view', 'cases.manage', 'cases.decide', 'cases.assigned', 'hearings.view', 'hearings.manage', 'concerns.manage', 'concerns.view'] },
   { id: 'equipment', name: 'Property and equipment', permissions: ['inventory.view', 'inventory.manage', 'borrowing.approve', 'borrowing.release'] },
   { id: 'reports', name: 'Reports and analytics', permissions: ['analytics.view', 'reports.view', 'reports.export'] },
 ]
 
 const ROLE_OVERRIDES_KEY = 'bmis.rolePermissions'
 
-/** Saved changes from the role manager (prototype: this device; backend: a roles table). */
+/**
+ * Saved changes from the role manager (prototype: this device; backend: a
+ * roles table). Stored as differences from the defaults ({ on, off }), so a
+ * permission added in a later release keeps its default unless someone
+ * changed it on purpose. Old saves (a full list) are read the same way, but
+ * permissions introduced after that format always follow the defaults.
+ */
+const DEFAULT_ROLE_PERMISSIONS: Record<RoleId, Permission[]> = Object.fromEntries(Object.entries(ROLE_PERMISSIONS).map(([k, v]) => [k, [...v]])) as Record<RoleId, Permission[]>
+const ADDED_AFTER_LIST_FORMAT: Permission[] = ['cases.assigned', 'concerns.manage', 'concerns.view', 'security.approve']
+type RoleDiff = { on: Permission[]; off: Permission[] }
+
+function applyDiff(role: RoleId, d: RoleDiff) {
+  const set = new Set(DEFAULT_ROLE_PERMISSIONS[role])
+  for (const p of d.on) set.add(p)
+  for (const p of d.off) set.delete(p)
+  ;(ROLE_PERMISSIONS as Record<RoleId, Permission[]>)[role] = [...set]
+}
+
 ;(function applyRoleOverrides() {
   try {
-    const saved = JSON.parse(localStorage.getItem(ROLE_OVERRIDES_KEY) ?? '{}') as Partial<Record<RoleId, Permission[]>>
-    // Only matrix-editable permissions come from saved changes; everything else
-    // (e.g. security.approve, cases.assigned) always follows the defaults, so a
-    // permission added in a later release is not lost on devices with old saves.
+    const saved = JSON.parse(localStorage.getItem(ROLE_OVERRIDES_KEY) ?? '{}') as Partial<Record<RoleId, Permission[] | RoleDiff>>
     const editable = new Set<Permission>(PERMISSION_GROUPS.flatMap((g) => g.permissions))
     for (const r of EDITABLE_ROLES) {
-      if (!Array.isArray(saved[r])) continue
-      const fixed = ROLE_PERMISSIONS[r].filter((p) => !editable.has(p))
-      ;(ROLE_PERMISSIONS as Record<RoleId, Permission[]>)[r] = [...new Set([...saved[r]!.filter((p) => editable.has(p)), ...fixed])]
+      const v = saved[r]
+      if (!v) continue
+      if (Array.isArray(v)) {
+        const defaults = DEFAULT_ROLE_PERMISSIONS[r]
+        applyDiff(r, {
+          on: v.filter((p) => editable.has(p) && !defaults.includes(p) && !ADDED_AFTER_LIST_FORMAT.includes(p)),
+          off: defaults.filter((p) => editable.has(p) && !v.includes(p) && !ADDED_AFTER_LIST_FORMAT.includes(p)),
+        })
+      } else applyDiff(r, v)
     }
   } catch {
     /* no saved changes */
@@ -157,9 +179,11 @@ const ROLE_OVERRIDES_KEY = 'bmis.rolePermissions'
 
 export function writeRolePermissions(role: RoleId, list: Permission[]) {
   ;(ROLE_PERMISSIONS as Record<RoleId, Permission[]>)[role] = list
+  const defaults = DEFAULT_ROLE_PERMISSIONS[role]
+  const diff: RoleDiff = { on: list.filter((p) => !defaults.includes(p)), off: defaults.filter((p) => !list.includes(p)) }
   try {
     const saved = JSON.parse(localStorage.getItem(ROLE_OVERRIDES_KEY) ?? '{}')
-    saved[role] = list
+    saved[role] = diff
     localStorage.setItem(ROLE_OVERRIDES_KEY, JSON.stringify(saved))
   } catch {
     /* storage unavailable: change lasts until reload */
@@ -229,6 +253,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'system.settings': 'Manage system settings',
   'system.health': 'View system health and backups',
   'security.approve': 'Approve access changes as the second person',
+  'concerns.manage': 'Manage community concerns (group, assign, resolve)',
+  'concerns.view': 'View community concerns',
   'self.profile': 'View own profile',
   'self.documents': 'Request and track own documents',
   'self.complaints': 'Submit and track own complaints',

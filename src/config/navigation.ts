@@ -72,6 +72,7 @@ const PERSONNEL_NAV: NavGroup[] = [
   { section: 'Services', label: 'Document Requests', icon: FileText, path: '/documents', anyOf: ['documents.view'] },
   { section: 'Services', label: 'Approvals', icon: FileCheck2, path: '/documents/approvals', anyOf: ['documents.approve'] },
   { section: 'Services', label: 'Document Templates', icon: Files, path: '/documents/templates', anyOf: ['documents.view'] },
+  { section: 'Community', label: 'Community Concerns', icon: MessageSquareWarning, path: '/concerns', anyOf: ['concerns.manage', 'concerns.view'] },
   { section: 'Katarungang Pambarangay', label: 'Cases', icon: Gavel, path: '/cases', anyOf: ['cases.view', 'cases.manage', 'cases.assigned'] },
   { section: 'Katarungang Pambarangay', label: 'Hearings and Mediation', icon: CalendarClock, path: '/hearings', anyOf: ['hearings.view', 'hearings.manage'] },
   { section: 'Property and Equipment', label: 'Equipment Records', icon: Boxes, path: '/inventory', anyOf: ['inventory.view'] },

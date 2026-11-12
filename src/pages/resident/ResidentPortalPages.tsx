@@ -1,4 +1,5 @@
 import { RowList } from '@/components/ui/RowList'
+import { listMyConcerns } from '@/services/concernService'
 import { Plus } from '@/icons'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -137,6 +138,7 @@ export function MyComplaintsPage() {
           <ul>{cases.map((c) => <li key={c.id} className="border-b border-line-soft last:border-0"><Link to={`/my/complaints/${c.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-sky-50"><span className="min-w-0"><span className="block truncate text-[length:calc(15px*var(--fs))] font-semibold text-navy-900">{c.nature}</span><span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{c.caseNo} · {formatDate(c.filedAt)}</span></span><StatusLabel status={caseStageForResident(c.stage)} /></Link></li>)}</ul>
         )}
       </Panel>
+      <MyConcernsList />
       {/* Reports filed through the earlier online forms stay viewable. */}
       {docs.length > 0 && (
         <Panel className="mt-4" title="Earlier reports" bodyClassName="px-0 py-0">
@@ -179,5 +181,17 @@ export function MyBorrowingPage() {
         })}
       </Card>
     </>
+  )
+}
+
+/** The resident's own community concerns (never other residents'). */
+function MyConcernsList() {
+  const { user } = useAuth()
+  const items = useAsync(() => (user ? listMyConcerns(user) : Promise.resolve([])), [user]).data ?? []
+  if (!items.length) return null
+  return (
+    <Panel className="mt-4" title="My community concerns" bodyClassName="px-0 py-0">
+      <ul>{items.map((c) => <li key={c.submission.id} className="border-b border-line-soft last:border-0"><Link to={`/my/concerns/${c.submission.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-sky-50"><span className="min-w-0"><span className="block truncate text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{c.submission.title}</span><span className="block text-[length:calc(14px*var(--fs))] text-ink-muted">{c.submission.street ?? c.submission.landmark}</span></span><StatusLabel status={c.status} /></Link></li>)}</ul>
+    </Panel>
   )
 }

@@ -13,6 +13,7 @@ import { ServiceError } from '@/services/mockApi'
 import { getResident } from '@/services/residentService'
 import type { Resident } from '@/types/resident'
 import { BackLink } from './parts'
+import { ConcernForm } from './ConcernForm'
 
 /** Dedicated complaint / report form (never a document request). */
 export function NewComplaintPage() {
@@ -65,10 +66,12 @@ export function NewComplaintPage() {
           </div>
         </Panel>
 
-        {category && (
+        {category === 'Community concern' && <ConcernForm />}
+
+        {category && category !== 'Community concern' && (
           <Panel title="Details">
             <div className="space-y-3">
-              <FieldLabel label="Subject" required><TextInput value={nature} onChange={(e) => setNature(e.target.value)} placeholder={category === 'Community concern' ? 'e.g. Broken streetlight' : 'e.g. Unpaid loan'} /></FieldLabel>
+              <FieldLabel label="Subject" required><TextInput value={nature} onChange={(e) => setNature(e.target.value)} placeholder="e.g. Unpaid loan" /></FieldLabel>
               {category === 'Complaint against a person' && (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <FieldLabel label="Person you are complaining about" required><TextInput value={who.name} onChange={(e) => setWho((w) => ({ ...w, name: e.target.value }))} /></FieldLabel>

@@ -64,6 +64,8 @@ export type Permission =
   | 'system.settings'
   | 'system.health'
   | 'security.approve'
+  | 'concerns.manage'
+  | 'concerns.view'
   // Resident self-service (own records only)
   | 'self.profile'
   | 'self.documents'

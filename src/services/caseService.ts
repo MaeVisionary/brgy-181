@@ -395,6 +395,8 @@ export function submitComplaint(input: ResidentComplaintInput, a: CaseActor, me:
     if (!a.permissions.has('self.complaints')) throw new ServiceError('forbidden', 'You cannot file complaints.')
     if (!a.user.residentId || a.user.residentId !== me.residentId) throw new ServiceError('forbidden', 'You can only file complaints as yourself.')
     if (!COMPLAINT_CATEGORIES.includes(input.category)) throw new ServiceError('category', 'Choose what you are reporting.')
+    // Community concerns are not disputes: they go to the community concern workflow (concernService).
+    if (input.category === 'Community concern') throw new ServiceError('category', 'Community concerns are sent through the community concern form.')
     if (!input.nature.trim()) throw new ServiceError('nature', 'Enter a short subject.')
     if (input.details.trim().length < 10) throw new ServiceError('details', 'Describe what happened.')
     const respondents = input.respondents.filter((p) => p.name.trim()).map((p) => ({ name: p.name.trim(), address: p.address.trim() }))

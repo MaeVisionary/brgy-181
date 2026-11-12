@@ -1,3 +1,4 @@
+import { ConcernIssuePage, ConcernsPage, MyConcernPage } from '@/pages/concerns/ConcernPages'
 import { SecurityPage } from '@/pages/admin/SecurityPage'
 import { lazy, Suspense, type ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
@@ -110,6 +111,9 @@ export default function App() {
 
           {/* Resident portal */}
           <Route path="/my/complaints" element={guard(['self.complaints'], 'resident', <MyComplaintsPage />)} />
+          <Route path="/my/concerns/:id" element={guard(['self.complaints'], 'resident', <MyConcernPage />)} />
+          <Route path="/concerns" element={guard(['concerns.manage', 'concerns.view'], 'personnel', <ConcernsPage />)} />
+          <Route path="/concerns/:id" element={guard(['concerns.manage', 'concerns.view'], 'personnel', <ConcernIssuePage />)} />
           <Route path="/my/complaints/new" element={guard(['self.complaints'], 'resident', <NewComplaintPage />)} />
           <Route path="/my/complaints/:id" element={guard(['self.complaints'], 'resident', <ComplaintDetailsPage />)} />
           <Route path="/my/borrowing" element={guard(['self.borrowing'], 'resident', <MyBorrowingPage />)} />
