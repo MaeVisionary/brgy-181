@@ -2,7 +2,7 @@ import { useAuth } from '@/auth/useAuth'
 import { ChairmanDashboard } from './ChairmanDashboard'
 import { CustodianDashboard } from './CustodianDashboard'
 import { AdminDashboard, KagawadDashboard } from './OtherDashboards'
-import { ResidentHome } from '@/pages/resident/ResidentV2Pages'
+import { ResidentHome } from '@/pages/resident/ResidentHome'
 import { SecretaryDashboard } from './SecretaryDashboard'
 
 /** Each role gets its own dashboard; none share the same layout. */

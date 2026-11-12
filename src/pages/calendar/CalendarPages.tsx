@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronRight } from '@/icons'
 import { useAuth } from '@/auth/useAuth'
 import { BackLink } from '@/components/ui/BackLink'
@@ -208,7 +208,9 @@ export function MyCalendarPage() {
   const [view, setView] = useStickyState<'list' | 'month'>('view', 'list')
   const [month, setMonth] = useState(manilaToday().slice(0, 7))
   const [picked, setPicked] = useState<string | null>(null)
-  const [openKey, setOpenKey] = useState<string | null>(null)
+  const [params] = useSearchParams()
+  const [openKey, setOpenKey] = useState<string | null>(() => params.get('item'))
+  useEffect(() => { const k = params.get('item'); if (k) window.setTimeout(() => document.getElementById(`cal-${k}`)?.scrollIntoView({ block: 'center' }), 50) }, [params])
   useEffect(() => { runAppointmentJobs(); runCalendarJobs(); if (user) listMyAppointments(user).then(setApps).catch(() => setApps([])) }, [user])
   if (!user) return null
   const today = manilaToday()
@@ -248,7 +250,7 @@ export function MyCalendarPage() {
                 </>
               )
               const cls = `flex min-h-[76px] w-full items-center gap-3 px-4 py-3 text-left hover:bg-sky-50 sm:px-5 ${i.mine ? 'border-l-4 border-navy-900' : 'border-l-4 border-transparent'}`
-              return <li key={i.key}>{i.to ? <Link to={i.to} className={cls}>{body}</Link> : <button type="button" aria-expanded={openKey === i.key} onClick={() => setOpenKey(openKey === i.key ? null : i.key)} className={cls}>{body}</button>}</li>
+              return <li key={i.key} id={`cal-${i.key}`}>{i.to ? <Link to={i.to} className={cls}>{body}</Link> : <button type="button" aria-expanded={openKey === i.key} onClick={() => setOpenKey(openKey === i.key ? null : i.key)} className={cls}>{body}</button>}</li>
             })}
           </ul>
         </Card>
@@ -292,54 +294,3 @@ function ResidentMonth({ month, setMonth, items, picked, onPick }: { month: stri
 }
 
 /** Resident home: the next appointment and what is coming up in the barangay. */
-export function HomeCalendarCards() {
-  const { user } = useAuth()
-  const [apps, setApps] = useState<Appointment[] | null>(null)
-  useEffect(() => { if (user) listMyAppointments(user).then(setApps).catch(() => setApps([])) }, [user])
-  if (!user) return null
-  const today = manilaToday()
-  const next = (apps ?? []).filter((a) => a.date && isOpen(a) && a.date >= today).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0]
-  const needs = (apps ?? []).find((a) => a.status === 'awaiting_schedule')
-  const upcoming = calendarEntries(today, addDays(today, 60)).slice(0, 3)
-  return (
-    <Card className="overflow-hidden">
-      <div className="px-5 py-4">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[length:calc(15.5px*var(--fs))] font-semibold text-ink-nav">Upcoming appointment</p>
-          {next && <Badge tone={next.status === 'confirmed' ? 'success' : 'warning'}>{APPOINTMENT_STATUS_LABEL[next.status]}</Badge>}
-        </div>
-        {apps === null ? <div className="mt-2 h-12 animate-pulse rounded bg-surface-muted" /> : next ? (
-          <Link to={`/my/appointments/${next.id}`} className="mt-1 block">
-            <span className="block font-display text-[length:calc(20px*var(--fs))] font-extrabold text-navy-900">{APPOINTMENT_TYPES[next.kind].label}</span>
-            <span className="block text-[length:calc(16.5px*var(--fs))] text-navy-900">{dateLong(next.date)}</span>
-            <span className="block text-[length:calc(16.5px*var(--fs))] text-navy-900">{formatTime(next.time)}</span>
-          </Link>
-        ) : needs ? (
-          <Link to={`/my/appointments/${needs.id}`} className="mt-1 block text-[length:calc(17px*var(--fs))] font-semibold text-info hover:underline">Choose a time for your {APPOINTMENT_TYPES[needs.kind].label.toLowerCase()}</Link>
-        ) : <p className="mt-1 text-[length:calc(16.5px*var(--fs))] text-ink-muted">Nothing scheduled.</p>}
-      </div>
-      <div className="border-t border-line-soft px-5 py-4">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[length:calc(15.5px*var(--fs))] font-semibold text-ink-nav">Barangay Calendar</p>
-          <Link to="/my/calendar" className="inline-flex min-h-11 items-center text-[length:calc(15.5px*var(--fs))] font-semibold text-info hover:underline">See all <ChevronRight className="size-4" /></Link>
-        </div>
-        {upcoming.length === 0 ? <p className="text-[length:calc(16px*var(--fs))] text-ink-muted">Nothing coming up.</p> : (
-          <ul className="space-y-3">
-            {upcoming.map((e) => (
-              <li key={e.id} className="flex items-center gap-3">
-                <span className="grid w-12 shrink-0 place-items-center text-center leading-tight text-navy-900">
-                  <span className="font-display text-[length:calc(20px*var(--fs))] font-extrabold">{Number(e.date.slice(8))}</span>
-                  <span className="text-[length:calc(13px*var(--fs))] font-semibold">{new Date(`${e.date}T12:00:00+08:00`).toLocaleDateString('en-US', { month: 'short', timeZone: 'Asia/Manila' })}</span>
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[length:calc(16.5px*var(--fs))] font-semibold break-words text-navy-900">{e.title}</span>
-                  <span className="block text-[length:calc(15px*var(--fs))] break-words text-ink-nav">{e.kind === 'event' ? `${e.time ? `${formatTime(e.time)} · ` : ''}${e.detail}` : e.kind === 'closure' ? e.detail : e.hallClosed ? 'Barangay Hall closed' : e.detail}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </Card>
-  )
-}

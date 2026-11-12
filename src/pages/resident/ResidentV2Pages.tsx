@@ -1,10 +1,9 @@
-import { CalendarClock, CheckCircle2, ChevronRight, CircleAlert, Clock, FileText, Inbox, Mail, MapPin, MessageSquareWarning, Package, Phone, XCircle } from '@/icons'
+import { CalendarClock, CheckCircle2, CircleAlert, Clock, Inbox, Mail, MapPin, Phone, XCircle } from '@/icons'
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/auth/useAuth'
 import { TransitionPanel } from '@/components/documents/TransitionPanel'
 import { Button } from '@/components/ui/Button'
-import { GreetingCard } from '@/components/ui/GreetingCard'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Panel'
 import { BARANGAY_CONTACT, KP } from '@/config/barangay'
@@ -17,7 +16,6 @@ import { cn } from '@/lib/cn'
 import { FileField } from '@/components/ui/FileField'
 import { MAX_TRANSACTION_BYTES } from '@/config/uploads'
 import { attachUploads, totalSize, type StoredFile } from '@/services/fileStore'
-import { toneForPath } from '@/icons/tones'
 import { formatDate, formatDateTime } from '@/lib/format'
 import { ALL_RESIDENT_STATUSES, STATUSES_BY_KIND, caseStageForResident, documentStatusForResident, type ResidentStatus } from '@/lib/residentStatus'
 import { mockUsers } from '@/mocks/users'
@@ -26,9 +24,6 @@ import { estimateFor, standardFor } from '@/services/serviceStandardService'
 import { applyTransition, availableTransitions, getRequest } from '@/services/documentService'
 import { STAGE_ORDER, actOnBorrowing, borrowingStage, fmtDue, getBorrowing, runBorrowingJobs } from '@/services/equipmentService'
 import { appointmentFor, formatTime } from '@/services/appointmentService'
-import { listPublished } from '@/services/announcementService'
-import { AnnouncementRows } from '@/pages/announcements/AnnouncementPages'
-import { HomeCalendarCards } from '@/pages/calendar/CalendarPages'
 import { ServiceError } from '@/services/mockApi'
 import { listMyTransactions, type TransactionKind } from '@/services/transactionService'
 import type { KPCase } from '@/types/case'
@@ -38,92 +33,6 @@ import { itemsText } from '@/pages/equipment/BorrowingPages'
 import { NotFound } from '@/pages/system/NotFound'
 import { BackLink, Banner, DetailBody, DetailHeader, InfoRows, NeedHelp, Progress, Section, TitleBar, TransactionList, Updates, stepsFrom } from './parts'
 
-
-// ── Home ─────────────────────────────────────────────────────────────
-
-
-/** Resident Home (Figma "Resident v2 / Home (simplified)"). */
-/**
- * Resident home: what to attend (next appointment), what is happening in the
- * barangay (calendar), what to do (three services), and the latest
- * announcements. Everything else is one tap away in the menu.
- */
-export function ResidentHome() {
-  const actions = [
-    { to: '/my/documents/new', icon: FileText, title: 'Request a document' },
-    { to: '/my/complaints/new', icon: MessageSquareWarning, title: 'Report or complain' },
-    { to: '/my/borrowing/new', icon: Package, title: 'Borrow equipment' },
-  ]
-  return (
-    <>
-      <GreetingCard subtitle="Your Barangay 181 services in one place." profileTo="/my/profile" />
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <HomeCalendarCards />
-          <section aria-label="Services" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            {actions.map(({ to, icon: Icon, title }) => (
-              <Link key={title} to={to} className="bmis-press flex min-h-16 items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3 transition-colors hover:border-navy-600/40 hover:bg-sky-50">
-                <span className={cn('grid size-10 shrink-0 place-items-center rounded-[10px]', toneForPath(to))}><Icon className="size-[18px]" /></span>
-                <span className="min-w-0 flex-1 text-[length:calc(16.5px*var(--fs))] font-semibold text-navy-900">{title}</span>
-                <ChevronRight className="size-4 shrink-0 text-ink-subtle" />
-              </Link>
-            ))}
-          </section>
-        </div>
-        <DarkHeadCard title="Barangay Announcements" to="/my/announcements">
-          <HomeAnnouncements />
-        </DarkHeadCard>
-      </div>
-      <NeedAssistance />
-    </>
-  )
-}
-
-function DarkHeadCard({ title, to, children }: { title: string; to: string; children: React.ReactNode }) {
-  return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center justify-between gap-3 bg-bar border-b border-sky-300 text-navy-900 px-5 py-3.5">
-        <h2 className="font-display text-[length:calc(17.5px*var(--fs))] font-bold">{title}</h2>
-        <Link to={to} className="inline-flex min-h-9 shrink-0 items-center gap-1 text-[length:calc(14.5px*var(--fs))] font-semibold text-navy-900 hover:underline">
-          View all <ChevronRight className="size-4" />
-        </Link>
-      </div>
-      {children}
-    </Card>
-  )
-}
-
-
-function NeedAssistance() {
-  const C = BARANGAY_CONTACT
-  return (
-    <section className="mt-4 border-t border-line pt-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-display text-[length:calc(19px*var(--fs))] font-bold text-navy-900">Need Assistance?</h2>
-        </div>
-        <Link to="/my/contact" className="inline-flex h-11 shrink-0 items-center justify-center gap-1 self-start rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[length:calc(15px*var(--fs))] font-semibold text-navy-900 hover:bg-surface-muted sm:self-center">
-          View contact information <ChevronRight className="size-4" />
-        </Link>
-      </div>
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
-          <p className="flex items-center gap-1.5 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900"><MapPin className="size-4" /> Visit the Barangay Hall</p>
-          <p className="mt-1 text-[length:calc(15px*var(--fs))] text-navy-900">{C.hall}, {C.address}</p>
-        </div>
-        <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
-          <p className="flex items-center gap-1.5 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900"><Phone className="size-4" /> Contact the Barangay</p>
-          <a href={`tel:${C.phone.replace(/[^\d+]/g, '')}`} className="mt-1 block text-[length:calc(15px*var(--fs))] text-info hover:underline">{C.phone}</a>
-          <a href={`mailto:${C.email}`} className="block text-[length:calc(15px*var(--fs))] break-all text-info hover:underline">{C.email}</a>
-        </div>
-        <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
-          <p className="flex items-center gap-1.5 text-[length:calc(15.5px*var(--fs))] font-semibold text-navy-900"><Clock className="size-4" /> Office Hours</p>
-          <p className="mt-1 text-[length:calc(15px*var(--fs))] text-navy-900">{C.officeHours}</p>
-        </div>
-      </div>
-    </section>
-  )
-}
 
 // ── My Transactions ─────────────────────────────────────────────────
 
@@ -658,10 +567,3 @@ function ReplyForm({ req, step, actor, onDone }: { req: DocumentRequest; step: T
 }
 
 /** Home: the three newest published announcements (titles only; details open on their own page). */
-function HomeAnnouncements() {
-  const { user } = useAuth()
-  const items = useAsync(() => (user ? listPublished(user) : Promise.resolve([])), [user]).data
-  if (!items) return <div className="h-24 animate-pulse" />
-  if (!items.length) return <p className="px-5 py-4 text-[length:calc(16px*var(--fs))] text-ink-muted">No announcements right now.</p>
-  return <AnnouncementRows items={items.slice(0, 3)} />
-}
