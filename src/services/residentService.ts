@@ -1,4 +1,6 @@
 import { AREAS, mockChangeRequests, mockHouseholds, mockRegistrations, mockResidents } from '@/mocks/residents'
+import { once } from '@/lib/idempotency'
+import { MSG, isMobile } from '@/lib/validation'
 import type { User } from '@/types/auth'
 import type { Family, Household, Relationship, Resident, ResidentChangeRequest } from '@/types/resident'
 import { familyNumber, householdNumber, nextNumber, residentNumber } from '@/lib/ids'
@@ -300,8 +302,8 @@ function correctionChecks(input: CorrectionInput, res: Resident, me: Resident): 
   return checks
 }
 
-export function submitCorrection(input: CorrectionInput, by: User): Promise<ResidentChangeRequest> {
-  return mockRequest(() => {
+export function submitCorrection(input: CorrectionInput, by: User, clientRequestId?: string): Promise<ResidentChangeRequest> {
+  return mockRequest(() => once(clientRequestId && `${by.id}:${clientRequestId}`, (id) => mockChangeRequests.find((c) => c.id === id), (c) => c.id, () => {
     const me = mockResidents.find((r) => r.id === by.residentId)
     const res = mockResidents.find((r) => r.id === input.residentId)
     if (!res || !me) throw new ServiceError('not_found', 'Record not found.')
@@ -326,6 +328,12 @@ export function submitCorrection(input: CorrectionInput, by: User): Promise<Resi
       throw new ServiceError('field', 'Choose what needs correcting.')
     }
     if (!input.requestedValue.replace(/\|/g, '').trim()) throw new ServiceError('value', 'Enter the correct information.')
+    if (field === 'Full name') {
+      const [first, , last] = input.requestedValue.split('|')
+      if (!first?.trim() || !last?.trim()) throw new ServiceError('value', 'Please enter both the first name and the last name.')
+    }
+    if (field === 'Contact number' && !isMobile(input.requestedValue)) throw new ServiceError('value', MSG.mobile)
+    if (field === 'Birthdate' && (Number.isNaN(new Date(input.requestedValue).getTime()) || new Date(input.requestedValue) > new Date())) throw new ServiceError('value', 'Please enter a real birthdate that is not in the future.')
     if (!input.reason.trim()) throw new ServiceError('reason', 'Add the reason.')
     if (basis !== 'household' && PROOF_REQUIRED[field] && !input.proof?.fileName && !input.proof?.bringOnsite) throw new ServiceError('proof', `Attach proof (${PROOF_REQUIRED[field]}) or choose to bring it to the Barangay Hall.`)
     const current: Record<string, string> = {
@@ -386,7 +394,7 @@ export function submitCorrection(input: CorrectionInput, by: User): Promise<Resi
     // The affected adult is told someone asked to change their record (no values in the preview).
     if (basis === 'representative') notifyUserOfResident(res.id, 'A correction was requested for your record', `${field} · submitted by ${me.firstName} ${me.lastName}. Contact the Barangay Hall if you did not authorize this.`, '/my/profile')
     return cr
-  })
+  }))
 }
 
 /** Kept for older callers: own record or a minor dependent. */

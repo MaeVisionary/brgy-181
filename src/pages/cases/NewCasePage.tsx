@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { DraftConflictNote, DraftIndicator, DraftRecoveryCard, useDraft } from '@/hooks/useDraft'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
 import { Button } from '@/components/ui/Button'
@@ -35,6 +36,8 @@ export function NewCasePage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }))
+  // Auto-saved on this device until recorded. Saving a draft never records anything in the blotter.
+  const draft = useDraft(`new-case:${src?.id ?? 'walk-in'}`, f)
 
   const submit = async () => {
     setBusy(true)
@@ -52,10 +55,12 @@ export function NewCasePage() {
           sourceRequestId: src?.id,
         },
         actor,
+        draft.draftId,
       )
+      draft.clear()
       navigate(`/cases/${c.id}`, { replace: true })
     } catch (e) {
-      setError(e instanceof ServiceError ? e.message : 'Something went wrong.')
+      setError(e instanceof ServiceError ? e.message : 'The entry could not be recorded because of a problem on our side. What you typed is kept. Please press Record in blotter again.')
       setBusy(false)
     }
   }
@@ -67,6 +72,8 @@ export function NewCasePage() {
         title="New blotter entry"
         subtitle={src ? `From ${getDocumentType(src.typeId).name} ${src.referenceNo}. Check the details, then record it.` : 'Record a complaint received at the Barangay Hall. A blotter number and case number are given automatically.'}
       />
+      {draft.recovered && <DraftRecoveryCard savedAt={draft.recovered.savedAt} onContinue={() => { const d = draft.resume(); if (d) setF(d) }} onStartOver={draft.startOver} />}
+      {draft.conflict && <DraftConflictNote onTake={() => { const d = draft.takeOther(); if (d) setF(d) }} onKeep={draft.keepMine} />}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Panel title="Complainant">
           <div className="grid gap-3">
@@ -92,9 +99,10 @@ export function NewCasePage() {
             </div>
           </div>
           {error && <p role="alert" className="mt-3 rounded-md bg-danger-tint px-3 py-2 text-[length:calc(15px*var(--fs))] text-danger-ink">{error}</p>}
+          <DraftIndicator status={draft.status} className="mt-3" />
           <div className="mt-4 flex flex-wrap gap-2">
             <Button onClick={submit} loading={busy}>Record in blotter</Button>
-            <Button variant="secondary" onClick={() => navigate(-1)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => { draft.clear(); navigate(-1) }}>Cancel</Button>
           </div>
         </Panel>
       </div>

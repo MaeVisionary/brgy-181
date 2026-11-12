@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/cn'
 
@@ -25,19 +25,38 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size
   loading?: boolean
   icon?: ReactNode
+  /**
+   * Why the action cannot run yet (e.g. "Please choose a time."). The button
+   * stays tappable; a tap shows this message under it instead of doing nothing.
+   * The message goes away by itself once the reason is resolved.
+   */
+  blockedReason?: string | false | null
 }
 
-export function Button({ variant = 'primary', size = 'md', loading, icon, className, children, disabled, ...rest }: ButtonProps) {
-  return (
+export function Button({ variant = 'primary', size = 'md', loading, icon, className, children, disabled, blockedReason, onClick, ...rest }: ButtonProps) {
+  const [why, setWhy] = useState(false)
+  useEffect(() => { if (!blockedReason) setWhy(false) }, [blockedReason])
+  const btn = (
     <button
       className={cn(base, variants[variant], sizes[size], className)}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
+      onClick={(e) => {
+        if (blockedReason) { e.preventDefault(); setWhy(true); return }
+        onClick?.(e)
+      }}
       {...rest}
     >
       {loading ? <span className="size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" /> : icon}
       {children}
     </button>
+  )
+  if (!(why && blockedReason)) return btn
+  return (
+    <>
+      {btn}
+      <p role="alert" className="w-full basis-full text-[length:calc(15px*var(--fs))] leading-snug font-semibold whitespace-normal text-danger-ink">{blockedReason}</p>
+    </>
   )
 }
 

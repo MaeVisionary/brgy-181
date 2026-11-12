@@ -192,7 +192,7 @@ function ApprovalCard({ req, actor, onDone }: { req: DocumentRequest; actor: Doc
             </label>
             {error && <p role="alert" className="text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
             <ActionStack>
-              <Button variant={picked.tone === 'danger' ? 'danger' : 'primary'} loading={busy} disabled={picked.remarks === 'required' && !remarks.trim()} onClick={decide}>
+              <Button variant={picked.tone === 'danger' ? 'danger' : 'primary'} loading={busy} blockedReason={picked.remarks === 'required' && !remarks.trim() && 'Please write the reason in the remarks box. The resident will see it.'} onClick={decide}>
                 Confirm: {picked.label}
               </Button>
               <Button variant="secondary" onClick={() => setPicked(null)} disabled={busy}>Go back</Button>

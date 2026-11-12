@@ -1,6 +1,8 @@
 import { ChevronRight, Pencil, Plus, X } from '@/icons'
 import type { ReactNode } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { DraftIndicator, DraftRecoveryCard, useDraft } from '@/hooks/useDraft'
+import { focusFirstInvalid } from '@/lib/validation'
 import { cn } from '@/lib/cn'
 import { useAuth } from '@/auth/useAuth'
 import { Button, ButtonLink } from '@/components/ui/Button'
@@ -204,22 +206,43 @@ function AddForm({ onDone, actor, categories }: { onDone: () => void; actor: Non
   const [qty, setQty] = useState('')
   const [location, setLocation] = useState('')
   const [err, setErr] = useState<string | null>(null)
+  const [touched, setTouched] = useState(false)
+  const draftValue = useMemo(() => ({ name, category, description, qty, location }), [name, category, description, qty, location])
+  const draft = useDraft('add-equipment', draftValue, { isEmpty: (v) => !v.name.trim() && !v.qty && !v.description.trim() })
+  const load = (d: typeof draftValue | null) => { if (d) { setName(d.name); setCategory(d.category); setDescription(d.description); setQty(d.qty); setLocation(d.location) } }
+  const errors = {
+    name: !name.trim() ? 'Please enter the name of the equipment. Example: Monobloc chair' : '',
+    category: !category.trim() ? 'Please choose a category or type a new one.' : '',
+    qty: !qty || Number(qty) < 1 ? 'Please enter how many there are (1 or more).' : '',
+  }
+  const show = (k: keyof typeof errors) => (touched ? errors[k] : '')
+  const save = async () => {
+    setTouched(true)
+    if (Object.values(errors).some(Boolean)) { focusFirstInvalid(); return }
+    try {
+      await addEquipment({ name: name.trim(), category: category.trim(), description, totalQty: Number(qty), location: location.trim() || undefined }, actor)
+      draft.clear()
+      onDone()
+    } catch (e) { setErr(e instanceof ServiceError ? e.message : 'The equipment could not be saved because of a problem on our side. What you typed is kept. Please press Save again.') }
+  }
   return (
     <Panel className="mb-4" title="Add equipment" subtitle="Type a new category to add a kind of equipment residents can borrow.">
+      {draft.recovered && <DraftRecoveryCard savedAt={draft.recovered.savedAt} onContinue={() => load(draft.resume())} onStartOver={draft.startOver} />}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <FieldLabel label="Name" required><TextInput value={name} onChange={(e) => setName(e.target.value)} /></FieldLabel>
-        <FieldLabel label="Category" required hint="Choose one or type a new category.">
-          <TextInput list="equipment-categories" value={category} onChange={(e) => setCategory(e.target.value)} />
+        <FieldLabel label="Name" required error={show('name')}><TextInput value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!!show('name') || undefined} /></FieldLabel>
+        <FieldLabel label="Category" required hint="Choose one or type a new category." error={show('category')}>
+          <TextInput list="equipment-categories" value={category} onChange={(e) => setCategory(e.target.value)} aria-invalid={!!show('category') || undefined} />
         </FieldLabel>
         <FieldLabel label="Description"><TextInput value={description} onChange={(e) => setDescription(e.target.value)} /></FieldLabel>
-        <FieldLabel label="Quantity" required><TextInput inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))} /></FieldLabel>
+        <FieldLabel label="Quantity" required error={show('qty')}><TextInput inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))} aria-invalid={!!show('qty') || undefined} /></FieldLabel>
         <FieldLabel label="Where it is kept"><TextInput value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Barangay Hall storage" /></FieldLabel>
       </div>
       <CategoryList categories={categories} />
-      {err && <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
+      {err && <p role="alert" className="mt-2 text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
+      <DraftIndicator status={draft.status} className="mt-2" />
       <ActionStack className="mt-3">
-        <Button onClick={async () => { try { if (!category.trim()) throw new ServiceError('category', 'Enter a category.'); await addEquipment({ name, category: category.trim(), description, totalQty: Number(qty), location: location.trim() || undefined }, actor); onDone() } catch (e) { setErr(e instanceof ServiceError ? e.message : 'Failed.') } }}>Save</Button>
-        <Button variant="secondary" onClick={onDone}>Cancel</Button>
+        <Button onClick={save}>Save</Button>
+        <Button variant="secondary" onClick={() => { draft.clear(); onDone() }}>Cancel</Button>
       </ActionStack>
     </Panel>
   )

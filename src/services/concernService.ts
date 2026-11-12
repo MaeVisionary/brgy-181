@@ -1,4 +1,5 @@
 import { ROLE_PERMISSIONS } from '@/config/permissions'
+import { once } from '@/lib/idempotency'
 import { CONCERN_CATEGORIES, computePriority, conceptsOf, isHazard, priorityRank, similarity, suggestCategory, type Confidence, type ConcernCategory, type Priority } from '@/concerns/engine'
 import { mockNotifications } from '@/mocks/notifications'
 import { mockResidents } from '@/mocks/residents'
@@ -142,8 +143,8 @@ export interface ConcernInput {
 }
 
 /** Resident submits a concern; the system links it to a matching open issue or starts a new one. */
-export function submitConcern(input: ConcernInput, by: User): Promise<{ submission: ConcernSubmission; linked: 'new' | 'existing' | 'review' }> {
-  return mockRequest(() => {
+export function submitConcern(input: ConcernInput, by: User, clientRequestId?: string): Promise<{ submission: ConcernSubmission; linked: 'new' | 'existing' | 'review' }> {
+  return mockRequest(() => once(clientRequestId && `${by.id}:${clientRequestId}`, (id) => { const sub = load().submissions.find((x) => x.id === id); return sub ? { submission: sub, linked: 'new' as const } : undefined }, (r) => r.submission.id, () => {
     if (!can(by, 'self.complaints') || !by.residentId) throw new ServiceError('forbidden', 'Only residents can send community concerns here.')
     if (input.title.trim().length < 3) throw new ServiceError('title', 'Give a short title, for example "Broken streetlight".')
     if (input.details.trim().length < 10) throw new ServiceError('details', 'Tell us what is happening.')
@@ -204,7 +205,7 @@ export function submitConcern(input: ConcernInput, by: User): Promise<{ submissi
     if (linked === 'existing') notify([by.id], 'Your concern was linked to a community issue', 'Others reported the same problem. The barangay is reviewing it.', `/my/concerns/${sub.id}`)
     if (sub.hazard) notify(staff(), 'Urgent community concern', `${sub.ref} · ${sub.title}${sub.street ? ` · ${sub.street}` : ''}`, '/concerns')
     return { submission: sub, linked }
-  })
+  }))
 }
 
 export interface MyConcern { submission: ConcernSubmission; status: 'Submitted' | 'Processing' | 'Completed'; linkedToOthers: boolean }

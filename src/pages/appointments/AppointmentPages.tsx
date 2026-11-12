@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { DraftIndicator, DraftRecoveryCard, useDraft } from '@/hooks/useDraft'
+import { focusFirstInvalid } from '@/lib/validation'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ChevronRight } from '@/icons'
 import { useAuth } from '@/auth/useAuth'
@@ -91,6 +93,7 @@ export function TimePicker({ a, onPicked, onBack }: { a: Appointment; onPicked: 
   const days = useMemo(() => dayOptions(a), [a])
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
+  const [nudge, setNudge] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -154,8 +157,13 @@ export function TimePicker({ a, onPicked, onBack }: { a: Appointment; onPicked: 
           )}
         </div>
       )}
+      {nudge && !time && (
+        <p role="alert" data-invalid="true" tabIndex={-1} className="rounded-md bg-danger-tint px-3 py-2 text-[length:calc(15.5px*var(--fs))] font-semibold text-danger-ink">
+          {!date ? 'Please choose a day first, then a time.' : times.length ? 'Please choose a time for your visit.' : 'There are no free times on this day. Please choose another day.'}
+        </p>
+      )}
       <ActionStack>
-        <Button disabled={!time} onClick={() => setConfirming(true)}>Next</Button>
+        <Button onClick={() => { if (!time) { setNudge(true); focusFirstInvalid(); return } setConfirming(true) }}>Next</Button>
         {onBack && <Button variant="ghost" onClick={onBack}>Back</Button>}
       </ActionStack>
     </div>
@@ -260,7 +268,7 @@ export function ScheduleVisitForm({ changeRequestId, onDone, onCancel }: { chang
       </details>
       {err && <Note ok={false}>{err}</Note>}
       <ActionStack>
-        <Button size="sm" onClick={save} loading={busy} disabled={!docs.length || (who === 'staff' && !slot.time) || (!!override && override.reason.trim().length < 5)}>{who === 'staff' ? 'Schedule and notify resident' : 'Ask the resident to choose a time'}</Button>
+        <Button size="sm" onClick={save} loading={busy} blockedReason={!docs.length ? 'Please tick at least one document the resident should bring.' : who === 'staff' && !slot.time ? 'Please choose a time.' : !!override && override.reason.trim().length < 5 ? 'Please give the reason for changing the length (at least 5 characters).' : ''}>{who === 'staff' ? 'Schedule and notify resident' : 'Ask the resident to choose a time'}</Button>
         <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
       </ActionStack>
     </div>
@@ -641,7 +649,7 @@ export function AppointmentDetailPage() {
           ) : mode === 'reschedule' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">
               <StaffSlotPicker kind={a.kind} minutes={a.durationMin} ignoreId={a.id} value={slot} onChange={setSlot} />
-              <ActionStack><Button disabled={!slot.time} onClick={() => run(() => rescheduleAppointment(a.id, slot.date, slot.time, slot.staff, user), 'Moved. The resident was told and asked to confirm.')}>Save new time</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
+              <ActionStack><Button blockedReason={!slot.time && 'Please choose a new time.'} onClick={() => run(() => rescheduleAppointment(a.id, slot.date, slot.time, slot.staff, user), 'Moved. The resident was told and asked to confirm.')}>Save new time</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : mode === 'assist' ? (
             <div className="border-t border-line-soft pt-3"><TimePicker a={a} onPicked={() => { setMode(null); setMsg({ ok: true, text: 'Booked for the resident. They were told.' }); load() }} onBack={() => setMode(null)} /></div>
@@ -668,7 +676,7 @@ export function AppointmentDetailPage() {
                 </Select>
                 <TextInput aria-label="Reason" placeholder="Reason" value={text} onChange={(e) => setText(e.target.value)} />
               </div>
-              <ActionStack><Button disabled={!to} onClick={() => run(() => reassign(a.id, to, text, user), 'Reassigned. Both members of the Barangay Personnel were told.')}>Reassign</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
+              <ActionStack><Button blockedReason={!to && 'Please choose who will take this appointment.'} onClick={() => run(() => reassign(a.id, to, text, user), 'Reassigned. Both members of the Barangay Personnel were told.')}>Reassign</Button><Button variant="ghost" onClick={() => setMode(null)}>Back</Button></ActionStack>
             </div>
           ) : mode === 'cancel' ? (
             <div className="space-y-2 border-t border-line-soft pt-3">
@@ -768,7 +776,7 @@ export function ConsultationPanel({ caseId }: { caseId: string }) {
             <FieldLabel label="Why should the complainant come in?"><TextArea className="min-h-[60px]" value={reason} onChange={(e) => setReason(e.target.value)} /></FieldLabel>
             <p className="text-[length:calc(15px*var(--fs))] text-ink-muted">About {minutes} minutes</p>
             <StaffSlotPicker kind="complaint_consult" minutes={minutes} value={slot} onChange={setSlot} />
-            <ActionStack><Button size="sm" loading={busy} disabled={!slot.time || reason.trim().length < 5} onClick={save}>Schedule and notify</Button><Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></ActionStack>
+            <ActionStack><Button size="sm" loading={busy} blockedReason={!slot.time ? 'Please choose a time.' : reason.trim().length < 5 ? 'Please give the reason (at least 5 characters).' : ''} onClick={save}>Schedule and notify</Button><Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></ActionStack>
           </>
         ) : <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Schedule a consultation</Button>}
       </div>
@@ -785,15 +793,22 @@ export function BookVisitPage() {
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   if (!user) return null
+  const [touched, setTouched] = useState(false)
+  const visitDraft = useDraft('visit-request', useMemo(() => ({ kind: kind ?? '', reason }), [kind, reason]), { isEmpty: (v) => !v.reason.trim() })
+  const loadVisit = (d: { kind: string; reason: string } | null) => { if (!d) return; setKind((d.kind || null) as typeof kind); setReason(d.reason) }
+  const reasonErr = reason.trim().length < 5 ? (reason.trim() ? 'Please tell us a little more (at least 5 characters).' : 'Please tell us what you need help with. Example: Help filling in a form') : ''
   const next = async () => {
-    if (!kind) return
+    if (!kind || busy) return
+    setTouched(true)
+    if (reasonErr) { focusFirstInvalid(); return }
     setBusy(true); setErr(null)
-    try { const a = await requestVisit(kind, reason, user); navigate(`/my/appointments/${a.id}`, { replace: true }) } catch (e) { setErr(errText(e)) } finally { setBusy(false) }
+    try { const a = await requestVisit(kind, reason, user, visitDraft.draftId); visitDraft.clear(); navigate(`/my/appointments/${a.id}`, { replace: true }) } catch (e) { setErr(errText(e)) } finally { setBusy(false) }
   }
   return (
     <>
       <BackLink to="/my/appointments">My Appointments</BackLink>
       <PageHeader title="Book a visit" />
+      {visitDraft.recovered && <DraftRecoveryCard savedAt={visitDraft.recovered.savedAt} onContinue={() => loadVisit(visitDraft.resume())} onStartOver={visitDraft.startOver} />}
       {!kind ? (
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {bookableServices().map((k) => (
@@ -808,10 +823,11 @@ export function BookVisitPage() {
       ) : (
         <Card className="space-y-4 px-5 py-5">
           <p className="text-[length:calc(18px*var(--fs))] font-semibold text-navy-900">{APPOINTMENT_TYPES[kind].label}</p>
-          <FieldLabel label="What do you need help with?"><TextArea className="min-h-[96px]" value={reason} onChange={(e) => setReason(e.target.value)} /></FieldLabel>
+          <FieldLabel label="What do you need help with?" required error={touched && reasonErr}><TextArea className="min-h-[96px]" value={reason} onChange={(e) => setReason(e.target.value)} aria-invalid={(touched && !!reasonErr) || undefined} /></FieldLabel>
           {err && <Note ok={false}>{err}</Note>}
+          <DraftIndicator status={visitDraft.status} />
           <ActionStack>
-            <Button loading={busy} disabled={reason.trim().length < 5} onClick={next}>Next: choose a time</Button>
+            <Button loading={busy} onClick={next}>Next: choose a time</Button>
             <Button variant="ghost" onClick={() => setKind(null)}>Back</Button>
           </ActionStack>
         </Card>

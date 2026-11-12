@@ -135,7 +135,7 @@ function ClosureForm({ onDone, onError }: { onDone: (msg: string) => void; onErr
       )}
       <FieldLabel label="Reason (residents will see it)" required><TextInput value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></FieldLabel>
       <label className={check}><input type="checkbox" className="size-5 accent-[#002132]" checked={f.announce} onChange={(e) => setF({ ...f, announce: e.target.checked })} /> Prepare an announcement for the Punong Barangay's approval</label>
-      <ActionStack><Button loading={busy} disabled={!f.from || f.reason.trim().length < 5} onClick={save}>Save closure</Button><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></ActionStack>
+      <ActionStack><Button loading={busy} blockedReason={!f.from ? 'Please choose the date of the closure.' : f.reason.trim().length < 5 ? 'Please give the reason (at least 5 characters). Example: Barangay fiesta' : ''} onClick={save}>Save closure</Button><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></ActionStack>
     </div>
   )
 }
@@ -169,7 +169,7 @@ function HolidayRow({ h, admin, onDone, onError }: { h: Holiday; admin: boolean;
           {h.type === 'local' && (
             <div className="flex flex-wrap gap-2">
               <TextInput aria-label="Reason for removing" placeholder="Reason for removing" className="w-full sm:w-64" value={why} onChange={(e) => setWhy(e.target.value)} />
-              <Button size="sm" variant="ghost" disabled={why.trim().length < 5} onClick={() => removeHoliday(h.id, why, user).then(() => onDone('Holiday removed.')).catch(onError)}>Remove holiday</Button>
+              <Button size="sm" variant="ghost" blockedReason={why.trim().length < 5 && 'Please give the reason for removing this holiday (at least 5 characters).'} onClick={() => removeHoliday(h.id, why, user).then(() => onDone('Holiday removed.')).catch(onError)}>Remove holiday</Button>
             </div>
           )}
         </div>

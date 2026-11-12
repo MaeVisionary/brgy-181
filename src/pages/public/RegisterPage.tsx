@@ -1,12 +1,15 @@
 import { SealWatermark } from '@/components/layout/SealWatermark'
 import { ID_TYPES, idHasExpiry } from '@/config/idTypes'
 import { sniff } from '@/lib/uploads'
-import { AlertCircle, ArrowLeft, Camera, CheckCircle2, CircleHelp, Eye, EyeOff, IdCard, Loader2, ShieldCheck, Upload, UserRound, XCircle } from '@/icons'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { AlertCircle, ArrowLeft, Camera, Check as Tick, CheckCircle2, RotateCcw, CircleHelp, Eye, EyeOff, IdCard, Loader2, ShieldCheck, Upload, UserRound, XCircle } from '@/icons'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { DraftIndicator, DraftRecoveryCard, useDraft } from '@/hooks/useDraft'
+import { DRAFT_TTL, hasContent } from '@/lib/drafts'
 import { useAnalytics } from '@/analytics/AnalyticsContext'
 import { BarangaySeal } from '@/components/layout/BarangaySeal'
 import { Button } from '@/components/ui/Button'
 import { BARANGAY } from '@/config/barangay'
+import { MSG, focusFirstInvalid, isEmail, isMobile, yearProblem } from '@/lib/validation'
 import { cn } from '@/lib/cn'
 import { analyseFrame, captureFrame, descriptorFromImage, faceVerdict, fileToJpeg, loadFaceApi, shrink, similarity, type Descriptor } from '@/lib/faceVerify'
 import { checkIdText, readIdText } from '@/lib/idOcr'
@@ -59,23 +62,26 @@ const EMPTY: Details = {
 function detailErrors(d: Details): Partial<Record<keyof Details, string>> {
   const e: Partial<Record<keyof Details, string>> = {}
   const year = new Date().getFullYear()
-  if (!d.firstName.trim()) e.firstName = 'Enter your first name.'
-  if (!d.lastName.trim()) e.lastName = 'Enter your last name.'
-  if (!d.sex) e.sex = 'Choose one.'
-  if (!d.birthDate) e.birthDate = 'Enter your birthdate.'
-  else if (new Date(d.birthDate) > new Date()) e.birthDate = 'Birthdate cannot be in the future.'
+  if (!d.firstName.trim()) e.firstName = MSG.required('your first name')
+  if (!d.lastName.trim()) e.lastName = MSG.required('your last name')
+  if (!d.sex) e.sex = MSG.choose('Male or Female')
+  if (!d.birthDate) e.birthDate = 'Please enter your birthdate. Example: 03/14/1991'
+  else if (new Date(d.birthDate) > new Date()) e.birthDate = 'Your birthdate cannot be a future date. Please check the year.'
   else if (ageOn(d.birthDate) < MIN_AGE) e.birthDate = `Online registration is for residents ${MIN_AGE} and above. Minors are registered by a parent or guardian at the Barangay Hall.`
-  if (!d.civilStatus) e.civilStatus = 'Choose one.'
-  if (!d.houseNo.trim()) e.houseNo = 'Enter your house or unit number.'
-  if (!d.street) e.street = 'Choose your street.'
-  else if (d.street === 'other' && !d.otherStreet.trim()) e.otherStreet = 'Enter your street.'
-  if (!/^09\d{9}$/.test(d.contactNo.replace(/[\s-]/g, ''))) e.contactNo = 'Use the 11-digit format, e.g. 09171234567.'
-  if (!/^\S+@\S+\.\S+$/.test(d.email.trim())) e.email = 'Enter a valid email address.'
-  else if (identifierTaken(d.email)) e.email = 'This email already has an account. Sign in or use “Forgot password”.'
-  const since = Number(d.residentSince)
-  if (!/^\d{4}$/.test(d.residentSince) || since < 1900 || since > year) e.residentSince = `Enter a year from 1900 to ${year}.`
-  else if (d.birthDate && since < new Date(d.birthDate).getFullYear()) e.residentSince = 'This year is before your birth year.'
-  if (!d.voter) e.voter = 'Choose one.'
+  if (!d.civilStatus) e.civilStatus = MSG.choose('your civil status')
+  if (!d.houseNo.trim()) e.houseNo = MSG.required('your house or unit number')
+  if (!d.street) e.street = MSG.choose('your street')
+  else if (d.street === 'other' && !d.otherStreet.trim()) e.otherStreet = MSG.required('the name of your street')
+  if (!d.contactNo.trim()) e.contactNo = MSG.required('your mobile number') + ' Example: 09171234567'
+  else if (!isMobile(d.contactNo)) e.contactNo = MSG.mobile
+  if (!d.email.trim()) e.email = MSG.required('your email address') + ' Example: name@gmail.com'
+  else if (!isEmail(d.email)) e.email = MSG.email
+  else if (identifierTaken(d.email)) e.email = 'This email already has an account. Please sign in, or use “Forgot password” if you cannot remember it.'
+  const birthYear = d.birthDate ? new Date(d.birthDate).getFullYear() : 1900
+  const yp = yearProblem(d.residentSince, 1900, year)
+  if (yp) e.residentSince = yp
+  else if (d.birthDate && Number(d.residentSince) < birthYear) e.residentSince = `This year is before your birth year (${birthYear}). Please enter the year you started living in Barangay 181.`
+  if (!d.voter) e.voter = MSG.yesNo
   return e
 }
 
@@ -113,6 +119,25 @@ export function RegisterPage() {
   const [result, setResult] = useState<ResidentRegistration | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const topRef = useRef<HTMLDivElement>(null)
+
+  // Auto-saved progress on this device (24 hours). Only the details typed in the form:
+  // never the ID number, ID photo, selfie, face data or password.
+  const draftValue = useMemo(() => ({ step: Math.min(step, 4), consent, d, idType, idExpiry, username }), [step, consent, d, idType, idExpiry, username])
+  const draft = useDraft('registration', draftValue, { owner: 'guest', ttlHours: DRAFT_TTL.registration, enabled: step < 5, isEmpty: (v) => !hasContent(v.d) })
+  const [resumeNote, setResumeNote] = useState('')
+  const resumeDraft = () => {
+    const v = draft.resume()
+    if (!v) return
+    setConsent(v.consent); setD({ ...EMPTY, ...v.d }); setIdType(v.idType ?? ''); setIdExpiry(v.idExpiry ?? ''); setUsername(v.username ?? '')
+    // The ID photo and face check are never saved, so those steps start again.
+    const to = Math.min(v.step ?? 0, 2)
+    if ((v.step ?? 0) >= 2) setResumeNote('For your security, your ID number, ID photo and face check were not saved. Please add them again.')
+    setStep(to)
+  }
+  const discardDraftAndReset = () => {
+    draft.startOver()
+    setConsent(false); setD(EMPTY); setIdType(''); setIdNumber(''); setIdExpiry(''); setUsername(''); setResumeNote(''); setStep(0)
+  }
 
   const set = <K extends keyof Details>(k: K, v: Details[K]) => setD((p) => ({ ...p, [k]: v }))
   const errs = detailErrors(d)
@@ -152,22 +177,39 @@ export function RegisterPage() {
     }
   }
 
-  const accountError = (() => {
-    if (!username.trim()) return 'Choose a username.'
-    if (!/^[a-z0-9._@-]{4,}$/i.test(username.trim())) return 'Use at least 4 letters, numbers, dots or dashes.'
-    if (username.trim().toLowerCase() !== d.email.trim().toLowerCase() && identifierTaken(username)) return 'That username is taken.'
-    return passwordProblem(password) ?? (password !== confirm ? 'The passwords do not match.' : null)
+  const accountErrs = (() => {
+    const e: { username?: string; password?: string; confirm?: string } = {}
+    if (!username.trim()) e.username = MSG.required('a username') + ' You can use your email.'
+    else if (!/^[a-z0-9._@-]{4,}$/i.test(username.trim())) e.username = 'Please use at least 4 characters: letters, numbers, dots (.), dashes (-) or @. Example: juan.delacruz'
+    else if (username.trim().toLowerCase() !== d.email.trim().toLowerCase() && identifierTaken(username)) e.username = 'This username is already taken. Please choose another one.'
+    if (!password) e.password = MSG.required('a password')
+    else { const pw = passwordProblem(password); if (pw) e.password = `${pw} Example: barangay2026` }
+    if (!confirm) e.confirm = 'Please type your password again to confirm it.'
+    else if (password !== confirm) e.confirm = 'The two passwords do not match. Please type the same password in both boxes.'
+    return e
   })()
+  const sectionRef = useRef<HTMLElement>(null)
+  const [busy, setBusy] = useState(false)
+
+  // Number of problems on the current step (0 = ready to continue).
+  const stepProblems =
+    step === 0 ? (consent ? 0 : 1)
+    : step === 1 ? Object.keys(errs).length
+    : step === 2 ? [!idType, idNumber.trim().length < 4, !!expiryError, !idImage].filter(Boolean).length + (idFace === 'checking' ? 1 : 0)
+    : step === 3 ? (selfie ? 0 : 1)
+    : step === 4 ? Object.keys(accountErrs).length
+    : 0
 
   const next = () => {
+    if (busy) return
     setTouched(true)
-    if (step === 0 && !consent) return
-    if (step === 1 && Object.keys(errs).length) return
-    if (step === 2 && (!idType || idNumber.trim().length < 4 || expiryError || !idImage || idFace === 'checking')) return
-    if (step === 3 && !selfie) return
+    if (stepProblems > 0) {
+      focusFirstInvalid(sectionRef.current)
+      return
+    }
     if (step === 4) {
-      if (accountError) return
-      void submit()
+      setBusy(true)
+      void submit().finally(() => setBusy(false))
       return
     }
     if (step === 1 && !username) setUsername(d.email.trim().toLowerCase())
@@ -224,11 +266,13 @@ export function RegisterPage() {
         evidence: { idType, idNumber: idNumber.trim(), idExpiry: expiryNeeded ? idExpiry : undefined, idImage: idSmall, selfieImage: selfieSmall, faceSimilarity, ocrFound: ocr.found },
         checks: { ocr: ocr.result, faceMatch, liveness: selfie!.live ? 'passed' : 'inconclusive' },
         record,
+        clientRequestId: draft.draftId,
       })
       setResult(reg)
+      draft.clear()
       setStep(6)
     } catch (e) {
-      setSubmitError(e instanceof ServiceError ? e.message : 'Something went wrong while submitting. Please try again.')
+      setSubmitError(e instanceof ServiceError ? e.message : 'Your registration could not be saved because of a problem on our side. Your details are kept. Please press Try again. If it keeps happening, register at the Barangay Hall.')
     }
   }
 
@@ -236,7 +280,7 @@ export function RegisterPage() {
     <PublicLayout minimal>
       <div className="relative overflow-hidden">
       <SealWatermark size={480} className="hidden 2xl:block" />
-      <div ref={topRef} className="relative mx-auto max-w-[760px] scroll-mt-20 px-4 py-8 sm:px-6 sm:py-12">
+      <div ref={topRef} className="relative mx-auto max-w-[760px] scroll-mt-20 px-3 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-12">
         {step < 5 && (
           <button
             type="button"
@@ -255,9 +299,13 @@ export function RegisterPage() {
           </div>
         </div>
 
+        {draft.recovered && step < 5 && (
+          <div className="mt-4"><DraftRecoveryCard savedAt={draft.recovered.savedAt} onContinue={resumeDraft} onStartOver={discardDraftAndReset} note="Saved on this device. Your ID photo and face check are never saved and will be asked again." /></div>
+        )}
         {step < 5 && <Stepper step={step} />}
+        {resumeNote && step === 2 && <Status tone="info" icon={<CircleHelp className="size-4" />}>{resumeNote}</Status>}
 
-        <section key={step} className="bmis-rise mt-6 rounded-lg border border-line bg-surface p-6 sm:p-8">
+        <section key={step} ref={sectionRef} className="bmis-rise mt-4 rounded-md border border-line bg-surface p-4 sm:mt-6 sm:rounded-lg sm:p-8">
           {step === 0 && (
             <>
               <StepTitle icon={<ShieldCheck />} title="Before you start" sub="It takes about 5 minutes." />
@@ -276,10 +324,10 @@ export function RegisterPage() {
                 </p>
               </div>
               <label className="mt-5 flex items-start gap-3 text-[length:calc(16px*var(--fs))] text-navy-900">
-                <input type="checkbox" className="mt-0.5 size-4 accent-[#002132]" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+                <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-[#002132]" checked={consent} onChange={(e) => setConsent(e.target.checked)} aria-invalid={touched && !consent} />
                 I have read the privacy notice and I agree to the collection and use of my information for resident verification.
               </label>
-              {touched && !consent && <ErrorText>Please agree to the privacy notice to continue.</ErrorText>}
+              {touched && !consent && <ErrorText>Please tick the box to agree to the privacy notice. You cannot register without agreeing.</ErrorText>}
             </>
           )}
 
@@ -340,13 +388,13 @@ export function RegisterPage() {
             <>
               <StepTitle icon={<IdCard />} title="Valid ID" sub="Take a clear photo of the front of your ID. Make sure your photo, name and ID number can be read." />
               <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <F label="Type of ID" error={touched && !idType ? 'Choose your ID type.' : undefined}>
+                <F label="Type of ID" error={touched && !idType ? MSG.choose('the type of ID you will use') : undefined}>
                   <select className={field} value={idType} onChange={(e) => setIdType(e.target.value)} aria-invalid={touched && !idType}>
                     <option value="">Select</option>
                     {ID_TYPES.map((t) => <option key={t}>{t}</option>)}
                   </select>
                 </F>
-                <F label="ID number" error={touched && idNumber.trim().length < 4 ? 'Enter the ID number shown on the card.' : undefined}>
+                <F label="ID number" error={touched && idNumber.trim().length < 4 ? (idNumber.trim() ? 'This ID number looks too short. Please type it exactly as printed on the card.' : MSG.required('the ID number printed on your card')) : undefined}>
                   <input className={field} value={idNumber} onChange={(e) => setIdNumber(e.target.value)} aria-invalid={touched && idNumber.trim().length < 4} />
                 </F>
                 {expiryNeeded && (
@@ -377,7 +425,8 @@ export function RegisterPage() {
                 {idFace === 'missing' && <Status tone="warning" icon={<CircleHelp className="size-4" />}>We couldn't find a face on this photo. Retake it closer and without glare, or continue and the Barangay Secretary will check it.</Status>}
                 {idFileError && <Status tone="danger" icon={<XCircle className="size-4" />}>{idFileError}</Status>}
                 {idFace === 'error' && <Status tone="danger" icon={<XCircle className="size-4" />}>That file could not be read. Please use a JPG or PNG photo.</Status>}
-                {touched && !idImage && <ErrorText>Add a photo of your ID.</ErrorText>}
+                {touched && !idImage && <p data-invalid="true" tabIndex={-1} className="mt-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">Please add a photo of the front of your ID. Tap “Take a photo” or “Upload from files”.</p>}
+                {touched && idImage && idFace === 'checking' && <ErrorText>Please wait a moment. We are still checking your ID photo.</ErrorText>}
               </div>
             </>
           )}
@@ -396,7 +445,7 @@ export function RegisterPage() {
                   selfieDescriptor.current = null
                 }}
               />
-              {touched && !selfie && <ErrorText>Complete the face check to continue.</ErrorText>}
+              {touched && !selfie && <p data-invalid="true" tabIndex={-1} className="mt-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">Please complete the face check above before continuing.</p>}
             </>
           )}
 
@@ -404,17 +453,16 @@ export function RegisterPage() {
             <>
               <StepTitle icon={<ShieldCheck />} title="Your sign-in details" sub="You'll use these to sign in to the resident portal." />
               <div className="mt-6 grid gap-4">
-                <F label="Username" hint="You can also sign in with your email."><input className={field} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" /></F>
-                <F label="Password">
+                <F label="Username" hint="You can also sign in with your email." error={touched ? accountErrs.username : undefined}><input className={field} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" aria-invalid={touched && !!accountErrs.username} /></F>
+                <F label="Password" error={touched ? accountErrs.password : undefined}>
                   <span className="relative block">
-                    <input className={cn(field, 'pr-12')} type={showPw ? 'text' : 'password'} placeholder="At least 8 characters, letters and numbers" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+                    <input className={cn(field, 'pr-12')} type={showPw ? 'text' : 'password'} placeholder="At least 8 characters, letters and numbers" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" aria-invalid={touched && !!accountErrs.password} />
                     <button type="button" onClick={() => setShowPw((s) => !s)} aria-label={showPw ? 'Hide password' : 'Show password'} className="absolute top-1/2 right-2 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-ink-muted hover:text-navy-900">
                       {showPw ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
                     </button>
                   </span>
                 </F>
-                <F label="Confirm password"><input className={field} type={showPw ? 'text' : 'password'} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" /></F>
-                {touched && accountError && <ErrorText>{accountError}</ErrorText>}
+                <F label="Confirm password" error={touched ? accountErrs.confirm : undefined}><input className={field} type={showPw ? 'text' : 'password'} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" aria-invalid={touched && !!accountErrs.confirm} /></F>
               </div>
               <div className="mt-6 rounded-lg bg-surface-muted p-4 text-[length:calc(15px*var(--fs))] text-navy-900">
                 <p className="font-semibold">Review</p>
@@ -474,8 +522,21 @@ export function RegisterPage() {
           )}
 
           {step < 5 && (
-            <div className="mt-8 flex justify-end">
-              <Button className="h-12 rounded-lg px-7 text-[length:calc(17px*var(--fs))]" onClick={next} disabled={step === 2 && idFace === 'checking'}>
+            <div className="mt-6 flex flex-col items-stretch gap-3 sm:mt-8 sm:flex-row sm:items-center sm:justify-end">
+              {touched && stepProblems > 0 && (
+                <p role="alert" className="text-[length:calc(15px*var(--fs))] font-semibold text-danger-ink sm:mr-auto">
+                  {step === 2 && idFace === 'checking' && stepProblems === 1
+                    ? 'Still checking your ID photo. Please wait a moment.'
+                    : stepProblems === 1 ? 'Please correct the item marked in red.' : `Please correct the ${stepProblems} items marked in red.`}
+                </p>
+              )}
+              {!draft.recovered && draft.status !== 'idle' && (
+                <div className="order-last flex flex-wrap items-center justify-center gap-x-3 sm:order-first sm:mr-auto sm:justify-start">
+                  <DraftIndicator status={draft.status} />
+                  {draft.status === 'saved' && <button type="button" onClick={discardDraftAndReset} className="text-[length:calc(14px*var(--fs))] font-semibold text-info hover:underline">Clear saved entries</button>}
+                </div>
+              )}
+              <Button className="h-12 w-full rounded-lg px-7 text-[length:calc(17px*var(--fs))] sm:w-auto" onClick={next} loading={busy} disabled={busy}>
                 {step === 4 ? 'Submit registration' : 'Continue'}
               </Button>
             </div>
@@ -489,18 +550,20 @@ export function RegisterPage() {
 
 // ── Live selfie with a head-turn liveness check ─────────────────────────
 
-type Phase = 'loading' | 'center' | 'turn' | 'back' | 'capturing' | 'error'
+type Phase = 'intro' | 'loading' | 'center' | 'turn' | 'back' | 'capturing' | 'error'
 
 function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: boolean } | null; onDone: (img: string, live: boolean) => Promise<void>; onReset: () => void }) {
   const video = useRef<HTMLVideoElement>(null)
-  const [phase, setPhase] = useState<Phase>('loading')
+  // First visit: explain the camera and start it on a tap (no blank preview, and
+  // phones allow the camera more reliably after a tap). Retakes start straight away.
+  const [phase, setPhase] = useState<Phase>('intro')
   const [hint, setHint] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
   const [showUpload, setShowUpload] = useState(false)
   const [run, setRun] = useState(0)
 
   useEffect(() => {
-    if (value) return
+    if (value || run === 0) return
     let stream: MediaStream | null = null
     let stopped = false
     let timer: number | undefined
@@ -512,27 +575,52 @@ function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: 
       setPhase(p)
     }
 
+    // If the camera has not started after 15 seconds, say so and offer Retry.
+    const watchdog = window.setTimeout(() => {
+      if (!stopped && current === 'loading') {
+        setErrorMsg('The camera is taking too long to start. Please press Try again. If it still does not start, close other apps that use the camera, or upload a selfie instead.')
+        to('error')
+        setShowUpload(true)
+      }
+    }, 15_000)
+
     const start = async () => {
+      to('loading')
+      setErrorMsg('')
       try {
+        if (!window.isSecureContext) throw new Error('insecure')
         if (!navigator.mediaDevices?.getUserMedia) throw new Error('nocam')
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
         if (stopped) return
         const v = video.current!
         v.srcObject = stream
         await v.play()
+        // The camera was unplugged, taken by another app, or the phone locked.
+        stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+          if (stopped || current === 'capturing') return
+          setErrorMsg('The camera stopped. Please press Try again to restart the face check.')
+          to('error')
+        })
         await loadFaceApi()
         if (stopped) return
+        window.clearTimeout(watchdog)
         to('center')
         tick()
       } catch (e) {
         if (stopped) return
+        window.clearTimeout(watchdog)
         const name = (e as { name?: string }).name
+        const msg = (e as Error).message
         setErrorMsg(
-          name === 'NotAllowedError'
-            ? 'Camera access was blocked. Allow the camera in your browser settings and try again, or upload a selfie instead.'
-            : name === 'NotFoundError' || (e as Error).message === 'nocam'
-              ? 'No camera was found on this device. You can upload a selfie instead.'
-              : 'The camera or face check could not start. You can try again or upload a selfie instead.',
+          name === 'NotAllowedError' || name === 'SecurityError'
+            ? 'Camera permission was not allowed. To continue, tap the lock or camera icon beside the web address, choose Allow for Camera, then press Try again. You can also upload a selfie instead.'
+            : name === 'NotReadableError' || name === 'AbortError'
+              ? 'Another app is using the camera. Please close it, then press Try again.'
+              : name === 'NotFoundError' || name === 'OverconstrainedError' || msg === 'nocam'
+                ? 'No front camera was found on this device. You can upload a selfie instead.'
+                : msg === 'insecure'
+                  ? 'The camera only works on a secure (https) page. Please open the registration page from the official link.'
+                  : 'The camera or face check could not start. Please press Try again, or upload a selfie instead.',
         )
         to('error')
         setShowUpload(true)
@@ -572,6 +660,7 @@ function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: 
           if (steady >= 3) {
             to('capturing')
             const img = captureFrame(video.current)
+            stopped = true
             stream?.getTracks().forEach((t) => t.stop())
             await onDone(img, true)
             return
@@ -581,12 +670,27 @@ function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: 
       timer = window.setTimeout(tick, 120)
     }
 
+    // Leaving the app or tab mid-check turns the camera off; on return the person taps Start camera and begins again from step 1.
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden' && !stopped && current !== 'capturing') {
+        stopped = true
+        window.clearTimeout(timer)
+        window.clearTimeout(watchdog)
+        stream?.getTracks().forEach((t) => t.stop())
+        setHint('')
+        setPhase('intro')
+      }
+    }
+    document.addEventListener('visibilitychange', onHidden)
+
     void start()
     const offerUpload = window.setTimeout(() => setShowUpload(true), 25_000)
     return () => {
       stopped = true
       window.clearTimeout(timer)
       window.clearTimeout(offerUpload)
+      window.clearTimeout(watchdog)
+      document.removeEventListener('visibilitychange', onHidden)
       stream?.getTracks().forEach((t) => t.stop())
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -624,43 +728,56 @@ function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: 
   ]
   const order: Phase[] = ['center', 'turn', 'back', 'capturing']
   const idx = order.indexOf(phase)
+  const startCamera = () => { setShowUpload(false); setRun((r) => r + 1) }
+
+  if (phase === 'intro') {
+    return (
+      <div className="mt-5">
+        <div className="rounded-md bg-surface-muted p-4 text-[length:calc(16px*var(--fs))] text-navy-900">
+          <p className="font-semibold">This step uses your camera</p>
+          <p className="mt-1 text-ink-muted">Your browser will ask to use the camera. Please choose <span className="font-semibold text-navy-900">Allow</span>. The video stays on your device; only one photo is saved for checking.</p>
+        </div>
+        <StepList steps={steps} idx={-1} />
+        <Button className="mt-5 h-12 w-full rounded-lg text-[length:calc(17px*var(--fs))]" icon={<Camera className="size-5" />} onClick={startCamera}>Start camera</Button>
+        <div className="mt-4 text-center text-[length:calc(15px*var(--fs))] text-ink-muted">
+          No camera? <FilePick inline label="Upload a selfie photo instead" capture="user" onFile={upload} />
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="mt-6">
-      <div className="relative mx-auto aspect-[3/4] w-full max-w-[320px] overflow-hidden rounded-lg bg-navy-900">
-        <video ref={video} playsInline muted className="absolute inset-0 size-full -scale-x-100 object-cover" />
-        {/* Oval guide */}
+    <div className="mt-4">
+      <p aria-live="polite" className="mb-3 min-h-[2.6em] text-center text-[length:calc(17px*var(--fs))] leading-snug font-semibold text-navy-900">
+        {phase === 'loading' ? 'Starting the camera… Choose Allow if your browser asks.' : phase === 'error' ? 'The face check is paused' : phase === 'capturing' ? 'Done. Saving your photo…' : hint || 'Position your face inside the oval.'}
+      </p>
+      {/* Width follows the screen height too, so the whole oval and the buttons fit without scrolling. */}
+      <div className="relative mx-auto aspect-[3/4] w-[min(100%,340px,calc(52svh*0.75))] overflow-hidden rounded-md bg-navy-900">
+        <video ref={video} playsInline muted autoPlay className="absolute inset-0 size-full -scale-x-100 object-cover" />
         <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
-          <div className={cn('h-[68%] w-[64%] rounded-[50%] border-[3px] transition-colors duration-300', phase === 'capturing' ? 'border-success' : 'border-white/80')} style={{ boxShadow: '0 0 0 999px rgba(0,33,50,0.45)' }} />
+          <div className={cn('aspect-[3/4] w-[62%] rounded-[50%] border-[3px] transition-colors duration-300', phase === 'capturing' ? 'border-success' : 'border-white/85')} style={{ boxShadow: '0 0 0 999px rgba(0,33,50,0.45)' }} />
         </div>
         {(phase === 'loading' || phase === 'capturing') && (
-          <div className="absolute inset-0 grid place-items-center text-white">
-            <span className="flex items-center gap-2 rounded-full bg-black/50 px-4 py-2 text-[length:calc(15px*var(--fs))]">
+          <div className="absolute inset-0 grid place-items-center px-4 text-center text-white">
+            <span className="flex items-center gap-2 rounded-full bg-black/55 px-4 py-2 text-[length:calc(15px*var(--fs))]">
               <Loader2 className="size-4 animate-spin" /> {phase === 'loading' ? 'Starting the camera…' : 'Checking…'}
             </span>
           </div>
         )}
+        {phase === 'error' && (
+          <div className="absolute inset-0 grid place-items-center px-6 text-center text-white">
+            <span className="flex flex-col items-center gap-2 text-[length:calc(15px*var(--fs))]"><AlertCircle className="size-7" /> Camera is off</span>
+          </div>
+        )}
       </div>
 
-      {phase !== 'error' && (
-        <>
-          <p aria-live="polite" className="mt-4 text-center text-[length:calc(17px*var(--fs))] font-semibold text-navy-900">{phase === 'loading' ? 'Allow camera access when asked.' : hint}</p>
-          <ol className="mt-3 flex justify-center gap-2">
-            {steps.map((s, i) => (
-              <li key={s.k} className={cn('rounded-full px-3 py-1 text-[length:calc(14px*var(--fs))] font-semibold', i < idx ? 'bg-success-tint text-success' : i === idx ? 'bg-navy-900 text-white' : 'bg-surface-muted text-ink-muted')}>
-                {s.label}
-              </li>
-            ))}
-          </ol>
-        </>
-      )}
-      {phase === 'error' && (
+      {phase === 'error' ? (
         <>
           <Status tone="danger" icon={<AlertCircle className="size-4" />}>{errorMsg}</Status>
-          <div className="mt-3 text-center">
-            <Button variant="secondary" onClick={() => { setPhase('loading'); setRun((r) => r + 1) }}>Try the camera again</Button>
-          </div>
+          <Button className="mt-3 h-12 w-full rounded-lg" variant="secondary" icon={<RotateCcw className="size-4" />} onClick={startCamera}>Try again</Button>
         </>
+      ) : (
+        <StepList steps={steps} idx={idx} />
       )}
       {showUpload && (
         <div className="mt-4 text-center text-[length:calc(15px*var(--fs))] text-ink-muted">
@@ -669,6 +786,27 @@ function LiveSelfie({ value, onDone, onReset }: { value: { image: string; live: 
         </div>
       )}
     </div>
+  )
+}
+
+/** The three face-check steps: stacked on phones, side by side on wider screens. Done steps are ticked; the current one is highlighted. */
+function StepList({ steps, idx }: { steps: { k: string; label: string }[]; idx: number }) {
+  return (
+    <ol className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+      {steps.map((st, i) => {
+        const done = idx > i
+        const now = idx === i
+        return (
+          <li key={st.k} aria-current={now ? 'step' : undefined} className={cn('flex min-h-12 items-center gap-3 rounded-md border px-3 py-2 text-[length:calc(16px*var(--fs))]', done ? 'border-success/40 bg-success-tint text-navy-900' : now ? 'border-navy-900 bg-navy-900 text-white' : 'border-line bg-surface text-ink-muted')}>
+            <span className={cn('grid size-7 shrink-0 place-items-center rounded-full text-[length:calc(14px*var(--fs))] font-bold', done ? 'bg-success text-white' : now ? 'bg-white text-navy-900' : 'bg-surface-muted text-ink-muted')}>
+              {done ? <Tick className="size-4" /> : i + 1}
+            </span>
+            <span className="font-semibold">{st.label}</span>
+            {done && <span className="sr-only">(done)</span>}
+          </li>
+        )
+      })}
+    </ol>
   )
 }
 
@@ -706,7 +844,7 @@ function F({ label, error, optional, children }: { label: string; error?: string
         {label} {optional && <span className="font-normal text-ink-muted">(optional)</span>}
       </span>
       {children}
-      {error ? <span className="mt-1 block text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</span> : null}
+      {error ? <span className="mt-1.5 block text-[length:calc(15px*var(--fs))] leading-snug text-danger-ink">{error}</span> : null}
     </label>
   )
 }

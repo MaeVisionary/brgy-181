@@ -1,5 +1,25 @@
 # BMIS Patch Notes: Report formats, notifications, analytics and cleanup (12 November 2026)
 
+## 2026-11-12 (latest): Form validation, face check on phones, auto-save and draft recovery
+
+Validation
+- Continue / Submit never does nothing: on a problem the page scrolls to the first field marked in red, puts the cursor there, and says how many items need correcting. Messages sit under the field, say what to fix with an example (e.g. "Please enter a valid email address. Example: name@gmail.com", "Please select Yes or No."), and disappear once corrected. Nothing typed is cleared.
+- Shared rules in src/lib/validation.ts are used by the forms and re-checked in the service layer (registration, document requests, complaints, concerns, borrowing, corrections); a request that skips the form is refused with the same messages.
+- Buttons that used to stay greyed out until a form was complete now stay tappable and explain what is missing (Button `blockedReason`).
+- Server problems say so plainly, keep the entries, and allow Try again. Double taps are ignored while sending.
+
+Face check (registration)
+- Phone-first layout: tighter card, camera box sized to the screen height so the whole oval and the buttons fit, steps listed one per line with done and current steps marked, full-width 48 px buttons, safe-area padding.
+- Starts with a short explanation and a Start camera button. Clear messages for permission refused, camera in use, no camera, non-secure page, and a 15-second start-up timeout, each with Try again and the existing upload fallback. Leaving the app mid-check turns the camera off and offers to start again. The verification steps and checks are unchanged.
+
+Auto-save and draft recovery
+- Forms save as you type (after a short pause) on this device: registration (24 hours), document requests, complaints, community concerns, equipment borrowing, profile corrections, visit requests, and for Barangay Personnel the walk-in request, new blotter entry, announcement editor, walk-in borrowing and add equipment (7 days). A small "Saved on this device" note shows progress; "Unable to save" appears if the device cannot store it.
+- Returning to an unfinished form shows "Welcome back!" with Continue where I left off / Start over, only when a draft exists. A change made in another tab is offered, not silently overwritten.
+- Never saved: passwords, ID numbers, ID photos, selfies, face data, session tokens. After a refresh during registration the ID and face steps start again (the resident is told why). Uploaded files are re-attached if still kept (24 hours); otherwise the form asks to attach them again.
+- Drafts belong to the signed-in account; signing out removes them from the device; expired drafts are removed on start. A draft is never a submission: nothing is sent, approved, recorded or published by auto-save, and reference numbers are given only on submission.
+- One submission per draft: each submission carries the draft id, so pressing Submit twice or retrying after a dropped connection returns the first record instead of creating a duplicate. While offline nothing is sent and the form says so.
+- Database design: docs/supabase/drafts.sql (owner-only RLS, versioned saves, unique client_request_id). Not applied; server-side drafts across devices need the backend.
+
 ## 2026-11-12 (latest): Identification numbers and household records
 
 - One standard: Resident RES-181-YYYY-NNNNNN, Household HH-181-NNNNNN, Family FAM-181-NNNNNN, resident portal Account ACC-181-NNNNNN, Barangay Personnel EMP-181-NNNNNN. Transaction references (CLR-, APT-, BRW-, ANN-, KP-) are unchanged and never used as a person's number.

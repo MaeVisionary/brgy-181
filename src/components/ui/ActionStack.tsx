@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn'
  */
 export function ActionStack({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('grid w-full grid-cols-1 gap-2 sm:w-max sm:min-w-[240px] [&>*]:h-12 [&>*]:w-full [&>*]:justify-center [&>*]:text-center', className)}>
+    <div className={cn('grid w-full grid-cols-1 gap-2 sm:w-max sm:min-w-[240px] [&>:not(p)]:h-12 [&>*]:w-full [&>:not(p)]:justify-center [&>:not(p)]:text-center', className)}>
       {children}
     </div>
   )

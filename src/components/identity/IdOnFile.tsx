@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { focusFirstInvalid } from '@/lib/validation'
+import { FieldError } from '@/components/ui/Field'
 import { AlertTriangle, CheckCircle2, Clock, IdCard, XCircle } from '@/icons'
 import { Button } from '@/components/ui/Button'
 import { ID_TYPES, idHasExpiry, maskIdNumber } from '@/config/idTypes'
@@ -55,8 +57,20 @@ export function IdUploadForm({ name, onSubmit, onCancel, submitLabel = 'Submit I
   const [busy, setBusy] = useState<string | null>(null)
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })
 
+  const [touched, setTouched] = useState(false)
+  const errors = {
+    idType: !idType ? 'Please select the type of ID.' : '',
+    idNumber: idNumber.trim().length < 4 ? (idNumber.trim() ? 'This ID number looks too short. Please type it exactly as printed on the card.' : 'Please enter the ID number printed on your card.') : '',
+    expiresAt: idHasExpiry(idType) && !expiresAt ? 'Please enter the expiry date printed on the ID.' : idHasExpiry(idType) && expiresAt < today ? 'This ID has expired. Please use an ID that is still valid.' : '',
+    file: !file ? 'Please add a photo or scan of the front of your ID.' : '',
+  }
+  const show = (k: keyof typeof errors) => (touched ? errors[k] : '')
+
   const submit = async () => {
+    if (busy) return
     setErr(null)
+    setTouched(true)
+    if (Object.values(errors).some(Boolean)) { focusFirstInvalid(); return }
     const base = { idType, idNumber, expiresAt: idHasExpiry(idType) ? expiresAt : undefined }
     const problem = idUploadProblem({ ...base, fileId: file?.id })
     if (problem) { setErr(problem); return }
@@ -78,21 +92,25 @@ export function IdUploadForm({ name, onSubmit, onCancel, submitLabel = 'Submit I
     <div className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">Type of ID
-          <select className={cn(input, 'mt-1')} value={idType} onChange={(e) => setIdType(e.target.value)}>
+          <select className={cn(input, 'mt-1 aria-[invalid=true]:border-danger')} value={idType} onChange={(e) => setIdType(e.target.value)} aria-invalid={!!show('idType') || undefined}>
             <option value="">Select</option>
             {ID_TYPES.map((t) => <option key={t}>{t}</option>)}
           </select>
+          {show('idType') && <FieldError>{show('idType')}</FieldError>}
         </label>
         <label className="block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">ID number
-          <input className={cn(input, 'mt-1')} value={idNumber} autoComplete="off" onChange={(e) => setIdNumber(e.target.value)} />
+          <input className={cn(input, 'mt-1 aria-[invalid=true]:border-danger')} value={idNumber} autoComplete="off" onChange={(e) => setIdNumber(e.target.value)} aria-invalid={!!show('idNumber') || undefined} />
+          {show('idNumber') && <FieldError>{show('idNumber')}</FieldError>}
         </label>
         {idHasExpiry(idType) && (
           <label className="block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">Expiry date
-            <input type="date" min={today} className={cn(input, 'mt-1')} value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
+            <input type="date" min={today} className={cn(input, 'mt-1 aria-[invalid=true]:border-danger')} value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} aria-invalid={!!show('expiresAt') || undefined} />
+            {show('expiresAt') && <FieldError>{show('expiresAt')}</FieldError>}
           </label>
         )}
       </div>
-      <FileField category="id" ownerResidentId={name.id} value={file} onChange={setFile} />
+      <div data-invalid={!!show('file') || undefined} tabIndex={-1}><FileField category="id" ownerResidentId={name.id} value={file} onChange={setFile} /></div>
+      {show('file') && <FieldError>{show('file')}</FieldError>}
       {err && <p role="alert" className="text-[length:calc(14px*var(--fs))] text-danger-ink">{err}</p>}
       <div className="flex flex-wrap gap-2">
         <Button onClick={submit} loading={!!busy}>{busy ?? submitLabel}</Button>

@@ -153,7 +153,7 @@ export function SchedulingRulesPanel() {
             <Field label="From"><input type="date" className={control} value={leave.from} onChange={(e) => setLeave({ ...leave, from: e.target.value, to: leave.to || e.target.value })} /></Field>
             <Field label="To"><input type="date" className={control} value={leave.to} onChange={(e) => setLeave({ ...leave, to: e.target.value })} /></Field>
           </div>
-          <Button className="mt-3" size="sm" variant="secondary" disabled={!leave.staffId || !leave.from || leave.reason.trim().length < 3} onClick={() => { setR({ ...r, leave: [...r.leave, { ...leave, id: `lv-${Date.now().toString(36)}` }] }); setLeave({ staffId: '', from: '', to: '', reason: '' }) }}>Add Leave</Button>
+          <Button className="mt-3" size="sm" variant="secondary" blockedReason={!leave.staffId ? 'Please choose the member of the Barangay Personnel.' : !leave.from ? 'Please choose the first day of leave.' : leave.reason.trim().length < 3 ? 'Please type the reason for the leave.' : ''} onClick={() => { setR({ ...r, leave: [...r.leave, { ...leave, id: `lv-${Date.now().toString(36)}` }] }); setLeave({ staffId: '', from: '', to: '', reason: '' }) }}>Add Leave</Button>
         </Section>
 
         <details className="group border-t border-line-soft pt-5">

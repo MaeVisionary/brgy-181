@@ -94,6 +94,8 @@ export function FieldInput({
 }) {
   const label = field.label
   const invalidCls = invalid ? 'border-danger' : undefined
+  const verb = field.kind === 'choice' || field.kind === 'multi' ? 'select' : 'enter'
+  const errorText = invalid ? <span className="mt-1.5 block text-[length:calc(15px*var(--fs))] leading-snug text-danger-ink">{field.kind === 'multi' ? `Please select at least one option for “${label}”.` : `Please ${verb} “${label}”. This field is required.`}</span> : null
   if (field.kind === 'multi') {
     const arr = Array.isArray(value) ? value : []
     return (
@@ -102,7 +104,7 @@ export function FieldInput({
           {label}
           {field.required && <span className="text-danger-ink"> *</span>}
         </legend>
-        <div className={cn('grid gap-1.5 rounded-[var(--radius-control)] border p-3 sm:grid-cols-2', invalid ? 'border-danger' : 'border-line')}>
+        <div data-invalid={invalid || undefined} tabIndex={invalid ? -1 : undefined} className={cn('grid gap-1.5 rounded-[var(--radius-control)] border p-3 sm:grid-cols-2', invalid ? 'border-danger' : 'border-line')}>
           {field.options!.map((o) => (
             <label key={o} className="flex items-center gap-2 text-[length:calc(15px*var(--fs))] text-navy-900">
               <input
@@ -116,6 +118,7 @@ export function FieldInput({
             </label>
           ))}
         </div>
+        {errorText}
       </fieldset>
     )
   }
@@ -132,9 +135,9 @@ export function FieldInput({
     <div className={field.kind === 'textarea' ? 'sm:col-span-2' : undefined}>
       <FieldLabel label={label} required={field.required}>
         {field.kind === 'textarea' ? (
-          <TextArea value={str} disabled={disabled} placeholder={field.help} onChange={(e) => onChange(e.target.value)} className={invalidCls} />
+          <TextArea value={str} disabled={disabled} placeholder={field.help} onChange={(e) => onChange(e.target.value)} className={invalidCls} aria-invalid={invalid || undefined} />
         ) : field.kind === 'choice' ? (
-          <Select value={str} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={invalidCls}>
+          <Select value={str} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={invalidCls} aria-invalid={invalid || undefined}>
             <option value="">Select…</option>
             {field.options!.map((o) => (
               <option key={o}>{o}</option>
@@ -148,9 +151,11 @@ export function FieldInput({
             placeholder={field.help}
             onChange={(e) => onChange(field.kind === 'number' ? e.target.value.replace(/[^\d]/g, '') : e.target.value)}
             className={invalidCls}
+            aria-invalid={invalid || undefined}
           />
         )}
       </FieldLabel>
+      {errorText}
     </div>
   )
 }

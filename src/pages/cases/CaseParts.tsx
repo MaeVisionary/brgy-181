@@ -164,8 +164,8 @@ function ServedDoc({ d: initial }: { d: DocumentRequest }) {
               )}
               <label className="block text-[length:calc(14px*var(--fs))] font-semibold text-navy-900">Date *<TextInput className="mt-0.5" type="date" max={today()} value={on} onChange={(e) => setOn(e.target.value)} /></label>
               {error && <p className="text-[length:calc(14px*var(--fs))] text-danger-ink sm:col-span-3">{error}</p>}
-              <div className="flex gap-2 sm:col-span-3">
-                <Button size="sm" disabled={!who.trim() || !on} onClick={save}>Save</Button>
+              <div className="flex flex-wrap gap-2 sm:col-span-3">
+                <Button size="sm" blockedReason={!who.trim() ? 'Please enter the name.' : !on ? 'Please choose the date.' : ''} onClick={save}>Save</Button>
                 <Button size="sm" variant="ghost" onClick={() => { setMode('none'); setError(null) }}>Cancel</Button>
               </div>
             </div>

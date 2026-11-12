@@ -1,4 +1,5 @@
 import { mockDocumentRequests } from '@/mocks/documentRequests'
+import { once } from '@/lib/idempotency'
 import { KP } from '@/config/barangay'
 import { mockCases } from '@/mocks/cases'
 import { mockNotifications } from '@/mocks/notifications'
@@ -318,8 +319,8 @@ export interface NewCaseInput {
 const pad = (n: number, w: number) => String(n).padStart(w, '0')
 
 /** Records a complaint in the barangay blotter and opens its case (cases.manage). */
-export function createCase(input: NewCaseInput, a: CaseActor): Promise<KPCase> {
-  return mockRequest(() => {
+export function createCase(input: NewCaseInput, a: CaseActor, clientRequestId?: string): Promise<KPCase> {
+  return mockRequest(() => once(clientRequestId && `${a.user.id}:${clientRequestId}`, (id) => mockCases.find((c) => c.id === id), (c) => c.id, () => {
     if (!a.permissions.has('cases.manage')) throw new ServiceError('forbidden', 'Only case personnel can record blotter entries.')
     const complainants = input.complainants.filter((p) => p.name.trim())
     const respondents = input.respondents.filter((p) => p.name.trim())
@@ -358,7 +359,7 @@ export function createCase(input: NewCaseInput, a: CaseActor): Promise<KPCase> {
       src.history.push({ status: src.status, at: now, byUserId: a.user.id, byRole: a.user.roleId, action: `Recorded in the blotter as ${c.blotterNo} (case ${c.caseNo})` })
     }
     return c
-  })
+  }))
 }
 
 /** Records whether a person can attend a scheduled hearing. */
@@ -393,8 +394,8 @@ export interface ResidentComplaintInput {
  * (KP reference), never as a document request. The complainant is the signed-in
  * resident, taken from their record. Staff with case rights are notified.
  */
-export function submitComplaint(input: ResidentComplaintInput, a: CaseActor, me: { residentId: string; name: string; address: string; contactNo?: string }): Promise<KPCase> {
-  return mockRequest(() => {
+export function submitComplaint(input: ResidentComplaintInput, a: CaseActor, me: { residentId: string; name: string; address: string; contactNo?: string }, clientRequestId?: string): Promise<KPCase> {
+  return mockRequest(() => once(clientRequestId && `${a.user.id}:${clientRequestId}`, (id) => mockCases.find((c) => c.id === id), (c) => c.id, () => {
     if (!a.permissions.has('self.complaints')) throw new ServiceError('forbidden', 'You cannot file complaints.')
     if (!a.user.residentId || a.user.residentId !== me.residentId) throw new ServiceError('forbidden', 'You can only file complaints as yourself.')
     if (!COMPLAINT_CATEGORIES.includes(input.category)) throw new ServiceError('category', 'Choose what you are reporting.')
@@ -433,7 +434,7 @@ export function submitComplaint(input: ResidentComplaintInput, a: CaseActor, me:
     notify(staff, 'New complaint filed', `${c.caseNo} · ${input.category}`, `/cases/${c.id}`, 'complaint')
     notify([a.user.id], 'Complaint received', `${c.caseNo} · the barangay will review it.`, `/my/complaints/${c.id}`, 'complaint')
     return c
-  })
+  }))
 }
 
 /** Kagawads who can be assigned to a complaint. */

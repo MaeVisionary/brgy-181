@@ -1,4 +1,6 @@
 import { IdStatusLine, IdUploadForm } from '@/components/identity/IdOnFile'
+import { DraftConflictNote, DraftIndicator, DraftRecoveryCard, useDraft } from '@/hooks/useDraft'
+import { focusFirstInvalid } from '@/lib/validation'
 import { maskIdNumber } from '@/config/idTypes'
 import { getIdOnFile, needsUpload, stateOf, submitReplacementId, type IdDocument } from '@/services/identityService'
 import { useEffect, useMemo, useState } from 'react'
@@ -15,7 +17,7 @@ import { RESIDENT_SERVICES, getDocumentType } from '@/documents/catalog'
 import { ageOn, isFilled, prefillFromResident, residentFullName } from '@/documents/fill'
 import { useDocActor } from '@/hooks/useDocActor'
 import { MAX_TRANSACTION_BYTES } from '@/config/uploads'
-import { attachUploads, totalSize, type StoredFile } from '@/services/fileStore'
+import { attachUploads, fileMeta, totalSize, type StoredFile } from '@/services/fileStore'
 import { createRequest } from '@/services/documentService'
 import { ServiceError } from '@/services/mockApi'
 import { getResident } from '@/services/residentService'
@@ -39,8 +41,6 @@ const PURPOSE: Partial<Record<DocumentTypeId, string>> = {
   'barangay-certificate': 'A general certification from the barangay.',
 }
 
-const draftKey = (id: string) => `bmis.requestDraft:${id}`
-
 /** One document's request form on its own page (opened from New request). */
 export function RequestFormPage() {
   const { typeId = '' } = useParams()
@@ -51,9 +51,7 @@ export function RequestFormPage() {
   const type = allowed ? getDocumentType(allowed.id) : null
 
   const [resident, setResident] = useState<Resident | null>(null)
-  const [values, setValues] = useState<Record<string, FieldValue>>(() => {
-    try { return JSON.parse(sessionStorage.getItem(draftKey(typeId)) ?? 'null') ?? {} } catch { return {} }
-  })
+  const [values, setValues] = useState<Record<string, FieldValue>>({})
   const [files, setFiles] = useState<Record<string, StoredFile | null>>({})
   const [touched, setTouched] = useState(false)
   const [reviewing, setReviewing] = useState(false)
@@ -72,11 +70,27 @@ export function RequestFormPage() {
     loadId()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.residentId, typeId])
-  // Keep progress for this visit, so going back by mistake loses nothing.
-  useEffect(() => { try { sessionStorage.setItem(draftKey(typeId), JSON.stringify(values)) } catch { /* ignore */ } }, [typeId, values])
 
   const fields = useMemo(() => (type ? type.fields.filter((f) => f.by !== 'system' && !f.staffOnly) : []), [type])
   const profileKeys = useMemo(() => new Set(type && resident ? Object.entries(prefillFromResident(type.id, resident)).filter(([, v]) => isFilled(v)).map(([k]) => k) : []), [type, resident])
+  // Auto-saved draft (this account, this device, 7 days): what the resident typed and references to files already uploaded.
+  const draftValue = useMemo(() => ({
+    values: Object.fromEntries(Object.entries(values).filter(([k]) => !profileKeys.has(k))),
+    files: Object.fromEntries(Object.entries(files).filter(([, f]) => !!f).map(([k, f]) => [k, f!.id])) as Record<string, string>,
+  }), [values, files, profileKeys])
+  const draft = useDraft(`document-request:${typeId}`, draftValue)
+  const [missingFiles, setMissingFiles] = useState<string[]>([])
+  const resumeDraft = () => {
+    const d = draft.resume()
+    if (!d) return
+    setValues((v) => ({ ...v, ...d.values }))
+    // Uploaded files are kept for 24 hours; older ones must be uploaded again.
+    const kept: Record<string, StoredFile | null> = {}
+    const lost: string[] = []
+    for (const [label, id] of Object.entries(d.files ?? {})) { const m = fileMeta(id); if (m) kept[label] = m; else lost.push(label) }
+    setFiles((f) => ({ ...f, ...kept }))
+    setMissingFiles(lost)
+  }
   if (!type) return <Navigate to="/my/documents/new" replace />
 
   const askFields = fields.filter((f) => !profileKeys.has(f.key))
@@ -87,12 +101,12 @@ export function RequestFormPage() {
   const otherReqs = type.requirements.filter((r) => !isOwnIdRequirement(r.label))
   const typed = askFields.some((f) => isFilled(values[f.key]) && !profileKeys.has(f.key)) || Object.values(files).some(Boolean)
 
-  const discard = () => { try { sessionStorage.removeItem(draftKey(typeId)) } catch { /* ignore */ } navigate('/my/documents/new', { replace: true }) }
+  const discard = () => { draft.clear(); navigate('/my/documents/new', { replace: true }) }
   const back = () => (reviewing ? setReviewing(false) : navigate(-1))
   const cancel = () => (typed ? setLeaving(true) : discard())
   const review = () => {
     setTouched(true)
-    if (missing.length || idBlocked) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
+    if (missing.length || idBlocked) { focusFirstInvalid(); return }
     setReviewing(true)
     window.scrollTo({ top: 0 })
   }
@@ -112,9 +126,9 @@ export function RequestFormPage() {
           ? { provided: true, note: `${idState === 'pending' ? 'ID on file, verification pending' : 'Verified ID on file'}: ${idDoc.idType} ${maskIdNumber(idDoc.idNumber)}` }
           : { provided: !!files[r.label], note: files[r.label] ? `Attached: ${files[r.label]!.originalName}` : undefined, fileId: files[r.label]?.id }])),
         assisted: false,
-      }, actor)
+      }, actor, draft.draftId)
       attachUploads(fileIds, req.referenceNo)
-      try { sessionStorage.removeItem(draftKey(typeId)) } catch { /* ignore */ }
+      draft.clear()
       navigate(`/my/documents/${req.id}`, { replace: true, state: { justSubmitted: true } })
     } catch (e) {
       setError(e instanceof ServiceError ? e.message : 'Something went wrong. Please try again.')
@@ -160,9 +174,16 @@ export function RequestFormPage() {
         </div>
       ) : (
         <div className="space-y-4">
+          {draft.recovered && <DraftRecoveryCard savedAt={draft.recovered.savedAt} onContinue={resumeDraft} onStartOver={draft.startOver} />}
+          {draft.conflict && <DraftConflictNote onTake={() => { const d = draft.takeOther(); if (d) setValues((v) => ({ ...v, ...d.values })) }} onKeep={draft.keepMine} />}
+          {missingFiles.length > 0 && (
+            <p role="status" className="rounded-md bg-warning-tint px-4 py-3 text-[length:calc(15.5px*var(--fs))] text-navy-900">
+              Please attach again: {missingFiles.join(', ')}. Files are kept on this device for 24 hours only.
+            </p>
+          )}
           {touched && (missing.length > 0 || idBlocked) && (
             <p role="alert" className="rounded-md bg-danger-tint px-4 py-3 text-[length:calc(16px*var(--fs))] text-danger-ink">
-              {missing.length > 0 ? `Please fill in: ${missing.map((f) => f.label).join(', ')}.` : 'Please add a valid ID to continue.'}
+              {missing.length > 0 ? `Please complete ${missing.length === 1 ? 'the field' : `the ${missing.length} fields`} marked in red: ${missing.map((f) => f.label).join(', ')}.` : 'Please add a valid ID below to continue.'}
             </p>
           )}
           {resident && (
@@ -172,7 +193,7 @@ export function RequestFormPage() {
               {needsId && idDoc !== null && <IdStatusLine className="mt-3" doc={idDoc} state={idState} />}
               <Link to="/my/profile" className="mt-3 inline-block text-[length:calc(15px*var(--fs))] font-semibold text-info hover:underline">Something wrong? Request a correction</Link>
               {idBlocked && (
-                <div className="mt-4 border-t border-line-soft pt-4">
+                <div className="mt-4 border-t border-line-soft pt-4" data-invalid={touched || undefined} tabIndex={-1}>
                   <p className="mb-3 text-[length:calc(16px*var(--fs))] font-semibold text-navy-900">{idState === 'missing' ? 'Add a valid ID' : 'Upload a valid ID to continue'}</p>
                   <IdUploadForm name={resident} onSubmit={async (u) => { await submitReplacementId(resident.id, u, user!); loadId() }} />
                 </div>
@@ -209,6 +230,7 @@ export function RequestFormPage() {
             </Panel>
           )}
 
+          <DraftIndicator status={draft.status} />
           <ActionStack>
             <Button onClick={review}>Review Request</Button>
             <Button variant="ghost" onClick={cancel}>Cancel</Button>

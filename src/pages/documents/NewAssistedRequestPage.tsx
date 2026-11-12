@@ -1,4 +1,7 @@
 import { Search, UserRound, X } from '@/icons'
+import { residentById } from '@/mocks/residents'
+import { hasContent } from '@/lib/drafts'
+import { DraftConflictNote, DraftIndicator, DraftRecoveryCard, useDraft } from '@/hooks/useDraft'
 import { BackLink } from '@/components/ui/BackLink'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -36,6 +39,12 @@ export function NewAssistedRequestPage() {
   const [presented, setPresented] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const draftValue = useMemo(() => ({ typeId, residentId: resident?.id ?? '', requesterName, values, presented }), [typeId, resident, requesterName, values, presented])
+  const draft = useDraft('walk-in-request', draftValue, { isEmpty: (v) => !v.residentId && !v.requesterName.trim() && !hasContent(v.values) })
+  const load = (d: typeof draftValue | null) => {
+    if (!d) return
+    setTypeId(d.typeId); setResident(d.residentId ? residentById(d.residentId) ?? null : null); setRequesterName(d.requesterName); setValues(d.values ?? {}); setPresented(d.presented ?? {})
+  }
 
   const type = getDocumentType(typeId)
   const forNonResident = NON_RESIDENT_TYPES.includes(typeId)
@@ -83,10 +92,12 @@ export function NewAssistedRequestPage() {
           assisted: true,
         },
         actor,
+        draft.draftId,
       )
+      draft.clear()
       navigate(`/documents/${req.id}`)
     } catch (e) {
-      setError(e instanceof ServiceError ? e.message : 'Something went wrong.')
+      setError(e instanceof ServiceError ? e.message : 'The request could not be saved because of a problem on our side. What you entered is kept. Please press the button again.')
     } finally {
       setBusy(false)
     }
@@ -98,6 +109,8 @@ export function NewAssistedRequestPage() {
     <>
       <BackLink fallbackTo="/documents" fallbackLabel="Document Requests" />
       <PageHeader title="Encode walk-in request" subtitle="For residents who request at the Barangay Hall. They get the same tracking as online requests." />
+      {draft.recovered && <DraftRecoveryCard savedAt={draft.recovered.savedAt} onContinue={() => load(draft.resume())} onStartOver={draft.startOver} />}
+      {draft.conflict && <DraftConflictNote onTake={() => load(draft.takeOther())} onKeep={draft.keepMine} />}
 
       <div className="max-w-3xl space-y-4">
         <Panel title="1. Document">
@@ -191,10 +204,11 @@ export function NewAssistedRequestPage() {
 
             {error && <p className="rounded-md bg-danger-tint px-3 py-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{error}</p>}
             <ActionStack>
+              <DraftIndicator status={draft.status} className="w-full" />
               <Button onClick={submit} loading={busy}>
                 Create request
               </Button>
-              <Button variant="ghost" onClick={() => navigate('/documents')}>
+              <Button variant="ghost" onClick={() => { draft.clear(); navigate('/documents') }}>
                 Cancel
               </Button>
             </ActionStack>

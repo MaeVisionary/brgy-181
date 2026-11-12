@@ -1,8 +1,9 @@
 import { RESIDENT_SERVICES } from '@/documents/catalog'
+import { once } from '@/lib/idempotency'
 import { addWorkingDays, estimateFor } from './serviceStandardService'
 import { ROLE_PERMISSIONS } from '@/config/permissions'
 import { getDocumentType } from '@/documents/catalog'
-import { missingFields, systemValues } from '@/documents/fill'
+import { isFilled, missingFields, systemValues } from '@/documents/fill'
 import { WORKFLOWS } from '@/documents/workflows'
 import { mockDocumentRequests, nextReference } from '@/mocks/documentRequests'
 import { mockNotifications } from '@/mocks/notifications'
@@ -95,8 +96,8 @@ export interface NewRequestInput {
   assisted: boolean
 }
 
-export function createRequest(input: NewRequestInput, actor: DocActor): Promise<DocumentRequest> {
-  return mockRequest(() => {
+export function createRequest(input: NewRequestInput, actor: DocActor, clientRequestId?: string): Promise<DocumentRequest> {
+  return mockRequest(() => once(clientRequestId && `${actor.user.id}:${clientRequestId}`, (id) => mockDocumentRequests.find((r) => r.id === id), (r) => r.id, () => {
     const type = getDocumentType(input.typeId)
     const wf = WORKFLOWS[type.workflow]
     if (input.assisted) {
@@ -112,6 +113,11 @@ export function createRequest(input: NewRequestInput, actor: DocActor): Promise<
     // Applicants never set staff-only or system fields.
     const allowed = new Set(type.fields.filter((f) => input.assisted || (f.by !== 'system' && !f.staffOnly)).map((f) => f.key))
     const values = Object.fromEntries(Object.entries(input.values).filter(([k]) => allowed.has(k)))
+    if (!input.assisted) {
+      // Same rule as the form: every required field the resident fills in must have a value.
+      const missing = type.fields.filter((f) => allowed.has(f.key) && f.required && !isFilled(values[f.key] as FieldValue | undefined))
+      if (missing.length) throw new ServiceError('missing', `Please complete: ${missing.map((f) => f.label).join(', ')}.`)
+    }
     const req: DocumentRequest = {
       id: `docreq-${Date.now().toString(36)}`,
       referenceNo: nextReference(input.typeId),
@@ -140,7 +146,7 @@ export function createRequest(input: NewRequestInput, actor: DocActor): Promise<
       notify(usersWith('documents.process'), 'document', 'New document request', `${req.referenceNo}: ${type.name} from ${req.requesterName}.`, `/documents/${req.id}`)
     }
     return req
-  })
+  }))
 }
 
 export function saveValues(id: string, values: Record<string, FieldValue>, actor: DocActor): Promise<DocumentRequest> {

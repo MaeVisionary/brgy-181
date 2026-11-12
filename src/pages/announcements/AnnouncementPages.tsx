@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { DraftConflictNote, DraftIndicator, DraftRecoveryCard, useDraft } from '@/hooks/useDraft'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ChevronRight } from '@/icons'
 import { useAuth } from '@/auth/useAuth'
@@ -201,6 +202,10 @@ export function AnnouncementEditorPage() {
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [existing, setExisting] = useState<Announcement | null>(null)
+  // Unsaved edits are kept on this device. A draft here is never submitted, approved or published by itself.
+  const draftValue = useMemo(() => ({ c, when }), [c, when])
+  const draft = useDraft(`announcement:${id ?? 'new'}`, draftValue, { enabled: !!c, isEmpty: (v) => !v.c || (!v.c.title.trim() && !v.c.summary?.trim() && !v.c.body?.trim()) })
+  const loadDraft = (d: typeof draftValue | null) => { if (d?.c) { setC(d.c); setWhen(d.when) } }
   useEffect(() => {
     if (!id || !user) return
     getAnnouncement(id, user).then((a) => { setExisting(a); const src = a.revision ?? a; setC({ title: src.title, category: src.category, summary: src.summary, body: src.body, publishAt: src.publishAt, expiresOn: src.expiresOn, event: src.event, bring: src.bring, contact: src.contact, audience: src.audience, urgent: src.urgent }); setWhen(new Date(src.publishAt).getTime() > Date.now() ? 'later' : 'now') }).catch(() => setErr('Announcement not found.'))
@@ -216,6 +221,7 @@ export function AnnouncementEditorPage() {
     try {
       const a = await saveDraft(content(), user, id)
       if (submit && ['draft', 'returned'].includes(a.status)) await submitForApproval(a.id, user)
+      draft.clear()
       navigate(`/announcements/${a.id}`, { replace: true })
     } catch (e) { setErr(errText(e)) } finally { setBusy(false) }
   }
@@ -225,6 +231,8 @@ export function AnnouncementEditorPage() {
     <>
       <BackLink fallbackTo="/announcements" fallbackLabel="Announcements" />
       <PageHeader title={id ? 'Edit announcement' : 'New announcement'} />
+      {draft.recovered && <DraftRecoveryCard savedAt={draft.recovered.savedAt} onContinue={() => loadDraft(draft.resume())} onStartOver={draft.startOver} note="These are changes you had not saved yet. Nothing was sent for approval." />}
+      {draft.conflict && <DraftConflictNote onTake={() => loadDraft(draft.takeOther())} onKeep={draft.keepMine} />}
       {live && <p className="mb-4 rounded-[var(--radius-control)] bg-warning-tint px-4 py-3 text-[length:calc(16px*var(--fs))] text-navy-900">Already approved. Your changes will be sent to the Punong Barangay; residents keep seeing the current version until then.</p>}
       {preview ? (
         <div className="max-w-3xl space-y-3">
@@ -262,6 +270,7 @@ export function AnnouncementEditorPage() {
             <label className="flex min-h-12 items-end gap-2.5 pb-2 text-[length:calc(16px*var(--fs))] font-semibold text-navy-900"><input type="checkbox" className="size-5 accent-[#002132]" checked={c.urgent} onChange={(e) => set({ urgent: e.target.checked })} /> Mark as important</label>
           </div>
           {err && <p role="alert" className="rounded-[var(--radius-control)] bg-danger-tint px-4 py-3 text-[length:calc(16px*var(--fs))] text-danger-ink">{err}</p>}
+          <DraftIndicator status={draft.status} />
           <ActionStack>
             {!live && <Button loading={busy} onClick={() => run(true)}>Submit for Approval</Button>}
             {live && <Button loading={busy} onClick={() => run(false)}>Send changes for approval</Button>}

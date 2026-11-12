@@ -12,6 +12,8 @@ import { ROLE_PERMISSIONS } from '@/config/permissions'
 import { mockNotifications } from '@/mocks/notifications'
 import { sendEmail, type EmailRecord } from './emailService'
 import { accountNumber, nextNumber } from '@/lib/ids'
+import { recall, remember } from '@/lib/idempotency'
+import { MSG, errorSummary, hasErrors, isEmail, isMobile, yearProblem, type Errors } from '@/lib/validation'
 
 /**
  * ONLINE RESIDENT SELF-REGISTRATION (prototype).
@@ -158,10 +160,50 @@ export interface RegistrationInput {
   evidence: Omit<RegistrationEvidence, 'reasons' | 'recordSource'>
   checks: { ocr: CheckResult; faceMatch: CheckResult; liveness: CheckResult }
   record: RecordMatch
+  /** The registration draft's id: a retry with the same id returns the first result instead of a second registration. */
+  clientRequestId?: string
+}
+
+/**
+ * Server-side check of a registration (the same rules as the form). Returns
+ * one message per field that needs correcting; empty when everything is valid.
+ */
+export function registrationErrors(input: Pick<RegistrationInput, 'applicant' | 'username' | 'password' | 'evidence'>): Errors {
+  const a = input.applicant
+  const e: Errors = {}
+  const year = new Date().getFullYear()
+  if (!a.firstName?.trim()) e.firstName = MSG.required('your first name')
+  if (!a.lastName?.trim()) e.lastName = MSG.required('your last name')
+  if (a.sex !== 'male' && a.sex !== 'female') e.sex = MSG.choose('Male or Female')
+  if (!a.birthDate || Number.isNaN(new Date(a.birthDate).getTime())) e.birthDate = 'Please enter your birthdate.'
+  else if (new Date(a.birthDate) > new Date()) e.birthDate = 'Your birthdate cannot be a future date.'
+  else if (ageOn(a.birthDate) < MIN_AGE) e.birthDate = `Online registration is for residents ${MIN_AGE} years old and above.`
+  if (!['single', 'married', 'widowed', 'separated', 'live_in'].includes(a.civilStatus ?? '')) e.civilStatus = MSG.choose('your civil status')
+  if (!a.houseNo?.trim()) e.houseNo = MSG.required('your house or unit number')
+  if (!a.street?.trim()) e.street = MSG.choose('your street')
+  if (!a.contactNo || !isMobile(a.contactNo)) e.contactNo = MSG.mobile
+  if (!a.email || !isEmail(a.email)) e.email = MSG.email
+  const yp = yearProblem(String(a.residentSince ?? ''), 1900, year)
+  if (yp) e.residentSince = yp
+  else if (a.birthDate && Number(a.residentSince) < new Date(a.birthDate).getFullYear()) e.residentSince = 'The year you started living here is before your birth year.'
+  if (typeof a.voter !== 'boolean') e.voter = MSG.yesNo
+  if (!input.username?.trim() || !/^[a-z0-9._@-]{4,}$/i.test(input.username.trim())) e.username = 'Please use at least 4 characters for your username: letters, numbers, dots, dashes or @.'
+  const pw = passwordProblem(input.password ?? '')
+  if (pw) e.password = pw
+  if (!input.evidence?.idType) e.idType = MSG.choose('the type of ID you used')
+  if (!input.evidence?.idNumber || input.evidence.idNumber.trim().length < 4) e.idNumber = 'Please enter the ID number printed on your card.'
+  if (!input.evidence?.idImage) e.idImage = 'Please add a photo of your ID.'
+  if (!input.evidence?.selfieImage) e.selfieImage = 'Please complete the face check.'
+  return e
 }
 
 export async function submitRegistration(input: RegistrationInput): Promise<ResidentRegistration> {
   const a = input.applicant
+  const onceKey = input.clientRequestId && `guest:${input.clientRequestId}`
+  const prior = recall(onceKey, (id) => mockRegistrations.find((r) => r.id === id))
+  if (prior) return structuredClone(prior)
+  const invalid = registrationErrors(input)
+  if (hasErrors(invalid)) throw new ServiceError('invalid', `Some details need correcting: ${errorSummary(invalid)}`)
   if (ageOn(a.birthDate) < MIN_AGE) throw new ServiceError('age', `Online registration is for residents ${MIN_AGE} years old and above.`)
   if (identifierTaken(input.username) || identifierTaken(a.email)) throw new ServiceError('taken', 'That username or email already has an account.')
   const pw = passwordProblem(input.password)
@@ -228,6 +270,7 @@ export async function submitRegistration(input: RegistrationInput): Promise<Resi
     }
     setCredential(userId, { hash, mustChange: false, updatedAt: new Date().toISOString() })
     audit(user, auto ? 'Registration auto-approved' : 'Registration submitted for manual verification', 'Residents', reg.referenceNo)
+    remember(onceKey, reg.id)
     return reg
   })
 }

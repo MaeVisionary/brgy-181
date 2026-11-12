@@ -1,4 +1,5 @@
 import { BARANGAY_CONTACT } from '@/config/barangay'
+import { once } from '@/lib/idempotency'
 import { mockCases } from '@/mocks/cases'
 import { mockChangeRequests, mockResidents } from '@/mocks/residents'
 import { mockNotifications } from '@/mocks/notifications'
@@ -631,8 +632,8 @@ export function bookedOutsideHours(r: { officeStart: string; officeEnd: string; 
 export const bookableServices = (): AppointmentKind[] => (Object.keys(APPOINTMENT_TYPES) as AppointmentKind[]).filter((k) => serviceRule(k)?.residentBookable)
 
 /** Resident asks for a visit; they then pick a time from the free ones. */
-export function requestVisit(kind: AppointmentKind, reason: string, by: User): Promise<Appointment> {
-  return mockRequest(() => {
+export function requestVisit(kind: AppointmentKind, reason: string, by: User, clientRequestId?: string): Promise<Appointment> {
+  return mockRequest(() => once(clientRequestId && `${by.id}:${clientRequestId}`, (id) => load().find((x) => x.id === id), (x) => x.id, () => {
     if (!by.residentId) throw new ServiceError('forbidden', 'Only residents can book a visit here.')
     if (!bookableServices().includes(kind)) throw new ServiceError('kind', 'This service cannot be booked online.')
     if (reason.trim().length < 5) throw new ServiceError('reason', 'Tell us briefly what you need.')
@@ -647,7 +648,7 @@ export function requestVisit(kind: AppointmentKind, reason: string, by: User): P
     }
     save([...list, a])
     return a
-  })
+  }))
 }
 
 /** The assigned official accepts a requested time (services that need it). */

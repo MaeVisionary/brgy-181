@@ -1,4 +1,5 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { clearDraftsFor, purgeExpiredDrafts } from '@/lib/drafts'
 import { APP_CONFIG } from '@/config/app'
 import { ROLES, ROLE_PERMISSIONS } from '@/config/permissions'
 import { testAccountOf } from '@/config/testAccount'
@@ -122,6 +123,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       logout: () => {
         if (user) audit(user, 'Signed out', 'Security')
+        // Signing out removes this account's unsent drafts from the device, so the next person cannot see them.
+        // (A session that times out keeps them: only this account can open them again after signing in.)
+        if (user) clearDraftsFor(user.id)
         start(null, false)
         try {
           // Drop per-session navigation history so Back cannot reopen protected pages.
@@ -147,3 +151,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
+
+// Expired drafts are removed whenever the app starts.
+purgeExpiredDrafts()

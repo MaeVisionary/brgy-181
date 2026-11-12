@@ -1,12 +1,15 @@
 import { RowList } from '@/components/ui/RowList'
+import { residentById } from '@/mocks/residents'
+import { DraftConflictNote, DraftIndicator, DraftRecoveryCard, useDraft } from '@/hooks/useDraft'
+import { focusFirstInvalid, hasErrors } from '@/lib/validation'
 import { BellRing, Plus } from '@/icons'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { BackLink } from '@/components/ui/BackLink'
 import { useAuth } from '@/auth/useAuth'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { FieldLabel, Select, TextArea, TextInput } from '@/components/ui/Field'
+import { FieldLabel, Select, TextArea, TextInput, FieldError } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, Panel } from '@/components/ui/Panel'
 import { useAsync } from '@/hooks/useAsync'
@@ -276,9 +279,35 @@ export function BorrowForm({ assisted, resident, onDone }: { assisted?: boolean;
     searchResidents(q).then(setResults)
   }, [q, assisted])
 
+  const [touched, setTouched] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const draftValue = useMemo(() => ({ whoId: assisted ? who?.id ?? '' : '', qty, dateOfUse, stated }), [assisted, who, qty, dateOfUse, stated])
+  const draft = useDraft(`borrowing:${assisted ? 'walk-in' : 'self'}`, draftValue, { isEmpty: (v) => !Object.values(v.qty).some((x) => Number(x) > 0) && !v.dateOfUse && !v.whoId })
+  const load = (d: typeof draftValue | null) => {
+    if (!d) return
+    setQty(d.qty ?? {}); setDateOfUse(d.dateOfUse ?? ''); setStated(d.stated ?? '')
+    if (assisted && d.whoId) setWho(residentById(d.whoId) ?? null)
+  }
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })
+  const chosen = Object.entries(qty).filter(([, v]) => Number(v) > 0)
+  const over = (equipment ?? []).filter((e) => Number(qty[e.id] || 0) > availableQty(e))
+  // Same rules as requestBorrowing in the service layer (period availability is checked there).
+  const errors = {
+    who: !who ? 'Please search for and choose the borrower.' : '',
+    items: !chosen.length ? 'Please type how many you need for at least one item. Example: 10' : over.length ? over.map((e) => `Only ${availableQty(e)} ${e.name} available. Please lower the number.`).join(' ') : '',
+    dateOfUse: !dateOfUse ? 'Please choose the date you will use the equipment.' : dateOfUse < todayStr ? 'The date of use cannot be in the past. Please choose today or a later date.' : '',
+    stated: stated && dateOfUse && stated < dateOfUse ? 'The return date must be on or after the date of use.' : '',
+  }
+  const show = (k: keyof typeof errors) => (touched ? errors[k] : '')
+  const invalid = (k: keyof typeof errors) => (touched && !!errors[k]) || undefined
+
   const submit = async () => {
-    if (!who) { setErr('Choose the borrower.'); return }
+    if (busy) return
+    setTouched(true)
+    if (hasErrors(errors)) { focusFirstInvalid(); return }
+    if (!who) return
     setErr(null)
+    setBusy(true)
     try {
       const b = await requestBorrowing({
         residentId: who.id,
@@ -288,18 +317,23 @@ export function BorrowForm({ assisted, resident, onDone }: { assisted?: boolean;
         dateOfUse,
         statedReturnDate: stated,
         assisted: !!assisted,
-      }, actor)
+      }, actor, draft.draftId)
+      draft.clear()
       onDone(b)
     } catch (e) {
-      setErr(e instanceof ServiceError ? e.message : 'Failed.')
+      setErr(e instanceof ServiceError ? e.message : 'The request could not be sent because of a problem on our side. What you entered is kept. Please press Submit request again.')
+    } finally {
+      setBusy(false)
     }
   }
 
   return (
     <Panel className="mb-4" title={assisted ? 'Encode walk-in borrowing request' : 'What do you need?'} >
+      {draft.recovered && <DraftRecoveryCard savedAt={draft.recovered.savedAt} onContinue={() => load(draft.resume())} onStartOver={draft.startOver} />}
+      {draft.conflict && <DraftConflictNote onTake={() => load(draft.takeOther())} onKeep={draft.keepMine} />}
       {assisted && !who && (
-        <FieldLabel label="Borrower (resident)" required>
-          <TextInput placeholder="Search name" value={q} onChange={(e) => setQ(e.target.value)} />
+        <FieldLabel label="Borrower (resident)" required error={show('who')}>
+          <TextInput placeholder="Search name" value={q} onChange={(e) => setQ(e.target.value)} aria-invalid={invalid('who')} />
           {results.length > 0 && <ul className="mt-1 rounded-md border border-line">{results.map((r) => <li key={r.id}><button type="button" onClick={() => setWho(r)} className="w-full px-3 py-1.5 text-left text-[length:calc(15px*var(--fs))] hover:bg-sky-50">{r.firstName} {r.lastName} · {r.houseNo} {r.street}</button></li>)}</ul>}
         </FieldLabel>
       )}
@@ -307,14 +341,16 @@ export function BorrowForm({ assisted, resident, onDone }: { assisted?: boolean;
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {(equipment ?? []).map((e) => (
           <FieldLabel key={e.id} label={`${e.name} (${availableQty(e)} available)`}>
-            <TextInput inputMode="numeric" placeholder="0" value={qty[e.id] ?? ''} onChange={(ev) => setQty((s) => ({ ...s, [e.id]: ev.target.value.replace(/\D/g, '') }))} />
+            <TextInput inputMode="numeric" placeholder="0" value={qty[e.id] ?? ''} onChange={(ev) => setQty((s) => ({ ...s, [e.id]: ev.target.value.replace(/\D/g, '') }))} aria-invalid={(touched && (!chosen.length || Number(qty[e.id] || 0) > availableQty(e))) || undefined} />
           </FieldLabel>
         ))}
-        <FieldLabel label="Date of use" required><TextInput type="date" value={dateOfUse} onChange={(e) => setDateOfUse(e.target.value)} /></FieldLabel>
-        <FieldLabel label="Return date"><TextInput type="date" value={stated} onChange={(e) => setStated(e.target.value)} /></FieldLabel>
+        <FieldLabel label="Date of use" required error={show('dateOfUse')}><TextInput type="date" min={todayStr} value={dateOfUse} onChange={(e) => setDateOfUse(e.target.value)} aria-invalid={invalid('dateOfUse')} /></FieldLabel>
+        <FieldLabel label="Return date (optional)" error={show('stated')}><TextInput type="date" min={dateOfUse || todayStr} value={stated} onChange={(e) => setStated(e.target.value)} aria-invalid={invalid('stated')} /></FieldLabel>
       </div>
-      {err && <p className="mt-2 text-[length:calc(14.5px*var(--fs))] text-danger-ink">{err}</p>}
-      <ActionStack className="mt-3"><Button onClick={submit}>Submit request</Button><Button variant="ghost" onClick={() => onDone()}>Cancel</Button></ActionStack>
+      {show('items') && <FieldError>{show('items')}</FieldError>}
+      {err && <p role="alert" className="mt-2 rounded-md bg-danger-tint px-3 py-2 text-[length:calc(15px*var(--fs))] text-danger-ink">{err}</p>}
+      <DraftIndicator status={draft.status} className="mt-2" />
+      <ActionStack className="mt-3"><Button onClick={submit} loading={busy}>Submit request</Button><Button variant="ghost" onClick={() => { draft.clear(); onDone() }}>Cancel</Button></ActionStack>
     </Panel>
   )
 }

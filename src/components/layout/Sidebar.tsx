@@ -83,7 +83,7 @@ function FlatNav({
     <nav aria-label="Main" className="flex h-full flex-col bg-surface">
       {confirmOut && (
         <ConfirmDialog title="Log out?" confirmLabel="Log Out" destructive onCancel={() => setConfirmOut(false)} onConfirm={logout}>
-          Are you sure you want to log out of your account?
+          Are you sure you want to log out of your account? Forms you have not sent yet will be removed from this device.
         </ConfirmDialog>
       )}
       <div className={cn('flex-1 overflow-y-auto pt-4', collapsed ? 'px-2' : 'px-3')}>

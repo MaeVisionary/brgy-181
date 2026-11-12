@@ -1,4 +1,5 @@
 import { BORROWING } from '@/config/barangay'
+import { once } from '@/lib/idempotency'
 import { ROLE_PERMISSIONS } from '@/config/permissions'
 import { mockBorrowings, mockEquipment } from '@/mocks/equipment'
 import { mockNotifications } from '@/mocks/notifications'
@@ -263,8 +264,8 @@ export function updateEquipment(id: string, patch: Partial<Pick<Equipment, 'name
 }
 
 // ── Lifecycle ────────────────────────────────────────────────────────
-export function requestBorrowing(input: { residentId?: string; borrowerName: string; address: string; items: BorrowItem[]; dateOfUse: string; statedReturnDate?: string; assisted: boolean }, a: EqActor): Promise<Borrowing> {
-  return mockRequest(() => {
+export function requestBorrowing(input: { residentId?: string; borrowerName: string; address: string; items: BorrowItem[]; dateOfUse: string; statedReturnDate?: string; assisted: boolean }, a: EqActor, clientRequestId?: string): Promise<Borrowing> {
+  return mockRequest(() => once(clientRequestId && `${a.user.id}:${clientRequestId}`, (id) => { const b = mockBorrowings.find((x) => x.id === id); return b ? { ...b } : undefined }, (b) => b.id, () => {
     if (input.assisted ? !a.permissions.has('borrowing.approve') && !a.permissions.has('documents.create') : !a.permissions.has('self.borrowing')) throw new ServiceError('forbidden', 'Not allowed.')
     if (!input.assisted && input.residentId !== a.user.residentId) throw new ServiceError('forbidden', 'You can only borrow under your own name.')
     const items = input.items.filter((i) => i.qty > 0).map((i) => ({ equipmentId: i.equipmentId, qty: Math.floor(i.qty) }))
@@ -295,7 +296,7 @@ export function requestBorrowing(input: { residentId?: string; borrowerName: str
     tellOwner(b, 'Borrowing request received', b.estimate.readyBy ? `Estimated availability: ${b.estimate.readyBy}. ${b.estimate.note}` : b.estimate.note)
     notify(usersWith('borrowing.approve'), 'New borrowing request', `${b.refNo} from ${b.borrowerName}${b.estimate.ok ? '' : ' (not enough stock on the requested date)'}.`, `/borrowing/${b.id}`)
     return { ...b }
-  })
+  }))
 }
 
 type Action = 'approve' | 'reject' | 'ready' | 'release' | 'return' | 'cancel' | 'close_review'
